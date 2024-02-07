@@ -1,0 +1,7 @@
+---
+ # Running the vcsim for each test inside container
+- name: Run vcsim
+  ansible.vmware.vmware_cluster_drs:
+    datacenter_name: my_dc
+    cluster_name: my_cluster
+    enable: yes

@@ -12,7 +12,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: vmware_cluster_drs
+module: cluster_drs
 short_description: Manage Distributed Resource Scheduler (DRS) on VMware vSphere clusters
 description:
     - Manages DRS on VMware vSphere clusters.
@@ -79,7 +79,7 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Enable DRS
-  community.vmware.vmware_cluster_drs:
+  vmware.vmware.cluster_drs:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -88,7 +88,7 @@ EXAMPLES = r'''
     enable: true
   delegate_to: localhost
 - name: Enable DRS and distribute a more even number of virtual machines across hosts for availability
-  community.vmware.vmware_cluster_drs:
+  vmware.vmware.cluster_drs:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -99,7 +99,7 @@ EXAMPLES = r'''
       'TryBalanceVmsPerHost': '1'
   delegate_to: localhost
 - name: Enable DRS and set default VM behavior to partially automated
-  community.vmware.vmware_cluster_drs:
+  vmware.vmware.cluster_drs:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -119,14 +119,14 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.vmware.plugins.module_utils.vmware import (
-    PyVmomi,
-    TaskError,
-    find_datacenter_by_name,
+from ansible_collections.vmware.vmware.plugins.module_utils.vmware import (
     vmware_argument_spec,
-    wait_for_task,
+    PyVmomi,
+    find_datacenter_by_name,
+    TaskError,
     option_diff,
-)
+    wait_for_task)
+
 from ansible.module_utils._text import to_native
 
 
@@ -234,8 +234,8 @@ def main():
         supports_check_mode=True,
     )
 
-    vmware_cluster_drs = VMwareCluster(module)
-    vmware_cluster_drs.configure_drs()
+    cluster_drs = VMwareCluster(module)
+    cluster_drs.configure_drs()
 
 
 if __name__ == '__main__':

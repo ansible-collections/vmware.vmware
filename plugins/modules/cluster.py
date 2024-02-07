@@ -6,13 +6,15 @@
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# the target test "cluster" covering the testing for that module
+
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
 DOCUMENTATION = r'''
 ---
-module: vmware_cluster
+module: cluster
 short_description: Manage VMware vSphere clusters
 description:
     - Adds or removes VMware vSphere clusters.
@@ -40,17 +42,16 @@ options:
       default: present
       type: str
 seealso:
-- module: community.vmware.vmware_cluster_drs
-- module: community.vmware.vmware_cluster_ha
-- module: community.vmware.vmware_cluster_vsan
-extends_documentation_fragment:
-- community.vmware.vmware.documentation
+- module: vmware.vmware.vmware_cluster_drs
+- module: vmware.vmware.vmware_cluster_ha
+- module: vmware.vmware.vmware_cluster_vsan
+
 
 '''
 
 EXAMPLES = r'''
 - name: Create Cluster
-  community.vmware.vmware_cluster:
+  vmware.vmware.cluster:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -59,7 +60,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Delete Cluster
-  community.vmware.vmware_cluster:
+  vmware.vmware.cluster:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -78,10 +79,10 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.vmware.plugins.module_utils.vmware import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vmware import (
+    vmware_argument_spec,
     PyVmomi,
     find_datacenter_by_name,
-    vmware_argument_spec,
     wait_for_task)
 from ansible.module_utils._text import to_native
 
@@ -210,8 +211,8 @@ def main():
         supports_check_mode=True,
     )
 
-    vmware_cluster = VMwareCluster(module)
-    vmware_cluster.process_state()
+    cluster = VMwareCluster(module)
+    cluster.process_state()
 
 
 if __name__ == '__main__':

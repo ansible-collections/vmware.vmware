@@ -1,0 +1,8 @@
+- hosts: localhost
+  gather_facts: no
+  tasks:
+      - import_role:
+          name: prepare_lab
+      - import_role:
+          name: cluster
+

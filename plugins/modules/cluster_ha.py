@@ -13,7 +13,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: vmware_cluster_ha
+module: cluster_ha
 short_description: Manage High Availability (HA) on VMware vSphere clusters
 description:
     - Manages HA configuration on VMware vSphere clusters.
@@ -198,13 +198,13 @@ options:
       default: 'warning'
       choices: [ 'disabled', 'warning', 'restartAggressive' ]
 extends_documentation_fragment:
-- community.vmware.vmware.documentation
+- vmware.vmware.vmware.documentation
 
 '''
 
 EXAMPLES = r'''
 - name: Enable HA without admission control
-  community.vmware.vmware_cluster_ha:
+  vmware.vmware.cluster_ha:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -214,7 +214,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Enable HA and VM monitoring without admission control
-  community.vmware.vmware_cluster_ha:
+  vmware.vmware.cluster_ha:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -225,7 +225,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Enable HA with admission control reserving 50% of resources for HA
-  community.vmware.vmware_cluster_ha:
+  vmware.vmware.cluster_ha:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -249,11 +249,11 @@ except ImportError:
     pass
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.vmware.plugins.module_utils.vmware import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vmware import (
+    vmware_argument_spec,
     PyVmomi,
     TaskError,
     find_datacenter_by_name,
-    vmware_argument_spec,
     wait_for_task,
     option_diff,
 )

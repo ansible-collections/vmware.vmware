@@ -13,7 +13,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: vmware_host
+module: host
 short_description: Add, remove, or move an ESXi host to, from, or within vCenter
 description:
 - This module can be used to add, reconnect, or remove an ESXi host to or from vCenter.
@@ -117,13 +117,13 @@ options:
     type: bool
     default: true
 extends_documentation_fragment:
-- community.vmware.vmware.documentation
+- vmware.vmware.vmware.documentation
 
 '''
 
 EXAMPLES = r'''
 - name: Add ESXi Host to vCenter
-  community.vmware.vmware_host:
+  vmware.vmware.host:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -136,7 +136,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Add ESXi Host to vCenter under a specific folder
-  community.vmware.vmware_host:
+  vmware.vmware.host:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -150,7 +150,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Reconnect ESXi Host (with username/password set)
-  community.vmware.vmware_host:
+  vmware.vmware.host:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -163,7 +163,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Reconnect ESXi Host (with default username/password)
-  community.vmware.vmware_host:
+  vmware.vmware.host:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -174,7 +174,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Add ESXi Host with SSL Thumbprint to vCenter
-  community.vmware.vmware_host:
+  vmware.vmware.host:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
@@ -203,7 +203,7 @@ except ImportError:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
-from ansible_collections.community.vmware.plugins.module_utils.vmware import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vmware import (
     PyVmomi, TaskError, vmware_argument_spec,
     wait_for_task, find_host_by_cluster_datacenter, find_hostsystem_by_name
 )
@@ -819,8 +819,8 @@ def main():
         ]
     )
 
-    vmware_host = VMwareHost(module)
-    vmware_host.process_state()
+    host = VMwareHost(module)
+    host.process_state()
 
 
 if __name__ == '__main__':

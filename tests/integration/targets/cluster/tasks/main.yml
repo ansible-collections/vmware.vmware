@@ -1,0 +1,5 @@
+- include_tasks: create_cluster.yml
+- include_tasks: enable_drs.yml
+- include_tasks: disable_drs.yml
+- include_tasks: add_host.yml
+- include_tasks: delete_cluster.yml
