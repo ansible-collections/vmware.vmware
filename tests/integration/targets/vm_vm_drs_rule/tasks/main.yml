@@ -1,0 +1,38 @@
+---
+- name: Create a DRS Affinity rule for vms
+  vmware.vmware.vm_vm_drs_rule:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    drs_rule_name: drs_rule_0001
+    cluster_name: "{{ cluster_name }}"
+    vms: "{{ vms }}"
+    enabled: true
+    affinity_rule: true
+    mandatory: true
+  register: drs_rule_result
+
+- name: Should report changed=true
+  assert:
+    that:
+      - drs_rule_result.changed
+
+- name: Remove a DRS Affinity rule for vms
+  vmware.vmware.vm_vm_drs_rule:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    drs_rule_name: drs_rule_0001
+    cluster_name: "{{ cluster_name }}"
+    vms: "{{ vms }}"
+    state: absent
+  register: drs_rule_result
+
+- name: Should report changed=True
+  assert:
+    that:
+      - not drs_rule_result.changed

@@ -1,0 +1,47 @@
+---
+name: Ansible Test
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  merge_group:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  ansible_integration_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update pip, git
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          path: ansible_collections/vmware/vmware
+
+      - name: Run
+        run: |
+          make integration
+        working-directory: ansible_collections/vmware/vmware
+  ansible_unit_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update pip, git
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          path: ansible_collections/vmware/vmware
+
+      - name: Run
+        run: |
+          make units
+        working-directory: ansible_collections/vmware/vmware

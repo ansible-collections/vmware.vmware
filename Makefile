@@ -1,16 +1,5 @@
-RELEASE?=0.0.2
-
-lint:
-	ansible-lint
-
-clean:
-	rm -rf *tar.gz
-# build:
-# 	ansible-galaxy collection build
-#
-# publish:
-# 	ansible-galaxy collection publish machacekondra-openshift_install-$(RELEASE).tar.gz --token=$(GALAXY_TOKEN)
+units:
+	ansible-test units --docker --python 3.12
 
 integration:
-	ansible-test sanity -v --color --coverage --junit --docker
-
+	ansible-test integration --no-temp-workdir vm_vm_drs_rule

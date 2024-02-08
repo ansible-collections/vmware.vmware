@@ -387,6 +387,20 @@ def find_vm_by_id(content, vm_id, vm_id_type="vm_name", datacenter=None,
     return vm
 
 
+def get_all_objs(content, vimtype, folder=None, recurse=True):
+    if not folder:
+        folder = content.rootFolder
+
+    obj = {}
+    container = content.viewManager.CreateContainerView(folder, vimtype, recurse)
+    for managed_object_ref in container.view:
+        try:
+            obj.update({managed_object_ref: managed_object_ref.name})
+        except vmodl.fault.ManagedObjectNotFound:
+            pass
+    return obj
+
+
 def find_vm_by_name(content, vm_name, folder=None, recurse=True):
     return find_object_by_name(content, vm_name, [vim.VirtualMachine], folder=folder, recurse=recurse)
 
@@ -1442,6 +1456,7 @@ class PyVmomi(object):
 
         """
         return find_cluster_by_name(self.content, cluster_name, datacenter=datacenter_name)
+
 
     def get_all_hosts_by_cluster(self, cluster_name):
         """
