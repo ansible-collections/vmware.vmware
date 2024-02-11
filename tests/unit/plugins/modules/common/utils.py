@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import json
 
 from ansible.module_utils import basic
 from ansible.module_utils._text import to_bytes
+from pyVmomi import vim
 
-from mock import patch
+import mock
 
 
 def set_module_args(**args):
@@ -27,6 +29,10 @@ def set_module_args(**args):
     basic._ANSIBLE_ARGS = to_bytes(args)
 
 
+class DummyDatacenter:
+    pass
+
+
 class AnsibleExitJson(Exception):
     """Exception class to be raised by module.exit_json and caught by the test case """
     pass
@@ -34,6 +40,14 @@ class AnsibleExitJson(Exception):
 
 class AnsibleFailJson(Exception):
     pass
+
+
+class AnsibleDummyException(Exception):
+    pass
+
+
+def raise_dummy_exception(*args, **kwargs):
+    raise AnsibleDummyException()
 
 
 def exit_json(*args, **kwargs):
@@ -48,9 +62,23 @@ def fail_json(*args, **kwargs):
     raise AnsibleFailJson(kwargs)
 
 
+def resource_task_success(*args, **kwargs):
+    task_mock = mock.Mock()
+    task_mock.info = mock.Mock()
+    task_mock.info.state = "success"
+    return task_mock
+
+
+def resource_task_fail(*args, **kwargs):
+    task_mock = mock.Mock()
+    task_mock.info = mock.Mock()
+    task_mock.info.state = "error"
+    return task_mock
+
+
 class ModuleTestCase:
     def setup_method(self):
-        self.mock_module = patch.multiple(
+        self.mock_module = mock.patch.multiple(
             basic.AnsibleModule, exit_json=exit_json, fail_json=fail_json,
         )
         self.mock_module.start()
