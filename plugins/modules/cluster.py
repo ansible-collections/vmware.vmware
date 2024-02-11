@@ -119,11 +119,12 @@ class VMwareCluster(PyVmomi):
         """
         Create cluster with given configuration
         """
+        changed = False
         try:
             cluster_config_spec = vim.cluster.ConfigSpecEx()
             if not self.module.check_mode:
                 self.datacenter.hostFolder.CreateClusterEx(self.cluster_name, cluster_config_spec)
-            self.module.exit_json(changed=True)
+            changed = True
         except vmodl.fault.InvalidArgument as invalid_args:
             self.module.fail_json(msg="Cluster configuration specification"
                                       " parameter is invalid : %s" % to_native(invalid_args.msg))
@@ -144,17 +145,18 @@ class VMwareCluster(PyVmomi):
             self.module.fail_json(msg="Failed to create cluster"
                                       " due to generic exception %s" % to_native(generic_exc))
 
+        self.module.exit_json(changed=changed)
+
     def state_destroy_cluster(self):
         """
         Destroy cluster
         """
-        changed, result = True, None
+        changed, result = False, None
 
         try:
             if not self.module.check_mode:
                 task = self.cluster.Destroy_Task()
                 changed, result = wait_for_task(task)
-            self.module.exit_json(changed=changed, result=result)
         except vim.fault.VimFault as vim_fault:
             self.module.fail_json(msg=to_native(vim_fault.msg))
         except vmodl.RuntimeFault as runtime_fault:
@@ -164,6 +166,8 @@ class VMwareCluster(PyVmomi):
         except Exception as generic_exc:
             self.module.fail_json(msg="Failed to destroy cluster"
                                       " due to generic exception %s" % to_native(generic_exc))
+
+        self.module.exit_json(changed=changed, result=result)
 
     def state_exit_unchanged(self):
         """
@@ -178,7 +182,7 @@ class VMwareCluster(PyVmomi):
 
         """
         try:
-            self.datacenter = find_datacenter_by_name(self.content, self.datacenter_name)
+            self.datacenter = self.find_datacenter_by_name(self.content, self.datacenter_name)
             if self.datacenter is None:
                 self.module.fail_json(msg="Datacenter %s does not exist." % self.datacenter_name)
             self.cluster = self.find_cluster_by_name(cluster_name=self.cluster_name, datacenter_name=self.datacenter)

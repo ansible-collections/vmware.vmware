@@ -279,7 +279,7 @@ class VMwareCluster(PyVmomi):
         else:
             self.ha_admission_control = False
 
-        self.datacenter = find_datacenter_by_name(self.content, self.datacenter_name)
+        self.datacenter = self.find_datacenter_by_name(self.content, self.datacenter_name)
         if self.datacenter is None:
             self.module.fail_json(msg="Datacenter %s does not exist." % self.datacenter_name)
 
@@ -292,6 +292,7 @@ class VMwareCluster(PyVmomi):
             self.changed_advanced_settings = option_diff(self.advanced_settings, self.cluster.configurationEx.dasConfig.option, False)
         else:
             self.changed_advanced_settings = None
+
 
     def get_failover_hosts(self):
         """
@@ -527,8 +528,8 @@ def main():
         ]
     )
 
-    vmware_cluster_ha = VMwareCluster(module)
-    vmware_cluster_ha.configure_ha()
+    cluster_ha = VMwareCluster(module)
+    cluster_ha.configure_ha()
 
 
 if __name__ == '__main__':
