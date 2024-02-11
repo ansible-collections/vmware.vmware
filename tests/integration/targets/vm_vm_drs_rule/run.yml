@@ -1,0 +1,14 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+    - community.general
+  vars_files:
+    - ../vars.yml
+  tasks:
+    - name: Vcsim
+      ansible.builtin.import_role:
+        name: prepare_vcsim
+
+    - name: Import drs rule role
+      ansible.builtin.import_role:
+        name: vm_vm_drs_rule

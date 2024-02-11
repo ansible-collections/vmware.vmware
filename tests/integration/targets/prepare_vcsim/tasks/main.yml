@@ -1,7 +1,21 @@
 ---
- # Running the vcsim for each test inside container
+- name: Install dependencies
+  ansible.builtin.pip:
+    name:
+      - pyvmomi
+      - requests
+
 - name: Run vcsim
-  ansible.vmware.vmware_cluster_drs:
-    datacenter_name: my_dc
-    cluster_name: my_cluster
-    enable: yes
+  community.docker.docker_container:
+    name: vcsim
+    image: vmware/vcsim
+    state: started
+    recreate: yes
+    exposed_ports:
+      - 8989
+    ports:
+      - 8989:8989
+
+- name: Pause for 5 sec to start vcsim
+  ansible.builtin.pause:
+    seconds: 5

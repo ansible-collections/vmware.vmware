@@ -1,0 +1,8 @@
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_port: 8989
+cluster_name: DC0_C0
+vms:
+  - DC0_C0_RP0_VM0
+  - DC0_C0_RP0_VM1
