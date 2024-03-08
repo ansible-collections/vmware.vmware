@@ -23,7 +23,7 @@ author:
 - Philippe Dellaert (@pdellaert) <philippe@dellaert.org>
 - Abhijeet Kasurde (@Akasurde) <akasurde@redhat.com>
 notes:
-    - Please make sure that the user used for M(community.vmware.vmware_guest) has the correct level of privileges.
+    - Please make sure that the user used for M(vmware.vmware.vmware_guest) has the correct level of privileges.
     - For example, following is the list of minimum privileges required by users to create virtual machines.
     - "   DataStore > Allocate Space"
     - "   Virtual Machine > Configuration > Add New Disk"
@@ -98,7 +98,7 @@ options:
     - Note, this may need to be done in a dedicated task invocation that is not making
       any other changes. For example, user cannot change the state from powered-on to
       powered-off AND save as template in the same task.
-    - See M(community.vmware.vmware_guest) source for more details.
+    - See M(vmware.vmware.vmware_guest) source for more details.
     default: false
     type: bool
   folder:
@@ -805,7 +805,7 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Create a virtual machine on given ESXi hostname
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -835,7 +835,7 @@ EXAMPLES = r'''
   register: deploy_vm
 
 - name: Create a virtual machine from a template
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -881,7 +881,7 @@ EXAMPLES = r'''
   register: deploy
 
 - name: Clone a virtual machine from Windows template and customize
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -913,7 +913,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name:  Clone a virtual machine from Linux template and customize
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -942,7 +942,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Rename a virtual machine (requires the virtual machine's uuid)
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -952,7 +952,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Remove a virtual machine by uuid
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -961,7 +961,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Remove a virtual machine from inventory
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -971,7 +971,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Manipulate vApp properties
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -988,7 +988,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Set powerstate of a virtual machine to poweroff by using UUID
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -997,7 +997,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Deploy a virtual machine in a datastore different from the datastore of the template
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -1013,7 +1013,7 @@ EXAMPLES = r'''
   delegate_to: localhost
 
 - name: Create a diskless VM
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -1030,7 +1030,7 @@ EXAMPLES = r'''
         num_cpu_cores_per_socket: 1
 
 - name: Create a VM with multiple disks of different disk controller types
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -1063,7 +1063,7 @@ EXAMPLES = r'''
   register: deploy_vm
 
 - name: Create a VM with NVDIMM device
-  community.vmware.vmware_guest:
+  vmware.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"

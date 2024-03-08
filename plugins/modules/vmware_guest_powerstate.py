@@ -131,7 +131,7 @@ extends_documentation_fragment:
 
 EXAMPLES = r"""
 - name: Set the state of a virtual machine to poweroff
-  community.vmware.vmware_guest_powerstate:
+  vmware.vmware.vmware_guest_powerstate:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -142,7 +142,7 @@ EXAMPLES = r"""
   register: deploy
 
 - name: Set the state of a virtual machine to poweron using MoID
-  community.vmware.vmware_guest_powerstate:
+  vmware.vmware.vmware_guest_powerstate:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -153,7 +153,7 @@ EXAMPLES = r"""
   register: deploy
 
 - name: Set the state of a virtual machine to poweroff at given scheduled time
-  community.vmware.vmware_guest_powerstate:
+  vmware.vmware.vmware_guest_powerstate:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -168,7 +168,7 @@ EXAMPLES = r"""
   register: deploy_at_schedule_datetime
 
 - name: Wait for the virtual machine to shutdown
-  community.vmware.vmware_guest_powerstate:
+  vmware.vmware.vmware_guest_powerstate:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -181,7 +181,7 @@ EXAMPLES = r"""
 - name: Automatically answer if a question locked a virtual machine
   block:
     - name: Power on a virtual machine without the answer param
-      community.vmware.vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
         hostname: "{{ esxi_hostname }}"
         username: "{{ esxi_username }}"
         password: "{{ esxi_password }}"
@@ -191,7 +191,7 @@ EXAMPLES = r"""
         state: powered-on
   rescue:
     - name: Power on a virtual machine with the answer param
-      community.vmware.vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
         hostname: "{{ esxi_hostname }}"
         username: "{{ esxi_username }}"
         password: "{{ esxi_password }}"
