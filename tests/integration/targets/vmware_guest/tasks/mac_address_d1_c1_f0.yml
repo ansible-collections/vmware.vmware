@@ -12,18 +12,18 @@
     guest_id: centos64Guest
     datacenter: "{{ dc1 }}"
     hardware:
-        num_cpus: 1
-        memory_mb: 128
+      num_cpus: 1
+      memory_mb: 128
     disk:
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     networks:
-        - name: VM Network
-          ip: 192.168.10.12
-          netmask: 255.255.255.0
-          gateway: 192.168.10.254
-          mac: aa:bb:cc:dd:aa:42
+      - name: VM Network
+        ip: 192.168.10.12
+        netmask: 255.255.255.0
+        gateway: 192.168.10.254
+        mac: aa:bb:cc:dd:aa:42
     state: poweredoff
     folder: vm
   register: clone_d1_c1_f0
@@ -33,5 +33,5 @@
 - name: assert that changes were made
   assert:
     that:
-        - "clone_d1_c1_f0['instance']['hw_eth0']['addresstype'] == 'manual'"
-        - "clone_d1_c1_f0['instance']['hw_eth0']['macaddress'] == 'aa:bb:cc:dd:aa:42'"
+      - "clone_d1_c1_f0['instance']['hw_eth0']['addresstype'] == 'manual'"
+      - "clone_d1_c1_f0['instance']['hw_eth0']['macaddress'] == 'aa:bb:cc:dd:aa:42'"

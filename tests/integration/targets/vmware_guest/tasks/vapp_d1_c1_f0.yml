@@ -21,20 +21,20 @@
       num_cpus: 1
       scsi: paravirtual
     disk:
-    - size_mb: 128
-      type: thin
-      datastore: "{{ rw_datastore }}"
+      - size_mb: 128
+        type: thin
+        datastore: "{{ rw_datastore }}"
     vapp_properties:
-    - id: prop_id1
-      category: category
-      label: prop_label1
-      type: string
-      value: prop_value1
-    - id: prop_id2
-      category: category
-      label: prop_label2
-      type: string
-      value: prop_value2
+      - id: prop_id1
+        category: category
+        label: prop_label1
+        type: string
+        value: prop_value1
+      - id: prop_id2
+        category: category
+        label: prop_label2
+        type: string
+        value: prop_value2
   register: vapp_vm
 
 - debug: var=vapp_vm
@@ -68,10 +68,10 @@
     name: test_vm1
     datacenter: "{{ dc1 }}"
     vapp_properties:
-    - id: prop_id1
-      operation: remove
-    - id: prop_id2
-      value: prop_value3
+      - id: prop_id1
+        operation: remove
+      - id: prop_id2
+        value: prop_value3
     state: present
   register: vapp_vm
 

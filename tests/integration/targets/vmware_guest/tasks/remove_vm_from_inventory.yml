@@ -26,7 +26,7 @@
 - name: assert that changes were made
   assert:
     that:
-        - create_vm_for_test is changed
+      - create_vm_for_test is changed
 
 - name: Remove VM from Inventory
   vmware_guest:
@@ -42,7 +42,7 @@
 - name: assert that changes were made
   assert:
     that:
-        - remove_vm_from_inventory is changed
+      - remove_vm_from_inventory is changed
 
 - name: Remove VM again from Inventory
   vmware_guest:
@@ -58,4 +58,4 @@
 - name: assert that changes were made
   assert:
     that:
-        - not (remove_again_vm_from_inventory is changed)
+      - not (remove_again_vm_from_inventory is changed)

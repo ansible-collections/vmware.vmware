@@ -31,16 +31,16 @@
     guest_id: centos64Guest
     datacenter: "{{ dc1 }}"
     hardware:
-        num_cpus: 1
-        num_cpu_cores_per_socket: 1
-        memory_mb: 128
-        hotadd_memory: true
-        hotadd_cpu: false
-        max_connections: 10
+      num_cpus: 1
+      num_cpu_cores_per_socket: 1
+      memory_mb: 128
+      hotadd_memory: true
+      hotadd_cpu: false
+      max_connections: 10
     disk:
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     state: poweredoff
     folder: '{{ f0 }}'
   register: clone_d1_c1_f0
@@ -61,7 +61,7 @@
 - name: assert that VM was not deleted
   assert:
     that:
-        - not delete_vm.changed
+      - not delete_vm.changed
 
 - name: Delete VM using right parameters value
   vmware_guest:
@@ -79,4 +79,4 @@
 - name: assert that VM was deleted
   assert:
     that:
-        - delete_vm.changed
+      - delete_vm.changed

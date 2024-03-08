@@ -18,13 +18,13 @@
       boot_firmware: efi
       scsi: paravirtual
     disk:
-    - size_mb: 128
-      type: thin
-      datastore: '{{ rw_datastore }}'
+      - size_mb: 128
+        type: thin
+        datastore: '{{ rw_datastore }}'
     cdrom:
-    - controller_number: 0
-      unit_number: 0
-      type: client
+      - controller_number: 0
+        unit_number: 0
+        type: client
   register: vbs_vm
 
 - debug: var=vbs_vm
@@ -54,13 +54,13 @@
       boot_firmware: efi
       scsi: paravirtual
     disk:
-    - size_mb: 128
-      type: thin
-      datastore: '{{ rw_datastore }}'
+      - size_mb: 128
+        type: thin
+        datastore: '{{ rw_datastore }}'
     cdrom:
-    - controller_number: 0
-      unit_number: 0
-      type: client
+      - controller_number: 0
+        unit_number: 0
+        type: client
   register: vbs_vm
 
 - debug: var=vbs_vm
@@ -81,9 +81,9 @@
     name: vbs-Test2
     datacenter: "{{ f0 }}"
     disk:
-    - size_mb: 256
-      type: thin
-      datastore: '{{ rw_datastore }}'
+      - size_mb: 256
+        type: thin
+        datastore: '{{ rw_datastore }}'
     hardware:
       virt_based_security: true
     state: present
@@ -107,9 +107,9 @@
     name: vbs-Test2
     datacenter: "{{ f0 }}"
     disk:
-    - size_mb: 256
-      type: thin
-      datastore: '{{ rw_datastore }}'
+      - size_mb: 256
+        type: thin
+        datastore: '{{ rw_datastore }}'
     hardware:
       virt_based_security: true
     state: present

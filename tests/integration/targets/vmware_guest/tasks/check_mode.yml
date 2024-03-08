@@ -10,21 +10,21 @@
     state: poweredoff
     guest_id: debian8_64Guest
     disk:
-    - size_mb: 10
-      type: thin
-      datastore: '{{ rw_datastore }}'
+      - size_mb: 10
+        type: thin
+        datastore: '{{ rw_datastore }}'
     hardware:
       memory_mb: 128
       num_cpus: 1
       scsi: paravirtual
       version: 11
     cdrom:
-    - controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
     networks:
-    - name: VM Network
+      - name: VM Network
 
 - name: Perform all operation in check mode
   vmware_guest:

@@ -10,21 +10,21 @@
     state: poweredoff
     guest_id: debian8_64Guest
     disk:
-    - size_mb: 10
-      type: thin
-      datastore: '{{ rw_datastore }}'
+      - size_mb: 10
+        type: thin
+        datastore: '{{ rw_datastore }}'
     hardware:
       memory_mb: 128
       num_cpus: 1
       scsi: paravirtual
       version: 11
     cdrom:
-    - controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
     networks:
-    - name: VM Network
+      - name: VM Network
 
 - name: clone vm from template and customize GOS
   vmware_guest:
@@ -46,7 +46,7 @@
 - name: assert that changes were made
   assert:
     that:
-        - clone_customize is changed
+      - clone_customize is changed
 
 - name: clone vm from template and customize GOS again
   vmware_guest:
@@ -68,4 +68,4 @@
 - name: assert that changes were not made
   assert:
     that:
-        - not (clone_customize_again is changed)
+      - not (clone_customize_again is changed)

@@ -10,13 +10,13 @@
     guest_id: centos64Guest
     datacenter: "{{ dc1 }}"
     hardware:
-        version: 11
-        num_cpus: 1
-        memory_mb: 128
+      version: 11
+      num_cpus: 1
+      memory_mb: 128
     disk:
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     state: poweredoff
     folder: F0
   register: clone_rp_d1_c1_f0
@@ -47,7 +47,7 @@
 - name: assert that changes were made with deletion
   assert:
     that:
-        - clone_rp_d1_c1_f0_delete is changed
+      - clone_rp_d1_c1_f0_delete is changed
 
 # now create with just a cluster
 - name: create new VM with default resource pool in cluster
@@ -62,13 +62,13 @@
     datacenter: "{{ dc1 }}"
     cluster: "{{ ccr1 }}"
     hardware:
-        version: 11
-        num_cpus: 1
-        memory_mb: 128
+      version: 11
+      num_cpus: 1
+      memory_mb: 128
     disk:
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     state: poweredoff
     folder: F0
   register: clone_rpc_d1_c1_f0
@@ -100,7 +100,7 @@
 - name: assert that changes were made with deletion
   assert:
     that:
-        - clone_rpc_d1_c1_f0_delete is changed
+      - clone_rpc_d1_c1_f0_delete is changed
 
 # now create with a specific resource pool
 - name: create new VM with specific resource pool in cluster
@@ -116,13 +116,13 @@
     cluster: "{{ ccr1 }}"
     resource_pool: DC0_C0_RP1
     hardware:
-        version: 11
-        num_cpus: 1
-        memory_mb: 128
+      version: 11
+      num_cpus: 1
+      memory_mb: 128
     disk:
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     state: poweredoff
     folder: F0
   register: clone_rpcp_d1_c1_f0
@@ -154,7 +154,7 @@
 - name: assert that changes were made with deletion
   assert:
     that:
-        - clone_rpcp_d1_c1_f0_delete is changed
+      - clone_rpcp_d1_c1_f0_delete is changed
 
 # now create with a specific host
 - name: create new VM with specific host
@@ -169,12 +169,12 @@
     datacenter: "{{ dc1 }}"
     esxi_hostname: '{{ esxi1 }}'
     hardware:
-        num_cpus: 1
-        memory_mb: 128
+      num_cpus: 1
+      memory_mb: 128
     disk:
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     state: poweredoff
     folder: F0
   register: clone_rph_d1_c1_f0
@@ -205,4 +205,4 @@
 - name: assert that changes were made with deletion
   assert:
     that:
-        - clone_rph_d1_c1_f0_delete is changed
+      - clone_rph_d1_c1_f0_delete is changed

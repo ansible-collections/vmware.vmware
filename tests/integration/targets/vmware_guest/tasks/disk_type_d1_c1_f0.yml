@@ -12,15 +12,15 @@
     guest_id: centos64Guest
     datacenter: "{{ dc1 }}"
     hardware:
-        num_cpus: 1
-        memory_mb: 128
+      num_cpus: 1
+      memory_mb: 128
     disk:
-        - size: 1gb
-          type: eagerzeroedthick
-          datastore: "{{ rw_datastore }}"
-        - size: 1gb
-          type: thin
-          datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: eagerzeroedthick
+        datastore: "{{ rw_datastore }}"
+      - size: 1gb
+        type: thin
+        datastore: "{{ rw_datastore }}"
     state: poweredoff
     folder: F0
   register: disk_type_d1_c1_f0
@@ -30,4 +30,4 @@
 - name: assert that changes were made
   assert:
     that:
-        - disk_type_d1_c1_f0 is changed
+      - disk_type_d1_c1_f0 is changed

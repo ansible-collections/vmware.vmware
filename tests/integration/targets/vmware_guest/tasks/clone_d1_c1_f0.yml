@@ -23,7 +23,7 @@
 - name: assert that changes were not made
   assert:
     that:
-        - not (linked_clone_d1_c1_f0 is changed)
+      - not (linked_clone_d1_c1_f0 is changed)
 
 - name: create new linked clone without specifying linked_clone
   vmware_guest:
@@ -46,4 +46,4 @@
 - name: assert that changes were not made
   assert:
     that:
-        - not (linked_clone_d1_c1_f0 is changed)
+      - not (linked_clone_d1_c1_f0 is changed)

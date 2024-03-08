@@ -18,16 +18,16 @@
       memory_mb: 512
       num_cpus: 1
     disk:
-    - controller_type: lsilogicsas
-      controller_number: 0
-      unit_number: 0
-      size_mb: 512
-      type: thin
-    - controller_type: paravirtual
-      controller_number: 1
-      unit_number: 0
-      size_mb: 256
-      type: eagerzeroedthick
+      - controller_type: lsilogicsas
+        controller_number: 0
+        unit_number: 0
+        size_mb: 512
+        type: thin
+      - controller_type: paravirtual
+        controller_number: 1
+        unit_number: 0
+        size_mb: 256
+        type: eagerzeroedthick
   register: multi_scsi_disk_vm
 
 - debug: var=multi_scsi_disk_vm
@@ -51,15 +51,15 @@
     datastore: "{{ rw_datastore }}"
     state: present
     disk:
-    - controller_type: lsilogicsas
-      controller_number: 0
-      unit_number: 0
-      size_mb: 512
-      disk_mode: independent_persistent
-    - controller_type: paravirtual
-      controller_number: 1
-      unit_number: 0
-      size_mb: 512
+      - controller_type: lsilogicsas
+        controller_number: 0
+        unit_number: 0
+        size_mb: 512
+        disk_mode: independent_persistent
+      - controller_type: paravirtual
+        controller_number: 1
+        unit_number: 0
+        size_mb: 512
   register: multi_scsi_disk_vm
 
 - debug: var=multi_scsi_disk_vm
@@ -86,19 +86,19 @@
       memory_mb: 512
       num_cpus: 1
     disk:
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      size_mb: 512
-      disk_mode: independent_persistent
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 0
-      size_mb: 256
-    - controller_type: sata
-      controller_number: 2
-      unit_number: 0
-      size_mb: 256
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        size_mb: 512
+        disk_mode: independent_persistent
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 0
+        size_mb: 256
+      - controller_type: sata
+        controller_number: 2
+        unit_number: 0
+        size_mb: 256
   register: multi_sata_disk_vm
 
 - debug: var=multi_sata_disk_vm
@@ -122,15 +122,15 @@
     state: present
     datastore: "{{ rw_datastore }}"
     disk:
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      size_mb: 512
-      disk_mode: persistent
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 0
-      size_mb: 512
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        size_mb: 512
+        disk_mode: persistent
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 0
+        size_mb: 512
   register: multi_sata_disk_vm
 
 - debug: var=multi_sata_disk_vm
@@ -158,19 +158,19 @@
       num_cpus: 1
       version: 14
     disk:
-    - controller_type: nvme
-      controller_number: 0
-      unit_number: 0
-      size_mb: 512
-    - controller_type: nvme
-      controller_number: 1
-      unit_number: 0
-      size_mb: 256
-      type: thin
-    - controller_type: nvme
-      controller_number: 2
-      unit_number: 0
-      size_mb: 256
+      - controller_type: nvme
+        controller_number: 0
+        unit_number: 0
+        size_mb: 512
+      - controller_type: nvme
+        controller_number: 1
+        unit_number: 0
+        size_mb: 256
+        type: thin
+      - controller_type: nvme
+        controller_number: 2
+        unit_number: 0
+        size_mb: 256
   register: multi_nvme_disk_vm
 
 - debug: var=multi_nvme_disk_vm
@@ -194,18 +194,18 @@
     state: present
     datastore: "{{ rw_datastore }}"
     disk:
-    - controller_type: nvme
-      controller_number: 0
-      unit_number: 1
-      size_mb: 512
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 0
-      size_mb: 256
-    - controller_type: paravirtual
-      controller_number: 0
-      unit_number: 0
-      size_mb: 256
+      - controller_type: nvme
+        controller_number: 0
+        unit_number: 1
+        size_mb: 512
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 0
+        size_mb: 256
+      - controller_type: paravirtual
+        controller_number: 0
+        unit_number: 0
+        size_mb: 256
   register: multi_nvme_disk_vm
 
 - debug: var=multi_nvme_disk_vm

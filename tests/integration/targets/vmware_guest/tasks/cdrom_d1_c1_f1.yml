@@ -17,25 +17,25 @@
       num_cpus: 1
       scsi: paravirtual
     disk:
-    - size_mb: 128
-      type: thin
-      datastore: "{{ rw_datastore }}"
+      - size_mb: 128
+        type: thin
+        datastore: "{{ rw_datastore }}"
     cdrom:
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] centos.iso"
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 1
-      type: client
-    - controller_number: 1
-      unit_number: 0
-      type: none
-    - controller_number: 1
-      unit_number: 1
-      type: client
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] centos.iso"
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 1
+        type: client
+      - controller_number: 1
+        unit_number: 0
+        type: none
+      - controller_number: 1
+        unit_number: 1
+        type: client
   register: cdrom_vm
 
 - debug: var=cdrom_vm
@@ -55,23 +55,23 @@
     name: test_vm1
     datacenter: "{{ dc1 }}"
     cdrom:
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 0
-      type: client
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 1
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 0
-      state: absent
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 1
-      state: absent
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 0
+        type: client
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 1
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 0
+        state: absent
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 1
+        state: absent
     state: present
   register: cdrom_vm
   check_mode: true
@@ -93,23 +93,23 @@
     name: test_vm1
     datacenter: "{{ dc1 }}"
     cdrom:
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 0
-      type: client
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 1
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 0
-      state: absent
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 1
-      state: absent
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 0
+        type: client
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 1
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 0
+        state: absent
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 1
+        state: absent
     state: present
   register: cdrom_vm
 
@@ -137,27 +137,27 @@
       num_cpus: 1
       scsi: paravirtual
     disk:
-    - size_mb: 128
-      type: thin
-      datastore: "{{ rw_datastore }}"
+      - size_mb: 128
+        type: thin
+        datastore: "{{ rw_datastore }}"
     cdrom:
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] centos.iso"
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 1
-      type: client
-    - controller_type: sata
-      controller_number: 2
-      unit_number: 0
-      type: none
-    - controller_type: sata
-      controller_number: 3
-      unit_number: 1
-      type: client
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] centos.iso"
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 1
+        type: client
+      - controller_type: sata
+        controller_number: 2
+        unit_number: 0
+        type: none
+      - controller_type: sata
+        controller_number: 3
+        unit_number: 1
+        type: client
   register: cdrom_vm
 
 - debug: var=cdrom_vm
@@ -177,23 +177,23 @@
     name: test_vm2
     datacenter: "{{ dc1 }}"
     cdrom:
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      state: absent
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 1
-      state: absent
-    - controller_type: sata
-      controller_number: 2
-      unit_number: 0
-      type: client
-    - controller_type: sata
-      controller_number: 3
-      unit_number: 1
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        state: absent
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 1
+        state: absent
+      - controller_type: sata
+        controller_number: 2
+        unit_number: 0
+        type: client
+      - controller_type: sata
+        controller_number: 3
+        unit_number: 1
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
     state: present
   register: cdrom_vm
   check_mode: true
@@ -215,23 +215,23 @@
     name: test_vm2
     datacenter: "{{ dc1 }}"
     cdrom:
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      state: absent
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 1
-      state: absent
-    - controller_type: sata
-      controller_number: 2
-      unit_number: 0
-      type: client
-    - controller_type: sata
-      controller_number: 3
-      unit_number: 1
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        state: absent
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 1
+        state: absent
+      - controller_type: sata
+        controller_number: 2
+        unit_number: 0
+        type: client
+      - controller_type: sata
+        controller_number: 3
+        unit_number: 1
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
     state: present
   register: cdrom_vm
 
@@ -259,27 +259,27 @@
       num_cpus: 1
       scsi: paravirtual
     disk:
-    - size_mb: 128
-      type: thin
-      datastore: "{{ rw_datastore }}"
+      - size_mb: 128
+        type: thin
+        datastore: "{{ rw_datastore }}"
     cdrom:
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] centos.iso"
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      type: client
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 0
-      type: none
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 0
-      type: client
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] centos.iso"
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        type: client
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 0
+        type: none
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 0
+        type: client
   register: cdrom_vm
 
 - debug: var=cdrom_vm
@@ -299,23 +299,23 @@
     name: test_vm3
     datacenter: "{{ dc1 }}"
     cdrom:
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 0
-      state: absent
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 0
-      type: client
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 0
-      state: absent
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 0
+        state: absent
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 0
+        type: client
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 0
+        state: absent
     state: present
   register: cdrom_vm
   check_mode: true
@@ -337,23 +337,23 @@
     name: test_vm3
     datacenter: "{{ dc1 }}"
     cdrom:
-    - controller_type: ide
-      controller_number: 0
-      unit_number: 0
-      state: absent
-    - controller_type: sata
-      controller_number: 0
-      unit_number: 0
-      type: iso
-      iso_path: "[{{ ro_datastore }}] fedora.iso"
-    - controller_type: ide
-      controller_number: 1
-      unit_number: 0
-      type: client
-    - controller_type: sata
-      controller_number: 1
-      unit_number: 0
-      state: absent
+      - controller_type: ide
+        controller_number: 0
+        unit_number: 0
+        state: absent
+      - controller_type: sata
+        controller_number: 0
+        unit_number: 0
+        type: iso
+        iso_path: "[{{ ro_datastore }}] fedora.iso"
+      - controller_type: ide
+        controller_number: 1
+        unit_number: 0
+        type: client
+      - controller_type: sata
+        controller_number: 1
+        unit_number: 0
+        state: absent
     state: present
   register: cdrom_vm
 

@@ -1,4 +1,3 @@
----
 - name: Create VM with special characters
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
