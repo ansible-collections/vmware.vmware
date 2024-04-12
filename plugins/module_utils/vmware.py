@@ -1457,7 +1457,6 @@ class PyVmomi(object):
         """
         return find_cluster_by_name(self.content, cluster_name, datacenter=datacenter_name)
 
-
     def get_all_hosts_by_cluster(self, cluster_name):
         """
         Get all hosts from cluster by cluster name
