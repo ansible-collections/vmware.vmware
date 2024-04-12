@@ -1,7 +1,7 @@
 # See https://docs.ansible.com/ansible/latest/dev_guide/collections_galaxy_meta.html
 
-namespace: community
-name: FIXME
+namespace: vmware
+name: vmware
 version: 0.1.0
 readme: README.md
 authors:
