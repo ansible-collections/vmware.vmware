@@ -42,11 +42,11 @@ options:
       default: present
       type: str
 seealso:
-- module: vmware.vmware.vmware_cluster_drs
-- module: vmware.vmware.vmware_cluster_ha
-- module: vmware.vmware.vmware_cluster_vsan
-
-
+- module: vmware.vmware.cluster_drs
+- module: vmware.vmware.cluster_ha
+- module: vmware.vmware.cluster_vsan
+extends_documentation_fragment:
+- vmware.vmware.vmware.documentation
 '''
 
 EXAMPLES = r'''
