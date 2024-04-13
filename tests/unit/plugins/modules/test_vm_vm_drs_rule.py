@@ -67,7 +67,7 @@ class TestAffinity(ModuleTestCase):
         with pytest.raises(AnsibleExitJson) as c:
             vm_vm_drs_rule.main()
 
-        assert c.value.args[0]["changed"] is True    
+        assert c.value.args[0]["changed"] is True
 
     def test_absent(self, mocker):
         self.__prepare(mocker)
