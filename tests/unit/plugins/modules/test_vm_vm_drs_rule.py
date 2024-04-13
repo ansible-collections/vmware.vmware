@@ -44,7 +44,7 @@ class TestAffinity(ModuleTestCase):
         with pytest.raises(AnsibleExitJson) as c:
             vm_vm_drs_rule.main()
 
-        assert c.value.args[0]["changed"] == True
+        assert c.value.args[0]["changed"] is True
 
     def test_update(self, mocker):
         self.__prepare(mocker)
@@ -67,7 +67,7 @@ class TestAffinity(ModuleTestCase):
         with pytest.raises(AnsibleExitJson) as c:
             vm_vm_drs_rule.main()
 
-        assert c.value.args[0]["changed"] == True    
+        assert c.value.args[0]["changed"] is True    
 
     def test_absent(self, mocker):
         self.__prepare(mocker)
@@ -87,4 +87,4 @@ class TestAffinity(ModuleTestCase):
         with pytest.raises(AnsibleExitJson) as c:
             vm_vm_drs_rule.main()
 
-        assert c.value.args[0]["changed"] == True
+        assert c.value.args[0]["changed"] is True
