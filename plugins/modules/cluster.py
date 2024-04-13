@@ -44,7 +44,6 @@ options:
 seealso:
 - module: vmware.vmware.cluster_drs
 - module: vmware.vmware.cluster_ha
-- module: vmware.vmware.cluster_vsan
 extends_documentation_fragment:
 - vmware.vmware.vmware.documentation
 '''
