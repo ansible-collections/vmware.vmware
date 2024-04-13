@@ -293,7 +293,6 @@ class VMwareCluster(PyVmomi):
         else:
             self.changed_advanced_settings = None
 
-
     def get_failover_hosts(self):
         """
         Get failover hosts for failover_host_admission_control policy
