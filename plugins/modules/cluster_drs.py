@@ -74,7 +74,7 @@ options:
       type: bool
       default: false
 extends_documentation_fragment:
-- community.vmware.vmware.documentation
+- vmware.vmware.vmware.documentation
 '''
 
 EXAMPLES = r'''
