@@ -5,4 +5,3 @@
           name: prepare_lab
       - import_role:
           name: cluster
-
