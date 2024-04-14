@@ -6,7 +6,6 @@ import json
 
 from ansible.module_utils import basic
 from ansible.module_utils._text import to_bytes
-from pyVmomi import vim
 
 import mock
 
