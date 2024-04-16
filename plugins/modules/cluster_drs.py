@@ -122,7 +122,6 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import (
     vmware_argument_spec,
     PyVmomi,
-    find_datacenter_by_name,
     TaskError,
     option_diff,
     wait_for_task)
@@ -140,7 +139,7 @@ class VMwareCluster(PyVmomi):
         self.cluster = None
         self.drs_vmotion_rate = [5, 4, 3, 2, 1][self.params.get('drs_vmotion_rate') - 1]
 
-        self.datacenter = find_datacenter_by_name(self.content, self.datacenter_name)
+        self.datacenter = self.find_datacenter_by_name(self.content, self.datacenter_name)
         if self.datacenter is None:
             self.module.fail_json(msg="Datacenter %s does not exist." % self.datacenter_name)
 
