@@ -1,0 +1,38 @@
+[
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/rest/com/vmware/cis/session"
+  },
+  "httpResponse": {
+    "statusCode": 200,
+    "body": {"value": "72300ca9ff16c5743fa0a6328c8570ce"}
+  }
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.vcenter.VM\",\"operationId\":\"list\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": []}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api"
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": 0}, \"id\": '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  }
+}
+]

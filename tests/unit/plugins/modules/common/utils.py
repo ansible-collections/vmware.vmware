@@ -10,12 +10,12 @@ from ansible.module_utils._text import to_bytes
 import mock
 
 
-def set_module_args(**args):
+def set_module_args(add_cluster=True, **args):
     if '_ansible_remote_tmp' not in args:
         args['_ansible_remote_tmp'] = '/tmp'
     if '_ansible_keep_remote_files' not in args:
         args['_ansible_keep_remote_files'] = False
-    if 'cluster_name' not in args:
+    if add_cluster and 'cluster_name' not in args:
         args["cluster_name"] = "mycluster"
     if 'hostname' not in args:
         args["hostname"] = "127.0.0.1"

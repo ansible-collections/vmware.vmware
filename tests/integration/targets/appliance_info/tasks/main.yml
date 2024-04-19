@@ -1,0 +1,17 @@
+---
+- name: Gather appliance info
+  vmware.vmware.appliance_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    properties:
+      - summary
+  register: __res
+
+- name: Assert values
+  ansible.builtin.assert:
+    that:
+      - __res.changed == False
+      - __res.appliance.summary.hostname == "hostname.example.com"
