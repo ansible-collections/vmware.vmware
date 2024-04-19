@@ -18,6 +18,7 @@ jobs:
         run: |
           set -euxo pipefail
           sudo apt-get update
+          sudo apt-get install podman
 
       - name: Checkout repo
         uses: actions/checkout@v4
