@@ -5,7 +5,7 @@
 # Simplified BSD License (see LICENSES/BSD-2-Clause.txt or https://opensource.org/licenses/BSD-2-Clause)
 # SPDX-License-Identifier: BSD-2-Clause
 
-# This collection was originally depevelop for community.vmware collection,
+# This util was originally depevelop for community.vmware collection,
 # and is based on version 4.3.0.
 
 from __future__ import absolute_import, division, print_function

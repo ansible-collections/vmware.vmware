@@ -2,11 +2,11 @@
 
 namespace: vmware
 name: vmware
-version: 0.1.0
+version: 1.0.0
 readme: README.md
 authors:
-  - YOUR NAME (github.com/YOURGITHUB)
-description: null
+  - Ansible Cloud Content Team (@redhat-cop)
+description: Collection to manage VMware
 license_file: LICENSE
 tags:
   - cloud
@@ -20,3 +20,5 @@ build_ignore:
 # https://docs.ansible.com/ansible/devel/dev_guide/developing_collections_distributing.html#ignoring-files-and-folders
   - .gitignore
   - changelogs/.plugin-cache.yaml
+  - .github
+  - .vscode

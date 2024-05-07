@@ -130,3 +130,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# archives
+*tar.gz
+
+# galaxy-importer
+importer_result.json
