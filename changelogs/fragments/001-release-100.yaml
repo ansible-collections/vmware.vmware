@@ -1,0 +1,6 @@
+---
+major_changes:
+  - Release 1.0.0
+  - Added module appliance_info
+  - Added module guest_info
+  - Added module license_info
