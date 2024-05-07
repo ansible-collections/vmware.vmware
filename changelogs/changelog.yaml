@@ -1,1 +1,14 @@
-releases: {}
+ancestor: null
+releases:
+  1.0.0:
+    changes:
+      major_changes:
+      - Added module appliance_info
+      - Added module guest_info
+      - Added module license_info
+      - Release 1.0.0
+      release_summary: Initial release 1.0.0
+    fragments:
+    - 001-release-100.yaml
+    - 002-release-summary.yaml
+    release_date: '2024-05-07'
