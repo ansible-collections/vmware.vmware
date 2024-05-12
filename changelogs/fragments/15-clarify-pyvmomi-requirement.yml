@@ -1,0 +1,2 @@
+minor_changes:
+  - Clarify pyVmomi requirement (https://github.com/ansible-collections/vmware.vmware/pull/15).

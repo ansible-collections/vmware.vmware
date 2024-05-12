@@ -29,13 +29,11 @@ except ImportError:
 PYVMOMI_IMP_ERR = None
 try:
     from pyVim import connect
-    from pyVmomi import vim, vmodl, VmomiSupport
+    from pyVmomi import vim, vmodl
     HAS_PYVMOMI = True
-    HAS_PYVMOMIJSON = hasattr(VmomiSupport, 'VmomiJSONEncoder')
 except ImportError:
     PYVMOMI_IMP_ERR = traceback.format_exc()
     HAS_PYVMOMI = False
-    HAS_PYVMOMIJSON = False
 
 from ansible.module_utils.basic import env_fallback, missing_required_lib
 
