@@ -18,29 +18,22 @@ description:
 author:
     - Ansible Cloud Team (@ansible-collections)
 options:
-  detailed_vms:
-    default: true
-    description:
-      - Wither or not get the vms detailed.
-    type: bool
+    detailed_vms:
+        default: true
+        description:
+        - If I(true) gather detailed information about virtual machines.
+        type: bool
 extends_documentation_fragment:
 - vmware.vmware.vmware_rest_client.documentation
 
 '''
 
 EXAMPLES = r'''
-- name: Gather list of VMs
+- name: Gather list of VMs group by clusters and folders
   vmware.vmware.vm_list_group_by_clusters:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
-
-- name: Gather list of VMs in clusterA
-  vmware.vmware.vm_list_group_by_clusters:
-    hostname: "https://vcenter"
-    username: "username"
-    password: "password"
-    detailed_vms: False
 '''
 
 RETURN = r'''
@@ -132,24 +125,34 @@ class VmwareVMList(VmwareRestClient):
             type=self.api_client.vcenter.Folder.Type.VIRTUAL_MACHINE)
         return self.api_client.vcenter.Folder.list(folder_filter_spec)
 
-    def get_all_vms_in_cluster_and_folder(self, cluster, folder):
+    def get_all_vms_in_cluster_and_folder(self, cluster, folder, host):
         vms_filter = self.api_client.vcenter.VM.FilterSpec(clusters=set([cluster]),
-                                                           folders=set([folder]))
+                                                           folders=set([folder]),
+                                                           hosts=set([host]))
+
         return self.api_client.vcenter.VM.list(vms_filter)
 
     def get_vm_detailed(self, vm):
         return self.api_client.vcenter.VM.get(vm=vm)
 
+    def get_cluster_hosts(self, cluster):
+        host_filter = self.api_client.vcenter.Host.FilterSpec(
+            clusters=set([cluster]))
+        return self.api_client.vcenter.Host.list(host_filter)
+
     def get_vm_list_group_by_clusters(self):
         clusters = self.get_all_clusters()
         folders = self.get_all_folders()
-
         result_dict = {}
         for cluster in clusters:
             vm_list_group_by_folder_dict = {}
-            empty = True
+            hosts = self.get_cluster_hosts(cluster.cluster)
             for folder in folders:
-                vms = self.get_all_vms_in_cluster_and_folder(cluster.cluster, folder.folder)
+                vms = []
+                # iterate each host due to an error too_many_matches when looking at all vms on a cluster
+                # https://github.com/vmware/vsphere-automation-sdk-python/issues/142
+                for host in hosts:
+                    vms.extend(self.get_all_vms_in_cluster_and_folder(cluster.cluster, folder.folder, host.host))
                 vms_detailed = []
                 for vm in vms:
                     if self.detailed_vms:
@@ -158,10 +161,9 @@ class VmwareVMList(VmwareRestClient):
                     vms_detailed.append(self._vvars(vm))
 
                 if vms_detailed:
-                    empty = False
                     vm_list_group_by_folder_dict[folder.name] = vms_detailed
 
-            if not empty:
+            if vm_list_group_by_folder_dict:
                 result_dict[cluster.name] = vm_list_group_by_folder_dict
 
         return result_dict
