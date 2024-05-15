@@ -1,0 +1,16 @@
+---
+- name: VM list group by clusters and folders
+  vmware.vmware.vm_list_group_by_clusters:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    detailed_vms: false
+    port: "{{ vcenter_port }}"
+  register: __res
+
+- name: Assert values
+  ansible.builtin.assert:
+    that:
+      - __res.changed == False
+      - __res.vm_list_group_by_clusters | length == 1
