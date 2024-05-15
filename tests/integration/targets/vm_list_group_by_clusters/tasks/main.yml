@@ -14,3 +14,5 @@
     that:
       - __res.changed == False
       - __res.vm_list_group_by_clusters | length == 1
+      - __res.vm_list_group_by_clusters['cluster1'] | length == 1
+      - __res.vm_list_group_by_clusters['cluster1']['folder1'] | length == 1
