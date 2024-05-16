@@ -12,6 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: vm_list_group_by_clusters
+version_added: '1.1.0'
 short_description: Returns information about the virtual machines grouping by clusters and folders
 description:
     - Returns information about the virtual machines grouping by clusters and folders.
