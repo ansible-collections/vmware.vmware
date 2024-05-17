@@ -1,0 +1,6 @@
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_port: 1080
+
+mock_file: "vcsa_settings"

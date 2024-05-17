@@ -1,0 +1,59 @@
+---
+- name: Set VCSA settings
+  vmware.vmware.vcsa_settings:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    ssh_enabled: true
+    consolecli_enabled: false
+    dcui_enabled: true
+    firewall_rules_append: false
+    firewall_rules:
+      - address: '1.2.3.7'
+        interface_name: '*'
+        prefix: 24
+        policy: 'ACCEPT'
+    dns_mode: 'dhcp'
+    dns_append: true
+    dns_domains:
+      - xyz.com
+    timesync_mode: ntp
+    ntp_servers:
+      - time.google.com
+    noproxy:
+      - abc.com
+    proxy:
+      - enabled: true
+        protocol: 'http'
+        url: 'http://127.0.0.1'
+        port: 80
+  register: __res
+
+- name: Assert values
+  ansible.builtin.assert:
+    that:
+      - __res.changed == True
+      - __res.vcsa_settings.ssh_enabled == True
+      - __res.vcsa_settings.consolecli_enabled == False
+      - __res.vcsa_settings.dcui_enabled == True
+      - __res.vcsa_settings.noproxy | length == 1
+      - __res.vcsa_settings.noproxy[0] == 'abc.com'
+
+- name: Set VCSA settings
+  vmware.vmware.vcsa_settings:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    consolecli_enabled: false
+    noproxy:
+      - abc.com
+  register: __res
+
+- name: Assert values
+  ansible.builtin.assert:
+    that:
+      - __res.changed == False

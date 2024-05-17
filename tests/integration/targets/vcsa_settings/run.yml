@@ -1,0 +1,12 @@
+- hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Rest
+      ansible.builtin.import_role:
+        name: prepare_rest
+
+    - name: Import vcsa_settings role
+      ansible.builtin.import_role:
+        name: vcsa_settings
