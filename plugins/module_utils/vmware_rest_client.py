@@ -556,3 +556,40 @@ class VmwareRestClient(object):
                 category_id = category_obj.id
 
         return self.get_tag_by_category_id(tag_name=tag_name, category_id=category_id)
+
+    def obj_to_dict(self, vmware_obj, r):
+        """
+        Tranform VMware SDK object to dictionary.
+        Args:
+            vmware_obj: Object to transform.
+            r: Dictionary to fill with object data.
+        """
+        for k, v in vars(vmware_obj).items():
+            if not k.startswith('_'):
+                if hasattr(v, '__dict__') and not isinstance(v, str):
+                    self.obj_to_dict(v, r[k])
+                elif isinstance(v, int):
+                    r[k] = int(v)
+                else:
+                    r[k] = str(v)
+
+    def set_param(self, param, cmp_fn, set_fn):
+        """
+        Since most of the check is similar to do. This method implement
+        generic call for most of the parameters. It checks if parameter
+        specified is different to one which is currently set and if yes,
+        it will update it.
+
+        param: AnsibleModule parameter name
+        cmp_fn: function that compares the parameter value to any API call
+        set_fn: function that is called if the cmd_fn is true
+        """
+        generic_param = self.params.get(param)
+        if generic_param is None:
+            return
+
+        if cmp_fn(generic_param):
+            self.changed = True
+            if not self.module.check_mode:
+                set_fn(generic_param)
+        self.info[param] = generic_param

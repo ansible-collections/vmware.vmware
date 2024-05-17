@@ -1,0 +1,167 @@
+[
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/rest/com/vmware/cis/session"
+  },
+  "httpResponse": {
+    "statusCode": 200,
+    "body": {"value": "72300ca9ff16c5743fa0a6328c8570ce"}
+  }
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api"
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":0}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  }
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"operationId\":\"set\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": null}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.networking.no_proxy\",\"operationId\":\"get\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":[\"abc.com\",\"localhost\",\"127.0.0.1\"]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.networking.proxy\",\"operationId\":\"list\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":[{\"STRUCTURE\":{\"map-entry\":{\"value\":{\"STRUCTURE\":{\"com.vmware.appliance.networking.proxy.config\":{\"server\":\"http://127.0.0.1\",\"password\":{\"OPTIONAL\":null},\"port\":80,\"enabled\":true,\"username\":{\"OPTIONAL\":null}}}},\"key\":\"http\"}}},{\"STRUCTURE\":{\"map-entry\":{\"value\":{\"STRUCTURE\":{\"com.vmware.appliance.networking.proxy.config\":{\"server\":\"\",\"password\":{\"OPTIONAL\":null},\"port\":-1,\"enabled\":false,\"username\":{\"OPTIONAL\":null}}}},\"key\":\"https\"}}},{\"STRUCTURE\":{\"map-entry\":{\"value\":{\"STRUCTURE\":{\"com.vmware.appliance.networking.proxy.config\":{\"server\":\"\",\"password\":{\"OPTIONAL\":null},\"port\":-1,\"enabled\":false,\"username\":{\"OPTIONAL\":null}}}},\"key\":\"ftp\"}}}]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.networking.firewall.inbound\",\"operationId\":\"get\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":[]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.networking.dns.servers\",\"operationId\":\"get\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":{\"STRUCTURE\":{\"com.vmware.appliance.networking.dns.servers.DNS_server_config\":{\"mode\":\"is_static\",\"servers\":[\"10.185.246.1\",\"2607:f0d0:1f01:22:884::2\"]}}}}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.networking.dns.domains\",\"operationId\":\"list\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": [\"abc.com\"]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.ntp\",\"operationId\":\"get\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": [\"time.google.com\"]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.appliance.timesync\",\"operationId\":\"get\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": \"NTP\"}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "params" : {
+        "serviceId" : "com.vmware.cis.session",
+        "operationId" : "delete"
+      }
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": 0}, \"id\": '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+}
+]
