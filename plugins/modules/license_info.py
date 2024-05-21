@@ -15,6 +15,9 @@ description:
 - Fetch vCenter, ESXi server license keys.
 author:
 - Ansible Cloud Team (@ansible-collections)
+attributes:
+  check_mode:
+    support: full
 extends_documentation_fragment:
 - vmware.vmware.vmware.vcenter_documentation
 '''
@@ -29,7 +32,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 licenses:
-    description: list of license keys
+    description: List of license keys.
     returned: always
     type: list
     sample:
