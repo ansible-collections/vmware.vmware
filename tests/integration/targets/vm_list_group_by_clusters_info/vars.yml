@@ -3,4 +3,4 @@ vcenter_username: "user"
 vcenter_password: "pass"
 vcenter_port: 1080
 
-mock_file: "vm_list_group_by_clusters"
+mock_file: "vm_list_group_by_clusters_info"
