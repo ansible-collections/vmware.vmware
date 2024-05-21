@@ -11,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: vm_list_group_by_clusters
+module: vm_list_group_by_clusters_info
 version_added: '1.1.0'
 short_description: Returns information about the virtual machines grouping by clusters and folders
 description:
@@ -35,14 +35,14 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Gather list of VMs group by clusters and folders
-  vmware.vmware.vm_list_group_by_clusters:
+  vmware.vmware.vm_list_group_by_clusters_info:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
 '''
 
 RETURN = r'''
-vm_list_group_by_clusters:
+vm_list_group_by_clusters_info:
     description:
         - Dictionary of vm list by folders and clusters.
     returned: On success
@@ -190,8 +190,8 @@ def main():
     )
 
     vmware_vm_list_group_by_clusters_mgr = VmwareVMList(module)
-    vm_list_group_by_clusters = vmware_vm_list_group_by_clusters_mgr.get_vm_list_group_by_clusters()
-    module.exit_json(changed=False, vm_list_group_by_clusters=vm_list_group_by_clusters)
+    vm_list_group_by_clusters_info = vmware_vm_list_group_by_clusters_mgr.get_vm_list_group_by_clusters()
+    module.exit_json(changed=False, vm_list_group_by_clusters_info=vm_list_group_by_clusters_info)
 
 
 if __name__ == '__main__':

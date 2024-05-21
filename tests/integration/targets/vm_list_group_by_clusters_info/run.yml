@@ -11,4 +11,4 @@
 
     - name: VM list group by clusters
       ansible.builtin.import_role:
-        name: vm_list_group_by_clusters
+        name: vm_list_group_by_clusters_info
