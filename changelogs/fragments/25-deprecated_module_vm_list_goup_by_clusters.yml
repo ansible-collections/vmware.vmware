@@ -1,0 +1,2 @@
+deprecated_features:
+  - vm_list_group_by_clusters - deprecate the module since it was renamed to `vm_list_group_by_clusters_info`

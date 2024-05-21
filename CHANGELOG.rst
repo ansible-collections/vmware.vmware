@@ -7,7 +7,7 @@ vmware.vmware Release Notes
 v1.1.0
 ======
 
-Major Changes
+Minor Changes
 -------------
 
 - Added module vm_list_group_by_clusters
