@@ -2,20 +2,21 @@
 - name: Install dependencies
   ansible.builtin.pip:
     name:
-      - pyvmomi
       - requests
+      - pyVmomi
 
-- name: Run vcsim
-  community.docker.docker_container:
-    name: vcsim
-    image: vmware/vcsim
+- name: Run soap vcSim
+  containers.podman.podman_container:
+    name: vmwaresoap
+
+    image: docker.io/vmware/vcsim:latest
     state: started
     recreate: yes
-    exposed_ports:
+    expose:
       - 8989
     ports:
       - 8989:8989
 
-- name: Pause for 5 sec to start vcsim
+- name: Pause
   ansible.builtin.pause:
-    seconds: 5
+    seconds: 10
