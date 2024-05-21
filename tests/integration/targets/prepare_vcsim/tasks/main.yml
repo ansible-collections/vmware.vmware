@@ -3,7 +3,7 @@
   ansible.builtin.pip:
     name:
       - pyvmomi
-      - requests
+      - requests==2.31.0
 
 - name: Run vcsim
   community.docker.docker_container:
