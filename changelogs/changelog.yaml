@@ -14,7 +14,7 @@ releases:
     release_date: '2024-05-07'
   1.1.0:
     changes:
-      major_changes:
+      minor_changes:
       - Added module vm_list_group_by_clusters
     fragments:
     - 16-vm_list_group_by_clusters.yml
