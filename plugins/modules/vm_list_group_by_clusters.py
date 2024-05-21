@@ -24,6 +24,9 @@ options:
         description:
         - If I(true) gather detailed information about virtual machines.
         type: bool
+attributes:
+  check_mode:
+    support: full
 extends_documentation_fragment:
 - vmware.vmware.vmware_rest_client.documentation
 
@@ -40,7 +43,7 @@ EXAMPLES = r'''
 RETURN = r'''
 vm_list_group_by_clusters:
     description:
-        - Dictionary of vm list by folders and clusters
+        - Dictionary of vm list by folders and clusters.
     returned: On success
     type: dict
     sample: {
@@ -182,7 +185,7 @@ def main():
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     vmware_vm_list_group_by_clusters_mgr = VmwareVMList(module)

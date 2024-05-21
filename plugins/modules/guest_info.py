@@ -30,6 +30,9 @@ options:
     description:
       - The name of the guest virtual machine to obtain info from.
     type: str
+attributes:
+  check_mode:
+    support: full
 extends_documentation_fragment:
 - vmware.vmware.vmware_rest_client.documentation
 

@@ -35,6 +35,9 @@ options:
     type: list
     elements: str
     default: all
+attributes:
+  check_mode:
+    support: full
 extends_documentation_fragment:
 - vmware.vmware.vmware_rest_client.documentation
 
@@ -309,7 +312,7 @@ def main():
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     vmware_appliance_mgr = VmwareApplianceInfo(module)
