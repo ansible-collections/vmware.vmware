@@ -32,6 +32,7 @@ options:
     type: str
 attributes:
   check_mode:
+    description: The check_mode support.
     support: full
 extends_documentation_fragment:
 - vmware.vmware.vmware_rest_client.documentation
