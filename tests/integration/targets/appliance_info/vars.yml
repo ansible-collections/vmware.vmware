@@ -4,3 +4,4 @@ vcenter_password: "pass"
 vcenter_port: 1080
 
 mock_file: "appliance_info"
+appliance_hostname: "hostname.example.com"
