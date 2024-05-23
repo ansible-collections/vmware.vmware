@@ -21,25 +21,15 @@ except ImportError:
     REQUESTS_IMP_ERR = traceback.format_exc()
     HAS_REQUESTS = False
 
-PYVMOMI_IMP_ERR = None
-try:
-    from pyVim import connect  # noqa: F401, pylint: disable=unused-import
-    from pyVmomi import vim  # noqa: F401, pylint: disable=unused-import
-    HAS_PYVMOMI = True
-except ImportError:
-    PYVMOMI_IMP_ERR = traceback.format_exc()
-    HAS_PYVMOMI = False
-
 VSPHERE_IMP_ERR = None
 try:
-    from com.vmware.vapi.std_client import DynamicID
     from vmware.vapi.vsphere.client import create_vsphere_client
     from com.vmware.vapi.std.errors_client import Unauthorized
     from com.vmware.content.library_client import Item
     from com.vmware.vcenter_client import (Folder,
                                            Datacenter,
                                            ResourcePool,
-                                           Datastore,
+                                           VM,
                                            Cluster,
                                            Host,
                                            VM)
@@ -97,9 +87,6 @@ class VmwareRestClient(object):
         if not HAS_REQUESTS:
             self.module.fail_json(msg=missing_required_lib('requests'),
                                   exception=REQUESTS_IMP_ERR)
-        if not HAS_PYVMOMI:
-            self.module.fail_json(msg=missing_required_lib('PyVmomi'),
-                                  exception=PYVMOMI_IMP_ERR)
         if not HAS_VSPHERE:
             self.module.fail_json(
                 msg=missing_required_lib('vSphere Automation SDK',
@@ -183,164 +170,6 @@ class VmwareRestClient(object):
 
         return client
 
-    def get_tags_for_object(self, tag_service=None, tag_assoc_svc=None, dobj=None, tags=None):
-        """
-        Return tag objects associated with an object
-        Args:
-            dobj: Dynamic object
-            tag_service: Tag service object
-            tag_assoc_svc: Tag Association object
-            tags: List or set to which the tag objects are being added, reference is returned by the method
-        Returns: Tag objects associated with the given object
-        """
-        # This method returns tag objects only,
-        # Please use get_tags_for_dynamic_obj for more object details
-        if tags is None:
-            tags = []
-
-        if not (isinstance(tags, list) or isinstance(tags, set)):
-            self.module.fail_json(msg="The parameter 'tags' must be of type 'list' or 'set', but type %s was passed" % type(tags))
-
-        if not dobj:
-            return tags
-
-        if not tag_service:
-            tag_service = self.api_client.tagging.Tag
-
-        if not tag_assoc_svc:
-            tag_assoc_svc = self.api_client.tagging.TagAssociation
-
-        tag_ids = tag_assoc_svc.list_attached_tags(dobj)
-
-        add_tag = tags.append if isinstance(tags, list) else tags.add
-        for tag_id in tag_ids:
-            add_tag(tag_service.get(tag_id))
-
-        return tags
-
-    def get_tags_for_dynamic_obj(self, dobj=None, tags=None):
-        """
-        Return tag object details associated with object
-        Args:
-            mid: Dynamic object for specified object
-            tags: List or set to which the tag objects are being added, reference is returned by the method
-
-        Returns: Tag object details associated with the given object
-
-        """
-        if tags is None:
-            tags = []
-
-        if not (isinstance(tags, list) or isinstance(tags, set)):
-            self.module.fail_json(msg="The parameter 'tags' must be of type 'list' or 'set', but type %s was passed" % type(tags))
-
-        if dobj is None:
-            return tags
-
-        temp_tags_model = self.get_tags_for_object(dobj=dobj)
-
-        category_service = self.api_client.tagging.Category
-
-        add_tag = tags.append if isinstance(tags, list) else tags.add
-        for tag_obj in temp_tags_model:
-            add_tag({
-                'id': tag_obj.id,
-                'category_name': category_service.get(tag_obj.category_id).name,
-                'name': tag_obj.name,
-                'description': tag_obj.description,
-                'category_id': tag_obj.category_id,
-            })
-
-        return tags
-
-    def get_tags_for_datacenter(self, datacenter_mid=None):
-        """
-        Return list of tag object associated with datacenter
-        Args:
-            datacenter_mid: Dynamic object for datacenter
-
-        Returns: List of tag object associated with the given datacenter
-
-        """
-        dobj = DynamicID(type='Datacenter', id=datacenter_mid)
-        return self.get_tags_for_dynamic_obj(dobj=dobj)
-
-    def get_tags_for_datastore(self, datastore_mid=None):
-        """
-        Return list of tag object associated with datastore
-        Args:
-            datastore_mid: Dynamic object for datacenter
-
-        Returns: List of tag object associated with the given datastore
-
-        """
-        dobj = DynamicID(type="Datastore", id=datastore_mid)
-        return self.get_tags_for_dynamic_obj(dobj=dobj)
-
-    def get_tags_for_cluster(self, cluster_mid=None):
-        """
-        Return list of tag object associated with cluster
-        Args:
-            cluster_mid: Dynamic object for cluster
-
-        Returns: List of tag object associated with the given cluster
-
-        """
-        dobj = DynamicID(type='ClusterComputeResource', id=cluster_mid)
-        return self.get_tags_for_dynamic_obj(dobj=dobj)
-
-    def get_tags_for_hostsystem(self, hostsystem_mid=None):
-        """
-        Return list of tag object associated with host system
-        Args:
-            hostsystem_mid: Dynamic object for host system
-
-        Returns: List of tag object associated with the given host system
-
-        """
-        dobj = DynamicID(type='HostSystem', id=hostsystem_mid)
-        return self.get_tags_for_dynamic_obj(dobj=dobj)
-
-    def get_tags_for_vm(self, vm_mid=None):
-        """
-        Return list of tag object associated with virtual machine
-        Args:
-            vm_mid: Dynamic object for virtual machine
-
-        Returns: List of tag object associated with the given virtual machine
-
-        """
-        dobj = DynamicID(type='VirtualMachine', id=vm_mid)
-        return self.get_tags_for_dynamic_obj(dobj=dobj)
-
-    def get_vm_tags(self, tag_service=None, tag_association_svc=None, vm_mid=None):
-        """
-        Return list of tag name associated with virtual machine
-        Args:
-            tag_service:  Tag service object
-            tag_association_svc: Tag association object
-            vm_mid: Dynamic object for virtual machine
-
-        Returns: List of tag names associated with the given virtual machine
-
-        """
-        # This API returns just names of tags
-        # Please use get_tags_for_vm for more tag object details
-        tags = []
-        if vm_mid is None:
-            return tags
-
-        temp_tags_model = self.get_tags_for_object(
-            tag_service=tag_service,
-            tag_assoc_svc=tag_association_svc,
-            dobj=vm_mid
-        )
-
-        for tag_obj in temp_tags_model:
-            tags.append(tag_obj.name)
-
-        return tags
-
     def get_vm_by_name(self, name):
         """
         Returns a VM object that matches the given name.
@@ -376,6 +205,18 @@ class VmwareRestClient(object):
         item_id = item_ids[0] if item_ids else None
         return item_id
 
+    def get_library_by_name(self, name):
+        """
+        Returns the identifier of the library given by library name.
+        Args:
+            name (str): The name of the lubrary
+        Returns:
+            str: The library ID or None if the library is not found
+        """
+        cl_find_spec = self.api_client.content.Library.FindSpec(name=name)
+        cl_item_ids = self.api_client.content.Library.find(cl_find_spec)
+        return cl_item_ids[0] if cl_item_ids else None
+
     def get_library_item_from_content_library_name(self, name, content_library_name):
         """
         Returns the identifier of the library item with the given name in the specified
@@ -386,9 +227,7 @@ class VmwareRestClient(object):
         Returns:
             str: The item ID or None if the item is not found
         """
-        cl_find_spec = self.api_client.content.Library.FindSpec(name=content_library_name)
-        cl_item_ids = self.api_client.content.Library.find(cl_find_spec)
-        cl_item_id = cl_item_ids[0] if cl_item_ids else None
+        cl_item_id = self.get_library_by_name(content_library_name)
         if cl_item_id:
             find_spec = Item.FindSpec(name=name, library_id=cl_item_id)
             item_ids = self.api_client.content.library.Item.find(find_spec)
@@ -402,129 +241,102 @@ class VmwareRestClient(object):
         Returns the identifier of a datacenter
         Note: The method assumes only one datacenter with the mentioned name.
         """
+        if datacenter_name is None:
+            return None
+
         filter_spec = Datacenter.FilterSpec(names=set([datacenter_name]))
         datacenter_summaries = self.api_client.vcenter.Datacenter.list(filter_spec)
-        datacenter = datacenter_summaries[0].datacenter if len(datacenter_summaries) > 0 else None
-        return datacenter
+        return datacenter_summaries[0].datacenter if len(datacenter_summaries) > 0 else None
 
-    def get_folder_by_name(self, datacenter_name, folder_name):
+    def get_datacenters_set_by_name(self, datacenter_name):
+        datacenter = self.get_datacenter_by_name(datacenter_name)
+        return set([datacenter]) if datacenter else set()
+
+    def get_folder_by_name(self, folder_name, datacenter_name=None):
         """
         Returns the identifier of a folder
         with the mentioned names.
         """
-        datacenter = self.get_datacenter_by_name(datacenter_name)
-        if not datacenter:
+        if folder_name is None:
             return None
+        datacenters = self.get_datacenters_set_by_name(datacenter_name)
         filter_spec = Folder.FilterSpec(type=Folder.Type.VIRTUAL_MACHINE,
                                         names=set([folder_name]),
-                                        datacenters=set([datacenter]))
+                                        datacenters=datacenters)
         folder_summaries = self.api_client.vcenter.Folder.list(filter_spec)
-        folder = folder_summaries[0].folder if len(folder_summaries) > 0 else None
-        return folder
+        return folder_summaries[0].folder if len(folder_summaries) > 0 else None
 
-    def get_resource_pool_by_name(self, datacenter_name, resourcepool_name, cluster_name=None, host_name=None):
+    def get_resource_pool_by_name(self, resourcepool_name, datacenter_name=None, cluster_name=None, host_name=None):
         """
         Returns the identifier of a resource pool
         with the mentioned names.
         """
-        datacenter = self.get_datacenter_by_name(datacenter_name)
-        if not datacenter:
-            return None
+        datacenters = self.get_datacenters_set_by_name(datacenter_name)
         clusters = None
         if cluster_name:
-            clusters = self.get_cluster_by_name(datacenter_name, cluster_name)
+            clusters = self.get_cluster_by_name(cluster_name, datacenter_name)
             if clusters:
                 clusters = set([clusters])
         hosts = None
         if host_name:
-            hosts = self.get_host_by_name(datacenter_name, host_name)
+            hosts = self.get_host_by_name(host_name, datacenter_name)
             if hosts:
                 hosts = set([hosts])
         names = set([resourcepool_name]) if resourcepool_name else None
-        filter_spec = ResourcePool.FilterSpec(datacenters=set([datacenter]),
+        filter_spec = ResourcePool.FilterSpec(datacenters=datacenters,
                                               names=names,
                                               clusters=clusters)
         resource_pool_summaries = self.api_client.vcenter.ResourcePool.list(filter_spec)
         resource_pool = resource_pool_summaries[0].resource_pool if len(resource_pool_summaries) > 0 else None
         return resource_pool
 
-    def get_datastore_by_name(self, datacenter_name, datastore_name):
-        """
-        Returns the identifier of a datastore
-        with the mentioned names.
-        """
-        datacenter = self.get_datacenter_by_name(datacenter_name)
-        if not datacenter:
-            return None
-        names = set([datastore_name]) if datastore_name else None
-        filter_spec = Datastore.FilterSpec(datacenters=set([datacenter]),
-                                           names=names)
-        datastore_summaries = self.api_client.vcenter.Datastore.list(filter_spec)
-        datastore = datastore_summaries[0].datastore if len(datastore_summaries) > 0 else None
-        return datastore
-
-    def get_cluster_by_name(self, datacenter_name, cluster_name):
+    def get_cluster_by_name(self, cluster_name, datacenter_name=None):
         """
         Returns the identifier of a cluster
         with the mentioned names.
         """
-        datacenter = self.get_datacenter_by_name(datacenter_name)
-        if not datacenter:
-            return None
+        datacenters = self.get_datacenters_set_by_name(datacenter_name)
         names = set([cluster_name]) if cluster_name else None
-        filter_spec = Cluster.FilterSpec(datacenters=set([datacenter]),
-                                         names=names)
+        filter_spec = Cluster.FilterSpec(datacenters=datacenters, names=names)
         cluster_summaries = self.api_client.vcenter.Cluster.list(filter_spec)
-        cluster = cluster_summaries[0].cluster if len(cluster_summaries) > 0 else None
-        return cluster
+        return cluster_summaries[0].cluster if len(cluster_summaries) > 0 else None
 
-    def get_host_by_name(self, datacenter_name, host_name):
+    def get_host_by_name(self, host_name, datacenter_name=None):
         """
         Returns the identifier of a Host
         with the mentioned names.
         """
-        datacenter = self.get_datacenter_by_name(datacenter_name)
-        if not datacenter:
-            return None
+        datacenters = self.get_datacenters_set_by_name(datacenter_name)
         names = set([host_name]) if host_name else None
-        filter_spec = Host.FilterSpec(datacenters=set([datacenter]),
-                                      names=names)
+        filter_spec = Host.FilterSpec(datacenters=datacenters, names=names)
         host_summaries = self.api_client.vcenter.Host.list(filter_spec)
-        host = host_summaries[0].host if len(host_summaries) > 0 else None
-        return host
+        return host_summaries[0].host if len(host_summaries) > 0 else None
 
-    @staticmethod
-    def search_svc_object_by_name(service, svc_obj_name=None):
+    def get_vm_by_name(self, vm_name, datacenter_name=None):
         """
-        Return service object by name
+        Returns the identifier of a VM with the mentioned names.
+        """
+        datacenters = self.get_datacenters_set_by_name(datacenter_name)
+        names = set([vm_name]) if vm_name else None
+        filter_spec = VM.FilterSpec(datacenters=datacenters, names=names)
+        vm_summaries = self.api_client.vcenter.VM.list(filter_spec)
+        return vm_summaries[0].vm if len(vm_summaries) > 0 else None
+
+    def obj_to_dict(self, vmware_obj, r):
+        """
+        Tranform VMware SDK object to dictionary.
         Args:
-            service: Service object
-            svc_obj_name: Name of service object to find
-
-        Returns: Service object if found else None
-
+            vmware_obj: Object to transform.
+            r: Dictionary to fill with object data.
         """
-        if not svc_obj_name:
-            return None
-
-        for svc_object in service.list():
-            svc_obj = service.get(svc_object)
-            if svc_obj.name == svc_obj_name:
-                return svc_obj
-        return None
-
-    def get_tag_by_name(self, tag_name=None):
-        """
-        Return tag object by name
-        Args:
-            tag_name: Name of tag
-
-        Returns: Tag object if found else None
-        """
-        if not tag_name:
-            return None
-
-        return self.search_svc_object_by_name(service=self.api_client.tagging.Tag, svc_obj_name=tag_name)
+        for k, v in vars(vmware_obj).items():
+            if not k.startswith('_'):
+                if hasattr(v, '__dict__') and not isinstance(v, str):
+                    self.obj_to_dict(v, r[k])
+                elif isinstance(v, int):
+                    r[k] = int(v)
+                else:
+                    r[k] = str(v)
 
     def get_category_by_name(self, category_name=None):
         """

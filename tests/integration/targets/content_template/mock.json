@@ -1,0 +1,74 @@
+[
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/rest/com/vmware/cis/session"
+  },
+  "httpResponse": {
+    "statusCode": 200,
+    "body": {"value": "72300ca9ff16c5743fa0a6328c8570ce"}
+  }
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api"
+  },
+  "httpResponse": {
+    "statusCode": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {"jsonrpc": "2.0", "result": {"output": 0}, "id": "0"}
+  }
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.content.library\",\"operationId\":\"find\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":[\"11d399c9-92f6-49cd-abaf-ad7e4fdceb49\"]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "type": "JSON",
+      "matchType": "PARTIAL",
+      "json": "{\"params\":{\"serviceId\":\"com.vmware.content.library.item\",\"operationId\":\"find\"}}"
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\":[\"11d399c9-92f6-49cd-abaf-ad7e4fdceb49\"]}, 'id': '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+},
+{
+  "httpRequest": {
+    "method": "POST",
+    "path": "/api",
+    "body": {
+      "params" : {
+        "serviceId" : "com.vmware.cis.session",
+        "operationId" : "delete"
+      }
+    }
+  },
+  "httpResponseTemplate": {
+    "template": "{\"statusCode\": 200, \"headers\": {\"Content-type\": \"application/json\"}, \"body\": {\"jsonrpc\": \"2.0\", \"result\": {\"output\": 0}, \"id\": '${json.parse($!request.body)['id']}'}}",
+    "templateType": "VELOCITY"
+  },
+  "priority": 1
+}
+]
