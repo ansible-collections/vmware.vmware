@@ -71,6 +71,7 @@ guest:
 '''
 
 from collections import defaultdict
+from com.vmware.vcenter_client import VM
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
@@ -114,7 +115,12 @@ class VmwareGuestInfo(PyVmomi):
         guests = []
 
         if self.params.get('guest_name'):
-            vms = self._get_vm(self.params.get('guest_name'))
+            matching_vms = self._get_vm(self.params.get('guest_name'))
+            try:
+                _ = iter(matching_vms)
+                vms = matching_vms
+            except TypeError:
+                vms = [] if not matching_vms else [matching_vms]
         else:
             vms = self.vmware_client.api_client.vcenter.VM.list()
 
@@ -140,7 +146,7 @@ class VmwareGuestInfo(PyVmomi):
     def _get_vm(self, vm_name):
         names = set([vm_name])
         vms = self.vmware_client.api_client.vcenter.VM.list(
-            self.vmware_client.api_client.VM.FilterSpec(names=names)
+            VM.FilterSpec(names=names)
         )
 
         if len(vms) == 0:
