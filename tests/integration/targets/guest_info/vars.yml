@@ -3,4 +3,6 @@ vcenter_username: "user"
 vcenter_password: "pass"
 vcenter_port: 1080
 
+run_on_simulator: true
 mock_file: "guest_info"
+guests_length: 0
