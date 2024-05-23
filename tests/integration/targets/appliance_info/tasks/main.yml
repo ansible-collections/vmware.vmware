@@ -14,4 +14,4 @@
   ansible.builtin.assert:
     that:
       - __res.changed == False
-      - __res.appliance.summary.hostname == "hostname.example.com"
+      - __res.appliance.summary.hostname == appliance_hostname
