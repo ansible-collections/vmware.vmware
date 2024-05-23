@@ -12,4 +12,4 @@
   ansible.builtin.assert:
     that:
       - __res.changed == False
-      - __res.licenses | length == 0
+      - __res.licenses | length == licenses_length
