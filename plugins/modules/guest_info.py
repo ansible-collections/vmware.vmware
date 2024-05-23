@@ -8,6 +8,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
+import traceback
 
 DOCUMENTATION = r'''
 ---
@@ -71,7 +72,12 @@ guest:
 '''
 
 from collections import defaultdict
-from com.vmware.vcenter_client import VM
+
+try:
+    from com.vmware.vcenter_client import VM
+except ImportError:
+    # handled during class init
+    pass
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
@@ -117,7 +123,7 @@ class VmwareGuestInfo(PyVmomi):
         if self.params.get('guest_name'):
             matching_vms = self._get_vm(self.params.get('guest_name'))
             try:
-                _ = iter(matching_vms)
+                _ = iter(matching_vms)  # pylint: disable=disallowed-name
                 vms = matching_vms
             except TypeError:
                 vms = [] if not matching_vms else [matching_vms]
