@@ -1,0 +1,19 @@
+---
+- name: Create template from vm in content library
+  vmware.vmware.content_template:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    template: mytemplate
+    library: templates
+    vm_name: test
+    host: 1.2.3.4.
+  register: __res
+
+- name: Assert values
+  ansible.builtin.assert:
+    that:
+      - __res.changed == False
+      - __res.template_info.msg == "Template 'mytemplate' already exists."
