@@ -124,7 +124,7 @@ options:
   shell_timeout:
     description:
       - The timeout (in seconds) specifies how long you enable the Shell access. The maximum timeout is 86400 seconds(1 day).
-      - This parameter is mandatory in case C(shell_enabled) is I(true).
+      - This parameter is mandatory in case O(shell_enabled=true).
     type: int
   ssh_enabled:
     description:
