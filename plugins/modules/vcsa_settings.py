@@ -41,8 +41,8 @@ options:
     type: str
   dns_append:
     description:
-      - If I(true) items from C(dns_domains) and C(dns_servers) will be added to already configured DNS domains/servers.
-      - If I(false) domains/servers will be overriden.
+      - If V(true) items from O(dns_domains) and O(dns_servers) will be added to already configured DNS domains/servers.
+      - If V(false) domains/servers will be overriden.
     type: bool
     default: true
   dns_hostname:
