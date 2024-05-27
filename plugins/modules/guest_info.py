@@ -76,6 +76,8 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
 
+from com.vmware.vcenter_client import VM
+
 
 class VmwareGuestInfo(PyVmomi):
     def __init__(self, module):
@@ -140,7 +142,7 @@ class VmwareGuestInfo(PyVmomi):
     def _get_vm(self, vm_name):
         names = set([vm_name])
         vms = self.vmware_client.api_client.vcenter.VM.list(
-            self.vmware_client.api_client.VM.FilterSpec(names=names)
+            VM.FilterSpec(names=names)
         )
 
         if len(vms) == 0:
