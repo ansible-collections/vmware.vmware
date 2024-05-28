@@ -4,6 +4,25 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.2.0
+======
+
+Minor Changes
+-------------
+
+- Clarify pyVmomi requirement (https://github.com/ansible-collections/vmware.vmware/pull/15).
+- vcsa_settings - Add new module to configure VCSA settings
+
+Deprecated Features
+-------------------
+
+- vm_list_group_by_clusters - deprecate the module since it was renamed to ``vm_list_group_by_clusters_info``
+
+Bugfixes
+--------
+
+- guest_info - Fixed bugs that caused module failure when specifying the guest_name attribute
+
 v1.1.0
 ======
 

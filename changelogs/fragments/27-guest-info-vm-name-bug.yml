@@ -1,2 +1,0 @@
-bugfixes:
-  - guest_info - Fixed bugs that caused module failure when specifying the guest_name attribute
