@@ -71,12 +71,6 @@ guest:
 
 from collections import defaultdict
 
-try:
-    from com.vmware.vcenter_client import VM
-except ImportError:
-    # handled during class init
-    pass
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
@@ -119,7 +113,9 @@ class VmwareGuestInfo(PyVmomi):
         guests = []
 
         if self.params.get('guest_name'):
-            matching_vms = self._get_vm(self.params.get('guest_name'))
+            matching_vms = self.vmware_client.get_vm_by_name(
+                name=self.params.get('guest_name')
+            )
             try:
                 _ = iter(matching_vms)  # pylint: disable=disallowed-name
                 vms = matching_vms
@@ -146,17 +142,6 @@ class VmwareGuestInfo(PyVmomi):
                     self._vvars(v, r[k])
                 else:
                     r[k] = str(v)
-
-    def _get_vm(self, vm_name):
-        names = set([vm_name])
-        vms = self.vmware_client.api_client.vcenter.VM.list(
-            VM.FilterSpec(names=names)
-        )
-
-        if len(vms) == 0:
-            return None
-
-        return vms[0]
 
 
 def main():

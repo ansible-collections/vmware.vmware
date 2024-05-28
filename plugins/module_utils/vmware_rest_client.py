@@ -41,7 +41,8 @@ try:
                                            ResourcePool,
                                            Datastore,
                                            Cluster,
-                                           Host)
+                                           Host,
+                                           VM)
     HAS_VSPHERE = True
 except ImportError:
     VSPHERE_IMP_ERR = traceback.format_exc()
@@ -339,6 +340,26 @@ class VmwareRestClient(object):
             tags.append(tag_obj.name)
 
         return tags
+
+    def get_vm_by_name(self, name):
+        """
+        Returns a VM object that matches the given name.
+
+        Args:
+            name (str): The name of VM to look for
+
+        Returns:
+            list(str): VM object matching the name provided. Returns None if no
+            matches are found
+        """
+        vms = self.api_client.vcenter.VM.list(
+            VM.FilterSpec(names=set([name]))
+        )
+
+        if len(vms) == 0:
+            return None
+
+        return vms[0]
 
     def get_library_item_by_name(self, name):
         """
