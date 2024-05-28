@@ -19,3 +19,20 @@ releases:
     fragments:
     - 16-vm_list_group_by_clusters.yml
     release_date: '2024-05-16'
+  1.2.0:
+    changes:
+      bugfixes:
+      - guest_info - Fixed bugs that caused module failure when specifying the guest_name
+        attribute
+      deprecated_features:
+      - vm_list_group_by_clusters - deprecate the module since it was renamed to ``vm_list_group_by_clusters_info``
+      minor_changes:
+      - Clarify pyVmomi requirement (https://github.com/ansible-collections/vmware.vmware/pull/15).
+      - vcsa_settings - Add new module to configure VCSA settings
+    fragments:
+    - 10_vcsa_settings_new_module.yml
+    - 15-clarify-pyvmomi-requirement.yml
+    - 21-doc.yml
+    - 25-deprecated_module_vm_list_goup_by_clusters.yml
+    - 27-guest-info-vm-name-bug.yml
+    release_date: '2024-05-28'

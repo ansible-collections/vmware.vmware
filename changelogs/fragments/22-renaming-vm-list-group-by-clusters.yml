@@ -1,3 +1,0 @@
-major_changes:
-  - vm_list_group_by_clusters_info - Renaming the module vm_list_group_by_clusters to vm_list_group_by_clusters_info
-    since, modules that only gather information are named with suffix `info`.
