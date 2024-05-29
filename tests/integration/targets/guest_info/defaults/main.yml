@@ -2,16 +2,4 @@ vcenter_port: 443
 run_on_simulator: false
 
 guests_length: 1
-vm_name: eco-vm-test
-vm_cluster: "Eco-Cluster"
-vm_datacenter: "Eco-Datacenter"
-vm_folder: "/Eco-Datacenter/vm/e2e-qe"
-vm_guest_id: "rhel8_64Guest"
-vm_disk:
-  - size_gb: 10
-    type: thin
-    autoselect_datastore: true
-vm_hardware:
-  memory_mb: 2000
-  num_cpus: 2
-  boot_firmware: efi
+vm_name: eco-vcenter-server
