@@ -1,48 +1,16 @@
 ---
-- block:
-    - name: "Test setup: Create VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        cluster: "{{ vm_cluster }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "{{ vm_folder }}"
-        state: present
-        name: "{{ vm_name }}"
-        disk: "{{ vm_disk }}"
-        guest_id: "{{ vm_guest_id }}"
-        hardware: "{{ vm_hardware }}"
-      when: not run_on_simulator
+- name: Gather guest info
+  vmware.vmware.guest_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    guest_name: "{{ vm_name | d(omit) }}"
+  register: __res
 
-    - name: Gather guest info
-      vmware.vmware.guest_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
-        guest_name: "{{ vm_name | d(omit) }}"
-      register: __res
-
-    - name: Assert values
-      ansible.builtin.assert:
-        that:
-          - __res.changed == False
-          - __res.guests | length == guests_length
-
-  always:
-    - name: "Test teardown: Destroy VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        cluster: "{{ vm_cluster }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "{{ vm_folder }}"
-        state: absent
-        force: true
-        name: "{{ vm_name }}"
-      when: not run_on_simulator
+- name: Assert values
+  ansible.builtin.assert:
+    that:
+      - __res.changed == False
+      - __res.guests | length == guests_length
