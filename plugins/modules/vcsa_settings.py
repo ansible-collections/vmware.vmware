@@ -13,7 +13,7 @@ DOCUMENTATION = r'''
 ---
 module: vcsa_settings
 short_description: Configure vCenter Server Appliance settings
-version_added: 2.0.0
+version_added: 1.2.0
 description:
   - Configure vCenter Server Appliance settings.
 author:
