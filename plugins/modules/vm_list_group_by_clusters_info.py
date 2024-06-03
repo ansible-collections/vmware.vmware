@@ -191,7 +191,13 @@ def main():
 
     vmware_vm_list_group_by_clusters_mgr = VmwareVMList(module)
     vm_list_group_by_clusters_info = vmware_vm_list_group_by_clusters_mgr.get_vm_list_group_by_clusters()
-    module.exit_json(changed=False, vm_list_group_by_clusters_info=vm_list_group_by_clusters_info)
+    if vmware_vm_list_group_by_clusters_mgr.module._name == 'vm_list_group_by_clusters_info':
+        module.exit_json(changed=False, vm_list_group_by_clusters_info=vm_list_group_by_clusters_info)
+    elif vmware_vm_list_group_by_clusters_mgr.module._name == 'vm_list_group_by_clusters':
+        module.exit_json(changed=False, vm_list_group_by_clusters=vm_list_group_by_clusters_info)
+    else:
+        # module.fail_json(msg="There seems to be bug in this module. Please open an issue. This should never happen.")
+        module.fail_json(msg="module name %s" % vmware_vm_list_group_by_clusters_mgr.module._name)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,2 @@
+bugfixes:
+  - vm_list_group_by_clusters_info - Fix return value (https://github.com/ansible-collections/vmware.vmware/pull/36).
