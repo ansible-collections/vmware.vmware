@@ -1,19 +1,81 @@
 ---
-- name: Create template from vm in content library
-  vmware.vmware.content_template:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    template: mytemplate
-    library: templates
-    vm_name: test
-    host: 1.2.3.4.
-  register: __res
+- block:
+    - name: "Test setup: Create VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: present
+        name: "{{ vm }}"
+        disk: "{{ vm_disk }}"
+        guest_id: "{{ vm_guest_id }}"
+        hardware: "{{ vm_hardware }}"
+      when: not run_on_simulator
 
-- name: Assert values
-  ansible.builtin.assert:
-    that:
-      - __res.changed == False
-      - __res.template_info.msg == "Template 'mytemplate' already exists."
+    - name: "Test setup: Create content library {{ library }}"
+      community.vmware.vmware_content_library_manager:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ datastore }}"
+        library_name: "{{ library }}"
+        state: present
+        library_type: local
+      when: not run_on_simulator
+
+    - name: Create template from vm in content library
+      vmware.vmware.content_template:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        template: "{{ template_name }}"
+        library: "{{ library }}"
+        vm_name: "{{ vm }}"
+        host: "{{ template_host }}"
+      register: __res
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - __res.template_info.msg == "Template '" + template_name + "' already exists."
+      when: run_on_simulator
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == True
+          - __res.template_info.msg == "Template '" + template_name + "'."
+      when: not run_on_simulator
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm }}"
+      when: not run_on_simulator
+
+    - name: "Test teardown: Remove content library {{ library }}"
+      community.vmware.vmware_content_library_manager:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        library_name: "{{ library }}"
+        state: absent
+      when: not run_on_simulator

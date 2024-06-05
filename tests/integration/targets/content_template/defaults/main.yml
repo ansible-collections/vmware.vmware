@@ -1,0 +1,21 @@
+vcenter_port: 443
+run_on_simulator: false
+
+vm: test-content_template
+vm_cluster: "Eco-Cluster"
+vm_datacenter: "Eco-Datacenter"
+vm_folder: "/Eco-Datacenter/vm/e2e-qe"
+vm_guest_id: "rhel8_64Guest"
+vm_disk:
+  - size_gb: 10
+    type: thin
+    autoselect_datastore: true
+vm_hardware:
+  memory_mb: 2000
+  num_cpus: 2
+  boot_firmware: efi
+
+template_host: 10.46.29.208
+datastore: datastore2
+library: content_template_library
+template_name: template-test-content_template
