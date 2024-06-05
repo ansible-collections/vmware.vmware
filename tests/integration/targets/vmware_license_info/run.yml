@@ -5,14 +5,10 @@
   vars_files:
     - vars.yml
   tasks:
-    - name: Rest
-      ansible.builtin.import_role:
-        name: prepare_rest
-
     - name: Vcsim
       ansible.builtin.import_role:
         name: prepare_vcsim
 
-    - name: Import guest_info role
+    - name: Import vmware_license_info role
       ansible.builtin.import_role:
-        name: guest_info
+        name: vmware_license_info
