@@ -4,3 +4,8 @@ vcenter_password: "pass"
 vcenter_port: 1080
 
 mock_file: "content_template"
+
+run_on_simulator: true
+vm: test
+template_host: 1.2.3.4.
+template_name: mytemplate
