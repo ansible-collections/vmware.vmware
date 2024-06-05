@@ -4,4 +4,4 @@ vcenter_password: "pass"
 vcenter_port: 1080
 
 run_on_simulator: true
-mock_file: "vm_list_group_by_clusters_info"
+mock_file: "vmware_vm_list_group_by_clusters_info"

@@ -4,5 +4,5 @@ vcenter_password: "pass"
 vcenter_port: 1080
 
 run_on_simulator: true
-mock_file: "guest_info"
+mock_file: "vmware_guest_info"
 guests_length: 0

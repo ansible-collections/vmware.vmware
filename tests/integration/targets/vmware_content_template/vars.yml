@@ -3,7 +3,7 @@ vcenter_username: "user"
 vcenter_password: "pass"
 vcenter_port: 1080
 
-mock_file: "content_template"
+mock_file: "vmware_content_template"
 
 run_on_simulator: true
 vm: test
