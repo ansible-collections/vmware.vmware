@@ -7,6 +7,6 @@
       ansible.builtin.import_role:
         name: prepare_rest
 
-    - name: Import content_template role
+    - name: Import vmware_content_template role
       ansible.builtin.import_role:
-        name: content_template
+        name: vmware_content_template

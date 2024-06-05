@@ -9,6 +9,6 @@
       ansible.builtin.import_role:
         name: prepare_rest
 
-    - name: Import appliance_info role
+    - name: Import vmware_appliance_info role
       ansible.builtin.import_role:
-        name: appliance_info
+        name: vmware_appliance_info
