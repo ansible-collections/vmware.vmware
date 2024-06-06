@@ -15,6 +15,8 @@ description:
 - Fetch vCenter, ESXi server license keys.
 author:
 - Ansible Cloud Team (@ansible-collections)
+requirements:
+- Python SDK for the VMware vSphere Management API
 attributes:
   check_mode:
     description: The check_mode support.

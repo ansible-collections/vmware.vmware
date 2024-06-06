@@ -16,6 +16,8 @@ description:
 - This module gather vm guest information.
 author:
 - Ansible Cloud Team (@ansible-collections)
+requirements:
+- vSphere Automation SDK
 options:
   guest_username:
     description:

@@ -17,6 +17,8 @@ description:
 - This module gather VCenter appliance information.
 author:
 - Ansible Cloud Team (@ansible-collections)
+requirements:
+- vSphere Automation SDK
 options:
   properties:
     choices:
