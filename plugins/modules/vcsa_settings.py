@@ -18,6 +18,8 @@ description:
   - Configure vCenter Server Appliance settings.
 author:
   - Ansible Cloud Team (@ansible-collections)
+requirements:
+  - vSphere Automation SDK
 options:
   timezone:
     description:

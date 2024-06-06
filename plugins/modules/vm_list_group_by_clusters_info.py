@@ -18,6 +18,8 @@ description:
     - Returns information about the virtual machines grouping by clusters and folders.
 author:
     - Ansible Cloud Team (@ansible-collections)
+requirements:
+    - vSphere Automation SDK
 options:
     detailed_vms:
         default: true
