@@ -6,7 +6,7 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    guest_name: "{{ vm_name | d(omit) }}"
+    guest_name: "{{ (run_on_simulator) | ternary(omit, vm_name) }}"
   register: __res
 
 - name: Assert values
