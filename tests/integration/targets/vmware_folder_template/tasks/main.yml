@@ -1,0 +1,87 @@
+---
+- block:
+    - name: "Test setup: Create Folder"
+      community.vmware.vcenter_folder:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder_name: "{{ template_folder }}"
+        folder_type: vm
+        state: present
+      when: run_on_simulator
+
+    - name: "Test setup: Create VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ template_folder }}"
+        state: present
+        name: "{{ vm }}"
+        disk: "{{ vm_disk }}"
+        guest_id: "{{ vm_guest_id }}"
+        hardware: "{{ vm_hardware }}"
+      when: not run_on_simulator
+
+    - name: "Test setup: Power Off VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        port: "{{ vcenter_port }}"
+        state: poweredoff
+        name: "{{ vm }}"
+      when: run_on_simulator
+
+    - name: Create template from vm in vcenter folder
+      vmware.vmware.folder_template:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        port: "{{ vcenter_port }}"
+        folder: "{{ template_folder }}"
+        vm_name: "{{ vm }}"
+      register: __res
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm }}"
+      when: not run_on_simulator
+    - name: "Test teardown: Destroy VM template {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm }}_template"
+      when: not run_on_simulator

@@ -46,6 +46,16 @@ options:
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
       type: int
       default: 443
+    datacenter:
+      description:
+      - The datacenter to use when connecting to a vCenter.
+      type: str
+      aliases: [ datacenter_name ]
+    cluster:
+      description:
+      - The cluster to use when connecting to a vCenter.
+      type: str
+      aliases: [ cluster_name ]
     proxy_host:
       description:
       - Address of a proxy that will receive all HTTPS requests and relay them.
@@ -95,6 +105,16 @@ options:
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
       type: int
       default: 443
+    datacenter:
+      description:
+      - The datacenter to use when connecting to a vCenter.
+      type: str
+      aliases: [ datacenter_name ]
+    cluster:
+      description:
+      - The cluster to use when connecting to a vCenter.
+      type: str
+      aliases: [ cluster_name ]
     proxy_host:
       description:
       - Address of a proxy that will receive all HTTPS requests and relay them.

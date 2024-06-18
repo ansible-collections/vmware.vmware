@@ -1,0 +1,9 @@
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_port: 8989
+vm_cluster: DC0_C0
+vm_datacenter: DC0
+vm_folder: test
+run_on_simulator: true
+vm: DC0_H0_VM0

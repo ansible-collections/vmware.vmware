@@ -58,6 +58,12 @@ def vmware_argument_spec():
                       required=False,
                       no_log=True,
                       fallback=(env_fallback, ['VMWARE_PASSWORD'])),
+        cluster=dict(type='str',
+                     aliases=['cluster_name'],
+                     required=False),
+        datacenter=dict(type='str',
+                        aliases=['datacenter_name'],
+                        required=False),
         port=dict(type='int',
                   default=443,
                   fallback=(env_fallback, ['VMWARE_PORT'])),
@@ -218,3 +224,41 @@ class PyVmomi(object):
             return True
         elif api_type == 'HostAgent':
             return False
+
+    def __get_obj_by_name(self, vimtype, name):
+        """
+        Get the vsphere object associated with a given text name
+        Returns: Object if an object with the given type and name exists
+                 None otherwise
+        """
+        obj = None
+        container = self.content.viewManager.CreateContainerView(self.content.rootFolder, vimtype, True)
+        for c in container.view:
+            if c.name == name:
+                obj = c
+                break
+        return obj
+
+    def get_vm_by_name(self, vm_name, fail_on_missing=False):
+        vm = self.__get_obj_by_name([vim.VirtualMachine], vm_name)
+        if not vm and fail_on_missing:
+            self.module.fail_json("Unable to find VM with name %s" % vm_name)
+        return vm
+
+    def get_folder_by_name(self, folder_name, fail_on_missing=False):
+        folder = self.__get_obj_by_name([vim.Folder], folder_name)
+        if not folder and fail_on_missing:
+            self.module.fail_json("Unable to find folder with name %s" % folder_name)
+        return folder
+
+    def get_datastore_by_name(self, ds_name, fail_on_missing=False):
+        ds = self.__get_obj_by_name([vim.Datastore], ds_name)
+        if not ds and fail_on_missing:
+            self.module.fail_json("Unable to find datastore with name %s" % ds_name)
+        return ds
+
+    def get_resource_pool_by_name(self, pool_name, fail_on_missing=False):
+        pool = self.__get_obj_by_name([vim.ResourcePool], pool_name)
+        if not pool and fail_on_missing:
+            self.module.fail_json("Unable to find resource pool with name %s" % pool_name)
+        return pool
