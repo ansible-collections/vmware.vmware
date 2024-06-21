@@ -1,7 +1,7 @@
 vcenter_port: 443
 run_on_simulator: false
 
-vm: test-content_template
+vm: "{{ tiny_prefix }}-vm"
 vm_cluster: "Eco-Cluster"
 vm_datacenter: "Eco-Datacenter"
 vm_folder: "/Eco-Datacenter/vm/e2e-qe"
@@ -17,5 +17,5 @@ vm_hardware:
 
 template_host: 10.46.29.208
 datastore: datastore2
-library: content_template_library
-template_name: template-test-content_template
+library: "{{ tiny_prefix }}-content-library"
+template_name: "{{ tiny_prefix }}-template"
