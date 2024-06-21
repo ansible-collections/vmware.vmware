@@ -8,4 +8,5 @@ mock_file: "vmware_content_template"
 run_on_simulator: true
 vm: test
 template_host: 1.2.3.4.
+library: templates
 template_name: mytemplate
