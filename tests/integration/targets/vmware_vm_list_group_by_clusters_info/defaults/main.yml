@@ -1,9 +1,9 @@
 vcenter_port: 443
 run_on_simulator: false
 
-test_folder: test-vm_list_group_by_cluster_info
+test_folder: "{{ tiny_prefix }}-folder"
 
-vm_name: test-vm_list_group_by_cluster_info
+vm_name: "{{ tiny_prefix }}-vm"
 vm_cluster: "Eco-Cluster"
 vm_datacenter: "Eco-Datacenter"
 vm_folder: "/Eco-Datacenter/vm/{{ test_folder }}"
