@@ -4,6 +4,15 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.3.0
+======
+
+Minor Changes
+-------------
+
+- content_template - Add new module to manage templates in content library
+- vm_list_group_by_clusters_info - Add the appropriate returned value for the deprecated module ``vm_list_group_by_clusters``
+
 v1.2.0
 ======
 
