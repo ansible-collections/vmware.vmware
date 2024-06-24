@@ -1,2 +1,0 @@
-minor_changes:
-  - vm_list_group_by_clusters_info - Add the appropriate returned value for the deprecated module ``vm_list_group_by_clusters``
