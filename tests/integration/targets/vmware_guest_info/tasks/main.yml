@@ -1,4 +1,6 @@
 ---
+# note: this test will fail due to the below known bug:
+# https://issues.redhat.com/browse/ACA-1650
 - name: Gather guest info
   vmware.vmware.guest_info:
     validate_certs: false
