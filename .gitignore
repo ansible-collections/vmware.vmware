@@ -54,6 +54,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# Integration tests
+tests/integration/integration_config.yml
+
 # Translations
 *.mo
 *.pot
