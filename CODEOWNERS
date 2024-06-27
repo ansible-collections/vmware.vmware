@@ -1,0 +1,12 @@
+# Default code owners for all files and directories
+*       @bardielle @machacekondra @mikemorency
+
+# Integration tests permissions
+/tests/integration/ @shellymiron @elsapassaro @prabinovRedhat @anna-savina
+
+# Workflow files permissions
+.github/workflows/* @shellymiron @elsapassaro @prabinovRedhat @anna-savina
+
+# Scripts directory permissions
+/tools/ @shellymiron @elsapassaro @anna-savina @prabinovRedhat
+/changelogs/ @shellymiron @elsapassaro @anna-savina @prabinovRedhat
