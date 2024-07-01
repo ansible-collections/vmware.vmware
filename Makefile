@@ -17,24 +17,24 @@ integration: prepare_symlinks
 
 .PHONY: eco-vcenter-ci
 eco-vcenter-ci: prepare_symlinks
-	@[ -f /tmp/failed-tests.txt ] && rm /tmp/failed-tests.txt || true; \
+	@[ -f /tmp/vmware_vmware_failed_tests.txt ] && rm /tmp/vmware_vmware_failed_tests.txt || true; \
 	@failed=0; \
 	total=0; \
-	echo "===============" >> /tmp/failed-tests.txt; \
-	echo "Tests Summary" >> /tmp/failed-tests.txt; \
-	echo "===============" >> /tmp/failed-tests.txt; \
+	echo "===============" >> /tmp/vmware_vmware_failed_tests.txt; \
+	echo "Tests Summary" >> /tmp/vmware_vmware_failed_tests.txt; \
+	echo "===============" >> /tmp/vmware_vmware_failed_tests.txt; \
 	for dir in $(shell ansible-test integration --list-target --no-temp-workdir | grep 'vmware_'); do \
 	  echo "Running integration test for $$dir"; \
 	  total=$$((total + 1)); \
 	  if ansible-test integration --no-temp-workdir $$dir; then \
-	    echo -e "Test: $$dir ${GREEN}Passed${NC}" | tee -a /tmp/failed-tests.txt; \
+	    echo -e "Test: $$dir ${GREEN}Passed${NC}" | tee -a /tmp/vmware_vmware_failed_tests.txt; \
 	  else \
-	    echo -e "Test: $$dir ${RED}Failed${NC}" | tee -a /tmp/failed-tests.txt; \
+	    echo -e "Test: $$dir ${RED}Failed${NC}" | tee -a /tmp/vmware_vmware_failed_tests.txt; \
 	    failed=$$((failed + 1)); \
 	  fi; \
 	done; \
 	if [ $$failed -gt 0 ]; then \
-	  echo "$$failed test(s) failed out of $$total." >> /tmp/failed-tests.txt; \
-	  cat /tmp/failed-tests.txt; \
+	  echo "$$failed test(s) failed out of $$total." >> /tmp/vmware_vmware_failed_tests.txt; \
+	  cat /tmp/vmware_vmware_failed_tests.txt; \
 	  exit 1; \
 	fi
