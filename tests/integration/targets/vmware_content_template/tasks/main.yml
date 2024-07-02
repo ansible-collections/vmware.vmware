@@ -1,5 +1,10 @@
 ---
 - block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+      when: not run_on_simulator
+
     - name: "Test setup: Create VM guest {{ vm }}"
       community.vmware.vmware_guest:
         validate_certs: false

@@ -5,3 +5,4 @@ vcenter_port: 1080
 
 mock_file: "vmware_appliance_info"
 appliance_hostname: "hostname.example.com"
+run_on_simulator: true

@@ -1,0 +1,6 @@
+---
+# vcenter specific vars
+# please edit according to your vcenter configs
+vcenter_cluster_name: "Eco-Cluster"
+vcenter_datacenter: "Eco-Datacenter"
+vcenter_port: 443

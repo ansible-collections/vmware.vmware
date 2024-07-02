@@ -1,4 +1,3 @@
-vcenter_port: 443
 run_on_simulator: false
 
 guests_length: 1
