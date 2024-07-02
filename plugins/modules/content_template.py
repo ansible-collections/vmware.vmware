@@ -157,7 +157,7 @@ class VmwareContentTemplate(VmwareRestClient):
             name=self.template,
             placement=placement_spec,
             library=self.get_library_by_name(self.library),
-            source_vm=self.get_vm_by_name(self.vm_name),
+            source_vm=self.get_vm_obj_by_name(self.vm_name),
         )
         template_id = ''
         try:

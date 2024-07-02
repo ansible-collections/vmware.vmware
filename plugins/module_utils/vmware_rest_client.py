@@ -312,7 +312,7 @@ class VmwareRestClient(object):
         host_summaries = self.api_client.vcenter.Host.list(filter_spec)
         return host_summaries[0].host if len(host_summaries) > 0 else None
 
-    def get_vm_by_name(self, vm_name, datacenter_name=None):
+    def get_vm_obj_by_name(self, vm_name, datacenter_name=None):
         """
         Returns the identifier of a VM with the mentioned names.
         """
