@@ -3,3 +3,4 @@ vcenter_username: "user"
 vcenter_password: "pass"
 vcenter_port: 8989
 licenses_length: 0
+run_on_simulator: true

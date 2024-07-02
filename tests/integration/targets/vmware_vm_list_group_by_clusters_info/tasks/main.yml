@@ -1,5 +1,10 @@
 ---
 - block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+      when: not run_on_simulator
+
     - name: "Test setup: Create VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
         validate_certs: false

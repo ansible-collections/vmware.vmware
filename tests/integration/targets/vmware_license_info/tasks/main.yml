@@ -1,4 +1,9 @@
 ---
+- name: Import common vars
+  ansible.builtin.include_vars:
+    file: ../group_vars.yml
+  when: not run_on_simulator
+
 - name: Gather license info
   vmware.vmware.license_info:
     validate_certs: false
