@@ -77,7 +77,8 @@ def vmware_argument_spec():
     )
 
 
-def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=None, username=None, password=None, port=None, validate_certs=None,
+def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=None, username=None, password=None,
+                   port=None, validate_certs=None,
                    httpProxyHost=None, httpProxyPort=None):
     if module:
         if not hostname:
@@ -102,18 +103,18 @@ def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=Non
 
     if not hostname:
         _raise_or_fail(msg="Hostname parameter is missing."
-                       " Please specify this parameter in task or"
-                       " export environment variable like 'export VMWARE_HOST=ESXI_HOSTNAME'")
+                           " Please specify this parameter in task or"
+                           " export environment variable like 'export VMWARE_HOST=ESXI_HOSTNAME'")
 
     if not username:
         _raise_or_fail(msg="Username parameter is missing."
-                       " Please specify this parameter in task or"
-                       " export environment variable like 'export VMWARE_USER=ESXI_USERNAME'")
+                           " Please specify this parameter in task or"
+                           " export environment variable like 'export VMWARE_USER=ESXI_USERNAME'")
 
     if not password:
         _raise_or_fail(msg="Password parameter is missing."
-                       " Please specify this parameter in task or"
-                       " export environment variable like 'export VMWARE_PASSWORD=ESXI_PASSWORD'")
+                           " Please specify this parameter in task or"
+                           " export environment variable like 'export VMWARE_PASSWORD=ESXI_PASSWORD'")
 
     if validate_certs and not hasattr(ssl, 'SSLContext'):
         _raise_or_fail(msg='pyVim does not support changing verification mode with python < 2.7.9. Either update '
@@ -145,7 +146,9 @@ def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=Non
             msg_suffix = " [proxy: %s:%d]" % (httpProxyHost, httpProxyPort)
             connect_args.update(httpProxyHost=httpProxyHost, httpProxyPort=httpProxyPort)
             smart_stub = connect.SmartStubAdapter(**connect_args)
-            session_stub = connect.VimSessionOrientedStub(smart_stub, connect.VimSessionOrientedStub.makeUserLoginMethod(username, password))
+            session_stub = connect.VimSessionOrientedStub(smart_stub,
+                                                          connect.VimSessionOrientedStub.makeUserLoginMethod(username,
+                                                                                                             password))
             service_instance = vim.ServiceInstance('ServiceInstance', session_stub)
         else:
             connect_args.update(user=username, pwd=password)
@@ -155,9 +158,11 @@ def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=Non
         _raise_or_fail(msg="%s as %s: %s" % (msg, username, invalid_login.msg) + msg_suffix)
     except vim.fault.NoPermission as no_permission:
         _raise_or_fail(msg="User %s does not have required permission"
-                           " to log on to vCenter or ESXi API at %s:%s : %s" % (username, hostname, port, no_permission.msg))
+                           " to log on to vCenter or ESXi API at %s:%s : %s" % (
+                           username, hostname, port, no_permission.msg))
     except (requests.ConnectionError, ssl.SSLError) as generic_req_exc:
-        _raise_or_fail(msg="Unable to connect to vCenter or ESXi API at %s on TCP/%s: %s" % (hostname, port, generic_req_exc))
+        _raise_or_fail(
+            msg="Unable to connect to vCenter or ESXi API at %s on TCP/%s: %s" % (hostname, port, generic_req_exc))
     except vmodl.fault.InvalidRequest as invalid_request:
         # Request is malformed
         msg = "Failed to get a response from server %s:%s " % (hostname, port)
@@ -218,3 +223,62 @@ class PyVmomi(object):
             return True
         elif api_type == 'HostAgent':
             return False
+
+    def get_obj(self, vimtype, name, return_all=False):
+        """
+        Get any vsphere object associated with a given text name and vim type.
+        Args:
+            vimtype: The type of object to search for
+            name: The name or the ID of the object to search for
+            return_all: If true, return all the objects that were found.
+                        Useful when names must be unique
+        Returns:
+            list(object) or list() if no matches are found
+        """
+        obj = list()
+        container = self.content.viewManager.CreateContainerView(
+            self.content.rootFolder, vimtype, True)
+
+        for c in container.view:
+            if name in [c.name, c._GetMoId()]:
+                if return_all is False:
+                    return c
+                else:
+                    obj.append(c)
+
+        if len(obj) > 0:
+            return obj
+        else:
+            # for backwards-compat
+            return None
+
+    def get_standard_portgroup(self, portgroup):
+        """
+        Get a portgroup from type 'STANDARD_PORTGROUP'
+        Args:
+            portgroup: The name or the ID of the portgroup
+        Returns:
+            The standard portgroup object
+        """
+        return self.get_obj([vim.Network], portgroup)
+
+    def get_dvs_portgroup(self, portgroup):
+        """
+        Get a portgroup from type 'DISTRIBUTED_PORTGROUP'
+        Args:
+            portgroup: The name or the ID of the portgroup
+        Returns:
+            The distributed portgroup object
+        """
+        return self.get_obj([vim.dvs.DistributedVirtualPortgroup], portgroup)
+
+    def get_datacenter_detailed(self, name):
+        """
+        Get detailed information about a datacenter
+        Args:
+            name: The name or the ID of the datacenter
+        Returns:
+            The datacenter object
+
+        """
+        return self.get_obj([vim.Datacenter], name)
