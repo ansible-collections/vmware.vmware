@@ -1,0 +1,32 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+    - community.general
+  tasks:
+
+    - name: Import eco-vcenter credentials
+      ansible.builtin.include_vars:
+        file: ../../integration_config.yml
+      tags: eco-vcenter-ci
+
+    - name: Import simulator vars
+      ansible.builtin.include_vars:
+        file: vars.yml
+      tags: integration-ci
+
+    - name: Rest
+      ansible.builtin.import_role:
+        name: prepare_rest
+      tags: integration-ci
+
+    - name: Vcsim
+      ansible.builtin.import_role:
+        name: prepare_vcsim
+      tags: integration-ci
+
+    - name: Call VM portgroup information target
+      ansible.builtin.import_role:
+        name: vmware_vm_portgroup_info
+      tags:
+        - integration-ci
+        - eco-vcenter-ci

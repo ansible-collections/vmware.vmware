@@ -158,8 +158,7 @@ def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=Non
         _raise_or_fail(msg="%s as %s: %s" % (msg, username, invalid_login.msg) + msg_suffix)
     except vim.fault.NoPermission as no_permission:
         _raise_or_fail(msg="User %s does not have required permission"
-                           " to log on to vCenter or ESXi API at %s:%s : %s" % (
-                           username, hostname, port, no_permission.msg))
+                           " to log on to vCenter or ESXi API at %s:%s : %s" % (username, hostname, port, no_permission.msg))
     except (requests.ConnectionError, ssl.SSLError) as generic_req_exc:
         _raise_or_fail(
             msg="Unable to connect to vCenter or ESXi API at %s on TCP/%s: %s" % (hostname, port, generic_req_exc))

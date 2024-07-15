@@ -21,15 +21,14 @@ author:
 requirements:
     - vSphere Automation SDK
 options:
-  vm_names:
-    description:
-    - VM names
-    required: true
-    type: list
-    elements: str
+    vm_names:
+        description:
+            - VM names for retrieving the information about portgroup
+        required: true
+        type: list
+        elements: str
 extends_documentation_fragment:
-- vmware.vmware.vmware_rest_client.documentation
-
+    - vmware.vmware.vmware_rest_client.documentation
 '''
 
 EXAMPLES = r'''
@@ -51,17 +50,16 @@ vm_portgroup_info:
     type: dict
     sample: {
         "vm1": [
-            {
-                "name": "Network Name",
-                "nic_mac_address": "00:00:00:00:00:00",
-                "nic_mac_type": "ASSIGNED",
-                "nic_type": "VMXNET3",
-                "port_id": "network-port-id",
-                "type": "STANDARD_PORTGROUP",
-                "vlan_id": "0",
-                "vswitch_name": "vSwitch0"
-            }]
-        }
+        {
+            "name": "Network Name",
+            "nic_mac_address": "00:00:00:00:00:00",
+            "nic_mac_type": "ASSIGNED",
+            "nic_type": "VMXNET3",
+            "port_id": "network-port-id",
+            "type": "STANDARD_PORTGROUP",
+            "vlan_id": "0",
+            "vswitch_name": "vSwitch0"
+        }]
     }
 '''
 
@@ -135,7 +133,7 @@ def get_vlan_info(vlan_obj):
             if vli.start == vli.end:
                 vlan_id_list.append(str(vli.start))
             else:
-                vlan_id_list.append(str(vli.start) + "-" + str(vli.end))
+                vlan_id_list.append('{}-{}'.format(vli.start, vli.end))
         return dict(trunk=True, pvlan=False, vlan_id=vlan_id_list)
     elif isinstance(vlan_obj, vim.dvs.VmwareDistributedVirtualSwitch.PvlanSpec):
         return dict(trunk=False, pvlan=True, vlan_id=str(vlan_obj.pvlanId))
@@ -150,11 +148,8 @@ def get_dvs_port_allocation(config_type):
         return 'static'
 
 
-def get_dvs_autoExpand(config_autoExpand):
-    if config_autoExpand is True:
-        return 'elastic'
-    else:
-        return 'fixed'
+def get_dvs_autoExpand(config_autoexpand):
+    return 'elastic' if config_autoexpand else 'fixed'
 
 
 class PortgroupInfo(PyVmomi):
@@ -164,7 +159,6 @@ class PortgroupInfo(PyVmomi):
         self.params = module.params
         self.vmware_client = VmwareRestClient(module)
         self.vms = self.params['vm_names']
-
 
     def get_dvs_portgroup_detailed(self, pg_id):
         dvs_pg = self.get_dvs_portgroup(pg_id)
@@ -227,18 +221,15 @@ class PortgroupInfo(PyVmomi):
         return vms_nics
 
     def get_vm_detailed(self, vm_name):
-        vm_id = self.vmware_client.get_vm_by_name(vm_name)
+        vm_id = self.vmware_client.get_vm_obj_by_name(vm_name)
         return self.vmware_client.api_client.vcenter.VM.get(vm=vm_id)
-
-    def _vvars(self, vmware_obj):
-        return {k: str(v) for k, v in vars(vmware_obj).items() if not k.startswith('_')}
 
 
 def main():
     argument_spec = VmwareRestClient.vmware_client_argument_spec()
     argument_spec.update(
         dict(
-            vm_names=dict(type='list', elements='str')
+            vm_names=dict(type='list', elements='str', required=True)
         )
     )
     module = AnsibleModule(
