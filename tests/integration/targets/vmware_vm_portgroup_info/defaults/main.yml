@@ -1,0 +1,22 @@
+run_on_simulator: false
+
+test_folder: "{{ tiny_prefix }}-folder"
+
+vm_name: "{{ tiny_prefix }}-vm"
+vm_cluster: "{{ vcenter_cluster_name }}"
+vm_datacenter: "{{ vcenter_datacenter }}"
+vm_folder: "/{{ vcenter_datacenter }}/vm/{{ test_folder }}"
+vm_guest_id: "rhel8_64Guest"
+vm_disk:
+  - size_gb: 10
+    type: thin
+    autoselect_datastore: true
+vm_hardware:
+  memory_mb: 2000
+  num_cpus: 2
+  boot_firmware: efi
+vm_networks:
+  - name: "VM Network"
+    device_type: "vmxnet3"
+    mac: "00:50:56:bd:d2:9e"
+    type: "dhcp"
