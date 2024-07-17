@@ -3,7 +3,6 @@
     - name: Import common vars
       ansible.builtin.include_vars:
         file: ../group_vars.yml
-      when: not run_on_simulator
 
     - name: "Test setup: Create VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
@@ -15,7 +14,6 @@
         folder_name: "{{ test_folder }}"
         folder_type: vm
         state: present
-      when: not run_on_simulator
 
     - name: "Test setup: Create VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
@@ -33,7 +31,6 @@
         hardware: "{{ vm_hardware }}"
         networks: "{{ vm_networks }}"
       register: my_vm
-      when: not run_on_simulator
 
     - name: VM portgroup information
       vmware.vmware.vm_portgroup_info:
@@ -54,16 +51,7 @@
       ansible.builtin.assert:
         that:
           - __res.changed == False
-          - __res.vm_portgroup_info | length == 1
-          - __res.vm_portgroup_info['vm1'] | length == 1
-      when: run_on_simulator
-
-    - name: Assert values
-      ansible.builtin.assert:
-        that:
-          - __res.changed == False
           - __res.vm_portgroup_info[vm_name] | length == 1
-      when: not run_on_simulator
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
@@ -78,7 +66,6 @@
         state: absent
         force: true
         name: "{{ vm_name }}"
-      when: not run_on_simulator
 
     - name: "Test teardown: Remove VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
@@ -90,4 +77,3 @@
         folder_name: "{{ test_folder }}"
         folder_type: vm
         state: absent
-      when: not run_on_simulator
