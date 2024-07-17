@@ -41,6 +41,7 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
         vm_names:
           - "{{ vm_name }}"
       register: __res

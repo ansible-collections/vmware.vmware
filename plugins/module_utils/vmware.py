@@ -223,7 +223,7 @@ class PyVmomi(object):
         elif api_type == 'HostAgent':
             return False
 
-    def get_obj(self, vimtype, name, return_all=False):
+    def get_objs_by_name_or_moid(self, vimtype, name, return_all=False):
         """
         Get any vsphere object associated with a given text name and vim type.
         Args:
@@ -259,7 +259,7 @@ class PyVmomi(object):
         Returns:
             The standard portgroup object
         """
-        return self.get_obj([vim.Network], portgroup)
+        return self.get_objs_by_name_or_moid([vim.Network], portgroup)
 
     def get_dvs_portgroup(self, portgroup):
         """
@@ -269,7 +269,7 @@ class PyVmomi(object):
         Returns:
             The distributed portgroup object
         """
-        return self.get_obj([vim.dvs.DistributedVirtualPortgroup], portgroup)
+        return self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], portgroup)
 
     def get_datacenter_detailed(self, name):
         """
@@ -280,4 +280,4 @@ class PyVmomi(object):
             The datacenter object
 
         """
-        return self.get_obj([vim.Datacenter], name)
+        return self.get_objs_by_name_or_moid([vim.Datacenter], name)

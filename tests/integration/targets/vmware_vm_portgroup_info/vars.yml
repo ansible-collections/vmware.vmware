@@ -1,7 +1,8 @@
 vcenter_hostname: "127.0.0.1"
 vcenter_username: "user"
 vcenter_password: "pass"
-vcenter_port: 8989
+vcenter_port: 1080
+
 run_on_simulator: true
 mock_file: "vmware_vm_portgroup_info"
-vm_name: "vm-test"
+vm_name: "DC0_C0_RP0_VM0"
