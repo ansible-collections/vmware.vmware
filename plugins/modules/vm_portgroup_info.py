@@ -89,10 +89,11 @@ class PortgroupInfo(PyVmomi):
               'vlan_info': vmware_network.get_vlan_info(dvs_pg.config.defaultPortConfig.vlan)
               }
 
-        if dvs_pg.config.defaultPortConfig.uplinkTeamingPolicy and \
-                dvs_pg.config.defaultPortConfig.uplinkTeamingPolicy.uplinkPortOrder:
-            pg['active_uplinks'] = dvs_pg.config.defaultPortConfig.uplinkTeamingPolicy.uplinkPortOrder.activeUplinkPort
-            pg['standby_uplinks'] = dvs_pg.config.defaultPortConfig.uplinkTeamingPolicy.uplinkPortOrder.standbyUplinkPort
+        port_config = dvs_pg.config.defaultPortConfig
+        if port_config.uplinkTeamingPolicy and \
+                port_config.uplinkTeamingPolicy.uplinkPortOrder:
+            pg['active_uplinks'] = port_config.uplinkTeamingPolicy.uplinkPortOrder.activeUplinkPort
+            pg['standby_uplinks'] = port_config.uplinkTeamingPolicy.uplinkPortOrder.standbyUplinkPort
 
         return pg
 

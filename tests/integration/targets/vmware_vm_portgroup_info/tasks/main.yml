@@ -52,6 +52,10 @@
         that:
           - __res.changed == False
           - __res.vm_portgroup_info[vm_name] | length == 1
+          - __res.vm_portgroup_info[vm_name][0]['name'] == "VM Network"
+          - __res.vm_portgroup_info[vm_name][0]['nic_mac_address'] == "00:50:56:bd:d2:9e"
+          - __res.vm_portgroup_info[vm_name][0]['nic_type'] == "VMXNET3"
+          - __res.vm_portgroup_info[vm_name][0]['type'] == "STANDARD_PORTGROUP"
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
