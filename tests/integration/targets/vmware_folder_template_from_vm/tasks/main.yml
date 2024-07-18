@@ -1,0 +1,104 @@
+---
+- name: Test On Simulator
+  when: run_on_simulator
+  block:
+    - name: "Test setup: Create Folder"
+      community.vmware.vcenter_folder:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder_name: "{{ template_folder }}"
+        folder_type: vm
+        state: present
+
+    - name: "Test setup: Power Off VM guest {{ vm_name }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        state: poweredoff
+        name: "{{ vm_name }}"
+
+    - name: Create template from vm in vcenter folder
+      vmware.vmware.folder_template_from_vm:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        template_folder: "{{ template_folder }}"
+        vm_name: "{{ vm_name }}"
+        template_name: "{{ template_name }}"
+      register: __res
+
+- name: Test On VCenter
+  when: not run_on_simulator
+  block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+    - name: "Test setup: Create VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ template_folder }}"
+        state: present
+        name: "{{ vm_name }}"
+        disk: "{{ vm_disk }}"
+        guest_id: "{{ vm_guest_id }}"
+        hardware: "{{ vm_hardware }}"
+
+    - name: Create template from vm in vcenter folder
+      vmware.vmware.folder_template_from_vm:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        template_folder: "{{ template_folder }}"
+        vm_name: "{{ vm_name }}"
+        template_name: "{{ template_name }}"
+      register: __res
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ vm_name }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ template_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm_name }}"
+
+    - name: "Test teardown: Destroy VM template {{ template_name }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ template_folder }}"
+        state: absent
+        force: true
+        name: "{{ template_name }}"
