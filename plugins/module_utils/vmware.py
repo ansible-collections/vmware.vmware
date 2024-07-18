@@ -58,6 +58,12 @@ def vmware_argument_spec():
                       required=False,
                       no_log=True,
                       fallback=(env_fallback, ['VMWARE_PASSWORD'])),
+        cluster=dict(type='str',
+                     aliases=['cluster_name'],
+                     required=False),
+        datacenter=dict(type='str',
+                        aliases=['datacenter_name'],
+                        required=False),
         port=dict(type='int',
                   default=443,
                   fallback=(env_fallback, ['VMWARE_PORT'])),
@@ -225,7 +231,9 @@ class PyVmomi(object):
 
     def get_objs_by_name_or_moid(self, vimtype, name, return_all=False):
         """
-        Get any vsphere object associated with a given text name and vim type.
+        Get any vsphere objects associated with a given text name or MOID and vim type.
+        Different objects have different unique-ness requirements for the name parameter, so
+        you may get one or more objects back. The MOID should always be unique
         Args:
             vimtype: The type of object to search for
             name: The name or the ID of the object to search for
@@ -281,3 +289,117 @@ class PyVmomi(object):
 
         """
         return self.get_objs_by_name_or_moid([vim.Datacenter], name)
+
+    def get_vm_using_params(
+            self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
+            name_match_param='name_match', use_instance_uuid_param='use_instance_uuid'):
+        """
+            TODO
+            Get the vms matching the common module params related to vm identification: name, uuid, or moid. Since
+            MOID and UUID are unique identifiers, they are tried first. If they are not set, a search by name is tried
+            which may give one or more vms.
+            This also supports the 'name_match' parameter and the 'use_instance_uuid' parameters. The VM identification
+            parameter keys can be changed if your module uses different keys, like vm_name instead of just name
+            Args:
+                name_param: Set the prameter key that corredsponds to the VM name
+                uuid_param: Set the prameter key that corredsponds to the VM UUID
+                moid_param: Set the prameter key that corredsponds to the VM MOID
+                name_match_param: Set the prameter key that corredsponds to the name_match option
+                use_instance_uuid_param: Set the prameter key that corredsponds use_instance_uuid option
+                fail_on_missing: If true, an error will be thrown if no VMs are found
+            Returns:
+                list(vm), or None if no matches were found
+        """
+        if self.params.get(moid_param):
+            _search_type, _search_id, _search_value = 'moid', moid_param, self.params.get(moid_param)
+        elif self.params.get(uuid_param):
+            _search_type, _search_id, _search_value = 'uuid', uuid_param, self.params.get(uuid_param)
+        elif self.params.get(name_param):
+            _search_type, _search_id, _search_value = 'name', name_param, self.params.get(name_param)
+        else:
+            self.module.fail_json("Could not find any supported VM identifier params (name, uuid, or moid)")
+
+        if _search_type == 'uuid':
+            _vm = self.si.content.searchIndex.FindByUuid(
+                instanceUuid=self.params.get(use_instance_uuid_param, True),
+                uuid=_search_value,
+                vmSearch=True
+            )
+            vms = [_vm] if _vm else None
+        else:
+            vms = self.get_objs_by_name_or_moid([vim.VirtualMachine], _search_value, return_all=True)
+
+        if vms and _search_type == 'name' and self.params.get(name_match_param):
+            if self.params.get(name_match_param) == 'first':
+                return [vms[0]]
+            elif self.params.get(name_match_param) == 'last':
+                return [vms[-1]]
+            else:
+                self.module.fail_json("Unrecognized name_match option '%s' " % self.params.get(name_match_param))
+
+        if not vms and fail_on_missing:
+            self.module.fail_json("Unable to find VM with %s %s" % _search_id, _search_value)
+
+        return vms
+
+    def get_folder_by_name(self, folder_name, fail_on_missing=False):
+        """
+            Get all folders with the given name. Names are not unique
+            in a given cluster, so multiple folder objects can be returned
+            Args:
+                folder_name: Name of the folder to search for
+                fail_on_missing: If true, an error will be thrown if no folders are found
+            Returns:
+                list(folder object) or None
+        """
+        folder = self.get_objs_by_name_or_moid([vim.Folder], folder_name, return_all=True)
+        if not folder and fail_on_missing:
+            self.module.fail_json("Unable to find folder with name %s" % folder_name)
+        return folder
+
+    def get_folder_by_absolute_path(self, folder_path, fail_on_missing=False):
+        """
+            Get a folder with the given path. Paths are unique when they are absolute so only
+            one folder can be returned at most. An absolute path might look like
+            'Datacenter Name/vm/my/folder/structure'
+            Args:
+                folder_path: The absolute path to a folder to search for
+                fail_on_missing: If true, an error will be thrown if no folders are found
+            Returns:
+                folder object or None
+        """
+        folder = self.si.content.searchIndex.FindByInventoryPath(folder_path)
+
+        if not folder and fail_on_missing:
+            self.module.fail_json("Unable to find folder with absolute path %s" % folder_path)
+        return folder
+
+    def get_datastore_by_name(self, ds_name, fail_on_missing=False):
+        """
+            Get the datastore matching the given name. Datastore names must be unique
+            in a given cluster, so only one object is returned at most.
+            Args:
+                ds_name: Name of the datastore to search for
+                fail_on_missing: If true, an error will be thrown if no datastores are found
+            Returns:
+                datastore object or None
+        """
+        ds = self.get_objs_by_name_or_moid([vim.Datastore], ds_name)
+        if not ds and fail_on_missing:
+            self.module.fail_json("Unable to find datastore with name %s" % ds_name)
+        return ds
+
+    def get_resource_pool_by_name(self, pool_name, fail_on_missing=False):
+        """
+            Get the resource pool matching the given name. Pool names must be unique
+            in a given cluster, so only one object is returned at most.
+            Args:
+                pool_name: Name of the pool to search for
+                fail_on_missing: If true, an error will be thrown if no pools are found
+            Returns:
+                resource pool object or None
+        """
+        pool = self.get_objs_by_name_or_moid([vim.ResourcePool], pool_name)
+        if not pool and fail_on_missing:
+            self.module.fail_json("Unable to find resource pool with name %s" % pool_name)
+        return pool
