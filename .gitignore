@@ -56,6 +56,7 @@ coverage.xml
 
 # Integration tests
 tests/integration/integration_config.yml
+tests/integration/inventory
 
 # Translations
 *.mo
