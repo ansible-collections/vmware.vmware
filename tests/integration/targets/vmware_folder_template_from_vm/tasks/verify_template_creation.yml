@@ -1,0 +1,19 @@
+---
+- name: Get info on templates
+  community.vmware.vmware_guest_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "{{ item }}"
+    port: "{{ vcenter_port }}"
+    name: "{{ template_name }}"
+  register: template_info
+
+- name: Check template
+  ansible.builtin.assert:
+    that:
+      - template_info.instance.hw_folder == "/" + vcenter_datacenter + "/vm/" + item
+      - template_info.instance.hw_is_template == true
+      - template_info.instance.hw_name == template_name
