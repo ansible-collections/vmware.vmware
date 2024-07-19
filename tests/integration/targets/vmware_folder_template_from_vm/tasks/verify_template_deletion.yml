@@ -1,0 +1,18 @@
+---
+- name: Get info on templates
+  community.vmware.vmware_guest_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "{{ item }}"
+    port: "{{ vcenter_port }}"
+    name: "{{ template_name }}"
+  register: template_info
+  ignore_errors: true
+
+- name: Fail the task if the template still exists
+  ansible.builtin.fail:
+    msg: "Template {{ template_name }} still exists in folder {{ item }}"
+  when: not template_info.failed

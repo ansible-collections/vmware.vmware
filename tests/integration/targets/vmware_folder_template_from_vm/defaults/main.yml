@@ -1,6 +1,7 @@
 ---
 run_on_simulator: false
-template_folder: e2e-qe
+vm_folder: e2e-qe
+template_folder: "{{ tiny_prefix }}-folder"
 vm_name: "{{ tiny_prefix }}_folder_template_from_vm_test"
 vm_name_match: first
 template_name: "{{ vm_name }}_template"
