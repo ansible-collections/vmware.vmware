@@ -27,10 +27,56 @@ options:
     description:
       - The password of the user to be used to connect to guest vm and fetch environment info.
     type: str
-  guest_name:
+  name:
     description:
-      - The name of the guest virtual machine to obtain info from.
+      - The name of the vm to gather info for
+      - Only one of name, moid, uuid is allowed
     type: str
+    required: False
+    aliases: [guest_name]
+  uuid:
+    description:
+      - The UUID of the vm to gather info for
+      - Only one of name, moid, uuid is allowed
+    type: str
+    required: False
+  moid:
+    description:
+      - The MOID of the vm to gather info for
+      - Only one of name, moid, uuid is allowed
+    type: str
+    required: False
+  use_instance_uuid:
+    description:
+      - If true, search by instance UUID instead of BIOS UUID.
+      - BIOS UUID may not be unique and may cause errors.
+    type: bool
+    required: False
+    default: True
+  name_match:
+    description:
+      - If using name and multiple VMs have the same name, specify which VM should be selected
+    type: str
+    required: False
+    choices: ['first', 'last']
+  gather_tags:
+    description:
+      - If true, gather any tags attached to the vm(s)
+    type: bool
+    default: false
+    required: false
+  schema:
+    description:
+      - The type of info to gather from the vms
+    choices: [summary, vsphere]
+    default: summary
+    type: str
+  properties:
+    description:
+      - If the schema is 'vsphere', gather these specific properties only
+    type: list
+    elements: str
+
 attributes:
   check_mode:
     description: The check_mode support.
@@ -50,44 +96,106 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-guest:
+guests:
     description:
         - Information about guest.
     returned: On success
     type: list
-    sample: [{
-        "env": {},
-        "family": "LINUX",
-        "full_name": {
-            "args": "[]",
-            "default_message": "Red Hat Enterprise Linux 9 (64-bit)",
-            "id": "vmsg.guestos.rhel9_64Guest.label",
-            "localized": "None",
-            "params": "None"
-        },
-        "host_name": "localhost.localdomain",
-        "ip_address": "10.185.246.15",
-        "name": "RHEL_9_64"
-    }]
+    sample: [
+        {
+          "advanced_settings": {
+              "govcsim": "TRUE"
+          },
+          "annotation": null,
+          "current_snapshot": null,
+          "customvalues": {},
+          "env": {},
+          "guest_consolidation_needed": false,
+          "guest_question": null,
+          "guest_tools_status": "guestToolsNotRunning",
+          "guest_tools_version": "0",
+          "hw_cluster": null,
+          "hw_cores_per_socket": 1,
+          "hw_datastores": [
+              "LocalDS_0"
+          ],
+          "hw_esxi_host": "DC0_H0",
+          "hw_eth0": {
+              "addresstype": "generated",
+              "ipaddresses": [],
+              "label": "ethernet-0",
+              "macaddress": "00:0c:29:36:63:62",
+              "macaddress_dash": "00-0c-29-36-63-62",
+              "portgroup_key": "dvportgroup-13",
+              "portgroup_portkey": null,
+              "summary": "DVSwitch: fea97929-4b2d-5972-b146-930c6d0b4014"
+          },
+          "hw_files": [
+              "[LocalDS_0] DC0_H0_VM0/DC0_H0_VM0.vmx",
+              "[LocalDS_0] DC0_H0_VM0/DC0_H0_VM0.nvram",
+              "[LocalDS_0] DC0_H0_VM0/vmware.log",
+              "[LocalDS_0] DC0_H0_VM0/disk1.vmdk"
+          ],
+          "hw_folder": "DC0/vm",
+          "hw_guest_full_name": null,
+          "hw_guest_ha_state": null,
+          "hw_guest_id": "otherGuest",
+          "hw_interfaces": [
+              "eth0"
+          ],
+          "hw_is_template": false,
+          "hw_memtotal_mb": 32,
+          "hw_name": "DC0_H0_VM0",
+          "hw_power_status": "poweredOn",
+          "hw_processor_count": 1,
+          "hw_product_uuid": "265104de-1472-547c-b873-6dc7883fb6cb",
+          "hw_version": "vmx-13",
+          "identity": {},
+          "instance_uuid": "b4689bed-97f0-5bcd-8a4c-07477cc8f06f",
+          "ipv4": null,
+          "ipv6": null,
+          "module_hw": true,
+          "moid": "vm-63",
+          "snapshots": [],
+          "tags": [],
+          "tpm_info": {
+              "provider_id": null,
+              "tpm_present": null
+          },
+          "vimref": "vim.VirtualMachine:vm-63",
+          "vnc": {}
+        }
+      ]
 '''
 
-from collections import defaultdict
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils.vmware_facts import (
+    gather_vm_facts,
+    vmware_obj_to_json,
+    extract_object_attributes_to_dict
+)
 
 
-class VmwareGuestInfo(PyVmomi):
+class VmwareGuestInfo(VmwareRestClient):
     def __init__(self, module):
-        self.module = module
-        self.params = module.params
-        self.vmware_client = VmwareRestClient(module)
+        super(VmwareGuestInfo, self).__init__(module)
+        self.pyvmomi = PyVmomi(module)
+        self.vm_svc = self.api_client.vcenter.vm
 
     def _get_env(self, vm):
-        guest = self.vmware_client.api_client.vcenter.vm.guest
+        """
+        Gets the guest env facts from a vm and returns them as a dict.
+        This requires the VM is running, has vmware tools installed, and the user
+        provided a username and password to the VM via params
+        """
+        if not self.params.get('guest_username'):
+            return {}
+
         try:
-            return guest.Environment.list(
+            return self.vm_svc.guest.Environment.list(
                 vm=vm,
                 credentials={
                     'type': 'USERNAME_PASSWORD',
@@ -101,58 +209,82 @@ class VmwareGuestInfo(PyVmomi):
             return {}
 
     def _get_identity(self, vm):
-        r = defaultdict(dict)
-        guest = self.vmware_client.api_client.vcenter.vm.guest
+        """
+        Gets the guest indentity facts (guest os name, guest family, etc) about a VM
+        """
+        guest_svc = self.vm_svc.guest
         try:
-            identity = guest.Identity.get(vm=vm)
-        except Exception:
-            return None
+            identity = guest_svc.Identity.get(vm=str(vm._GetMoId()))
 
-        self._vvars(identity, r)
-        return r
+        except Exception as e:
+            return {}
 
-    def get_guest_info(self):
-        guests = []
+        return extract_object_attributes_to_dict(identity)
 
-        if self.params.get('guest_name'):
-            matching_vms = self.vmware_client.get_vm_by_name(
-                name=self.params.get('guest_name')
-            )
-            try:
-                _ = iter(matching_vms)  # pylint: disable=disallowed-name
-                vms = matching_vms
-            except TypeError:
-                vms = [] if not matching_vms else [matching_vms]
+    def gather_info_for_guests(self):
+        all_guest_info = []
+        for guest in self.get_guests():
+            guest_info = {}
+            if self.params['schema'] == 'summary':
+                guest_info = gather_vm_facts(self.pyvmomi.content, guest)
+            else:
+                guest_info = vmware_obj_to_json(guest, self.params['properties'])
+
+            guest_info['identity'] = self._get_identity(guest)
+            # legacy output
+            guest_info.update(guest_info['identity'])
+
+            guest_info['tags'] = self._get_tags(guest)
+            guest_info['env'] = self._get_env(guest)
+
+            all_guest_info += [guest_info]
+
+        return all_guest_info
+
+    def get_guests(self):
+        """
+        Uses the UUID, MOID, or name provided to find the source VM for the template. Returns an error if using the name,
+        multiple matches are found, and the user did not provide a name_match strategy.
+        """
+        if self.params.get('name') or self.params.get('uuid') or self.params.get('moid'):
+            vm = self.pyvmomi.get_vm_using_params(fail_on_missing=False)
         else:
-            vms = self.vmware_client.api_client.vcenter.VM.list()
+            vm = self.pyvmomi.get_all_vms()
 
-        for vm in vms:
-            r = self._get_identity(str(vm.vm))
-            if r is None:
-                continue
-            if self.params.get('guest_username') and self.params.get('guest_password'):
-                r['env'] = self._get_env(str(vm.vm))
+        return vm if vm else []
 
-            guests.append(r)
+    def _get_tags(self, vm):
+        """
+        Gets the tags on a VM. Tags are formated as a list of dictionaries corresponding to each tag
+        """
+        output = []
+        if not self.params.get('gather_tags'):
+            return output
 
-        return guests
+        tags = self.get_tags_by_vm_moid(vm._moId)
+        for tag in tags:
+            output.append(self.format_tag_identity_as_dict(tag))
 
-    def _vvars(self, vmware_obj, r):
-        for k, v in vars(vmware_obj).items():
-            if not k.startswith('_'):
-                if hasattr(v, '__dict__') and not isinstance(v, str):
-                    self._vvars(v, r[k])
-                else:
-                    r[k] = str(v)
+        return output
 
 
 def main():
     argument_spec = VmwareRestClient.vmware_client_argument_spec()
     argument_spec.update(
         dict(
-            guest_username=dict(type='str'),
-            guest_password=dict(type='str', no_log=True),
-            guest_name=dict(type='str'),
+            name=dict(type='str', aliases=['guest_name']),
+            name_match=dict(type='str', choices=['first', 'last'], default=None),
+            uuid=dict(type='str'),
+            use_instance_uuid=dict(type='bool', default=True),
+            moid=dict(type='str'),
+
+            gather_tags=dict(type='bool', default=False),
+
+            schema=dict(type='str', choices=['summary', 'vsphere'], default='summary'),
+            properties=dict(type='list', elements='str'),
+
+            guest_username=dict(type='str', required=False),
+            guest_password=dict(type='str', no_log=True, required=False),
         )
     )
     module = AnsibleModule(
@@ -161,10 +293,14 @@ def main():
         required_together=[
             ('guest_username', 'guest_password'),
         ],
+        mutually_exclusive=[['name', 'uuid', 'moid']]
     )
 
+    if module.params['schema'] != 'vsphere' and module.params.get('properties'):
+        module.fail_json(msg="The option 'properties' is only valid when the schema is 'vsphere'")
+
     vmware_appliance_mgr = VmwareGuestInfo(module)
-    guests = vmware_appliance_mgr.get_guest_info()
+    guests = vmware_appliance_mgr.gather_info_for_guests()
     module.exit_json(changed=False, guests=guests)
 
 

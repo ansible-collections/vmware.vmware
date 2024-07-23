@@ -23,6 +23,7 @@ except ImportError:
 
 VSPHERE_IMP_ERR = None
 try:
+    from com.vmware.vapi.std_client import DynamicID
     from vmware.vapi.vsphere.client import create_vsphere_client
     from com.vmware.vapi.std.errors_client import Unauthorized
     from com.vmware.content.library_client import Item
@@ -426,3 +427,54 @@ class VmwareRestClient(object):
             if not self.module.check_mode:
                 set_fn(generic_param)
         self.info[param] = generic_param
+
+    def get_tags_by_vm_moid(self, vm_moid):
+        """
+        Get a list of tag objects attached to a virtual machine
+        Args:
+            vm_mid: the VM MOID to use to gather tags
+
+        Returns:
+            List of tag object associated with the given virtual machine
+        """
+        dobj = DynamicID(type='VirtualMachine', id=vm_moid)
+        return self.get_tags_for_dynamic_id_obj(dobj=dobj)
+
+    def format_tag_identity_as_dict(self, tag_obj):
+        """
+        Takes a tag object and outputs a dictionary with identifying details about the tag,
+        including name, category, and ID
+        Args:
+            tag: VMWare Tag Object
+        Returns:
+            dict
+        """
+        category_service = self.api_client.tagging.Category
+        return {
+            'id': tag_obj.id,
+            'category_name': category_service.get(tag_obj.category_id).name,
+            'name': tag_obj.name,
+            'description': tag_obj.description,
+            'category_id': tag_obj.category_id,
+        }
+
+    def get_tags_for_dynamic_id_obj(self, dobj):
+        """
+        Return tag objects associated with an DynamicID object.
+        Args:
+            dobj: Dynamic object
+        Returns:
+            List of tag objects associated with the given object
+        """
+        tags = []
+        if not dobj:
+            return tags
+
+        tag_service = self.api_client.tagging.Tag
+        tag_assoc_svc = self.api_client.tagging.TagAssociation
+
+        tag_ids = tag_assoc_svc.list_attached_tags(dobj)
+        for tag_id in tag_ids:
+            tags.append(tag_service.get(tag_id))
+
+        return tags

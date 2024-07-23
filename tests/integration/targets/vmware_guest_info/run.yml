@@ -15,14 +15,9 @@
         file: vars.yml
       tags: integration-ci
 
-    - name: Rest
+    - name: Setup VCenter simulator
       ansible.builtin.import_role:
-        name: prepare_rest
-      tags: integration-ci
-
-    - name: Vcsim
-      ansible.builtin.import_role:
-        name: prepare_vcsim
+        name: prepare_combined_vcenter_simulator
       tags: integration-ci
 
     - name: Import vmware_guest_info role

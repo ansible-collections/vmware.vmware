@@ -1,0 +1,41 @@
+---
+- name: Create a container test network
+  containers.podman.podman_network:
+    name: "{{ prepare_combined_vcenter_simulator_network }}"
+
+- name: Start VCenter REST Mock
+  ansible.builtin.import_role:
+    name: prepare_rest
+  vars:
+    prepare_rest_network: "{{ prepare_combined_vcenter_simulator_network }}"
+  tags: integration-ci
+
+- name: Vcsim
+  ansible.builtin.import_role:
+    name: prepare_vcsim
+  vars:
+    prepare_vcsim_network: "{{ prepare_combined_vcenter_simulator_network }}"
+  tags: integration-ci
+
+- name: Run API gateway container
+  containers.podman.podman_container:
+    name: combined-vcenter-gateway
+    image: docker.io/library/nginx:latest
+    state: started
+    recreate: yes
+    expose:
+      - 443
+    ports:
+      - 9000:443
+    network: "{{ prepare_combined_vcenter_simulator_network }}"
+    volumes:
+      - "{{ role_path }}/files/default.conf:/etc/nginx/conf.d/default.conf:Z"
+      - "{{ role_path }}/files/entrypoint.sh:/entrypoint.sh:Z"
+    command:
+      - /bin/bash
+      - -c
+      - chmod +x /entrypoint.sh && /entrypoint.sh
+
+- name: Pause
+  ansible.builtin.pause:
+    seconds: 10

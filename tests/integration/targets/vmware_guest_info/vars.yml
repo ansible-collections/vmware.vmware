@@ -1,8 +1,8 @@
 vcenter_hostname: "127.0.0.1"
 vcenter_username: "user"
 vcenter_password: "pass"
-vcenter_port: 1080
+vcenter_port: 9000
 
 run_on_simulator: true
 mock_file: "vmware_guest_info"
-guests_length: 0
+vm_name: DC0_H0_VM0
