@@ -67,3 +67,25 @@ def format_folder_path_as_datastore_fq_path(folder_path, datacenter_name):
     Eg: rest/of/path -> datacenter name/datastore/rest/of/path
     """
     return __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='datastore')
+
+
+def get_folder_path_of_vm(vm):
+    """
+    Find the path of virtual machine.
+    Args:
+        content: VMware content object
+        vm_name: virtual machine managed object
+
+    Returns: Folder of virtual machine if exists, else None
+
+    """
+    _folder = vm.parent
+    folder_path = [_folder.name]
+    while getattr(_folder, 'parent', None) is not None:
+        _folder = _folder.parent
+        if _folder.name == 'Datacenters':
+            break
+        folder_path += [_folder.name]
+
+    folder_path.reverse()
+    return '/'.join(folder_path)

@@ -16,7 +16,6 @@ import atexit
 import ssl
 import traceback
 
-
 REQUESTS_IMP_ERR = None
 try:
     # requests is required for exception handling of the ConnectionError
@@ -294,7 +293,6 @@ class PyVmomi(object):
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
             name_match_param='name_match', use_instance_uuid_param='use_instance_uuid'):
         """
-            TODO
             Get the vms matching the common module params related to vm identification: name, uuid, or moid. Since
             MOID and UUID are unique identifiers, they are tried first. If they are not set, a search by name is tried
             which may give one or more vms.
@@ -317,7 +315,10 @@ class PyVmomi(object):
         elif self.params.get(name_param):
             _search_type, _search_id, _search_value = 'name', name_param, self.params.get(name_param)
         else:
-            self.module.fail_json("Could not find any supported VM identifier params (name, uuid, or moid)")
+            if fail_on_missing:
+                self.module.fail_json("Could not find any supported VM identifier params (name, uuid, or moid)")
+            else:
+                return None
 
         if _search_type == 'uuid':
             _vm = self.si.content.searchIndex.FindByUuid(
@@ -403,3 +404,22 @@ class PyVmomi(object):
         if not pool and fail_on_missing:
             self.module.fail_json("Unable to find resource pool with name %s" % pool_name)
         return pool
+
+    def get_all_objs_by_type(self, vimtype, folder=None, recurse=True):
+        if not folder:
+            folder = self.content.rootFolder
+
+        obj = {}
+        container = self.content.viewManager.CreateContainerView(folder, vimtype, recurse)
+        for managed_object_ref in container.view:
+            try:
+                obj.update({managed_object_ref: managed_object_ref.name})
+            except vmodl.fault.ManagedObjectNotFound:
+                pass
+        return obj
+
+    def get_all_vms(self, folder=None, recurse=True):
+        """
+        Get all virtual machines.
+        """
+        return self.get_all_objs_by_type([vim.VirtualMachine], folder=folder, recurse=recurse)

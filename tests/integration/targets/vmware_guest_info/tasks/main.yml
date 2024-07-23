@@ -1,6 +1,4 @@
 ---
-# note: this test will fail due to the below known bug:
-# https://issues.redhat.com/browse/ACA-1650
 - name: Import common vars
   ansible.builtin.include_vars:
     file: ../group_vars.yml
@@ -13,7 +11,7 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    guest_name: "{{ (run_on_simulator) | ternary(omit, vm_name) }}"
+    guest_name: "{{ vm_name }}"
   register: __res
 
 - name: Assert values

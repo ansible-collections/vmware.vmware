@@ -21,8 +21,8 @@ class TestGuestInfo(ModuleTestCase):
         init_mock = mocker.patch.object(guest_info.VmwareGuestInfo, "__init__")
         init_mock.return_value = None
 
-        get_guest_info = mocker.patch.object(guest_info.VmwareGuestInfo, "get_guest_info")
-        get_guest_info.return_value = {}
+        gather_info_for_guests = mocker.patch.object(guest_info.VmwareGuestInfo, "gather_info_for_guests")
+        gather_info_for_guests.return_value = []
 
     def test_gather(self, mocker):
         self.__prepare(mocker)

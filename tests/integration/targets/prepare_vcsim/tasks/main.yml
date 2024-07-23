@@ -12,10 +12,12 @@
     image: docker.io/vmware/vcsim:latest
     state: started
     recreate: yes
+    network: "{{ prepare_vcsim_network | default(omit) }}"
     expose:
       - 8989
     ports:
-      - 8989:8989
+      - "{{ prepare_vcsim_port }}:8989"
+    command: "{{ prepare_vcsim_command | default(omit) }}"
 
 - name: Pause
   ansible.builtin.pause:

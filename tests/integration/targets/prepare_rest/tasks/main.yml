@@ -13,10 +13,11 @@
     image: docker.io/mockserver/mockserver:latest
     state: started
     recreate: yes
+    network: "{{ prepare_rest_network | default(omit) }}"
     exposed_ports:
       - 1080
     ports:
-      - 1080:1080
+      - "{{ prepare_rest_port }}:1080"
 
 - name: Pause
   ansible.builtin.pause:
