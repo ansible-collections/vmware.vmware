@@ -46,6 +46,19 @@
       ansible.builtin.include_vars:
         file: ../group_vars.yml
 
+    - name: "Test setup: Create Folders"
+      community.vmware.vcenter_folder:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder_name: "{{ item }}"
+        folder_type: vm
+        state: present
+      loop: "{{ template_folders }}"
+
     - name: "Test setup: Create VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
         validate_certs: false
@@ -62,18 +75,6 @@
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
 
-    - name: "Test setup: Create Folder"
-      community.vmware.vcenter_folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
-        datacenter: "{{ vcenter_datacenter }}"
-        folder_name: "{{ template_folder }}"
-        folder_type: vm
-        state: present
-
     - name: Create templates from vm in vcenter folders
       vmware.vmware.folder_template_from_vm:
         validate_certs: false
@@ -85,16 +86,12 @@
         template_folder: "{{ item }}"
         vm_name: "{{ vm_name }}"
         template_name: "{{ template_name }}"
-      loop:
-        - "{{ vm_folder }}"
-        - "{{ template_folder }}"
+      loop: "{{ template_folders }}"
       register: __res
 
     - name: Verify template creation
       ansible.builtin.include_tasks: verify_template_creation.yml
-      loop:
-        - "{{ vm_folder }}"
-        - "{{ template_folder }}"
+      loop: "{{ template_folders }}"
 
     - name: Destroy template
       vmware.vmware.folder_template_from_vm:
@@ -108,15 +105,11 @@
         vm_name: "{{ vm_name }}"
         template_name: "{{ template_name }}"
         state: absent
-      loop:
-        - "{{ vm_folder }}"
-        - "{{ template_folder }}"
+      loop: "{{ template_folders }}"
 
     - name: Verify template deletion
       ansible.builtin.include_tasks: verify_template_deletion.yml
-      loop:
-        - "{{ vm_folder }}"
-        - "{{ template_folder }}"
+      loop: "{{ template_folders }}"
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
@@ -133,7 +126,7 @@
         force: true
         name: "{{ vm_name }}"
 
-    - name: "Test teardown: Destroy VM template {{ template_name }}"
+    - name: "Test teardown: Destroy VM template from folder {{ item }}"
       community.vmware.vmware_guest:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
@@ -146,11 +139,9 @@
         state: absent
         force: true
         name: "{{ template_name }}"
-      loop:
-        - "{{ vm_folder }}"
-        - "{{ template_folder }}"
+      loop: "{{ template_folders }}"
 
-    - name: "Test teardown: Delete Folder {{ template_folder }}"
+    - name: "Test teardown: Delete Folder {{ item }}"
       community.vmware.vcenter_folder:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
@@ -158,5 +149,6 @@
         password: "{{ vcenter_password }}"
         port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder_name: "{{ template_folder }}"
+        folder_name: "{{ item }}"
         state: absent
+      loop: "{{ template_folders }}"
