@@ -7,4 +7,5 @@ vcenter_datacenter: DC0
 vcenter_cluster_name: DC0_C0
 
 run_on_simulator: true
+vm_folder: test_folder
 vm_name: DC0_H0_VM0
