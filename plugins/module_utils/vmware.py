@@ -405,7 +405,19 @@ class PyVmomi(object):
             self.module.fail_json("Unable to find resource pool with name %s" % pool_name)
         return pool
 
-    def get_all_objs_by_type(self, vimtype, folder=None, recurse=True):
+    def list_all_objs_by_type(self, vimtype, folder=None, recurse=True):
+        """
+            Returns a dictionary of all objects matching a given VMWare type.
+            You can also limit the search by folder and recurse if desired
+            Args:
+                vimtype: The type of object to search for
+                folder: vim.Folder, the folder object to use as a base for the search. If
+                        none is provided, the datacenter root will be used
+                recurse: If true, the search will recurse through the folder structure
+            Returns:
+                dicttionary of {obj: str}. The keys are the object while the values are the
+                object name
+        """
         if not folder:
             folder = self.content.rootFolder
 
@@ -422,4 +434,4 @@ class PyVmomi(object):
         """
         Get all virtual machines.
         """
-        return self.get_all_objs_by_type([vim.VirtualMachine], folder=folder, recurse=recurse)
+        return self.list_all_objs_by_type([vim.VirtualMachine], folder=folder, recurse=recurse)
