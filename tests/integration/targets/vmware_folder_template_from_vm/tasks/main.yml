@@ -69,11 +69,24 @@
         port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ vm_folder }}"
-        state: present
+        state: poweredon
         name: "{{ vm_name }}"
         disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
+
+    - name: "Test setup: Power off VM guest {{ vm_name }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        port: "{{ vcenter_port }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: poweredoff
+        name: "{{ vm_name }}"
 
     - name: Create templates from vm in vcenter folders
       vmware.vmware.folder_template_from_vm:
