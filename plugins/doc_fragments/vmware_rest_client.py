@@ -16,9 +16,9 @@ notes:
   - All modules requires API write access and hence is not supported on a free ESXi license.
   - All variables and VMware object names are case sensitive.
   - >-
-    Modules may rely on the requests python library, which does not use the system certificate store by default. You can
-    specify the certificate store by setting the REQUESTS_CA_BUNDLE environment variable.
-    Example: 'export REQUESTS_CA_BUNDLE=/path/to/your/ca_bundle.pem'
+      Modules may rely on the requests python library, which does not use the system certificate store by default. You can
+      specify the certificate store by setting the REQUESTS_CA_BUNDLE environment variable.
+      Example: 'export REQUESTS_CA_BUNDLE=/path/to/your/ca_bundle.pem'
 options:
   hostname:
     description:
