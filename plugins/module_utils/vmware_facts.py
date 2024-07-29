@@ -22,7 +22,260 @@ import ansible.module_utils.common._collections_compat as collections_compat
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware_folder_paths import get_folder_path_of_vm
 
 
-def _get_vm_prop(vm, attributes):
+class VmFacts():
+    def __init__(self, vm):
+        self.vm = vm
+
+    def hw_all_facts(self):
+        '''
+        Returns a combined set of all 'hw_' facts
+        '''
+        return {
+            **self.hw_general_facts(),
+            **self.hw_folder_facts(),
+            **self.hw_files_facts(),
+            **self.hw_datastore_facts(),
+            **self.hw_runtime_facts(),
+            **self.hw_network_device_facts()
+        }
+
+    def all_facts(self, content):
+        return {
+            **self.hw_all_facts(),
+            **self.identifier_facts(),
+            **self.custom_value_facts(content),
+            **self.advanced_settings_facts(),
+            **self.guest_facts(),
+            **self.ip_facts(),
+            **self.snapshot_facts(),
+            **self.vnc_facts(),
+            **self.tpm_facts()
+        }
+
+    def identifier_facts(self):
+        return {
+            'instance_uuid': self.vm.config.instanceUuid,
+            'moid': self.vm._moId,
+            'vimref': "vim.VirtualMachine:%s" % self.vm._moId
+        }
+
+    def custom_value_facts(self, content):
+        facts = {}
+        custom_fields_manager = content.customFieldsManager
+
+        for custom_value_obj in self.vm.summary.customValue:
+            if custom_fields_manager is None or not custom_fields_manager.field:
+                facts[custom_value_obj.key] = custom_value_obj.value
+                continue
+
+            for field in custom_fields_manager.field:
+                if field.key == custom_value_obj.key:
+                    facts[field.name] = custom_value_obj.value
+                    break
+
+        return {'customvalues': facts}
+
+    def advanced_settings_facts(self):
+        output = {}
+        for advanced_setting in self.vm.config.extraConfig:
+            output[advanced_setting.key] = advanced_setting.value
+
+        return {'advanced_settings': output}
+
+    def guest_facts(self):
+        return {
+            'guest_tools_status': get_vm_prop_or_none(self.vm, ('guest', 'toolsRunningStatus')),
+            'guest_tools_version': get_vm_prop_or_none(self.vm, ('guest', 'toolsVersion')),
+            'guest_question': json.loads(json.dumps(self.vm.summary.runtime.question, cls=VmomiSupport.VmomiJSONEncoder,
+                                                    sort_keys=True, strip_dynamic=True)),
+            'guest_consolidation_needed': self.vm.summary.runtime.consolidationNeeded,
+        }
+
+    def ip_facts(self):
+        facts = {
+            'ipv6': None,
+            'ipv4': None
+        }
+
+        if self.vm.guest.ipAddress:
+            if ':' in self.vm.guest.ipAddress:
+                facts['ipv6'] = self.vm.guest.ipAddress
+            else:
+                facts['ipv4'] = self.vm.guest.ipAddress
+
+        return facts
+
+    def snapshot_facts(self):
+        snapshots = []
+        current_snapshot = None
+        snapshot_facts = list_snapshots(self.vm)
+        if 'snapshots' in snapshot_facts:
+            snapshots = snapshot_facts['snapshots']
+            current_snapshot = snapshot_facts['current_snapshot']
+
+        return {
+            'snapshots': snapshots,
+            'current_snapshot': current_snapshot
+        }
+
+    def vnc_facts(self):
+        facts = {}
+        for opts in self.vm.config.extraConfig:
+            for optkeyname in ['enabled', 'ip', 'port', 'password']:
+                if opts.key.lower() == "remotedisplay.vnc." + optkeyname:
+                    facts[optkeyname] = opts.value
+
+        return {'vnc': facts}
+
+    def tpm_facts(self):
+        facts = {
+            'tpm_present': None,
+            'provider_id': None
+        }
+
+        if hasattr(self.vm.summary.config, 'tpmPresent'):
+            facts['tpm_present'] = self.vm.summary.config.tpmPresent
+
+        if self.vm.config.keyId:
+            facts['provider_id'] = self.vm.config.keyId.providerId.id
+
+        return {'tpm_info': facts}
+
+    def hw_general_facts(self):
+        '''
+        Returns overview and summary 'hw_' facts
+        '''
+        return {
+            'module_hw': True,
+            'hw_name': self.vm.config.name,
+            'hw_power_status': self.vm.summary.runtime.powerState,
+            'hw_guest_full_name': self.vm.summary.guest.guestFullName,
+            'hw_guest_id': self.vm.summary.guest.guestId,
+            'hw_product_uuid': self.vm.config.uuid,
+            'hw_processor_count': self.vm.config.hardware.numCPU,
+            'hw_cores_per_socket': self.vm.config.hardware.numCoresPerSocket,
+            'hw_memtotal_mb': self.vm.config.hardware.memoryMB,
+            'hw_is_template': self.vm.config.template,
+            'hw_version': self.vm.config.version,
+        }
+
+    def hw_folder_facts(self):
+        try:
+            hw_folder = get_folder_path_of_vm(self.vm)
+        except Exception:
+            hw_folder = None
+
+        return {'hw_folder': hw_folder}
+
+    def hw_files_facts(self):
+        hw_files = []
+        try:
+            files = self.vm.config.files
+            layout = self.vm.layout
+            if files:
+                hw_files = [files.vmPathName]
+                for item in layout.snapshot:
+                    for snap in item.snapshotFile:
+                        if 'vmsn' in snap:
+                            hw_files.append(snap)
+                for item in layout.configFile:
+                    hw_files.append(os.path.join(os.path.dirname(files.vmPathName), item))
+                for item in self.vm.layout.logFile:
+                    hw_files.append(os.path.join(files.logDirectory, item))
+                for item in self.vm.layout.disk:
+                    for disk in item.diskFile:
+                        hw_files.append(disk)
+        except Exception:
+            pass
+
+        return {'hw_files': hw_files}
+
+    def hw_datastore_facts(self):
+        output = []
+        for ds in self.vm.datastore:
+            output.append(ds.info.name)
+
+        return {'hw_datastores': output}
+
+    def hw_runtime_facts(self):
+        output = {
+            'hw_esxi_host': None,
+            'hw_guest_ha_state': None
+        }
+
+        # facts that may or may not exist
+        if self.vm.summary.runtime.host:
+            try:
+                host = self.vm.summary.runtime.host
+                output['hw_esxi_host'] = host.summary.config.name
+                if host.parent and isinstance(host.parent, vim.ClusterComputeResource):
+                    output['hw_cluster'] = host.parent.name
+
+            except vim.fault.NoPermission:
+                # User does not have read permission for the host system,
+                # proceed without this value. This value does not contribute or hamper
+                # provisioning or power management operations.
+                pass
+
+        if self.vm.summary.runtime.dasVmProtection:
+            output['hw_guest_ha_state'] = self.vm.summary.runtime.dasVmProtection.dasProtected
+
+        return output
+
+    def hw_network_device_facts(self):
+        facts = {}
+        hw_interfaces_facts = []
+        ethernet_idx = 0
+
+        vmnet = get_vm_prop_or_none(self.vm, ('guest', 'net'))
+        net_dict = {}
+        if vmnet:
+            for device in vmnet:
+                if device.deviceConfigId > 0:
+                    net_dict[device.macAddress] = list(device.ipAddress)
+
+        for hardware_device in self.vm.config.hardware.device:
+            if not hasattr(hardware_device, 'macAddress'):
+                continue
+
+            if hardware_device.macAddress:
+                mac_addr = hardware_device.macAddress
+                mac_addr_dash = mac_addr.replace(':', '-')
+            else:
+                mac_addr = mac_addr_dash = None
+
+            if (
+                hasattr(hardware_device, "backing")
+                and hasattr(hardware_device.backing, "port")
+                and hasattr(hardware_device.backing.port, "portKey")
+                and hasattr(hardware_device.backing.port, "portgroupKey")
+            ):
+                port_group_key = hardware_device.backing.port.portgroupKey
+                port_key = hardware_device.backing.port.portKey
+            else:
+                port_group_key = None
+                port_key = None
+
+            facts['hw_eth' + str(ethernet_idx)] = {
+                'addresstype': hardware_device.addressType,
+                'label': hardware_device.deviceInfo.label,
+                'macaddress': mac_addr,
+                'ipaddresses': net_dict.get(hardware_device.macAddress, None),
+                'macaddress_dash': mac_addr_dash,
+                'summary': hardware_device.deviceInfo.summary,
+                'portgroup_portkey': port_key,
+                'portgroup_key': port_group_key,
+            }
+            hw_interfaces_facts.append('eth' + str(ethernet_idx))
+            ethernet_idx += 1
+
+        return {
+            'hw_interfacts': hw_interfaces_facts,
+            **facts
+        }
+
+
+def get_vm_prop_or_none(vm, attributes):
     """Safely get a property or return None"""
     result = vm
     for attribute in attributes:
@@ -31,166 +284,6 @@ def _get_vm_prop(vm, attributes):
         except (AttributeError, IndexError):
             return None
     return result
-
-
-def gather_vm_facts(content, vm):
-    """ Gather facts from vim.VirtualMachine object. """
-    facts = {
-        'module_hw': True,
-        'hw_name': vm.config.name,
-        'hw_power_status': vm.summary.runtime.powerState,
-        'hw_guest_full_name': vm.summary.guest.guestFullName,
-        'hw_guest_id': vm.summary.guest.guestId,
-        'hw_product_uuid': vm.config.uuid,
-        'hw_processor_count': vm.config.hardware.numCPU,
-        'hw_cores_per_socket': vm.config.hardware.numCoresPerSocket,
-        'hw_memtotal_mb': vm.config.hardware.memoryMB,
-        'hw_interfaces': [],
-        'hw_datastores': [],
-        'hw_files': [],
-        'hw_esxi_host': None,
-        'hw_guest_ha_state': None,
-        'hw_is_template': vm.config.template,
-        'hw_folder': None,
-        'hw_version': vm.config.version,
-        'instance_uuid': vm.config.instanceUuid,
-        'guest_tools_status': _get_vm_prop(vm, ('guest', 'toolsRunningStatus')),
-        'guest_tools_version': _get_vm_prop(vm, ('guest', 'toolsVersion')),
-        'guest_question': json.loads(json.dumps(vm.summary.runtime.question, cls=VmomiSupport.VmomiJSONEncoder,
-                                                sort_keys=True, strip_dynamic=True)),
-        'guest_consolidation_needed': vm.summary.runtime.consolidationNeeded,
-        'ipv4': None,
-        'ipv6': None,
-        'annotation': vm.config.annotation,
-        'customvalues': {},
-        'snapshots': [],
-        'current_snapshot': None,
-        'vnc': {},
-        'moid': vm._moId,
-        'vimref': "vim.VirtualMachine:%s" % vm._moId,
-        'advanced_settings': {},
-    }
-
-    # facts that may or may not exist
-    if vm.summary.runtime.host:
-        try:
-            host = vm.summary.runtime.host
-            facts['hw_esxi_host'] = host.summary.config.name
-            facts['hw_cluster'] = host.parent.name if host.parent and isinstance(host.parent, vim.ClusterComputeResource) else None
-
-        except vim.fault.NoPermission:
-            # User does not have read permission for the host system,
-            # proceed without this value. This value does not contribute or hamper
-            # provisioning or power management operations.
-            pass
-    if vm.summary.runtime.dasVmProtection:
-        facts['hw_guest_ha_state'] = vm.summary.runtime.dasVmProtection.dasProtected
-
-    datastores = vm.datastore
-    for ds in datastores:
-        facts['hw_datastores'].append(ds.info.name)
-
-    try:
-        files = vm.config.files
-        layout = vm.layout
-        if files:
-            facts['hw_files'] = [files.vmPathName]
-            for item in layout.snapshot:
-                for snap in item.snapshotFile:
-                    if 'vmsn' in snap:
-                        facts['hw_files'].append(snap)
-            for item in layout.configFile:
-                facts['hw_files'].append(os.path.join(os.path.dirname(files.vmPathName), item))
-            for item in vm.layout.logFile:
-                facts['hw_files'].append(os.path.join(files.logDirectory, item))
-            for item in vm.layout.disk:
-                for disk in item.diskFile:
-                    facts['hw_files'].append(disk)
-    except Exception:
-        pass
-
-    facts['hw_folder'] = get_folder_path_of_vm(vm)
-
-    cfm = content.customFieldsManager
-    # Resolve custom values
-    for value_obj in vm.summary.customValue:
-        kn = value_obj.key
-        if cfm is not None and cfm.field:
-            for f in cfm.field:
-                if f.key == value_obj.key:
-                    kn = f.name
-                    # Exit the loop immediately, we found it
-                    break
-
-        facts['customvalues'][kn] = value_obj.value
-
-    # Resolve advanced settings
-    for advanced_setting in vm.config.extraConfig:
-        facts['advanced_settings'][advanced_setting.key] = advanced_setting.value
-
-    net_dict = {}
-    vmnet = _get_vm_prop(vm, ('guest', 'net'))
-    if vmnet:
-        for device in vmnet:
-            if device.deviceConfigId > 0:
-                net_dict[device.macAddress] = list(device.ipAddress)
-
-    if vm.guest.ipAddress:
-        if ':' in vm.guest.ipAddress:
-            facts['ipv6'] = vm.guest.ipAddress
-        else:
-            facts['ipv4'] = vm.guest.ipAddress
-
-    ethernet_idx = 0
-    for entry in vm.config.hardware.device:
-        if not hasattr(entry, 'macAddress'):
-            continue
-
-        if entry.macAddress:
-            mac_addr = entry.macAddress
-            mac_addr_dash = mac_addr.replace(':', '-')
-        else:
-            mac_addr = mac_addr_dash = None
-
-        if (
-            hasattr(entry, "backing")
-            and hasattr(entry.backing, "port")
-            and hasattr(entry.backing.port, "portKey")
-            and hasattr(entry.backing.port, "portgroupKey")
-        ):
-            port_group_key = entry.backing.port.portgroupKey
-            port_key = entry.backing.port.portKey
-        else:
-            port_group_key = None
-            port_key = None
-
-        factname = 'hw_eth' + str(ethernet_idx)
-        facts[factname] = {
-            'addresstype': entry.addressType,
-            'label': entry.deviceInfo.label,
-            'macaddress': mac_addr,
-            'ipaddresses': net_dict.get(entry.macAddress, None),
-            'macaddress_dash': mac_addr_dash,
-            'summary': entry.deviceInfo.summary,
-            'portgroup_portkey': port_key,
-            'portgroup_key': port_group_key,
-        }
-        facts['hw_interfaces'].append('eth' + str(ethernet_idx))
-        ethernet_idx += 1
-
-    snapshot_facts = list_snapshots(vm)
-    if 'snapshots' in snapshot_facts:
-        facts['snapshots'] = snapshot_facts['snapshots']
-        facts['current_snapshot'] = snapshot_facts['current_snapshot']
-
-    facts['vnc'] = get_vnc_extraconfig(vm)
-
-    # Gather vTPM information
-    facts['tpm_info'] = {
-        'tpm_present': vm.summary.config.tpmPresent if hasattr(vm.summary.config, 'tpmPresent') else None,
-        'provider_id': vm.config.keyId.providerId.id if vm.config.keyId else None
-    }
-    return facts
 
 
 def deserialize_snapshot_obj(obj):
@@ -221,7 +314,7 @@ def get_current_snap_obj(snapshots, snapob):
 
 def list_snapshots(vm):
     result = {}
-    snapshot = _get_vm_prop(vm, ('snapshot',))
+    snapshot = get_vm_prop_or_none(vm, ('snapshot',))
     if not snapshot:
         return result
     if vm.snapshot is None:
@@ -234,15 +327,6 @@ def list_snapshots(vm):
         result['current_snapshot'] = deserialize_snapshot_obj(current_snap_obj[0])
     else:
         result['current_snapshot'] = dict()
-    return result
-
-
-def get_vnc_extraconfig(vm):
-    result = {}
-    for opts in vm.config.extraConfig:
-        for optkeyname in ['enabled', 'ip', 'port', 'password']:
-            if opts.key.lower() == "remotedisplay.vnc." + optkeyname:
-                result[optkeyname] = opts.value
     return result
 
 

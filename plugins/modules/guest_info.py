@@ -173,7 +173,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils.vmware_facts import (
-    gather_vm_facts,
+    VmFacts,
     vmware_obj_to_json,
     extract_object_attributes_to_dict
 )
@@ -226,7 +226,8 @@ class VmwareGuestInfo(VmwareRestClient):
         for guest in self.get_guests():
             guest_info = {}
             if self.params['schema'] == 'summary':
-                guest_info = gather_vm_facts(self.pyvmomi.content, guest)
+                vm_facts = VmFacts(guest)
+                guest_info = vm_facts.all_facts(self.pyvmomi.content)
             else:
                 guest_info = vmware_obj_to_json(guest, self.params['properties'])
 
