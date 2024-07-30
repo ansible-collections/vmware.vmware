@@ -1,0 +1,10 @@
+---
+test_cluster: "{{ tiny_prefix }}_cluster_drs_test"
+run_on_simulator: false
+
+drs_enable: true
+drs_enable_vm_behavior_overrides: true
+drs_default_vm_behavior: fullyAutomated
+drs_vmotion_rate: 4
+drs_advanced_settings: {}
+drs_predictive_drs: false

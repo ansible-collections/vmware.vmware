@@ -228,7 +228,7 @@ class PyVmomi(object):
         elif api_type == 'HostAgent':
             return False
 
-    def get_objs_by_name_or_moid(self, vimtype, name, return_all=False):
+    def get_objs_by_name_or_moid(self, vimtype, name, return_all=False, search_root_folder=None):
         """
         Get any vsphere objects associated with a given text name or MOID and vim type.
         Different objects have different unique-ness requirements for the name parameter, so
@@ -238,12 +238,18 @@ class PyVmomi(object):
             name: The name or the ID of the object to search for
             return_all: If true, return all the objects that were found.
                         Useful when names must be unique
+            search_root_folder: The folder object that should be used as the starting point
+                                for searches. Useful for restricting search results to a
+                                certain datacenter (search_root_folder=datacenter.hostFolder)
         Returns:
             list(object) or list() if no matches are found
         """
+        if not search_root_folder:
+            search_root_folder = self.content.rootFolder
+
         obj = list()
         container = self.content.viewManager.CreateContainerView(
-            self.content.rootFolder, vimtype, True)
+            search_root_folder, vimtype, True)
 
         for c in container.view:
             if name in [c.name, c._GetMoId()]:
@@ -277,17 +283,6 @@ class PyVmomi(object):
             The distributed portgroup object
         """
         return self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], portgroup)
-
-    def get_datacenter_detailed(self, name):
-        """
-        Get detailed information about a datacenter
-        Args:
-            name: The name or the ID of the datacenter
-        Returns:
-            The datacenter object
-
-        """
-        return self.get_objs_by_name_or_moid([vim.Datacenter], name)
 
     def get_vm_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
@@ -435,3 +430,44 @@ class PyVmomi(object):
         Get all virtual machines.
         """
         return self.list_all_objs_by_type([vim.VirtualMachine], folder=folder, recurse=recurse)
+
+    def get_datacenter_by_name(self, dc_name, fail_on_missing=False):
+        """
+            Get the datacenter matching the given name. Datacenter names must be unique
+            in a given vcenter, so only one object is returned at most.
+            Args:
+                dc_name: Name of the datacenter to search for
+                fail_on_missing: If true, an error will be thrown if no datacenters are found
+            Returns:
+                datacenter object or None
+        """
+        ds = self.get_objs_by_name_or_moid([vim.Datacenter], dc_name)
+        if not ds and fail_on_missing:
+            self.module.fail_json("Unable to find datacenter with name %s" % dc_name)
+        return ds
+
+    def get_cluster_by_name(self, cluster_name, fail_on_missing=False, datacenter=None):
+        """
+            Get the cluster matching the given name. Cluster names must be unique
+            in a given vcenter, so only one object is returned at most.
+            Args:
+                cluster_name: Name of the cluster to search for
+                fail_on_missing: If true, an error will be thrown if no clusters are found
+            Returns:
+                cluster object or None
+        """
+        search_folder = None
+        if datacenter and hasattr(datacenter, 'hostFolder'):
+            search_folder = datacenter.hostFolder
+
+        cluster = self.get_objs_by_name_or_moid(
+            [vim.ClusterComputeResource],
+            cluster_name,
+            return_all=False,
+            search_root_folder=search_folder
+        )
+
+        if not cluster and fail_on_missing:
+            self.module.fail_json("Unable to find cluster with name %s" % cluster_name)
+
+        return cluster

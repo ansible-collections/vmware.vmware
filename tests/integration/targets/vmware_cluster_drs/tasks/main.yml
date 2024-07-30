@@ -1,0 +1,82 @@
+---
+- name: Test On Simulator
+  when: run_on_simulator
+  block:
+    - name: Set DRS Settings In Cluster
+      vmware.vmware.cluster_drs:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        enable: "{{ drs_enable }}"
+        drs_enable_vm_behavior_overrides: "{{ drs_enable_vm_behavior_overrides}}"
+        drs_default_vm_behavior: "{{ drs_default_vm_behavior }}"
+        drs_vmotion_rate: "{{ drs_vmotion_rate }}"
+        advanced_settings: "{{ drs_advanced_settings }}"
+        predictive_drs: "{{ drs_predictive_drs }}"
+    # The simulator never seems to update its DRS settings, so theres nothing to validate here
+
+- name: Test On VCenter
+  when: not run_on_simulator
+  block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+    - name: Create Test Cluster
+      community.vmware.vmware_cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        validate_certs: false
+        port: "{{ vcenter_port }}"
+        cluster_name: "{{ test_cluster }}"
+    - name: Set DRS Settings In Test Cluster
+      vmware.vmware.cluster_drs:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        drs_enable_vm_behavior_overrides: "{{ drs_enable_vm_behavior_overrides}}"
+        drs_default_vm_behavior: "{{ drs_default_vm_behavior }}"
+        drs_vmotion_rate: "{{ drs_vmotion_rate }}"
+        advanced_settings: "{{ drs_advanced_settings }}"
+        predictive_drs: "{{ drs_predictive_drs }}"
+      register: _out
+    - name: Gather Cluster Settings
+      community.vmware.vmware_cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
+    - name: Check DRS Settings Were Applied
+      ansible.builtin.assert:
+        that:
+          - _config.drs_default_vm_behavior == drs_default_vm_behavior
+          - _config.drs_enable_vm_behavior_overrides == drs_enable_vm_behavior_overrides
+          - _config.drs_vmotion_rate == drs_vmotion_rate
+          - _config.enabled_drs == drs_enable
+      vars:
+        _config: "{{ _cluster_info.clusters[test_cluster] }}"
+
+  always:
+    - name: Destroy Test Cluster
+      community.vmware.vmware_cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        validate_certs: false
+        cluster_name: "{{ test_cluster }}"
+        state: absent
