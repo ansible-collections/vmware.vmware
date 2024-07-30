@@ -114,7 +114,7 @@ vm_list_group_by_clusters_info:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 
 
 class VmwareVMList(VmwareRestClient):

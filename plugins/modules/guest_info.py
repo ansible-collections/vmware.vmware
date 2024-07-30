@@ -170,9 +170,9 @@ guests:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware import PyVmomi
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware_facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
     VmFacts,
     vmware_obj_to_json,
     extract_object_attributes_to_dict
