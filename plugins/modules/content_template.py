@@ -107,7 +107,7 @@ template_info:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 from ansible.module_utils._text import to_native
 
 HAS_VAUTOMATION_PYTHON_SDK = False

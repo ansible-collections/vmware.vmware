@@ -241,7 +241,7 @@ vcsa_settings:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 
 
 class VmwareVcsaSettings(VmwareRestClient):

@@ -4,6 +4,9 @@
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Note: This utility is considered private, and can only be referenced from inside the vmware.vmware collection.
+#       It may be made public at a later date
+
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
@@ -19,7 +22,7 @@ except ImportError:
 from ansible.module_utils._text import to_text
 from ansible.module_utils.six import integer_types, string_types, iteritems
 import ansible.module_utils.common._collections_compat as collections_compat
-from ansible_collections.vmware.vmware.plugins.module_utils.vmware_folder_paths import get_folder_path_of_vm
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import get_folder_path_of_vm
 
 
 class VmFacts():
