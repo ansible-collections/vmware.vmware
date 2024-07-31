@@ -83,7 +83,7 @@ attributes:
     support: full
 extends_documentation_fragment:
 - vmware.vmware.vmware_rest_client.documentation
-
+- vmware.vmware.vmware.documentation
 '''
 
 EXAMPLES = r'''
@@ -92,6 +92,7 @@ EXAMPLES = r'''
     hostname: "https://vcenter"
     username: "username"
     password: "password"
+    validate_certs: false
     guest_name: "my_vm"
 '''
 
