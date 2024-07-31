@@ -46,7 +46,7 @@ class VmFacts():
         return {
             **self.hw_all_facts(),
             **self.identifier_facts(),
-            **self.custom_value_facts(content),
+            **self.custom_attribute_facts(content),
             **self.advanced_settings_facts(),
             **self.guest_facts(),
             **self.ip_facts(),
@@ -62,21 +62,24 @@ class VmFacts():
             'vimref': "vim.VirtualMachine:%s" % self.vm._moId
         }
 
-    def custom_value_facts(self, content):
-        facts = {}
+    def custom_attribute_facts(self, content):
+        custom_value_facts = {}
         custom_fields_manager = content.customFieldsManager
 
         for custom_value_obj in self.vm.summary.customValue:
             if custom_fields_manager is None or not custom_fields_manager.field:
-                facts[custom_value_obj.key] = custom_value_obj.value
+                custom_value_facts[custom_value_obj.key] = custom_value_obj.value
                 continue
 
             for field in custom_fields_manager.field:
                 if field.key == custom_value_obj.key:
-                    facts[field.name] = custom_value_obj.value
+                    custom_value_facts[field.name] = custom_value_obj.value
                     break
 
-        return {'customvalues': facts}
+        return {
+            'customvalues': custom_value_facts,
+            'annotation': self.vm.config.annotation
+        }
 
     def advanced_settings_facts(self):
         output = {}
@@ -273,7 +276,7 @@ class VmFacts():
             ethernet_idx += 1
 
         return {
-            'hw_interfacts': hw_interfaces_facts,
+            'hw_interfaces': hw_interfaces_facts,
             **facts
         }
 
