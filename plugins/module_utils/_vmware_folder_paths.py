@@ -91,4 +91,7 @@ def get_folder_path_of_vm(vm):
         folder_path += [_folder.name]
 
     folder_path.reverse()
-    return '/'.join(folder_path).lstrip('/')
+    out = '/'.join(folder_path)
+    if not out.startswith('/'):
+        out = '/' + out
+    return out
