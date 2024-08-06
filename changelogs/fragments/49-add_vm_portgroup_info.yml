@@ -1,2 +1,0 @@
-minor_changes:
-  - vm_portgroup_info - add module to get all the portgroups that associated with VMs

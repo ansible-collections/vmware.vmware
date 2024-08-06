@@ -1,3 +1,0 @@
----
-bugfixes:
-  - module_utils/vmware_rest_client - rename get_vm_by_name method as there is same signature already

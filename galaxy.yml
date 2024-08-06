@@ -2,7 +2,7 @@
 
 namespace: vmware
 name: vmware
-version: 1.3.0
+version: 1.4.0
 readme: README.md
 authors:
   - Ansible Cloud Content Team (@redhat-cop)
@@ -17,7 +17,7 @@ repository: https://github.com/ansible-collections/vmware.vmware
 homepage: https://github.com/ansible-collections/vmware.vmware
 issues: https://github.com/ansible-collections/vmware.vmware/issues
 build_ignore:
-# https://docs.ansible.com/ansible/devel/dev_guide/developing_collections_distributing.html#ignoring-files-and-folders
+  # https://docs.ansible.com/ansible/devel/dev_guide/developing_collections_distributing.html#ignoring-files-and-folders
   - .gitignore
   - changelogs/.plugin-cache.yaml
   - .github

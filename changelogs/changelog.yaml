@@ -48,3 +48,38 @@ releases:
     - 35-add-requirements-filed-to-modules-doc.yml
     - 37-vm_list_group_by_clusters_info_returned_obj.yml
     release_date: '2024-06-24'
+  1.4.0:
+    changes:
+      bugfixes:
+      - _vmware_facts - fixed typo in hw_interfaces fact key and added missing annotation
+        fact key and value
+      - _vmware_folder_paths - fixed issue where resolved folder paths incorrectly
+        included a leading slash
+      - guest_info - added more optional attributes to the example
+      - module_utils/vmware_rest_client - rename get_vm_by_name method as there is
+        same signature already
+      minor_changes:
+      - cluster_drs - added cluster_drs module to manage DRS settings in vcenter
+      - folder_template_from_vm - add module and tests to create a template from an
+        existing VM in vcenter and store the template in a folder
+      - guest_info - migrated functionality from community vmware_guest_info and vmware_vm_info
+        into guest_info. Changes are backwards compatible but legacy outputs are deprecated
+      - module_utils/vmware_tasks - added shared utils to monitor long running tasks
+        in vcenter
+      - module_utils/vmware_type_utils - added shared utils for validating, transforming,
+        and comparing vcenter settings with python variables
+      - vm_portgroup_info - add module to get all the portgroups that associated with
+        VMs
+    fragments:
+    - 10-rename_get_vm_by_name.yaml
+    - 48-add_folder_template.yml
+    - 49-add_vm_portgroup_info.yml
+    - 50-add_cluster_drs_module.yaml
+    - 51-migrate_vm_info_modules.yml
+    - 54-bugfix_custom_fact_values.yml
+    - 55-add_docs_for_mandatory_vars.yml
+    modules:
+    - description: Returns information about the portgroups of virtual machines
+      name: vm_portgroup_info
+      namespace: ''
+    release_date: '2024-08-06'

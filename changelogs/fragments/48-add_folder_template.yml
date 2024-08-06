@@ -1,2 +1,0 @@
-minor_changes:
-  - folder_template_from_vm - add module and tests to create a template from an existing VM in vcenter and store the template in a folder

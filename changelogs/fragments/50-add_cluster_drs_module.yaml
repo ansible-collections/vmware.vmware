@@ -1,5 +1,0 @@
----
-minor_changes:
-  - cluster_drs - added cluster_drs module to manage DRS settings in vcenter
-  - module_utils/vmware_tasks - added shared utils to monitor long running tasks in vcenter
-  - module_utils/vmware_type_utils - added shared utils for validating, transforming, and comparing vcenter settings with python variables
