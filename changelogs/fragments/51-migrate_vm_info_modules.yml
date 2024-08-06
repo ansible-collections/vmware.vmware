@@ -1,2 +1,0 @@
-minor_changes:
-  - guest_info - migrated functionality from community vmware_guest_info and vmware_vm_info into guest_info. Changes are backwards compatible but legacy outputs are deprecated

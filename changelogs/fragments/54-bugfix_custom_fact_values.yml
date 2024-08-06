@@ -1,4 +1,0 @@
----
-bugfixes:
-  - _vmware_facts - fixed typo in hw_interfaces fact key and added missing annotation fact key and value
-  - _vmware_folder_paths - fixed issue where resolved folder paths incorrectly included a leading slash
