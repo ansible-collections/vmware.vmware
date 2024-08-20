@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - cluster - Added cluster module, which is meant to succeed the community.vmware.vmware_cluster module (https://github.com/ansible-collections/vmware.vmware/pull/60).
