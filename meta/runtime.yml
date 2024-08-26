@@ -3,6 +3,7 @@ requires_ansible: '>=2.15.0'
 action_groups:
   vmware:
     - appliance_info
+    - cluster
     - cluster_drs
     - content_template
     - folder_template_from_vm
