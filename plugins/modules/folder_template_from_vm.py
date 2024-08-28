@@ -247,6 +247,7 @@ class VmwareFolderTemplate(PyVmomi):
 
         return template_location_spec
 
+
 def custom_validation(module):
     """
         This validation is too complex to be done with the provided ansible validation
