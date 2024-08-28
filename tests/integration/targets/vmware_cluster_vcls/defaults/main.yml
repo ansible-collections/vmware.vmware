@@ -1,0 +1,7 @@
+---
+test_cluster: "{{ tiny_prefix }}_cluster_drs_test"
+run_on_simulator: false
+
+allowed_datastores: ["datastore4"]
+datastores_to_add: ["datastore7"]
+datastores_to_remove: ["datastore4"]
