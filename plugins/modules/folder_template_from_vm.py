@@ -140,12 +140,12 @@ EXAMPLES = r'''
 RETURN = r'''
 '''
 
-import time
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi, vmware_argument_spec
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor, TaskError
 
 PYVMOMI_IMP_ERR = None
 try:
@@ -228,7 +228,10 @@ class VmwareFolderTemplate(PyVmomi):
         )
 
         if self.params.get("wait_for_template"):
-            self.__wait_for_template(task)
+            try:
+                RunningTaskMonitor(task).wait_for_completion()
+            except TaskError as e:
+                self.module.fail_json(msg="Cloning task failed with exception: %s" % e)
 
     def __create_template_location_spec(self):
         template_location_spec = vim.vm.RelocateSpec()
@@ -243,17 +246,6 @@ class VmwareFolderTemplate(PyVmomi):
                 fail_on_missing=True)
 
         return template_location_spec
-
-    def __wait_for_template(self, task):
-        """
-        Waits and provides updates on a vSphere task
-        """
-        while task.info.state == vim.TaskInfo.State.running:
-            time.sleep(2)
-
-        if task.info.state != vim.TaskInfo.State.success:
-            self.module.fail_json(msg=task.info.error)
-
 
 def custom_validation(module):
     """
