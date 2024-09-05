@@ -15,6 +15,6 @@ vm_hardware:
   boot_firmware: efi
 
 template_host: 10.46.29.208
-datastore: datastore2
+datastore: "{{ shared_storage_01 }}"
 library: "{{ tiny_prefix }}-content-library"
 template_name: "{{ tiny_prefix }}-template"

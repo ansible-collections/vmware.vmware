@@ -4,3 +4,5 @@
 vcenter_cluster_name: "Eco-Cluster"
 vcenter_datacenter: "Eco-Datacenter"
 vcenter_port: 443
+shared_storage_01: "eco-iscsi-ds1"
+shared_storage_02: "eco-iscsi-ds2"
