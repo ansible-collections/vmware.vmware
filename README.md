@@ -10,7 +10,7 @@ System programmers can enable pipelines to setup, tear down and deploy VMs while
 ## Requirements
 
 The host running the tasks must have the python requirements described in [requirements.txt](./requirements.txt)
-Once the colelction is installed, you can install them into a python environment using pip: `pip install -r ~/.ansible/collections/ansible_collections/vmware/vmware/requirements.txt`
+Once the collection is installed, you can install them into a python environment using pip: `pip install -r ~/.ansible/collections/ansible_collections/vmware/vmware/requirements.txt`
 
 ### Ansible version compatibility
 
@@ -52,11 +52,11 @@ ansible-galaxy collection install vmware.vmware:1.0.0
   * Actors:
     * System Admin
   * Description:
-    * A systems administrator can create a new vcenter cluster and ensure services are configured correctly.
+    * A systems administrator can create a new vCenter cluster and ensure services are configured correctly.
   * Flow:
-    * `vmware.vmware.cluster` - Create a new cluster if its missing
-    * `vmware.vmware.cluster_drs` - Configur cluster DRS settings to ensure correct state
-    * `vmware.vmware.cluster_vcls` - Configur cluster vCLS settings to ensure correct state
+    * `vmware.vmware.cluster` - Create a new cluster if it's missing
+    * `vmware.vmware.cluster_drs` - Configure cluster DRS settings to ensure correct state
+    * `vmware.vmware.cluster_vcls` - Configure cluster vCLS settings to ensure correct state
 
 * Use Case Name: Gather Information About Resources
   * Actors:
@@ -68,7 +68,7 @@ ansible-galaxy collection install vmware.vmware:1.0.0
     * `vmware.vmware.guest_info` - Gather details about one or more VMs running
     * `vmware.vmware.license_info` - Gather details about one or more licenses used in vCenter or ESXi
     * `vmware.vmware.vm_list_group_by_clusters_info` - Gather VMs and list them grouped by cluster and folder
-    * `vmware.vmware.vm_portgroup_info` - Gather details networks attached to VMs
+    * `vmware.vmware.vm_portgroup_info` - Gather details about networks attached to VMs
 
 
 ## Testing
