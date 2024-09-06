@@ -4,6 +4,22 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.5.0
+======
+
+Minor Changes
+-------------
+
+- Add action group (https://github.com/ansible-collections/vmware.vmware/pull/59).
+- cluster - Added cluster module, which is meant to succeed the community.vmware.vmware_cluster module (https://github.com/ansible-collections/vmware.vmware/pull/60).
+- cluster_vcls - Added module to manage vCLS settings, based on community.vmware.vmware_cluster_vcls (https://github.com/ansible-collections/vmware.vmware/pull/61).
+- folder_template_from_vm - Use a more robust method when waiting for tasks to complete to improve accuracy (https://github.com/ansible-collections/vmware.vmware/pull/64).
+
+Bugfixes
+--------
+
+- README - Fix typos in README (https://github.com/ansible-collections/vmware.vmware/pull/66).
+
 v1.4.0
 ======
 
