@@ -1,3 +1,0 @@
----
-trivial:
-  - cluster - Add cluster module to action group (https://github.com/ansible-collections/vmware.vmware/pull/63).

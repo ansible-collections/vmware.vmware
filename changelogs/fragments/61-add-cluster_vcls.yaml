@@ -1,3 +1,0 @@
----
-minor_changes:
-  - cluster_vcls - Added module to manage vCLS settings, based on community.vmware.vmware_cluster_vcls (https://github.com/ansible-collections/vmware.vmware/pull/61).

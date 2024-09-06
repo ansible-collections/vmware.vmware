@@ -83,3 +83,24 @@ releases:
       name: vm_portgroup_info
       namespace: ''
     release_date: '2024-08-06'
+  1.5.0:
+    changes:
+      bugfixes:
+      - README - Fix typos in README (https://github.com/ansible-collections/vmware.vmware/pull/66).
+      minor_changes:
+      - Add action group (https://github.com/ansible-collections/vmware.vmware/pull/59).
+      - cluster - Added cluster module, which is meant to succeed the community.vmware.vmware_cluster
+        module (https://github.com/ansible-collections/vmware.vmware/pull/60).
+      - cluster_vcls - Added module to manage vCLS settings, based on community.vmware.vmware_cluster_vcls
+        (https://github.com/ansible-collections/vmware.vmware/pull/61).
+      - folder_template_from_vm - Use a more robust method when waiting for tasks
+        to complete to improve accuracy (https://github.com/ansible-collections/vmware.vmware/pull/64).
+    fragments:
+    - 59-add-action_groups.yaml
+    - 60-add-cluster-module.yaml
+    - 61-add-cluster_vcls.yaml
+    - 61-update-readme-format.yaml
+    - 63-add-cluster-module-to-action_groups.yaml
+    - 64-add-cluster-module.yaml
+    - 66-fix-typos-in-readme.yaml
+    release_date: '2024-09-06'
