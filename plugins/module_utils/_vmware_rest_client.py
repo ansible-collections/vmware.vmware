@@ -325,7 +325,7 @@ class VmwareRestClient(object):
 
     def obj_to_dict(self, vmware_obj, r):
         """
-        Tranform VMware SDK object to dictionary.
+        Transform VMware SDK object to dictionary.
         Args:
             vmware_obj: Object to transform.
             r: Dictionary to fill with object data.
@@ -393,7 +393,7 @@ class VmwareRestClient(object):
 
     def obj_to_dict(self, vmware_obj, r):
         """
-        Tranform VMware SDK object to dictionary.
+        Transform VMware SDK object to dictionary.
         Args:
             vmware_obj: Object to transform.
             r: Dictionary to fill with object data.

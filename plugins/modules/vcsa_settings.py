@@ -44,7 +44,7 @@ options:
   dns_append:
     description:
       - If V(true) items from O(dns_domains) and O(dns_servers) will be added to already configured DNS domains/servers.
-      - If V(false) domains/servers will be overriden.
+      - If V(false) domains/servers will be overridden.
     type: bool
     default: true
   dns_hostname:

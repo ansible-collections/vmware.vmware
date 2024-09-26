@@ -12,7 +12,7 @@
         cluster: "{{ test_cluster }}"
         port: "{{ vcenter_port }}"
         allowed_datastores: "{{ allowed_datastores }}"
-    # The simulator never seems to update its vCLS settings, so theres nothing to validate here
+    # The simulator never seems to update its vCLS settings, so there's nothing to validate here
 
 - name: Test On VCenter
   when: not run_on_simulator

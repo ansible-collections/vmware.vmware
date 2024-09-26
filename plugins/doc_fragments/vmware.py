@@ -14,7 +14,7 @@ class ModuleDocFragment(object):
     # Parameters for VMware modules
     DOCUMENTATION = r'''
 notes:
-  - All modules requires API write access and hence is not supported on a free ESXi license.
+  - All modules require API write access and hence is not supported on a free ESXi license.
   - All variables and VMware object names are case sensitive.
 options:
     hostname:
