@@ -38,7 +38,7 @@ options:
     allowed_datastores:
         description:
             - Exclusive list of the allowed datastores.
-            - If there is an existing list configured in vCenter, it will be overriden by this value.
+            - If there is an existing list configured in vCenter, it will be overridden by this value.
         type: list
         elements: str
         required: false
@@ -116,7 +116,7 @@ allowed_datastores:
         ds3
     ]
 reconfig_task_result:
-    description: Infromation about the vSphere task to re-configure vCLS
+    description: Information about the vSphere task to re-configure vCLS
     returned: on change
     type: dict
     sample: {

@@ -13,7 +13,7 @@ DOCUMENTATION = r'''
 module: guest_info
 short_description: Gather guest information
 description:
-- This module gather vm guest information.
+- This module gathers vm guest information.
 author:
 - Ansible Cloud Team (@ansible-collections)
 requirements:
@@ -210,7 +210,7 @@ class VmwareGuestInfo(VmwareRestClient):
 
     def _get_identity(self, vm):
         """
-        Gets the guest indentity facts (guest os name, guest family, etc) about a VM
+        Gets the guest identity facts (guest os name, guest family, etc) about a VM
         """
         guest_svc = self.vm_svc.guest
         try:
@@ -256,7 +256,7 @@ class VmwareGuestInfo(VmwareRestClient):
 
     def _get_tags(self, vm):
         """
-        Gets the tags on a VM. Tags are formated as a list of dictionaries corresponding to each tag
+        Gets the tags on a VM. Tags are formatted as a list of dictionaries corresponding to each tag
         """
         output = []
         if not self.params.get('gather_tags'):

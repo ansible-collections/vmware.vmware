@@ -292,11 +292,11 @@ class PyVmomi(object):
             This also supports the 'name_match' parameter and the 'use_instance_uuid' parameters. The VM identification
             parameter keys can be changed if your module uses different keys, like vm_name instead of just name
             Args:
-                name_param: Set the prameter key that corredsponds to the VM name
-                uuid_param: Set the prameter key that corredsponds to the VM UUID
-                moid_param: Set the prameter key that corredsponds to the VM MOID
-                name_match_param: Set the prameter key that corredsponds to the name_match option
-                use_instance_uuid_param: Set the prameter key that corredsponds use_instance_uuid option
+                name_param: Set the parameter key that corredsponds to the VM name
+                uuid_param: Set the parameter key that corredsponds to the VM UUID
+                moid_param: Set the parameter key that corredsponds to the VM MOID
+                name_match_param: Set the parameter key that corredsponds to the name_match option
+                use_instance_uuid_param: Set the parameter key that corredsponds use_instance_uuid option
                 fail_on_missing: If true, an error will be thrown if no VMs are found
             Returns:
                 list(vm), or None if no matches were found

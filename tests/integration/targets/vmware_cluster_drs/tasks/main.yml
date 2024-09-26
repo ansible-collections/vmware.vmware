@@ -17,7 +17,7 @@
         drs_vmotion_rate: "{{ drs_vmotion_rate }}"
         advanced_settings: "{{ drs_advanced_settings }}"
         predictive_drs: "{{ drs_predictive_drs }}"
-    # The simulator never seems to update its DRS settings, so theres nothing to validate here
+    # The simulator never seems to update its DRS settings, so there's nothing to validate here
 
 - name: Test On VCenter
   when: not run_on_simulator
