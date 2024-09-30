@@ -71,7 +71,7 @@ EXAMPLES = r'''
 RETURN = r'''
 cluster:
     description:
-        - Identifying nformation about the cluster
+        - Identifying information about the cluster
         - If the cluster was removed, only the name is returned
     returned: On success
     type: dict

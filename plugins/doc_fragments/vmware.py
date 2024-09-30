@@ -74,7 +74,7 @@ options:
     # This doc fragment is specific to vcenter modules like vcenter_license
     VCENTER_DOCUMENTATION = r'''
 notes:
-  - All modules requires API write access and hence is not supported on a free ESXi license.
+  - All modules require API write access and hence is not supported on a free ESXi license.
 options:
     hostname:
       description:
