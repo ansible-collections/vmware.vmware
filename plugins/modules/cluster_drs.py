@@ -158,7 +158,6 @@ class VMwareCluster(PyVmomi):
         self.cluster = self.get_cluster_by_name(self.params.get('cluster'), fail_on_missing=True, datacenter=datacenter)
 
         self.enable_drs = self.params.get('enable')
-        self.drs_vmotion_rate = self.params.get('drs_vmotion_rate')
         self.drs_enable_vm_behavior_overrides = self.params.get('drs_enable_vm_behavior_overrides')
         self.drs_default_vm_behavior = self.params.get('drs_default_vm_behavior')
         self.predictive_drs = self.params.get('predictive_drs')
@@ -167,6 +166,16 @@ class VMwareCluster(PyVmomi):
             self.params.get('advanced_settings'),
             self.cluster.configurationEx.drsConfig.option
         )
+
+    @property
+    def drs_vmotion_rate(self):
+        """
+        When applying or reading this rate from the vCenter config, the values are reversed. So
+        for example, vCenter thinks 1 is the most aggressive when docs/UI say 5 is most aggressive.
+        We present the scale seen in the docs/UI to the user and then adjust the value here to ensure
+        vCenter behaves as intended.
+        """
+        return 6 - self.params.get('drs_vmotion_rate')
 
     def check_drs_config_diff(self):
         """
