@@ -1,0 +1,7 @@
+---
+test_cluster: "{{ tiny_prefix }}_cluster_dpm_test"
+run_on_simulator: false
+
+dpm_enable: true
+dpm_automation_level: manual
+dpm_recommendation_priority_threshold: 2
