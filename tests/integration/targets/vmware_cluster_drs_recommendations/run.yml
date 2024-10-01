@@ -1,0 +1,16 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+    - community.general
+
+  tasks:
+    - name: Import eco-vcenter credentials
+      ansible.builtin.include_vars:
+        file: ../../integration_config.yml
+      tags: eco-vcenter-ci
+
+    - name: Import vmware_cluster_drs_recommendations role
+      ansible.builtin.import_role:
+        name: vmware_cluster_drs_recommendations
+      tags:
+        - eco-vcenter-ci

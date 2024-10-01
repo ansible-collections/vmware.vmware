@@ -1,0 +1,48 @@
+---
+# The simulator doesn't support the RefreshRecommendations method that the drs recommendations
+# module uses, so there's no simulator tests
+- name: Test On VCenter
+  when: not run_on_simulator
+  block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+    - name: Create Test Cluster
+      vmware.vmware.cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        validate_certs: false
+        port: "{{ vcenter_port }}"
+        cluster_name: "{{ test_cluster }}"
+    - name: Enable DRS Settings In Test Cluster
+      vmware.vmware.cluster_drs:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        enable: true
+    - name: Apply Recommendations
+      vmware.vmware.cluster_drs_recommendations:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+  always:
+    - name: Destroy Test Cluster
+      vmware.vmware.cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        validate_certs: false
+        cluster_name: "{{ test_cluster }}"
+        state: absent
