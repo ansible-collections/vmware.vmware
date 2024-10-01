@@ -1,0 +1,86 @@
+---
+- name: Test On Simulator
+  when: run_on_simulator
+  block:
+    - name: Set DPM Settings In Cluster
+      vmware.vmware.cluster_dpm:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        enable: "{{ dpm_enable }}"
+        automation_level: "{{ dpm_automation_level }}"
+        recommendation_priority_threshold: "{{ dpm_recommendation_priority_threshold }}"
+    # The simulator never seems to update its DPM settings, so there's nothing to validate here
+
+- name: Test On VCenter
+  when: not run_on_simulator
+  block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+    - name: Create Test Cluster
+      vmware.vmware.cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        validate_certs: false
+        port: "{{ vcenter_port }}"
+        cluster_name: "{{ test_cluster }}"
+    - name: Set DPM Settings In Test Cluster
+      vmware.vmware.cluster_dpm:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        enable: "{{ dpm_enable }}"
+        automation_level: "{{ dpm_automation_level }}"
+        recommendation_priority_threshold: "{{ dpm_recommendation_priority_threshold }}"
+      register: _out
+    # testing for idempotence because recommendation_preiority_threshold is a little counter intuitive
+    - name: Set DPM Settings In Test Cluster Again - Idempotence
+      vmware.vmware.cluster_dpm:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        enable: "{{ dpm_enable }}"
+        automation_level: "{{ dpm_automation_level }}"
+        recommendation_priority_threshold: "{{ dpm_recommendation_priority_threshold }}"
+      register: _out
+    - name: Check Task Result
+      ansible.builtin.assert:
+        that: _out is not changed
+    - name: Gather Cluster Settings
+      community.vmware.vmware_cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
+    # cluster_info doesn't return DPM config right now so we can't validate this
+
+  always:
+    - name: Destroy Test Cluster
+      vmware.vmware.cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        validate_certs: false
+        cluster_name: "{{ test_cluster }}"
+        state: absent

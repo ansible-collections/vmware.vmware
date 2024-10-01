@@ -4,6 +4,7 @@ action_groups:
     vmware:
         - appliance_info
         - cluster
+        - cluster_dpm
         - cluster_drs
         - cluster_drs_recommendations
         - cluster_vcls
