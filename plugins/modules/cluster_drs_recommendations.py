@@ -123,16 +123,20 @@ class VMwareCluster(PyVmomi):
         applied_recommendation_descriptions = []
         applied_recommendation_tasks = []
         for recommendation in self.cluster.recommendation:
+            # since these are vmotion recommendations, there's only ever one action
+            action = recommendation.action[0]
             applied_recommendation_descriptions.append(
-                "%s move from %s to %s." % (
-                    recommendation.action[0].target.name,
-                    recommendation.action[0].drsMigration.source.name,
-                    recommendation.action[0].drsMigration.destination.name
+                "%s will move from %s to %s." % (
+                    action.target.name,
+                    action.drsMigration.source.name,
+                    action.drsMigration.destination.name
                 )
             )
 
             if not self.module.check_mode:
-                applied_recommendation_tasks.append(self.cluster.ApplyRecommendation(recommendation.key))
+                self.cluster.ApplyRecommendation(recommendation.key)
+                # get the most recent task for the target VM, which should be the vmotion task we just triggered
+                applied_recommendation_tasks.append(action.target.recentTask[0])
 
         task_results = self.__wait_for_recommendation_task_results(applied_recommendation_tasks)
         combined_results = zip_longest(applied_recommendation_descriptions, task_results, fillvalue=dict())
