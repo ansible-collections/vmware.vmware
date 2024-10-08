@@ -15,6 +15,15 @@ module: cluster_drs_recommendations
 short_description: Apply Distributed Resource Scheduler (DRS) recommendations on VMware vSphere clusters
 description:
     - Applies DRS recommendations on VMware vSphere clusters.
+    - >-
+      DRS recommendations are made based on a variety of factors such as resource usage, host health, and some advanced settings like TryBalanceVmsPerHost.
+      The cluster may not recommend moving a VM if the cost of moving the VM is greater than the benefit that would come after the move.
+    - >-
+      Recommendations may only be made if the VM can be vMotioned onto another host. Even if a host is clearly overloaded, if the VMs cannot move
+      to another host then no recommendations will appear.
+    - >-
+      If you try manually vMotioning a VM through the GUI, vCenter will validate the vMotion options at each step. This can be useful when determining
+      why a VM is not able to move to another host and why no recommendations are being made.
 author:
     - Ansible Cloud Team (@ansible-collections)
 
@@ -57,7 +66,7 @@ applied_recommendations:
     type: list
     sample: [
         {
-            "description": "server1 move from host1 to host2.",
+            "description": "server1 will move from host1 to host2.",
             "task_result": {
                 "completion_time": "2024-07-29T15:27:37.041577+00:00",
                 "entity_name": "test-5fb1_cluster_drs_test",
@@ -67,7 +76,7 @@ applied_recommendations:
             }
         },
         {
-            "description": "server2 move from host1 to host2.",
+            "description": "server2 will move from host1 to host2.",
             "task_result": {
                 "completion_time": "2024-07-29T15:27:37.041577+00:00",
                 "entity_name": "test-5fb1_cluster_drs_test",
