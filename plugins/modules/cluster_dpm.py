@@ -42,11 +42,11 @@ options:
                 automatically or manually.
             - If set to V(manual), then vCenter generates host power operation and related virtual machine
                 migration recommendations are made, but they are not automatically run.
-            - If set to V(automated), then vCenter host power operations are automatically run if
+            - If set to V(automatic), then vCenter host power operations are automatically run if
                 related virtual machine migrations can all be run automatically.
         type: str
-        default: automated
-        choices: [ automated, manual ]
+        default: automatic
+        choices: [ automatic, manual ]
     recommendation_priority_threshold:
         description:
             - Threshold for generated host power recommendations ranging from V(1) (most conservative) to V(5) (most aggressive).
@@ -129,6 +129,18 @@ class VMwareCluster(PyVmomi):
         self.cluster = self.get_cluster_by_name(self.params.get('cluster'), fail_on_missing=True, datacenter=datacenter)
 
     @property
+    def automation_level(self):
+        """
+        The vCenter UI and docs say the automation level can be manual or automatic. When setting this option
+        in the API, it expects manual or automated. So if the user chose 'automatic', we need to change it to
+        automated in code.
+        """
+        if self.params['automation_level'] == 'automatic':
+            return 'automated'
+
+        return self.params['automation_level']
+
+    @property
     def recommendation_priority_threshold(self):
         """
         When applying or reading this threshold from the vCenter config, the values are reversed. So
@@ -150,7 +162,7 @@ class VMwareCluster(PyVmomi):
             dpm_config = self.cluster.configurationEx.dpmConfigInfo
 
             if (dpm_config.enabled != self.params['enable'] or
-                    dpm_config.defaultDpmBehavior != self.params['automation_level'] or
+                    dpm_config.defaultDpmBehavior != self.automation_level or
                     dpm_config.hostPowerActionRate != self.recommendation_priority_threshold):
                 return True
 
@@ -166,7 +178,7 @@ class VMwareCluster(PyVmomi):
         cluster_config_spec = vim.cluster.ConfigSpecEx()
         cluster_config_spec.dpmConfig = vim.cluster.DpmConfigInfo()
         cluster_config_spec.dpmConfig.enabled = self.params['enable']
-        cluster_config_spec.dpmConfig.defaultDpmBehavior = self.params['automation_level']
+        cluster_config_spec.dpmConfig.defaultDpmBehavior = self.automation_level
         cluster_config_spec.dpmConfig.hostPowerActionRate = self.recommendation_priority_threshold
 
         return cluster_config_spec
@@ -199,8 +211,8 @@ def main():
                 enable=dict(type='bool', default=True),
                 automation_level=dict(
                     type='str',
-                    choices=['automated', 'manual'],
-                    default='automated'
+                    choices=['automatic', 'manual'],
+                    default='automatic'
                 ),
                 recommendation_priority_threshold=dict(type='int', choices=[1, 2, 3, 4, 5], default=3)
             )
