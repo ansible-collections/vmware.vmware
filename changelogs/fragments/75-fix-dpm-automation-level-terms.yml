@@ -1,3 +1,0 @@
----
-minor_changes:
-  - cluster_dpm - Change automation level option from 'automated' to 'automatic' so it matches the vCenter UI
