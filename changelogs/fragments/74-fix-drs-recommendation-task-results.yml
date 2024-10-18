@@ -1,3 +1,0 @@
----
-bugfixes:
-  - cluster_drs_recommendations - Fix issue where no task object is returned when applying DRS recommendations. Lookup the latest task instead
