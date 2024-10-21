@@ -1,3 +1,0 @@
----
-minor_changes:
-  - cluster_drs_recommendations - Migrated module from community.vmware to apply any DRS recommendations the vCenter cluster may have

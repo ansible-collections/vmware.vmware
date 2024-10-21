@@ -4,6 +4,21 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.6.0
+======
+
+Minor Changes
+-------------
+
+- cluster_dpm - Migrated module from community.vmware to configure DPM in a vCenter cluster
+- cluster_drs_recommendations - Migrated module from community.vmware to apply any DRS recommendations the vCenter cluster may have
+
+Bugfixes
+--------
+
+- Fix typos in all module documentation and README
+- cluster_drs - fixed backwards vMotion rate (input 1 set rate to 5 in vCenter) (https://github.com/ansible-collections/vmware.vmware/issues/68)
+
 v1.5.0
 ======
 
