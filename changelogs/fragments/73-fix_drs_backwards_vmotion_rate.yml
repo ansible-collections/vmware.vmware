@@ -1,3 +1,0 @@
----
-bugfixes:
-  - cluster_drs - fixed backwards vMotion rate (input 1 set rate to 5 in vCenter) (https://github.com/ansible-collections/vmware.vmware/issues/68)

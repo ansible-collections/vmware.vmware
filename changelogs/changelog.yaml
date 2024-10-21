@@ -104,3 +104,20 @@ releases:
     - 64-add-cluster-module.yaml
     - 66-fix-typos-in-readme.yaml
     release_date: '2024-09-06'
+  1.6.0:
+    changes:
+      bugfixes:
+      - Fix typos in all module documentation and README
+      - cluster_drs - fixed backwards vMotion rate (input 1 set rate to 5 in vCenter)
+        (https://github.com/ansible-collections/vmware.vmware/issues/68)
+      minor_changes:
+      - cluster_dpm - Migrated module from community.vmware to configure DPM in a
+        vCenter cluster
+      - cluster_drs_recommendations - Migrated module from community.vmware to apply
+        any DRS recommendations the vCenter cluster may have
+    fragments:
+    - 69-fix-various-typos-in-docs.yml
+    - 70-migrate-cluster-drs-recommendations.yml
+    - 71-migrate-cluster-dpm.yml
+    - 73-fix_drs_backwards_vmotion_rate.yml
+    release_date: '2024-10-21'
