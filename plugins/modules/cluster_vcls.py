@@ -136,7 +136,7 @@ except ImportError:
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
     AnsibleModule,
 )
-from ansible.module_utils.common.text.converters import to_native, jsonify
+from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
     PyVmomi,
@@ -284,16 +284,7 @@ def main():
         if not module.check_mode:
             results['reconfig_task_result'] = vmware_cluster_vcls.configure_vcls(ds_to_add, ds_to_remove)
 
-    # try:
     module.exit_json(**results)
-    # except Exception as e:
-    #     module.exit_json(
-    #         changed=results['changed'],
-    #         allowed_datastores=str(e),
-    #         added_datastores=to_native(results['added_datastores']),
-    #         removed_datastores=to_native(results['removed_datastores']),
-    #         reconfig_task_result=to_native(results['reconfig_task_result']),
-    #     )
 
 
 if __name__ == '__main__':
