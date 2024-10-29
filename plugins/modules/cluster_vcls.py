@@ -136,7 +136,7 @@ except ImportError:
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
     AnsibleModule,
 )
-from ansible.module_utils.common.text.converters import to_native
+from ansible.module_utils.common.text.converters import to_native, jsonify
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
     PyVmomi,
@@ -285,7 +285,7 @@ def main():
             results['reconfig_task_result'] = vmware_cluster_vcls.configure_vcls(ds_to_add, ds_to_remove)
 
     # try:
-    module.exit_json(**{k:to_native(v) for k,v in results.items()})
+    module.exit_json(**results)
     # except Exception as e:
     #     module.exit_json(
     #         changed=results['changed'],
