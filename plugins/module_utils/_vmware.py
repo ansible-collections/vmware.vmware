@@ -13,6 +13,7 @@ __metaclass__ = type
 import atexit
 import ssl
 import traceback
+from functools import lru_cache
 
 REQUESTS_IMP_ERR = None
 try:
@@ -80,6 +81,7 @@ def vmware_argument_spec():
     )
 
 
+@lru_cache
 def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=None, username=None, password=None,
                    port=None, validate_certs=None,
                    httpProxyHost=None, httpProxyPort=None):
