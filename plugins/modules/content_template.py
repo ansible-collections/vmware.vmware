@@ -106,7 +106,9 @@ template_info:
     }
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    AnsibleModule,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 from ansible.module_utils._text import to_native
 

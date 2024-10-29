@@ -108,7 +108,9 @@ try:
 except ImportError:
     pass
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    AnsibleModule,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
     PyVmomi,
     vmware_argument_spec
