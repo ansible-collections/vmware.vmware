@@ -12,6 +12,8 @@ try:
 except TypeError:
     enable_turbo_mode = False
 
+# short circuit to test
+enable_turbo_mode = True
 if enable_turbo_mode:
     try:
         from ansible_collections.cloud.common.plugins.module_utils.turbo.module import (  # noqa: F401
