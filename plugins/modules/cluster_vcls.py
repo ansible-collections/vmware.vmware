@@ -276,11 +276,11 @@ def main():
 
     vmware_cluster_vcls = VMwareClusterVcls(module)
     ds_to_add, ds_to_remove, new_allowed_datastores = vmware_cluster_vcls.resolve_datastores_to_add_and_remove()
-    results['allowed_datastores'] = new_allowed_datastores
+    results['allowed_datastores'] = list(new_allowed_datastores)
     if ds_to_add or ds_to_remove:
         results['changed'] = True
-        results['added_datastores'] = ds_to_add
-        results['removed_datastores'] = ds_to_remove
+        results['added_datastores'] = list(ds_to_add)
+        results['removed_datastores'] = list(ds_to_remove)
         if not module.check_mode:
             results['reconfig_task_result'] = vmware_cluster_vcls.configure_vcls(ds_to_add, ds_to_remove)
 
