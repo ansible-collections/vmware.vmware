@@ -33,6 +33,7 @@ except ImportError:
     HAS_PYVMOMI = False
 
 from ansible.module_utils.basic import env_fallback, missing_required_lib
+import functools
 
 
 class ApiAccessError(Exception):
@@ -80,6 +81,7 @@ def vmware_argument_spec():
     )
 
 
+@functools.lru_cache
 def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=None, username=None, password=None,
                    port=None, validate_certs=None,
                    httpProxyHost=None, httpProxyPort=None):
@@ -203,10 +205,20 @@ class PyVmomi(object):
         self.module = module
         self.params = module.params
         self.current_vm_obj = None
-        self.si, self.content = connect_to_api(self.module, return_si=True)
+        self.si, self.content = self._connect_to_vcenter()
         self.custom_field_mgr = []
         if self.content.customFieldsManager:  # not an ESXi
             self.custom_field_mgr = self.content.customFieldsManager.field
+
+    def __eq__(self, value):
+        return True
+
+    def __hash__(self):
+        return hash(self.params['hostname'])
+
+    @functools.lru_cache
+    def _connect_to_vcenter(self):
+        return  connect_to_api(self.module, return_si=True)
 
     def is_vcenter(self):
         """

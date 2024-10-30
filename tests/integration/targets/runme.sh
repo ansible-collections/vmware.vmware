@@ -15,3 +15,9 @@ else
   echo "ANSIBLE_TAGS is not set for Eco vCenter. Running on simulator."
   exec ansible-playbook run.yml --tags integration-ci
 fi
+lastExitCode=$?
+
+# kill turbo server
+ps -ef | grep turbo | grep -v 'grep' |awk '{print $2}' | xargs kill -9
+
+exit $?

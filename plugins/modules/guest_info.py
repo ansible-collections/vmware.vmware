@@ -241,7 +241,7 @@ class VmwareGuestInfo(VmwareRestClient):
             guest_info['env'] = self._get_env(guest)
 
             all_guest_info += [guest_info]
-
+        #all_guest_info = [{'one': self.connect_to_vsphere_client.cache_info(), 'two': self.pyvmomi._connect_to_vcenter.cache_info()}]
         return all_guest_info
 
     def get_guests(self):
