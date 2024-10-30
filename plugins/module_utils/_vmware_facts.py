@@ -19,9 +19,9 @@ try:
 except ImportError:
     pass
 
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.six import integer_types, string_types, iteritems
-import ansible.module_utils.common._collections_compat as collections_compat
+import ansible.module_utils.six.moves.collections_abc as collections_compat
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import get_folder_path_of_vm
 
 
@@ -355,7 +355,7 @@ def serialize_spec(clonespec):
         elif isinstance(xo, vim.vm.device.VirtualDisk):
             data[x] = serialize_spec(xo)
         elif isinstance(xo, vim.vm.device.VirtualDeviceSpec.FileOperation):
-            data[x] = to_text(xo)
+            data[x] = to_native(xo)
         elif isinstance(xo, vim.Description):
             data[x] = {
                 'dynamicProperty': serialize_spec(xo.dynamicProperty),
@@ -364,7 +364,7 @@ def serialize_spec(clonespec):
                 'summary': serialize_spec(xo.summary),
             }
         elif hasattr(xo, 'name'):
-            data[x] = to_text(xo) + ':' + to_text(xo.name)
+            data[x] = to_native(xo) + ':' + to_native(xo.name)
         elif isinstance(xo, vim.vm.ProfileSpec):
             pass
         elif issubclass(xt, list):
@@ -375,13 +375,13 @@ def serialize_spec(clonespec):
             if issubclass(xt, integer_types):
                 data[x] = int(xo)
             else:
-                data[x] = to_text(xo)
+                data[x] = to_native(xo)
         elif issubclass(xt, bool):
             data[x] = xo
         elif issubclass(xt, dict):
-            data[to_text(x)] = {}
+            data[to_native(x)] = {}
             for k, v in xo.items():
-                k = to_text(k)
+                k = to_native(k)
                 data[x][k] = serialize_spec(v)
         else:
             data[x] = str(xt)

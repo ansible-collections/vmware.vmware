@@ -14,7 +14,6 @@ import time
 import traceback
 from random import randint
 
-from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.six import raise_from
 
 PYVMOMI_IMP_ERR = None
@@ -60,7 +59,7 @@ class RunningTaskMonitor():
 
             if self.is_task_finished_with_success():
                 out = {
-                    'completion_time': to_native(self.task.info.completeTime),
+                    'completion_time': self.task.info.completeTime,
                     'state': self.task.info.state,
                     'result': self.task.info.result,
                     'entity_name': self.task.info.entityName,

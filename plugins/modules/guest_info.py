@@ -170,7 +170,7 @@ guests:
 
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
-    AnsibleModule,
+    AnsibleModule
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
