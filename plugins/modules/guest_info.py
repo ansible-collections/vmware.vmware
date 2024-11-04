@@ -169,7 +169,9 @@ guests:
 '''
 
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    AnsibleModule,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
@@ -239,7 +241,6 @@ class VmwareGuestInfo(VmwareRestClient):
             guest_info['env'] = self._get_env(guest)
 
             all_guest_info += [guest_info]
-
         return all_guest_info
 
     def get_guests(self):

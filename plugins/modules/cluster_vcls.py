@@ -133,8 +133,10 @@ try:
 except ImportError:
     pass
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_native
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    AnsibleModule,
+)
+from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
     PyVmomi,

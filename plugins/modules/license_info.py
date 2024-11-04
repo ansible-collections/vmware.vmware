@@ -43,7 +43,9 @@ licenses:
     - 143cc-0e942-b2955-3ea12-d006f
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    AnsibleModule,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi, vmware_argument_spec
 
 

@@ -51,6 +51,9 @@ except ImportError:
 
 from ansible.module_utils.basic import env_fallback, missing_required_lib
 from ansible.module_utils._text import to_native
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    cache,
+)
 
 
 class VmwareRestClient(object):
@@ -125,6 +128,18 @@ class VmwareRestClient(object):
                             fallback=(env_fallback, ['VMWARE_PROXY_PORT'])),
         )
 
+    def __eq__(self, value):
+        if not isinstance(value, self.__class__):
+            return False
+        return bool(all([
+            (self.params['hostname'] == value.params['hostname']),
+            (self.params['username'] == value.params['username'])
+        ]))
+
+    def __hash__(self):
+        return hash(self.params['hostname'] + self.params['username'])
+
+    @cache
     def connect_to_vsphere_client(self):
         """
         Connect to vSphere API Client with Username and Password
@@ -171,6 +186,7 @@ class VmwareRestClient(object):
 
         return client
 
+    @cache
     def get_vm_by_name(self, name):
         """
         Returns a VM object that matches the given name.

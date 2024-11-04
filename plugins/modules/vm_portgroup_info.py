@@ -64,7 +64,9 @@ vm_portgroup_info:
     }
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    AnsibleModule,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils import _vmware_network as vmware_network
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient

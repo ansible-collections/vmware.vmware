@@ -14,8 +14,8 @@ import time
 import traceback
 from random import randint
 
-from ansible.module_utils._text import to_text
 from ansible.module_utils.six import raise_from
+from ansible.module_utils.common.text.converters import to_native
 
 PYVMOMI_IMP_ERR = None
 try:
@@ -103,7 +103,7 @@ class VmQuestionHandler():
         """
         if hasattr(self.vm, "runtime") and self.vm.runtime.question:
             if not self.answers:
-                raise TaskError("Unanswered VM question: '%s'" % to_text(self.vm.runtime.question.text))
+                raise TaskError("Unanswered VM question: '%s'" % to_native(self.vm.runtime.question.text))
 
         responses = self.format_vm_question_responses()
         self.send_vm_question_responses(self.vm, responses)
@@ -154,4 +154,4 @@ class VmQuestionHandler():
             try:
                 self.vm.AnswerVM(response["id"], response["response_num"])
             except Exception as e:
-                raise TaskError("Answer failed: %s" % to_text(e))
+                raise TaskError("Answer failed: %s" % to_native(e))

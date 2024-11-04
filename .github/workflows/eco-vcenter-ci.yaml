@@ -44,3 +44,9 @@ jobs:
         working-directory: ansible_collections/vmware/vmware
         env:
           ANSIBLE_COLLECTIONS_PATH: "${{ github.workspace }}"
+
+      - name: kill turbo server
+        if: ${{ always() }}
+        run: |
+          # kill turbo server
+          ps -ef | grep turbo | grep -v 'grep' |awk '{print $2}' | xargs kill -9
