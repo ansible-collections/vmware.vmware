@@ -170,7 +170,7 @@ guests:
 
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
-    AnsibleModule
+    AnsibleModule,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
@@ -302,8 +302,8 @@ def main():
         module.fail_json(msg="The option 'properties' is only valid when the schema is 'vsphere'")
 
     vmware_appliance_mgr = VmwareGuestInfo(module)
-    guests = vmware_appliance_mgr.gather_info_for_guests()
-
+    #guests = vmware_appliance_mgr.gather_info_for_guests()
+    guests = []
     module.exit_json(changed=False, guests=guests)
 
 

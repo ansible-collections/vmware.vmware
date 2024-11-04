@@ -12,7 +12,6 @@ __metaclass__ = type
 
 import json
 import os
-import functools
 
 PYVMOMI_IMP_ERR = None
 try:
@@ -24,6 +23,9 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.six import integer_types, string_types, iteritems
 import ansible.module_utils.six.moves.collections_abc as collections_compat
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import get_folder_path_of_vm
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_module import (
+    cache,
+)
 
 
 class VmFacts():
@@ -31,7 +33,11 @@ class VmFacts():
         self.vm = vm
 
     def __eq__(self, value):
-        return True
+        if not isinstance(value, self.__class__):
+            return False
+        return bool(all([
+            (self.vm._GetMoId() == value.vm._GetMoId())
+        ]))
 
     def __hash__(self):
         return hash(self.vm._GetMoId())
@@ -49,7 +55,7 @@ class VmFacts():
             **self.hw_network_device_facts()
         }
 
-    @functools.lru_cache(maxsize=128)
+    @cache
     def all_facts(self, content):
         return {
             **self.hw_all_facts(),

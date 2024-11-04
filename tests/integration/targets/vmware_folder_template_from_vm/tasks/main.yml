@@ -120,6 +120,9 @@
         state: absent
       loop: "{{ template_folders }}"
 
+    - name: Clear the cache
+      vmware.vmware.clear_cache: {}
+
     - name: Verify template deletion
       ansible.builtin.include_tasks: verify_template_deletion.yml
       loop: "{{ template_folders }}"
