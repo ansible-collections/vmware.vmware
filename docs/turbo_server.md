@@ -83,7 +83,7 @@ class PyVmomi(object):
         return hash(self.params['hostname'] + self.params['username'])
 ```
 
-To clear the cache from within a module, you can call the builtin clear_cache method. If the user is not using the turbo server, the module does nothing so you can call this method safely without checking.
+To clear the cache from within a module, you can call the builtin `clear_vmware_cache` method. If the user is not using the turbo server, the module does nothing so you can call this method safely without checking.
 ```python
 def main():
     module = AnsibleModule(
@@ -91,5 +91,5 @@ def main():
         supports_check_mode=True,
     )
     ....
-    module.clear_cache()
+    module.clear_vmware_cache()
 ```

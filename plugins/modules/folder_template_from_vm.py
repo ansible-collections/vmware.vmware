@@ -301,7 +301,7 @@ def main():
             result['changed'] = True
 
     if result['changed']:
-        module.clear_cache()
+        module.clear_vmware_cache()
 
     module.exit_json(**result)
 
