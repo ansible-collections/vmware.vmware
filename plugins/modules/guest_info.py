@@ -302,8 +302,7 @@ def main():
         module.fail_json(msg="The option 'properties' is only valid when the schema is 'vsphere'")
 
     vmware_appliance_mgr = VmwareGuestInfo(module)
-    #guests = vmware_appliance_mgr.gather_info_for_guests()
-    guests = []
+    guests = vmware_appliance_mgr.gather_info_for_guests()
     module.exit_json(changed=False, guests=guests)
 
 

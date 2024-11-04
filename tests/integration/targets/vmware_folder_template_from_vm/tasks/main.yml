@@ -102,6 +102,9 @@
       loop: "{{ template_folders }}"
       register: __res
 
+    - name: Clear the cache
+      vmware.vmware.clear_cache: {}
+
     - name: Verify template creation
       ansible.builtin.include_tasks: verify_template_creation.yml
       loop: "{{ template_folders }}"
