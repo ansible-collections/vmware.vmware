@@ -137,7 +137,7 @@ class VmwareRestClient(object):
     def __hash__(self):
         return hash(self.params['hostname'] + self.params['username'])
 
-    @functools.cache(maxsize=128)
+    @functools.lru_cache(maxsize=128)
     def connect_to_vsphere_client(self):
         """
         Connect to vSphere API Client with Username and Password
@@ -184,7 +184,7 @@ class VmwareRestClient(object):
 
         return client
 
-    @functools.cache(maxsize=128)
+    @functools.lru_cache(maxsize=128)
     def get_vm_by_name(self, name):
         """
         Returns a VM object that matches the given name.

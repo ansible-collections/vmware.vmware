@@ -81,7 +81,7 @@ def vmware_argument_spec():
     )
 
 
-@functools.cache(maxsize=128)
+@functools.lru_cache(maxsize=128)
 def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=None, username=None, password=None,
                    port=None, validate_certs=None,
                    httpProxyHost=None, httpProxyPort=None):
@@ -221,9 +221,9 @@ class PyVmomi(object):
     def __hash__(self):
         return hash(self.params['hostname'] + self.params['username'])
 
-    @functools.cache(maxsize=128)
+    @functools.lru_cache(maxsize=128)
     def _connect_to_vcenter(self):
-        return  connect_to_api(self.module, return_si=True)
+        return connect_to_api(self.module, return_si=True)
 
     def is_vcenter(self):
         """
@@ -299,7 +299,7 @@ class PyVmomi(object):
         """
         return self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], portgroup)
 
-    @functools.cache(maxsize=128)
+    @functools.lru_cache(maxsize=128)
     def get_vm_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
             name_match_param='name_match', use_instance_uuid_param='use_instance_uuid'):

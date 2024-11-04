@@ -49,7 +49,7 @@ class VmFacts():
             **self.hw_network_device_facts()
         }
 
-    @functools.cache(maxsize=128)
+    @functools.lru_cache(maxsize=128)
     def all_facts(self, content):
         return {
             **self.hw_all_facts(),

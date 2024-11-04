@@ -13,15 +13,15 @@ enable_turbo_mode = check_type_bool(os.environ.get("ENABLE_TURBO_MODE", False))
 
 if enable_turbo_mode:
     try:
-        from ansible_collections.cloud.common.plugins.module_utils.turbo.module import (  # noqa: F401
+        from ansible_collections.cloud.common.plugins.module_utils.turbo.module import (
             AnsibleTurboModule as BaseAnsibleModule,
         )
 
         BaseAnsibleModule.collection_name = "vmware.vmware"
     except ImportError:
-        from ansible.module_utils.basic import BaseAnsibleModule  # noqa: F401
+        from ansible.module_utils.basic import AnsibleModule as BaseAnsibleModule
 else:
-    from ansible.module_utils.basic import BaseAnsibleModule  # noqa: F401
+    from ansible.module_utils.basic import AnsibleModule as BaseAnsibleModule
 
 
 class AnsibleModule(BaseAnsibleModule):

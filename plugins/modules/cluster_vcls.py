@@ -148,7 +148,6 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import
 )
 
 
-
 class VMwareClusterVcls(PyVmomi):
     def __init__(self, module):
         super(VMwareClusterVcls, self).__init__(module)
