@@ -22,3 +22,5 @@ build_ignore:
   - changelogs/.plugin-cache.yaml
   - .github
   - .vscode
+dependencies:
+  cloud.common: "*"

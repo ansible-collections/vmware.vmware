@@ -19,9 +19,9 @@ if enable_turbo_mode:
 
         BaseAnsibleModule.collection_name = "vmware.vmware"
     except ImportError:
-        from ansible.module_utils.basic import BaseAnsibleModule
+        from ansible.module_utils.basic import BaseAnsibleModule  # noqa: F401
 else:
-    from ansible.module_utils.basic import BaseAnsibleModule
+    from ansible.module_utils.basic import BaseAnsibleModule  # noqa: F401
 
 
 class AnsibleModule(BaseAnsibleModule):

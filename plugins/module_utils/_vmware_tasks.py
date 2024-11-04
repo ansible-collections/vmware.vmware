@@ -15,6 +15,7 @@ import traceback
 from random import randint
 
 from ansible.module_utils.six import raise_from
+from ansible.module_utils.common.text.converters import to_native
 
 PYVMOMI_IMP_ERR = None
 try:
