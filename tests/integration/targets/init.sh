@@ -4,7 +4,7 @@
 export DEFAULT_COLLECTIONS_PATH="$ANSIBLE_COLLECTIONS_PATH/ansible_collections"
 
 export ENABLE_TURBO_MODE=1
-export ANSIBLE_TURBO_LOOKUP_TTL=600
+export ANSIBLE_TURBO_LOOKUP_TTL=120
 
 # Check if the variable is already set (e.g., in CI)
 if [ -z "$ANSIBLE_COLLECTIONS_PATH" ]; then

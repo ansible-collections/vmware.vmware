@@ -12,6 +12,7 @@ __metaclass__ = type
 
 import json
 import os
+import functools
 
 PYVMOMI_IMP_ERR = None
 try:
@@ -29,6 +30,12 @@ class VmFacts():
     def __init__(self, vm):
         self.vm = vm
 
+    def __eq__(self, value):
+        return True
+
+    def __hash__(self):
+        return hash(self.vm._GetMoId())
+
     def hw_all_facts(self):
         '''
         Returns a combined set of all 'hw_' facts
@@ -42,6 +49,7 @@ class VmFacts():
             **self.hw_network_device_facts()
         }
 
+    @functools.cache
     def all_facts(self, content):
         return {
             **self.hw_all_facts(),

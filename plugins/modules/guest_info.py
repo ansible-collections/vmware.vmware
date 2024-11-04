@@ -304,6 +304,7 @@ def main():
 
     vmware_appliance_mgr = VmwareGuestInfo(module)
     guests = vmware_appliance_mgr.gather_info_for_guests()
+
     module.exit_json(changed=False, guests=guests)
 
 

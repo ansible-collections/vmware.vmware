@@ -8,10 +8,8 @@ import os
 from ansible.module_utils.common.validation import check_type_bool
 from ansible.module_utils.common.text.converters import to_native
 
-try:
-    enable_turbo_mode = check_type_bool(os.environ.get("ENABLE_TURBO_MODE"))
-except TypeError:
-    enable_turbo_mode = False
+
+enable_turbo_mode = check_type_bool(os.environ.get("ENABLE_TURBO_MODE", False))
 
 if enable_turbo_mode:
     try:
@@ -21,12 +19,19 @@ if enable_turbo_mode:
 
         BaseAnsibleModule.collection_name = "vmware.vmware"
     except ImportError:
-        from ansible.module_utils.basic import BaseAnsibleModule  # noqa: F401
+        from ansible.module_utils.basic import BaseAnsibleModule
 else:
-    from ansible.module_utils.basic import BaseAnsibleModule  # noqa: F401
+    from ansible.module_utils.basic import BaseAnsibleModule
 
 
 class AnsibleModule(BaseAnsibleModule):
+    """
+    This should really be added to the upstream cloud.common repo, but until then we need it here.
+    The outputs from a module need to be passed through the turbo server using pickle. If the output
+    contains something that pickle cannot encode/decode, we need to convert it first.
+    For most APIs that return content as JSON, this isn't an issue. But for the SDKs VMware uses,
+    it can be a problem.
+    """
     def exit_json(self, **kwargs):
         if enable_turbo_mode:
             kwargs = self.__format_value_for_turbo_server(kwargs)
