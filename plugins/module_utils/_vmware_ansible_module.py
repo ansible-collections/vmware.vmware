@@ -27,6 +27,7 @@ else:
 
 CACHED_FUNCTION_REGISTRY = set()
 
+
 class AnsibleModule(BaseAnsibleModule):
     """
     The exit_json and __format_value_for_turbo_server should really be added to the upstream

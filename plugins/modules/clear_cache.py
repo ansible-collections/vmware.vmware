@@ -43,7 +43,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_ansible_modu
 def main():
     module = AnsibleModule(
         argument_spec={},
-        supports_check_mode=True,
+        supports_check_mode=False,
     )
 
     cleared, no_cache = module.clear_vmware_cache()
