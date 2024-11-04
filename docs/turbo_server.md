@@ -27,6 +27,21 @@ You can also set these variables in your playbook, if that's more convenient:
   ...
 ```
 
+### Clearing The Cache
+
+You may find the need to clear the cache manually. This will make sure that all cached method return values are invalidated. You can do so with the `clear_cache` module:
+```yaml
+- name: Clear the cache
+  vmware.vmware.clear_cache: {}
+```
+
+### Killing the turbo server
+
+You may want to kill the turbo server before its expriation time. This will clear the cache and also delete any cached module files. You can do so by terminating the process running on the remote host (the host that the vmware.vmware task was run on):
+```bash
+ps -ef | grep turbo | grep -v grep | awk '{print $2}' | xargs kill
+```
+
 ## Development
 
 To use the turbo server in your module, you need to replace the AnsibleModule import with the custom class from this repo.
@@ -66,4 +81,15 @@ class PyVmomi(object):
 
     def __hash__(self):
         return hash(self.params['hostname'] + self.params['username'])
+```
+
+To clear the cache from within a module, you can call the builtin clear_cache method. If the user is not using the turbo server, the module does nothing so you can call this method safely without checking.
+```python
+def main():
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+        supports_check_mode=True,
+    )
+    ....
+    module.clear_cache()
 ```

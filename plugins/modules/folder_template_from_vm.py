@@ -300,6 +300,9 @@ def main():
                 template.Destroy_Task()
             result['changed'] = True
 
+    if result['changed']:
+        module.clear_cache()
+
     module.exit_json(**result)
 
 
