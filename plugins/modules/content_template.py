@@ -139,7 +139,7 @@ class VmwareContentTemplate(VmwareRestClient):
         self.vm_name = self.params.get('vm_name')
 
     def create_template_from_vm(self):
-        template = self.get_library_item_from_content_library_name(self.template, self.library)
+        template = self.get_library_item_id_from_content_library_name(self.template, self.library)
         if template:
             self.result['template_info'] = dict(
                 msg="Template '%s' already exists." % self.template,
@@ -156,7 +156,7 @@ class VmwareContentTemplate(VmwareRestClient):
         create_spec = LibraryItems.CreateSpec(
             name=self.template,
             placement=placement_spec,
-            library=self.get_library_by_name(self.library),
+            library=self.get_content_library_ids(name=self.library, fail_on_missing=True)[0],
             source_vm=self.get_vm_obj_by_name(self.vm_name),
         )
         template_id = ''
@@ -179,7 +179,7 @@ class VmwareContentTemplate(VmwareRestClient):
         )
 
     def delete_template(self):
-        template = self.get_library_item_from_content_library_name(self.template, self.library)
+        template = self.get_library_item_id_from_content_library_name(self.template, self.library)
         if template is None:
             self.result['template_info'] = dict(
                 msg="Template '%s' doesn't exists." % self.template,

@@ -1,0 +1,39 @@
+---
+- name: Test On Eco Datacenter
+  when: not run_on_simulator
+  block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+
+    - name: Gather Library Info
+      vmware.vmware.content_library_item_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        library_name: "{{ library_name }}"
+      register: __res
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - (__res.library_item_info | length) > 0
+
+    - name: Gather Fake Library Info
+      vmware.vmware.content_library_item_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        library_item_name: should_not_exist
+      register: __res
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - (__res.library_item_info | length) == 0
