@@ -26,7 +26,6 @@ try:
     from com.vmware.vapi.std_client import DynamicID
     from vmware.vapi.vsphere.client import create_vsphere_client
     from com.vmware.vapi.std.errors_client import Unauthorized
-    from com.vmware.content.library_client import Item
     from com.vmware.vcenter_client import (Folder,
                                            Datacenter,
                                            ResourcePool,
@@ -63,6 +62,9 @@ class VmwareRestClient(object):
         self.params = module.params
         self.check_required_library()
         self.api_client = self.connect_to_vsphere_client()
+
+        self.library_service = self.api_client.content.Library
+        self.library_item_service = self.api_client.content.library.Item
 
     # Helper function
     def get_error_message(self, error):
@@ -191,34 +193,56 @@ class VmwareRestClient(object):
 
         return vms[0]
 
-    def get_library_item_by_name(self, name):
+    def get_content_library_ids(self, name=None, library_type=None, fail_on_missing=False):
         """
-        Returns the identifier of the library item with the given name.
-
+        Get all content library IDs. You can optionally provide a name or type to refine the search
         Args:
-            name (str): The name of item to look for
-
+            name: str, The name of the library to search for. If None, no names are
+                  filtered out of the search
+            library_type: com.vmware.content_client.LibraryModel.LibraryType or None,
+                          The type of library to search for. If None, all types are included
+            fail_on_missing: If true, an error will be thrown if no libraries are found
         Returns:
-            str: The item ID or None if the item is not found
+            list(str), list of library IDs
         """
-        find_spec = Item.FindSpec(name=name)
-        item_ids = self.api_client.content.library.Item.find(find_spec)
-        item_id = item_ids[0] if item_ids else None
-        return item_id
+        if name or library_type:
+            find_spec = self.library_service.FindSpec(name=name, library_type=library_type)
+            item_ids = self.library_service.find(spec=find_spec)
+            if not item_ids and fail_on_missing:
+                self.module.fail_json(
+                    "Unable to find library with search parameters"
+                    "name %s and type %s" % (name or "'any'", library_type or "'any'")
+                )
+        else:
+            item_ids = self.library_service.list()
 
-    def get_library_by_name(self, name):
+        return item_ids
+
+    def get_library_item_ids(self, name=None, library_id=None, fail_on_missing=False):
         """
-        Returns the identifier of the library given by library name.
+        Get all content library item IDs. You can optionally provide a name or library ID
+        to refine the search
         Args:
-            name (str): The name of the lubrary
+            name: str, The name of the library to search for. If None, no names are
+                  filtered out of the search
+            library_id: str, The ID of library to search inside. If None, all libraries are included
+            fail_on_missing: If true, an error will be thrown if no items are found
         Returns:
-            str: The library ID or None if the library is not found
+            list(str), list of library item IDs
         """
-        cl_find_spec = self.api_client.content.Library.FindSpec(name=name)
-        cl_item_ids = self.api_client.content.Library.find(cl_find_spec)
-        return cl_item_ids[0] if cl_item_ids else None
+        if name or library_id:
+            find_spec = self.library_item_service.FindSpec(name=name, library_id=library_id)
+            item_ids = self.library_item_service.find(spec=find_spec)
+            if not item_ids and fail_on_missing:
+                self.module.fail_json(
+                    "Unable to find library items with search parameters"
+                    "name %s and library ID %s" % (name or "'any'", library_id or "'any'")
+                )
+        else:
+            item_ids = self.library_item_service.list()
+        return item_ids
 
-    def get_library_item_from_content_library_name(self, name, content_library_name):
+    def get_library_item_id_from_content_library_name(self, name, content_library_name):
         """
         Returns the identifier of the library item with the given name in the specified
         content library.
@@ -228,10 +252,10 @@ class VmwareRestClient(object):
         Returns:
             str: The item ID or None if the item is not found
         """
-        cl_item_id = self.get_library_by_name(content_library_name)
+        cl_item_id = self.get_content_library_ids(content_library_name)
         if cl_item_id:
-            find_spec = Item.FindSpec(name=name, library_id=cl_item_id)
-            item_ids = self.api_client.content.library.Item.find(find_spec)
+            find_spec = self.library_item_service.FindSpec(name=name, library_id=cl_item_id[0])
+            item_ids = self.library_item_service.find(find_spec)
             item_id = item_ids[0] if item_ids else None
             return item_id
         else:
