@@ -206,7 +206,7 @@ class VmwareRestClient(object):
             list(str), list of library IDs
         """
         if name or library_type:
-            find_spec = self.library_service.FindSpec(name=name, library_type=library_type)
+            find_spec = self.library_service.FindSpec(name=name, type=library_type)
             item_ids = self.library_service.find(spec=find_spec)
             if not item_ids and fail_on_missing:
                 self.module.fail_json(
@@ -241,25 +241,6 @@ class VmwareRestClient(object):
         else:
             item_ids = self.library_item_service.list()
         return item_ids
-
-    def get_library_item_id_from_content_library_name(self, name, content_library_name):
-        """
-        Returns the identifier of the library item with the given name in the specified
-        content library.
-        Args:
-            name (str): The name of item to look for
-            content_library_name (str): The name of the content library to search in
-        Returns:
-            str: The item ID or None if the item is not found
-        """
-        cl_item_id = self.get_content_library_ids(content_library_name)
-        if cl_item_id:
-            find_spec = self.library_item_service.FindSpec(name=name, library_id=cl_item_id[0])
-            item_ids = self.library_item_service.find(find_spec)
-            item_id = item_ids[0] if item_ids else None
-            return item_id
-        else:
-            return None
 
     def get_datacenter_by_name(self, datacenter_name):
         """
