@@ -9,6 +9,7 @@ action_groups:
         - cluster_drs_recommendations
         - cluster_info
         - cluster_vcls
+        - content_library_item_info
         - content_template
         - folder_template_from_vm
         - guest_info

@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - content_library_item_info - Migrate content_library_item_info module from the vmware.vmware_rest collection to here
