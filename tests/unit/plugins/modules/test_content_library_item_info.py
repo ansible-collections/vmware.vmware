@@ -21,7 +21,7 @@ class TestGuestInfo(ModuleTestCase):
         init_mock = mocker.patch.object(content_library_item_info.ContentLibaryItemInfo, "__init__")
         init_mock.return_value = None
 
-        library_item_ids = mocker.patch.object(content_library_item_info.ContentLibaryItemInfo, "get_library_item_ids")
+        library_item_ids = mocker.patch.object(content_library_item_info.ContentLibaryItemInfo, "get_relevant_library_item_ids_by_params")
         library_item_ids.return_value = []
 
     def test_gather(self, mocker):
@@ -32,10 +32,6 @@ class TestGuestInfo(ModuleTestCase):
             username="administrator@local",
             password="123456",
             add_cluster=False,
-            library_id=None,
-            library_name=None,
-            library_item_id=None,
-            library_item_name=None,
         )
 
         with pytest.raises(AnsibleExitJson) as c:
