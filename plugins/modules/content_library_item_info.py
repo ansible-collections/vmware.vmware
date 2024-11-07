@@ -188,7 +188,7 @@ class ContentLibaryItemInfo(VmwareRestClient):
 
         return self.library_item_service.list(library_id=library_id)
 
-    def get_library_item_ids(self):
+    def get_relevant_library_item_ids_by_params(self):
         if ((self.params['library_item_id'] or self.params['library_item_name']) and
            (not self.params['library_id'] and not self.params['library_name'])):
             # User is searching for a library item in any library, we dont need to specify a
@@ -204,7 +204,7 @@ class ContentLibaryItemInfo(VmwareRestClient):
 
         return library_item_ids
 
-    def get_library_item_info(self, library_item_ids):
+    def get_relevant_library_item_info(self, library_item_ids):
         all_library_items_info = []
         for library_item_id in library_item_ids:
             all_library_items_info.append(self.library_item_service.get(library_item_id).to_dict())
@@ -230,8 +230,8 @@ def main():
     )
 
     library_item_info_module = ContentLibaryItemInfo(module)
-    library_item_ids = library_item_info_module.get_library_item_ids()
-    library_item_info = library_item_info_module.get_library_item_info(library_item_ids)
+    library_item_ids = library_item_info_module.get_relevant_library_item_ids_by_params()
+    library_item_info = library_item_info_module.get_relevant_library_item_info(library_item_ids)
     module.exit_json(library_item_info=library_item_info)
 
 
