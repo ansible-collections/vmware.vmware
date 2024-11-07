@@ -32,6 +32,10 @@ class TestGuestInfo(ModuleTestCase):
             username="administrator@local",
             password="123456",
             add_cluster=False,
+            library_id=None,
+            library_name=None,
+            library_item_id=None,
+            library_item_name=None,
         )
 
         with pytest.raises(AnsibleExitJson) as c:
