@@ -134,16 +134,16 @@ class VmwareContentTemplate(VmwareRestClient):
         self.host = self.params.get('host')
         self.cluster = self.params.get('cluster')
         self.resource_pool = self.params.get('resource_pool')
-        self.library = self.params.get('library')
+        self.library_id = self.get_content_library_ids(name=self.params.get('library'), fail_on_missing=True)[0]
         self.folder = self.params.get('folder')
         self.vm_name = self.params.get('vm_name')
 
     def create_template_from_vm(self):
-        template = self.get_library_item_id_from_content_library_name(self.template, self.library)
-        if template:
+        _template = self.get_library_item_ids(name=self.template, library_id=self.library_id)
+        if _template:
             self.result['template_info'] = dict(
                 msg="Template '%s' already exists." % self.template,
-                template_id=template,
+                template_id=_template[0],
             )
             return
 
@@ -156,7 +156,7 @@ class VmwareContentTemplate(VmwareRestClient):
         create_spec = LibraryItems.CreateSpec(
             name=self.template,
             placement=placement_spec,
-            library=self.get_content_library_ids(name=self.library, fail_on_missing=True)[0],
+            library=self.library_id,
             source_vm=self.get_vm_obj_by_name(self.vm_name),
         )
         template_id = ''
@@ -179,22 +179,23 @@ class VmwareContentTemplate(VmwareRestClient):
         )
 
     def delete_template(self):
-        template = self.get_library_item_id_from_content_library_name(self.template, self.library)
-        if template is None:
+        _template = self.get_library_item_ids(name=self.template, library_id=self.library)
+        if not _template:
             self.result['template_info'] = dict(
                 msg="Template '%s' doesn't exists." % self.template,
             )
             return
+        template_id = _template[0]
 
         try:
-            self.api_client.content.library.Item.delete(template)
+            self.api_client.content.library.Item.delete(template_id)
         except Exception as err:
             self.module.fail_json(msg="%s" % to_native(err))
 
         self.result['changed'] = True
         self.result['template_info'] = dict(
             msg="Template '%s' has been deleted." % self.template,
-            template_id=template,
+            template_id=template_id,
         )
 
 
