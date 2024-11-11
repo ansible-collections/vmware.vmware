@@ -440,6 +440,18 @@ class VmwareRestClient(object):
         dobj = DynamicID(type='VirtualMachine', id=vm_moid)
         return self.get_tags_for_dynamic_id_obj(dobj=dobj)
 
+    def get_tags_by_cluster_moid(self, cluster_moid):
+        """
+        Get a list of tag objects attached to a cluster
+        Args:
+            vm_mid: the cluster MOID to use to gather tags
+
+        Returns:
+            List of tag object associated with the given cluster
+        """
+        dobj = DynamicID(type='ClusterComputeResource', id=cluster_moid)
+        return self.get_tags_for_dynamic_id_obj(dobj=dobj)
+
     def format_tag_identity_as_dict(self, tag_obj):
         """
         Takes a tag object and outputs a dictionary with identifying details about the tag,

@@ -62,7 +62,7 @@
       ansible.builtin.assert:
         that: _out is not changed
     - name: Gather Cluster Settings
-      community.vmware.vmware_cluster_info:
+      vmware.vmware.cluster_info:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -71,7 +71,12 @@
         cluster_name: "{{ test_cluster }}"
         port: "{{ vcenter_port }}"
       register: _cluster_info
-    # cluster_info doesn't return DPM config right now so we can't validate this
+    - name: Validate DPM Output
+      ansible.builtin.assert:
+        that:
+          - _cluster_info.clusters[test_cluster].dpm_enabled
+          - _cluster_info.clusters[test_cluster].dpm_default_dpm_behavior == dpm_automation_level
+          - _cluster_info.clusters[test_cluster].dpm_host_power_action_rate == dpm_recommendation_priority_threshold
 
   always:
     - name: Destroy Test Cluster
