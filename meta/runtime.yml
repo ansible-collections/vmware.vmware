@@ -7,6 +7,7 @@ action_groups:
         - cluster_dpm
         - cluster_drs
         - cluster_drs_recommendations
+        - cluster_info
         - cluster_vcls
         - content_template
         - folder_template_from_vm

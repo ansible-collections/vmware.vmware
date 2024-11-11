@@ -65,7 +65,7 @@
         predictive_drs: "{{ drs_predictive_drs }}"
       register: _idempotence_check
     - name: Gather Cluster Settings
-      community.vmware.vmware_cluster_info:
+      vmware.vmware.cluster_info:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -74,17 +74,14 @@
         cluster_name: "{{ test_cluster }}"
         port: "{{ vcenter_port }}"
       register: _cluster_info
-    # drs vmotion rate reported by vcenter api is backwards. So 1 is actually 5 in the UI
-    # and 5 is actually 1 in the UI. When we migrate cluster_info there is a ticket to fix the output
-    # so the number we return to the user makes sense, but for now we will fix it here with (6 - <user_input>)
     - name: Check DRS Settings Were Applied
       ansible.builtin.assert:
         that:
           - _idempotence_check is not changed
           - _config.drs_default_vm_behavior == drs_default_vm_behavior
           - _config.drs_enable_vm_behavior_overrides == drs_enable_vm_behavior_overrides
-          - _config.drs_vmotion_rate == (6 - drs_vmotion_rate)
-          - _config.enabled_drs == drs_enable
+          - _config.drs_vmotion_rate == drs_vmotion_rate
+          - _config.drs_enabled == drs_enable
       vars:
         _config: "{{ _cluster_info.clusters[test_cluster] }}"
 

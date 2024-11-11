@@ -13,10 +13,21 @@
         port: "{{ vcenter_port }}"
         state: present
       register: _create
+    - name: Gather Cluster Info
+      vmware.vmware.cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
     - name: Check Cluster Output
       ansible.builtin.assert:
         that:
-          - _create.cluster.moid is defined
+          - _cluster_info.clusters[test_cluster] is defined
+          - _create.cluster.moid == _cluster_info.clusters[test_cluster].moid
     # deleting a cluster in the simulator is not supporter
 
 - name: Test On VCenter
@@ -48,8 +59,23 @@
     - name: Check Cluster Output
       ansible.builtin.assert:
         that:
-          - _create.cluster.moid is defined
+          - _cluster_info.clusters[test_cluster] is defined
           - _create.cluster.moid == _cluster_info.clusters[test_cluster].moid
+    - name: Gather Missing Cluster Info
+      vmware.vmware.cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: foo
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
+    - name: Check Cluster Output
+      ansible.builtin.assert:
+        that:
+          - _cluster_info.clusters is defined
+          - not _cluster_info.clusters
 
   always:
     - name: Destroy Test Cluster

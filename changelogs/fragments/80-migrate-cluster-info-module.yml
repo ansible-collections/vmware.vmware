@@ -1,0 +1,2 @@
+minor_changes:
+  - cluster_info - Migrate cluster_info module from the community.vmware collection to here
