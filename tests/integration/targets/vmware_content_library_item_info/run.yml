@@ -2,11 +2,6 @@
   gather_facts: no
 
   tasks:
-    - name: Import simulator vars
-      ansible.builtin.include_vars:
-        file: vars.yml
-      tags: integration-ci
-
     - name: Import eco-vcenter credentials
       ansible.builtin.include_vars:
         file: ../../integration_config.yml
@@ -16,5 +11,4 @@
       ansible.builtin.import_role:
         name: vmware_content_library_item_info
       tags:
-        - integration-ci
         - eco-vcenter-ci
