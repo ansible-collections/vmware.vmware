@@ -38,6 +38,7 @@ options:
     gather_tags:
         description:
             - If true, gather any tags attached to the cluster(s)
+            - This has no affect if the O(schema) is set to V(vsphere). In that case, add 'tag' to O(properties) or leave O(properties) unset.
         type: bool
         default: false
         required: false
@@ -200,10 +201,13 @@ class ClusterInfo(PyVmomi):
             if self.params['schema'] == 'summary':
                 cluster_facts = ClusterFacts(cluster)
                 cluster_info = cluster_facts.all_facts()
+                cluster_info['tags'] = self._get_tags(cluster)
             else:
-                cluster_info = vmware_obj_to_json(cluster, self.params['properties'])
+                try:
+                    cluster_info = vmware_obj_to_json(cluster, self.params['properties'])
+                except AttributeError as e:
+                    self.module.fail_json(str(e))
 
-            cluster_info['tags'] = self._get_tags(cluster)
             all_cluster_info[cluster.name] = cluster_info
 
         return all_cluster_info
