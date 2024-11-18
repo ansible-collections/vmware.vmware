@@ -193,11 +193,12 @@ class ContentLibaryItemInfo(VmwareRestClient):
            (not self.params['library_id'] and not self.params['library_name'])):
             # User is searching for a library item in any library, we dont need to specify a
             # library ID and can save an API call or two
-            library_item_ids = self.__get_library_item_ids_by_search_param()
+            library_ids = [None]
+        else:
+            # User specified the library search params or is trying to gather all items, we need
+            # to lookup all of the library IDs first
+            library_ids = self.__get_library_ids_to_search()
 
-        # User specified the library search params or is trying to gather all items, we need
-        # to lookup all of the library IDs first
-        library_ids = self.__get_library_ids_to_search()
         library_item_ids = []
         for library_id in library_ids:
             library_item_ids += self.__get_library_item_ids_by_search_param(library_id=library_id)
