@@ -360,7 +360,7 @@ class ClusterFacts():
         try:
             output_facts["dpm_host_power_action_rate"] = ClusterFacts.reverse_drs_or_dpm_rate(dpm_config.hostPowerActionRate)
         except (TypeError, AttributeError):
-            output_facts["dpm_host_power_action_rate"] = ClusterFacts.DPM_DEFAULT
+            output_facts["dpm_host_power_action_rate"] = ClusterFacts.DPM_DEFAULT_RATE
 
         return output_facts
 
@@ -383,7 +383,7 @@ class ClusterFacts():
         try:
             output_facts["drs_vmotion_rate"] = ClusterFacts.reverse_drs_or_dpm_rate(drs_config.vmotionRate)
         except (TypeError, AttributeError):
-            output_facts["drs_vmotion_rate"] = ClusterFacts.DRS_DEFAULT
+            output_facts["drs_vmotion_rate"] = ClusterFacts.DRS_DEFAULT_RATE
 
         return output_facts
 
