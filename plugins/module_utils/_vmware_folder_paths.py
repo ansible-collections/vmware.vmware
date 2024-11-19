@@ -72,17 +72,16 @@ def format_folder_path_as_datastore_fq_path(folder_path, datacenter_name):
     return __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='datastore')
 
 
-def get_folder_path_of_vm(vm):
+def get_folder_path_of_vsphere_object(vsphere_obj):
     """
-    Find the path of virtual machine.
+    Find the path of an object in vsphere.
     Args:
-        content: VMware content object
-        vm_name: virtual machine managed object
+        vsphere_obj: VMware content object
 
-    Returns: Folder of virtual machine if exists, else None
+    Returns: Folder of object if exists, else None
 
     """
-    _folder = vm.parent
+    _folder = vsphere_obj.parent
     folder_path = [_folder.name]
     while getattr(_folder, 'parent', None) is not None:
         _folder = _folder.parent

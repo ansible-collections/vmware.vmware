@@ -22,7 +22,7 @@ except ImportError:
 from ansible.module_utils._text import to_text
 from ansible.module_utils.six import integer_types, string_types, iteritems
 import ansible.module_utils.common._collections_compat as collections_compat
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import get_folder_path_of_vm
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import get_folder_path_of_vsphere_object
 
 
 class VmFacts():
@@ -167,7 +167,7 @@ class VmFacts():
 
     def hw_folder_facts(self):
         try:
-            hw_folder = get_folder_path_of_vm(self.vm)
+            hw_folder = get_folder_path_of_vsphere_object(self.vm)
         except Exception:
             hw_folder = None
 
@@ -313,7 +313,7 @@ class ClusterFacts():
         for host in self.cluster.host:
             hosts.append({
                 'name': host.name,
-                'folder': get_folder_path_of_vm(host),
+                'folder': get_folder_path_of_vsphere_object(host),
             })
         return {"hosts": hosts}
 
