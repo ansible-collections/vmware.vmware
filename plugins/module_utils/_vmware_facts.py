@@ -282,8 +282,14 @@ class VmFacts():
 
 
 class ClusterFacts():
+    DPM_DEFAULT_RATE = 3
+    DRS_DEFAULT_RATE = 3
     def __init__(self, cluster):
         self.cluster = cluster
+
+    @staticmethod
+    def reverse_drs_or_dpm_rate(input_rate):
+        return 6 - int(input_rate)
 
     def all_facts(self):
         return {
@@ -352,9 +358,9 @@ class ClusterFacts():
         output_facts["dpm_default_dpm_behavior"] = getattr(dpm_config, "defaultDpmBehavior", None)
         # dpm host power rate is reversed by the vsphere API. so a 1 in the API is really a 5 in the UI
         try:
-            output_facts["dpm_host_power_action_rate"] = 6 - int(dpm_config.hostPowerActionRate)
+            output_facts["dpm_host_power_action_rate"] = ClusterFacts.reverse_drs_or_dpm_rate(dpm_config.hostPowerActionRate)
         except (TypeError, AttributeError):
-            output_facts["dpm_host_power_action_rate"] = 3
+            output_facts["dpm_host_power_action_rate"] = ClusterFacts.DPM_DEFAULT
 
         return output_facts
 
@@ -375,9 +381,9 @@ class ClusterFacts():
 
         # drs vmotion rate is reversed by the vsphere API. so a 1 in the API is really a 5 in the UI
         try:
-            output_facts["drs_vmotion_rate"] = 6 - int(drs_config.vmotionRate)
+            output_facts["drs_vmotion_rate"] = ClusterFacts.reverse_drs_or_dpm_rate(drs_config.vmotionRate)
         except (TypeError, AttributeError):
-            output_facts["drs_vmotion_rate"] = 3
+            output_facts["drs_vmotion_rate"] = ClusterFacts.DRS_DEFAULT
 
         return output_facts
 

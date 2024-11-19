@@ -143,7 +143,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import
     TaskError,
     RunningTaskMonitor
 )
-
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
+    ClusterFacts
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_type_utils import (
     diff_dict_and_vmodl_options_set
 )
@@ -175,7 +177,7 @@ class VMwareCluster(PyVmomi):
         We present the scale seen in the docs/UI to the user and then adjust the value here to ensure
         vCenter behaves as intended.
         """
-        return 6 - self.params.get('drs_vmotion_rate')
+        return ClusterFacts.reverse_drs_or_dpm_rate(self.params.get('drs_vmotion_rate'))
 
     def check_drs_config_diff(self):
         """
@@ -254,7 +256,7 @@ def main():
                     choices=['fullyAutomated', 'manual', 'partiallyAutomated'],
                     default='fullyAutomated'
                 ),
-                drs_vmotion_rate=dict(type='int', choices=[1, 2, 3, 4, 5], default=3),
+                drs_vmotion_rate=dict(type='int', choices=[1, 2, 3, 4, 5], default=ClusterFacts.DRS_DEFAULT_RATE),
                 advanced_settings=dict(type='dict', required=False, default=dict()),
                 predictive_drs=dict(type='bool', required=False, default=False),
             )

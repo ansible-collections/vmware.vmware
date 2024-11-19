@@ -432,7 +432,7 @@ class VmwareRestClient(object):
         """
         Get a list of tag objects attached to a virtual machine
         Args:
-            vm_mid: the VM MOID to use to gather tags
+            vm_moid: the VM MOID to use to gather tags
 
         Returns:
             List of tag object associated with the given virtual machine
@@ -444,7 +444,7 @@ class VmwareRestClient(object):
         """
         Get a list of tag objects attached to a cluster
         Args:
-            vm_mid: the cluster MOID to use to gather tags
+            cluster_moid: the cluster MOID to use to gather tags
 
         Returns:
             List of tag object associated with the given cluster
