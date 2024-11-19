@@ -117,6 +117,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import
     TaskError,
     RunningTaskMonitor
 )
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
+    ClusterFacts
+)
 
 from ansible.module_utils._text import to_native
 
@@ -148,7 +151,7 @@ class VMwareCluster(PyVmomi):
         We present the scale seen in the docs/UI to the user and then adjust the value here to ensure
         vCenter behaves as intended.
         """
-        return 6 - self.params['recommendation_priority_threshold']
+        return ClusterFacts.reverse_drs_or_dpm_rate(self.params['recommendation_priority_threshold'])
 
     def check_dpm_config_diff(self):
         """
@@ -214,7 +217,7 @@ def main():
                     choices=['automatic', 'manual'],
                     default='automatic'
                 ),
-                recommendation_priority_threshold=dict(type='int', choices=[1, 2, 3, 4, 5], default=3)
+                recommendation_priority_threshold=dict(type='int', choices=[1, 2, 3, 4, 5], default=ClusterFacts.DPM_DEFAULT_RATE)
             )
         },
         supports_check_mode=True,
