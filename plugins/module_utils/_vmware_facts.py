@@ -284,6 +284,7 @@ class VmFacts():
 class ClusterFacts():
     DPM_DEFAULT_RATE = 3
     DRS_DEFAULT_RATE = 3
+
     def __init__(self, cluster):
         self.cluster = cluster
 
