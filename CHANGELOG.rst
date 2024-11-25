@@ -4,6 +4,14 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.7.1
+======
+
+Bugfixes
+--------
+
+- content_library_item_info - Library name and ID are ignored if item ID is provided so updated docs and arg parse rules to reflect this
+
 v1.7.0
 ======
 
