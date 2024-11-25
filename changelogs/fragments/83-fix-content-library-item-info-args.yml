@@ -1,3 +1,0 @@
----
-bugfixes:
-  - content_library_item_info - Library name and ID are ignored if item ID is provided so updated docs and arg parse rules to reflect this

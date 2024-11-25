@@ -132,3 +132,11 @@ releases:
     - 80-migrate-cluster-info-module.yml
     - 81-migrate-content-library-item-info.yml
     release_date: '2024-11-25'
+  1.7.1:
+    changes:
+      bugfixes:
+      - content_library_item_info - Library name and ID are ignored if item ID is
+        provided so updated docs and arg parse rules to reflect this
+    fragments:
+    - 83-fix-content-library-item-info-args.yml
+    release_date: '2024-11-25'
