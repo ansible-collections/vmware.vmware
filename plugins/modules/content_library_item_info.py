@@ -42,6 +42,7 @@ options:
         description:
             - The ID of the library item for which to search.
             - Mutually exclusive with O(library_item_name).
+            - Also mutually exclusive with O(library_id), and O(library_name) since item IDs are unique within a vCenter.
             - If O(library_id) or O(library_name) are defined, only items in that library will be included in the results.
             - If neither O(library_item_id) nor O(library_item_name) are provided, all items in the relevant libraries will be returned.
         type: str
@@ -226,7 +227,9 @@ def main():
         supports_check_mode=True,
         mutually_exclusive=[
             ('library_id', 'library_name'),
-            ('library_item_id', 'library_item_name')
+            ('library_item_id', 'library_item_name'),
+            ('library_item_id', 'library_id'),
+            ('library_item_id', 'library_name')
         ],
     )
 
