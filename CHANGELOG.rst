@@ -4,6 +4,15 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.7.0
+======
+
+Minor Changes
+-------------
+
+- cluster_info - Migrate cluster_info module from the community.vmware collection to here
+- content_library_item_info - Migrate content_library_item_info module from the vmware.vmware_rest collection to here
+
 v1.6.0
 ======
 
