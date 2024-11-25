@@ -121,3 +121,14 @@ releases:
     - 71-migrate-cluster-dpm.yml
     - 73-fix_drs_backwards_vmotion_rate.yml
     release_date: '2024-10-21'
+  1.7.0:
+    changes:
+      minor_changes:
+      - cluster_info - Migrate cluster_info module from the community.vmware collection
+        to here
+      - content_library_item_info - Migrate content_library_item_info module from
+        the vmware.vmware_rest collection to here
+    fragments:
+    - 80-migrate-cluster-info-module.yml
+    - 81-migrate-content-library-item-info.yml
+    release_date: '2024-11-25'
