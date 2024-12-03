@@ -48,7 +48,6 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pyvmomi impo
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
 
 
-
 class VcenterLicenseMgr(PyVmomi):
     def __init__(self, module):
         super(VcenterLicenseMgr, self).__init__(module)

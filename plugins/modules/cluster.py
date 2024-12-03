@@ -152,7 +152,7 @@ class VMwareCluster(PyVmomi):
         """
         self.datacenter_obj = self.get_datacenter_by_name_or_moid(self.params['datacenter'], fail_on_missing=True)
         self.cluster_obj = self.get_cluster_by_name_or_moid(
-            cluster_name=self.params['cluster'],
+            identifier=self.params['cluster'],
             datacenter=self.datacenter_obj,
             fail_on_missing=False
         )
