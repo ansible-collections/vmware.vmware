@@ -6,7 +6,7 @@ import json
 
 from ansible.module_utils import basic
 from ansible.module_utils._text import to_bytes
-from ansible_collections.vmware.vmware.plugins.module_utils import _vmware
+from ansible_collections.vmware.vmware.plugins.module_utils import _vmware_pyvmomi
 
 import mock
 
@@ -30,7 +30,7 @@ def set_module_args(add_cluster=True, **args):
 
 
 def mock_pyvmomi(mocker):
-    connect_to_api = mocker.patch.object(_vmware, "connect_to_api")
+    connect_to_api = mocker.patch.object(_vmware_pyvmomi, "connect_to_api")
     _content = type('', (), {})()
     _content.customFieldsManager = False
     connect_to_api.return_value = None, _content
