@@ -77,7 +77,7 @@ class PortgroupInfo(PyVmomi):
         self.vms = self.params['vm_names']
 
     def get_dvs_portgroup_detailed(self, pg_id):
-        dvs_pg = self.get_dvs_portgroup(pg_id)
+        dvs_pg = self.get_dvs_portgroup_by_name_or_moid(pg_id)
         pg = {'portgroup_name': dvs_pg.name, 'vswitch_name': dvs_pg.config.distributedVirtualSwitch.name,
               'type': 'DISTRIBUTED_PORTGROUP', 'port_id': pg_id,
               'port_binding': vmware_network.get_dvs_port_allocation(dvs_pg.config.type),
@@ -98,7 +98,7 @@ class PortgroupInfo(PyVmomi):
         return pg
 
     def get_standard_portgroup_detailed(self, pg_id):
-        pg = self.get_standard_portgroup(pg_id)
+        pg = self.get_dvs_portgroup_by_name_or_moid(pg_id)
         pg_name = str(pg.summary.name)
         ret_pg = vmware_network.get_standard_portgroup_vlan_vswitch(pg, pg_name)
         ret_pg['port_id'] = pg_id

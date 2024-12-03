@@ -152,8 +152,8 @@ class VMwareCluster(PyVmomi):
         Checks if cluster exists and compares that to the desired state.
         Returns: True if cluster state matches desired state, False otherwise
         """
-        self.datacenter_obj = self.get_datacenter_by_name(self.params['datacenter'], fail_on_missing=True)
-        self.cluster_obj = self.get_cluster_by_name(
+        self.datacenter_obj = self.get_datacenter_by_name_or_moid(self.params['datacenter'], fail_on_missing=True)
+        self.cluster_obj = self.get_cluster_by_name_or_moid(
             cluster_name=self.params['cluster'],
             datacenter=self.datacenter_obj,
             fail_on_missing=False
