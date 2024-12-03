@@ -303,7 +303,7 @@ class PyVmomi(object):
             Get all folders with the given name. Names are not unique
             in a given cluster, so multiple folder objects can be returned
             Args:
-                folder_identifier: Name or MOID of the folder to search for
+                identifier: Name or MOID of the folder to search for
                 fail_on_missing: If true, an error will be thrown if no folders are found
             Returns:
                 list(folder object) or None

@@ -44,7 +44,7 @@ licenses:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pymomi import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pyvmomi import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
 
 

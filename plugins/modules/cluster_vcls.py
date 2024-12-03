@@ -136,7 +136,7 @@ except ImportError:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pymomi import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pyvmomi import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (

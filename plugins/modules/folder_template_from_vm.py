@@ -143,7 +143,7 @@ RETURN = r'''
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pymomi import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pyvmomi import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor, TaskError
