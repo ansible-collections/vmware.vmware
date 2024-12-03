@@ -136,10 +136,9 @@ except ImportError:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
-    PyVmomi,
-    vmware_argument_spec
-)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pymomi import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
+
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
     TaskError,
     RunningTaskMonitor
@@ -246,7 +245,7 @@ class VMwareClusterVcls(PyVmomi):
 def main():
     module = AnsibleModule(
         argument_spec={
-            **vmware_argument_spec(), **dict(
+            **base_arg_spec(), **dict(
                 cluster=dict(type='str', required=True, aliases=['cluster_name']),
                 datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
                 allowed_datastores=dict(type='list', elements='str'),

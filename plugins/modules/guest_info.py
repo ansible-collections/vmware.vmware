@@ -82,7 +82,7 @@ attributes:
     description: The check_mode support.
     support: full
 extends_documentation_fragment:
-- vmware.vmware.vmware_rest_client.documentation
+- vmware.vmware.vmware.documentation
 '''
 
 EXAMPLES = r'''
@@ -170,7 +170,8 @@ guests:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pymomi import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
     VmFacts,
@@ -270,7 +271,7 @@ class VmwareGuestInfo(VmwareRestClient):
 
 
 def main():
-    argument_spec = VmwareRestClient.vmware_client_argument_spec()
+    argument_spec = base_arg_spec()
     argument_spec.update(
         dict(
             name=dict(type='str', aliases=['guest_name']),

@@ -14,70 +14,26 @@ import atexit
 import ssl
 import traceback
 
+# requests is required for exception handling of the ConnectionError
 REQUESTS_IMP_ERR = None
 try:
-    # requests is required for exception handling of the ConnectionError
     import requests
-    HAS_REQUESTS = True
 except ImportError:
     REQUESTS_IMP_ERR = traceback.format_exc()
-    HAS_REQUESTS = False
 
 PYVMOMI_IMP_ERR = None
 try:
     from pyVim import connect
     from pyVmomi import vim, vmodl
-    HAS_PYVMOMI = True
 except ImportError:
     PYVMOMI_IMP_ERR = traceback.format_exc()
-    HAS_PYVMOMI = False
 
-from ansible.module_utils.basic import env_fallback, missing_required_lib
+from ansible.module_utils.basic import missing_required_lib
 
 
 class ApiAccessError(Exception):
     def __init__(self, *args, **kwargs):
         super(ApiAccessError, self).__init__(*args, **kwargs)
-
-
-def vmware_argument_spec():
-    return dict(
-        hostname=dict(type='str',
-                      required=False,
-                      fallback=(env_fallback, ['VMWARE_HOST']),
-                      ),
-        username=dict(type='str',
-                      aliases=['user', 'admin'],
-                      required=False,
-                      fallback=(env_fallback, ['VMWARE_USER'])),
-        password=dict(type='str',
-                      aliases=['pass', 'pwd'],
-                      required=False,
-                      no_log=True,
-                      fallback=(env_fallback, ['VMWARE_PASSWORD'])),
-        cluster=dict(type='str',
-                     aliases=['cluster_name'],
-                     required=False),
-        datacenter=dict(type='str',
-                        aliases=['datacenter_name'],
-                        required=False),
-        port=dict(type='int',
-                  default=443,
-                  fallback=(env_fallback, ['VMWARE_PORT'])),
-        validate_certs=dict(type='bool',
-                            required=False,
-                            default=True,
-                            fallback=(env_fallback, ['VMWARE_VALIDATE_CERTS'])
-                            ),
-        proxy_host=dict(type='str',
-                        required=False,
-                        default=None,
-                        fallback=(env_fallback, ['VMWARE_PROXY_HOST'])),
-        proxy_port=dict(type='int',
-                        required=False,
-                        default=None,
-                        fallback=(env_fallback, ['VMWARE_PROXY_PORT'])),
-    )
 
 
 def connect_to_api(module, disconnect_atexit=True, return_si=False, hostname=None, username=None, password=None,
@@ -192,11 +148,11 @@ class PyVmomi(object):
         """
         Constructor
         """
-        if not HAS_REQUESTS:
+        if not REQUESTS_IMP_ERR:
             module.fail_json(msg=missing_required_lib('requests'),
                              exception=REQUESTS_IMP_ERR)
 
-        if not HAS_PYVMOMI:
+        if not PYVMOMI_IMP_ERR:
             module.fail_json(msg=missing_required_lib('PyVmomi'),
                              exception=PYVMOMI_IMP_ERR)
 

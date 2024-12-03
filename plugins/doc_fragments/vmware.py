@@ -13,119 +13,62 @@ __metaclass__ = type
 class ModuleDocFragment(object):
     # Parameters for VMware modules
     DOCUMENTATION = r'''
-notes:
-  - All modules require API write access and hence is not supported on a free ESXi license.
-  - All variables and VMware object names are case sensitive.
-options:
-    hostname:
-      description:
-      - The hostname or IP address of the vSphere vCenter or ESXi server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_HOST) will be used instead.
-      type: str
-    username:
-      description:
-      - The username of the vSphere vCenter or ESXi server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_USER) will be used instead.
-      type: str
-      aliases: [ admin, user ]
-    password:
-      description:
-      - The password of the vSphere vCenter or ESXi server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PASSWORD) will be used instead.
-      type: str
-      aliases: [ pass, pwd ]
-    validate_certs:
-      description:
-      - Allows connection when SSL certificates are not valid. Set to V(false) when certificates are not trusted.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_VALIDATE_CERTS) will be used instead.
-      type: bool
-      default: true
-    port:
-      description:
-      - The port number of the vSphere vCenter or ESXi server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
-      type: int
-      default: 443
-    datacenter:
-      description:
-      - The datacenter to use when connecting to a vCenter.
-      type: str
-      aliases: [ datacenter_name ]
-    cluster:
-      description:
-      - The cluster to use when connecting to a vCenter.
-      type: str
-      aliases: [ cluster_name ]
-    proxy_host:
-      description:
-      - Address of a proxy that will receive all HTTPS requests and relay them.
-      - The format is a hostname or a IP.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_HOST) will be used instead.
-      type: str
-      required: false
-    proxy_port:
-      description:
-      - Port of the HTTP proxy that will receive all HTTPS requests and relay them.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_PORT) will be used instead.
-      type: int
-      required: false
-'''
-
-    # This doc fragment is specific to vcenter modules like vcenter_license
-    VCENTER_DOCUMENTATION = r'''
-notes:
-  - All modules require API write access and hence is not supported on a free ESXi license.
-options:
-    hostname:
-      description:
-      - The hostname or IP address of the vSphere vCenter server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_HOST) will be used instead.
-      type: str
-    username:
-      description:
-      - The username of the vSphere vCenter server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_USER) will be used instead.
-      type: str
-      aliases: [ admin, user ]
-    password:
-      description:
-      - The password of the vSphere vCenter server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PASSWORD) will be used instead.
-      type: str
-      aliases: [ pass, pwd ]
-    validate_certs:
-      description:
-      - Allows connection when SSL certificates are not valid. Set to V(false) when certificates are not trusted.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_VALIDATE_CERTS) will be used instead.
-      type: bool
-      default: true
-    port:
-      description:
-      - The port number of the vSphere vCenter server.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
-      type: int
-      default: 443
-    datacenter:
-      description:
-      - The datacenter to use when connecting to a vCenter.
-      type: str
-      aliases: [ datacenter_name ]
-    cluster:
-      description:
-      - The cluster to use when connecting to a vCenter.
-      type: str
-      aliases: [ cluster_name ]
-    proxy_host:
-      description:
-      - Address of a proxy that will receive all HTTPS requests and relay them.
-      - The format is a hostname or a IP.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_HOST) will be used instead.
-      type: str
-      required: false
-    proxy_port:
-      description:
-      - Port of the HTTP proxy that will receive all HTTPS requests and relay them.
-      - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_PORT) will be used instead.
-      type: int
-      required: false
+      notes:
+        - All modules require API write access and hence is not supported on a free ESXi license.
+        - All variables and VMware object names are case sensitive.
+        - >-
+            Modules may rely on the 'requests' python library, which does not use the system certificate store by default. You can
+            specify the certificate store by setting the REQUESTS_CA_BUNDLE environment variable.
+            Example: 'export REQUESTS_CA_BUNDLE=/path/to/your/ca_bundle.pem'
+      options:
+        hostname:
+          description:
+            - The hostname or IP address of the vSphere vCenter server.
+            - If the value is not specified in the task, the value of environment variable E(VMWARE_HOST) will be used instead.
+          type: str
+        username:
+          description:
+            - The username of the vSphere vCenter server.
+            - If the value is not specified in the task, the value of environment variable E(VMWARE_USER) will be used instead.
+          type: str
+          aliases: [ admin, user ]
+        password:
+          description:
+            - The password of the vSphere vCenter server.
+            - If the value is not specified in the task, the value of environment variable E(VMWARE_PASSWORD) will be used instead.
+          type: str
+          aliases: [ pass, pwd ]
+        validate_certs:
+          description:
+            - Allows connection when SSL certificates are not valid. Set to V(false) when certificates are not trusted.
+            - If the value is not specified in the task, the value of environment variable E(VMWARE_VALIDATE_CERTS) will be used instead.
+          type: bool
+          default: true
+        port:
+          description:
+            - The port number of the vSphere vCenter server.
+            - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
+          type: int
+          default: 443
+        proxy_protocol:
+          description:
+            - The proxy connection protocol to use.
+            - This is option is used if the correct proxy protocol cannot be automatically determined.
+          type: str
+          choices: [ http, https ]
+          default: https
+          aliases: [protocol]
+        proxy_host:
+          description:
+            - Address of a proxy that will receive all HTTPS requests and relay them.
+            - The format is a hostname or a IP.
+            - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_HOST) will be used instead.
+          type: str
+          required: false
+        proxy_port:
+          description:
+          - Port of the HTTP proxy that will receive all HTTPS requests and relay them.
+          - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_PORT) will be used instead.
+          type: int
+          required: false
     '''

@@ -29,7 +29,7 @@ options:
         type: list
         elements: str
 extends_documentation_fragment:
-    - vmware.vmware.vmware_rest_client.documentation
+    - vmware.vmware.vmware.documentation
 '''
 
 EXAMPLES = r'''
@@ -65,7 +65,8 @@ vm_portgroup_info:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_pymomi import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import base_arg_spec
 from ansible_collections.vmware.vmware.plugins.module_utils import _vmware_network as vmware_network
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 
@@ -143,7 +144,7 @@ class PortgroupInfo(PyVmomi):
 
 
 def main():
-    argument_spec = VmwareRestClient.vmware_client_argument_spec()
+    argument_spec = base_arg_spec()
     argument_spec.update(
         dict(
             vm_names=dict(type='list', elements='str', required=True)
