@@ -148,11 +148,11 @@ class PyVmomi(object):
         """
         Constructor
         """
-        if not REQUESTS_IMP_ERR:
+        if REQUESTS_IMP_ERR:
             module.fail_json(msg=missing_required_lib('requests'),
                              exception=REQUESTS_IMP_ERR)
 
-        if not PYVMOMI_IMP_ERR:
+        if PYVMOMI_IMP_ERR:
             module.fail_json(msg=missing_required_lib('PyVmomi'),
                              exception=PYVMOMI_IMP_ERR)
 
