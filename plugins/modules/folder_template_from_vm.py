@@ -241,12 +241,12 @@ class VmwareFolderTemplate(PyVmomi):
     def __create_template_location_spec(self):
         template_location_spec = vim.vm.RelocateSpec()
         if self.params.get("datastore"):
-            template_location_spec.datastore = self.get_datastore_by_name(
+            template_location_spec.datastore = self.get_datastore_by_name_or_moid(
                 self.params.get("datastore"),
                 fail_on_missing=True)
 
         if self.params.get("resource_pool"):
-            template_location_spec.pool = self.get_resource_pool_by_name(
+            template_location_spec.pool = self.get_resource_pool_by_name_or_moid(
                 self.params.get("resource_pool"),
                 fail_on_missing=True)
 

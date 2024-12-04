@@ -152,11 +152,11 @@ class VMwareClusterVcls(PyVmomi):
     def __init__(self, module):
         super(VMwareClusterVcls, self).__init__(module)
         if module.params.get('datacenter'):
-            datacenter = self.get_datacenter_by_name(module.params['datacenter'], fail_on_missing=True)
+            datacenter = self.get_datacenter_by_name_or_moid(module.params['datacenter'], fail_on_missing=True)
         else:
             datacenter = None
 
-        self.cluster = self.get_cluster_by_name(module.params['cluster'], datacenter=datacenter, fail_on_missing=True)
+        self.cluster = self.get_cluster_by_name_or_moid(module.params['cluster'], datacenter=datacenter, fail_on_missing=True)
 
     def get_current_configured_datastores(self):
         """
@@ -200,7 +200,7 @@ class VMwareClusterVcls(PyVmomi):
         Adds a datastore to the potential new vCLS spec. Causes a failure if the datastore does not exist.
         """
         allowed_datastore_spec = vim.cluster.DatastoreUpdateSpec()
-        allowed_datastore_spec.datastore = self.get_datastore_by_name(ds_name, fail_on_missing=True)
+        allowed_datastore_spec.datastore = self.get_datastore_by_name_or_moid(ds_name, fail_on_missing=True)
         allowed_datastore_spec.operation = 'add'
         cluster_config_spec.systemVMsConfig.allowedDatastores.append(allowed_datastore_spec)
 
@@ -209,7 +209,7 @@ class VMwareClusterVcls(PyVmomi):
         Removes a datastore from the potential new vCLS spec
         """
         allowed_datastore_spec = vim.cluster.DatastoreUpdateSpec()
-        allowed_datastore_spec.removeKey = self.get_datastore_by_name(ds_name, fail_on_missing=False)
+        allowed_datastore_spec.removeKey = self.get_datastore_by_name_or_moid(ds_name, fail_on_missing=False)
         allowed_datastore_spec.operation = 'remove'
         cluster_config_spec.systemVMsConfig.allowedDatastores.append(allowed_datastore_spec)
 

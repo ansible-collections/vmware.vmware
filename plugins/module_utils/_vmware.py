@@ -222,25 +222,31 @@ class PyVmomi(object):
             # for backwards-compat
             return None
 
-    def get_standard_portgroup(self, portgroup):
+    def get_dvs_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
-        Get a portgroup from type 'STANDARD_PORTGROUP'
+        Get a portgroup from type 'STANDARD_PORTGROUP' based on name or MOID
         Args:
-            portgroup: The name or the ID of the portgroup
+            identifier: The name or the ID of the portgroup
         Returns:
             The standard portgroup object
         """
-        return self.get_objs_by_name_or_moid([vim.Network], portgroup)
+        pg = self.get_objs_by_name_or_moid([vim.Network], identifier)
+        if not pg and fail_on_missing:
+            self.module.fail_json("Unable to find standard portgroup with name or MOID %s" % identifier)
+        return pg
 
-    def get_dvs_portgroup(self, portgroup):
+    def get_dvs_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
-        Get a portgroup from type 'DISTRIBUTED_PORTGROUP'
+        Get a portgroup from type 'DISTRIBUTED_PORTGROUP' based on name or MOID
         Args:
-            portgroup: The name or the ID of the portgroup
+            identifier: The name or the ID of the portgroup
         Returns:
             The distributed portgroup object
         """
-        return self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], portgroup)
+        pg = self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], identifier)
+        if not pg and fail_on_missing:
+            self.module.fail_json("Unable to find distributed portgroup with name or MOID %s" % identifier)
+        return pg
 
     def get_vm_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
@@ -296,19 +302,19 @@ class PyVmomi(object):
 
         return vms
 
-    def get_folder_by_name(self, folder_name, fail_on_missing=False):
+    def get_folders_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
             Get all folders with the given name. Names are not unique
             in a given cluster, so multiple folder objects can be returned
             Args:
-                folder_name: Name of the folder to search for
+                identifier: Name or MOID of the folder to search for
                 fail_on_missing: If true, an error will be thrown if no folders are found
             Returns:
                 list(folder object) or None
         """
-        folder = self.get_objs_by_name_or_moid([vim.Folder], folder_name, return_all=True)
+        folder = self.get_objs_by_name_or_moid([vim.Folder], identifier, return_all=True)
         if not folder and fail_on_missing:
-            self.module.fail_json("Unable to find folder with name %s" % folder_name)
+            self.module.fail_json("Unable to find folder with name or MOID %s" % identifier)
         return folder
 
     def get_folder_by_absolute_path(self, folder_path, fail_on_missing=False):
@@ -328,39 +334,39 @@ class PyVmomi(object):
             self.module.fail_json("Unable to find folder with absolute path %s" % folder_path)
         return folder
 
-    def get_datastore_by_name(self, ds_name, fail_on_missing=False):
+    def get_datastore_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
             Get the datastore matching the given name. Datastore names must be unique
             in a given cluster, so only one object is returned at most.
             Args:
-                ds_name: Name of the datastore to search for
+                identifier: Name or MOID of the datastore to search for
                 fail_on_missing: If true, an error will be thrown if no datastores are found
             Returns:
                 datastore object or None
         """
-        ds = self.get_objs_by_name_or_moid([vim.Datastore], ds_name)
+        ds = self.get_objs_by_name_or_moid([vim.Datastore], identifier)
         if not ds and fail_on_missing:
-            self.module.fail_json("Unable to find datastore with name %s" % ds_name)
+            self.module.fail_json("Unable to find datastore with name or MOID %s" % identifier)
         return ds
 
-    def get_resource_pool_by_name(self, pool_name, fail_on_missing=False):
+    def get_resource_pool_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
             Get the resource pool matching the given name. Pool names must be unique
             in a given cluster, so only one object is returned at most.
             Args:
-                pool_name: Name of the pool to search for
+                identifier: Name or MOID of the pool to search for
                 fail_on_missing: If true, an error will be thrown if no pools are found
             Returns:
                 resource pool object or None
         """
-        pool = self.get_objs_by_name_or_moid([vim.ResourcePool], pool_name)
+        pool = self.get_objs_by_name_or_moid([vim.ResourcePool], identifier)
         if not pool and fail_on_missing:
-            self.module.fail_json("Unable to find resource pool with name %s" % pool_name)
+            self.module.fail_json("Unable to find resource pool with name %s" % identifier)
         return pool
 
-    def list_all_objs_by_type(self, vimtype, folder=None, recurse=True):
+    def get_all_objs_by_type(self, vimtype, folder=None, recurse=True):
         """
-            Returns a dictionary of all objects matching a given VMWare type.
+            Returns a list of all objects matching a given VMWare type.
             You can also limit the search by folder and recurse if desired
             Args:
                 vimtype: The type of object to search for
@@ -368,48 +374,54 @@ class PyVmomi(object):
                         none is provided, the datacenter root will be used
                 recurse: If true, the search will recurse through the folder structure
             Returns:
-                dicttionary of {obj: str}. The keys are the object while the values are the
-                object name
+                list of objs
         """
         if not folder:
             folder = self.content.rootFolder
 
-        obj = {}
+        objs = []
         container = self.content.viewManager.CreateContainerView(folder, vimtype, recurse)
         for managed_object_ref in container.view:
             try:
-                obj.update({managed_object_ref: managed_object_ref.name})
+                objs += [managed_object_ref]
             except vmodl.fault.ManagedObjectNotFound:
                 pass
-        return obj
+        return objs
 
     def get_all_vms(self, folder=None, recurse=True):
         """
-        Get all virtual machines.
+            Get all virtual machines in a folder. Can recurse through folder tree if needed. If no folder
+            is provided, then the datacenter root folder is used
+            Args:
+                folder: vim.Folder, the folder object to use as a base for the search. If
+                        none is provided, the datacenter root will be used
+                recurse: If true, the search will recurse through the folder structure
+            Returns:
+                list of vim.VirtualMachine
         """
-        return self.list_all_objs_by_type([vim.VirtualMachine], folder=folder, recurse=recurse)
+        return self.get_all_objs_by_type([vim.VirtualMachine], folder=folder, recurse=recurse)
 
-    def get_datacenter_by_name(self, dc_name, fail_on_missing=False):
+    def get_datacenter_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
             Get the datacenter matching the given name. Datacenter names must be unique
             in a given vcenter, so only one object is returned at most.
             Args:
-                dc_name: Name of the datacenter to search for
+                identifier: Name or MOID of the datacenter to search for
                 fail_on_missing: If true, an error will be thrown if no datacenters are found
             Returns:
                 datacenter object or None
         """
-        ds = self.get_objs_by_name_or_moid([vim.Datacenter], dc_name)
+        ds = self.get_objs_by_name_or_moid([vim.Datacenter], identifier)
         if not ds and fail_on_missing:
-            self.module.fail_json("Unable to find datacenter with name %s" % dc_name)
+            self.module.fail_json("Unable to find datacenter with name or MOID %s" % identifier)
         return ds
 
-    def get_cluster_by_name(self, cluster_name, fail_on_missing=False, datacenter=None):
+    def get_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
         """
             Get the cluster matching the given name. Cluster names must be unique
             in a given vcenter, so only one object is returned at most.
             Args:
-                cluster_name: Name of the cluster to search for
+                identifier: Name or MOID of the cluster to search for
                 fail_on_missing: If true, an error will be thrown if no clusters are found
             Returns:
                 cluster object or None
@@ -420,12 +432,12 @@ class PyVmomi(object):
 
         cluster = self.get_objs_by_name_or_moid(
             [vim.ClusterComputeResource],
-            cluster_name,
+            identifier,
             return_all=False,
             search_root_folder=search_folder
         )
 
         if not cluster and fail_on_missing:
-            self.module.fail_json("Unable to find cluster with name %s" % cluster_name)
+            self.module.fail_json("Unable to find cluster with name or MOID %s" % identifier)
 
         return cluster

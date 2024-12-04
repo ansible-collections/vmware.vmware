@@ -183,19 +183,19 @@ class ClusterInfo(PyVmomi):
         """
         datacenter, search_folder = None, None
         if self.params.get('datacenter'):
-            datacenter = self.get_datacenter_by_name(self.params.get('datacenter'), fail_on_missing=False)
+            datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=False)
             search_folder = datacenter.hostFolder
 
         if self.params.get('cluster'):
-            _cluster = self.get_cluster_by_name(self.params.get('cluster'), fail_on_missing=False, datacenter=datacenter)
+            _cluster = self.get_cluster_by_name_or_moid(self.params.get('cluster'), fail_on_missing=False, datacenter=datacenter)
             return [_cluster] if _cluster else []
         else:
-            _clusters = self.list_all_objs_by_type(
+            _clusters = self.get_all_objs_by_type(
                 [vim.ClusterComputeResource],
                 folder=search_folder,
                 recurse=False
             )
-            return _clusters.keys()
+            return _clusters
 
     def gather_info_for_clusters(self):
         """
