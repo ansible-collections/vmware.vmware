@@ -57,7 +57,7 @@ options:
         elements: str
 
 extends_documentation_fragment:
-    - vmware.vmware.vmware.vcenter_documentation
+    - vmware.vmware.vmware.documentation
 '''
 
 EXAMPLES = r'''
