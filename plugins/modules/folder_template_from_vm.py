@@ -143,7 +143,12 @@ RETURN = r'''
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi, vmware_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
+    PyVmomi
+)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
+    common_argument_spec
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor, TaskError
 
@@ -262,7 +267,7 @@ def custom_validation(module):
 def main():
     module = AnsibleModule(
         argument_spec={
-            **vmware_argument_spec(), **dict(
+            **common_argument_spec(), **dict(
                 vm_name=dict(type='str', required=False, default=None),
                 vm_name_match=dict(type='str', required=False, choices=['first', 'last']),
                 vm_uuid=dict(type='str', required=False, default=None),

@@ -44,7 +44,12 @@ licenses:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi, vmware_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
+    PyVmomi
+)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
+    common_argument_spec
+)
 
 
 class VcenterLicenseMgr(PyVmomi):
@@ -62,7 +67,7 @@ class VcenterLicenseMgr(PyVmomi):
 
 def main():
     module = AnsibleModule(
-        argument_spec=vmware_argument_spec(),
+        argument_spec=common_argument_spec(),
         supports_check_mode=True,
     )
 

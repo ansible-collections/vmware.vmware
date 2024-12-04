@@ -155,7 +155,12 @@ try:
 except ImportError:
     pass
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi, vmware_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
+    PyVmomi
+)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
+    common_argument_spec
+)
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
     ClusterFacts,
@@ -230,7 +235,7 @@ class ClusterInfo(PyVmomi):
 def main():
     module = AnsibleModule(
         argument_spec={
-            **vmware_argument_spec(), **dict(
+            **common_argument_spec(), **dict(
                 cluster=dict(type='str', aliases=['cluster_name', 'name']),
                 datacenter=dict(type='str', aliases=['datacenter_name']),
                 gather_tags=dict(type='bool', default=False),
