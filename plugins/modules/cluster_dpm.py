@@ -58,7 +58,7 @@ options:
         choices: [ 1, 2, 3, 4, 5 ]
 
 extends_documentation_fragment:
-    - vmware.vmware.vmware.documentation
+    - vmware.vmware.vmware.base_documentation
 '''
 
 EXAMPLES = r'''
