@@ -159,7 +159,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
     PyVmomi
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
-    common_argument_spec
+    rest_compatible_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
@@ -235,7 +235,7 @@ class ClusterInfo(PyVmomi):
 def main():
     module = AnsibleModule(
         argument_spec={
-            **common_argument_spec(), **dict(
+            **rest_compatible_argument_spec(), **dict(
                 cluster=dict(type='str', aliases=['cluster_name', 'name']),
                 datacenter=dict(type='str', aliases=['datacenter_name']),
                 gather_tags=dict(type='bool', default=False),

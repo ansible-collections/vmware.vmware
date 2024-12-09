@@ -140,7 +140,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
     PyVmomi
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
-    common_argument_spec
+    base_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
     TaskError,
@@ -248,7 +248,7 @@ class VMwareClusterVcls(PyVmomi):
 def main():
     module = AnsibleModule(
         argument_spec={
-            **common_argument_spec(), **dict(
+            **base_argument_spec(), **dict(
                 cluster=dict(type='str', required=True, aliases=['cluster_name']),
                 datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
                 allowed_datastores=dict(type='list', elements='str'),
