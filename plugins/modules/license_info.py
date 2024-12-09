@@ -22,7 +22,7 @@ attributes:
     description: The check_mode support.
     support: full
 extends_documentation_fragment:
-- vmware.vmware.vmware.documentation
+- vmware.vmware.vmware.base_documentation
 '''
 
 EXAMPLES = r'''

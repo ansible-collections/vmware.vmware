@@ -11,8 +11,11 @@ __metaclass__ = type
 
 
 class ModuleDocFragment(object):
-    # Parameters for VMware modules
-    DOCUMENTATION = r'''
+    # This document fragment serves as a base for all vmware modules. If you are using the REST API SDK in your module,
+    # you should use the REST_COMPATIBLE_DOCUMENTATION fragment. Otherwise, you can use this BASE_DOCUMENTATION.
+    # BASE_DOCUMENTATION covers the arg spec provided by the base_argument_spec() function, while
+    # REST_COMPATIBLE_DOCUMENTATION covers the arg spec provided by the rest_compatible_argument_spec() function
+    BASE_DOCUMENTATION = r'''
 notes:
   - All modules require API write access and hence is not supported on a free ESXi license.
   - All variables and VMware object names are case sensitive.
@@ -50,14 +53,6 @@ options:
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
     type: int
     default: 443
-  proxy_protocol:
-    description:
-      - The proxy connection protocol to use.
-      - This is option is used if the correct proxy protocol cannot be automatically determined.
-    type: str
-    choices: [ http, https ]
-    default: https
-    aliases: [protocol]
   proxy_host:
     description:
       - Address of a proxy that will receive all HTTPS requests and relay them.
@@ -71,4 +66,16 @@ options:
     - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_PORT) will be used instead.
     type: int
     required: false
+'''
+    # Use this document fragment a base for any vmware modules that use the REST API SDK. If your module uses
+    # both the REST SDK and pyvmomi, you should still use this doc fragment
+    REST_COMPATIBLE_DOCUMENTATION = BASE_DOCUMENTATION + r'''
+  proxy_protocol:
+    description:
+      - The proxy connection protocol to use.
+      - This is option is used if the correct proxy protocol cannot be automatically determined.
+    type: str
+    choices: [ http, https ]
+    default: https
+    aliases: [protocol]
 '''

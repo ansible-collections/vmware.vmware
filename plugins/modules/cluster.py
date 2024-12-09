@@ -46,7 +46,7 @@ seealso:
     - module: community.vmware.vmware_cluster_ha
     - module: community.vmware.vmware_cluster_vsan
 extends_documentation_fragment:
-    - vmware.vmware.vmware.documentation
+    - vmware.vmware.vmware.base_documentation
 '''
 
 EXAMPLES = r'''
