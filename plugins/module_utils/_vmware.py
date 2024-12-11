@@ -262,11 +262,12 @@ class PyVmomi(object):
             # for backwards-compat
             return None
 
-    def get_dvs_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
+    def get_standard_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
         Get a portgroup from type 'STANDARD_PORTGROUP' based on name or MOID
         Args:
             identifier: The name or the ID of the portgroup
+            fail_on_missing: If true, an error will be thrown if no networks are found
         Returns:
             The standard portgroup object
         """
@@ -280,6 +281,7 @@ class PyVmomi(object):
         Get a portgroup from type 'DISTRIBUTED_PORTGROUP' based on name or MOID
         Args:
             identifier: The name or the ID of the portgroup
+            fail_on_missing: If true, an error will be thrown if no networks are found
         Returns:
             The distributed portgroup object
         """
@@ -344,7 +346,7 @@ class PyVmomi(object):
 
     def get_folders_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
-            Get all folders with the given name. Names are not unique
+            Get all folders with the given name or MOID. Names are not unique
             in a given cluster, so multiple folder objects can be returned
             Args:
                 identifier: Name or MOID of the folder to search for
@@ -376,7 +378,7 @@ class PyVmomi(object):
 
     def get_datastore_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
-            Get the datastore matching the given name. Datastore names must be unique
+            Get the datastore matching the given name or MOID. Datastore names must be unique
             in a given cluster, so only one object is returned at most.
             Args:
                 identifier: Name or MOID of the datastore to search for
@@ -391,7 +393,7 @@ class PyVmomi(object):
 
     def get_resource_pool_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
-            Get the resource pool matching the given name. Pool names must be unique
+            Get the resource pool matching the given name or MOID. Pool names must be unique
             in a given cluster, so only one object is returned at most.
             Args:
                 identifier: Name or MOID of the pool to search for
@@ -443,7 +445,7 @@ class PyVmomi(object):
 
     def get_datacenter_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
-            Get the datacenter matching the given name. Datacenter names must be unique
+            Get the datacenter matching the given name or MOID. Datacenter names must be unique
             in a given vcenter, so only one object is returned at most.
             Args:
                 identifier: Name or MOID of the datacenter to search for
@@ -458,11 +460,13 @@ class PyVmomi(object):
 
     def get_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
         """
-            Get the cluster matching the given name. Cluster names must be unique
+            Get the cluster matching the given name or MOID. Cluster names must be unique
             in a given vcenter, so only one object is returned at most.
             Args:
                 identifier: Name or MOID of the cluster to search for
                 fail_on_missing: If true, an error will be thrown if no clusters are found
+                datacenter: The datacenter object to use as a filter when searching for clusters. If
+                            not provided then all datacenters will be examined
             Returns:
                 cluster object or None
         """
