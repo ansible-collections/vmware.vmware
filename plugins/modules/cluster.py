@@ -45,8 +45,9 @@ seealso:
     - module: vmware.vmware.cluster_drs
     - module: community.vmware.vmware_cluster_ha
     - module: community.vmware.vmware_cluster_vsan
+
 extends_documentation_fragment:
-    - vmware.vmware.vmware.documentation
+    - vmware.vmware.base_options
 '''
 
 EXAMPLES = r'''
@@ -92,8 +93,10 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
-    PyVmomi,
-    vmware_argument_spec
+    PyVmomi
+)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
+    base_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
     TaskError,
@@ -182,7 +185,7 @@ class VMwareCluster(PyVmomi):
 def main():
     module = AnsibleModule(
         argument_spec={
-            **vmware_argument_spec(), **dict(
+            **base_argument_spec(), **dict(
                 cluster=dict(type='str', required=True, aliases=['cluster_name', 'name']),
                 datacenter=dict(type='str', required=True, aliases=['datacenter_name']),
                 state=dict(type='str', default='present', choices=['absent', 'present']),
