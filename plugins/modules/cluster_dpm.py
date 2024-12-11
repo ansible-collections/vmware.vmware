@@ -128,8 +128,8 @@ class VMwareCluster(PyVmomi):
     def __init__(self, module):
         super(VMwareCluster, self).__init__(module)
 
-        datacenter = self.get_datacenter_by_name(self.params.get('datacenter'), fail_on_missing=True)
-        self.cluster = self.get_cluster_by_name(self.params.get('cluster'), fail_on_missing=True, datacenter=datacenter)
+        datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=True)
+        self.cluster = self.get_cluster_by_name_or_moid(self.params.get('cluster'), fail_on_missing=True, datacenter=datacenter)
 
     @property
     def automation_level(self):
