@@ -4,8 +4,8 @@ from ansible.module_utils.basic import env_fallback
 def rest_compatible_argument_spec():
     """
     This returns a dictionary that can be used as the baseline for all REST module specs.
-    If your module uses the REST API, you should use this instead of the base_argument_spec.
-    If your module uses both this and the pyvmomi SDK, you should still use this spec.
+    If your module uses the REST API SDK, you should use this instead of the base_argument_spec.
+    If your module uses both the REST API SDK and the pyvmomi SDK, you should still use this spec.
     """
     return {
         **base_argument_spec(),
@@ -22,7 +22,7 @@ def rest_compatible_argument_spec():
 
 def base_argument_spec():
     """
-    This returns a dictionary that can be used as the baseline for all vmware module specs. Any arguments
+    This returns a dictionary that can be used as the baseline for all VMware module specs. Any arguments
     common to both the REST API SDK and pyvmomi SDK should be placed here.
     If your module uses the REST API, you should use the rest_compatible_argument_spec since that
     includes additional arguments specific to that SDK.

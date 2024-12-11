@@ -17,7 +17,7 @@ class ModuleDocFragment(object):
     # This vmware.vmware.base_options fragment covers the arg spec provided by the base_argument_spec() function
     DOCUMENTATION = r'''
 notes:
-  - All modules require API write access and hence is not supported on a free ESXi license.
+  - All modules require API write access and hence are not supported on a free ESXi license.
   - All variables and VMware object names are case sensitive.
   - >-
       Modules may rely on the 'requests' python library, which does not use the system certificate store by default. You can
@@ -55,14 +55,14 @@ options:
     default: 443
   proxy_host:
     description:
-      - Address of a proxy that will receive all HTTPS requests and relay them.
+      - The address of a proxy that will receive all HTTPS requests and relay them.
       - The format is a hostname or a IP.
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_HOST) will be used instead.
     type: str
     required: false
   proxy_port:
     description:
-    - Port of the HTTP proxy that will receive all HTTPS requests and relay them.
+    - The port of the HTTP proxy that will receive all HTTPS requests and relay them.
     - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_PORT) will be used instead.
     type: int
     required: false
