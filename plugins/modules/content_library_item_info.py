@@ -57,7 +57,8 @@ options:
         required: false
 
 extends_documentation_fragment:
-    - vmware.vmware.vmware_rest_client.documentation
+    - vmware.vmware.base_options
+    - vmware.vmware.additional_rest_options
 '''
 
 EXAMPLES = r'''
@@ -153,6 +154,7 @@ library_item_info:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 
 
 class ContentLibaryItemInfo(VmwareRestClient):
@@ -215,7 +217,7 @@ class ContentLibaryItemInfo(VmwareRestClient):
 
 
 def main():
-    argument_spec = VmwareRestClient.vmware_client_argument_spec()
+    argument_spec = rest_compatible_argument_spec()
     argument_spec.update(
         library_id=dict(type='str', required=False),
         library_name=dict(type='str', required=False),
