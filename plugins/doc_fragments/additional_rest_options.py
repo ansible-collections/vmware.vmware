@@ -21,7 +21,7 @@ options:
   proxy_protocol:
     description:
       - The proxy connection protocol to use.
-      - This is option is used if the correct proxy protocol cannot be automatically determined.
+      - This option is used if the correct proxy protocol cannot be automatically determined.
     type: str
     choices: [ http, https ]
     default: https
