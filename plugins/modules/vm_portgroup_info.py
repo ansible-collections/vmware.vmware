@@ -29,7 +29,8 @@ options:
         type: list
         elements: str
 extends_documentation_fragment:
-    - vmware.vmware.vmware_rest_client.documentation
+    - vmware.vmware.base_options
+    - vmware.vmware.additional_rest_options
 '''
 
 EXAMPLES = r'''
@@ -68,6 +69,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
 from ansible_collections.vmware.vmware.plugins.module_utils import _vmware_network as vmware_network
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 
 
 class PortgroupInfo(PyVmomi):
@@ -143,7 +145,7 @@ class PortgroupInfo(PyVmomi):
 
 
 def main():
-    argument_spec = VmwareRestClient.vmware_client_argument_spec()
+    argument_spec = rest_compatible_argument_spec()
     argument_spec.update(
         dict(
             vm_names=dict(type='list', elements='str', required=True)

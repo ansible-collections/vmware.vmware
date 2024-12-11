@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - doc fragments - Remove redundant fragments. Update pyvmomi modules to use new consolidated docs
+  - argument specs - Remove redundant argument specs. Update pyvmomi modules to use new consolidated spec
