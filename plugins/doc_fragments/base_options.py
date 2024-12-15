@@ -29,40 +29,30 @@ options:
       - The hostname or IP address of the vSphere vCenter server.
       - If the value is not specified in the task, the value of environment variable E(VMWARE_HOST) will be used instead.
     type: str
-    env:
-      - name: VMWARE_HOST
   username:
     description:
       - The username of the vSphere vCenter server.
       - If the value is not specified in the task, the value of environment variable E(VMWARE_USER) will be used instead.
     type: str
     aliases: [ admin, user ]
-    env:
-      - name: VMWARE_USER
   password:
     description:
       - The password of the vSphere vCenter server.
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PASSWORD) will be used instead.
     type: str
     aliases: [ pass, pwd ]
-    env:
-      - name: VMWARE_PASSWORD
   validate_certs:
     description:
       - Allows connection when SSL certificates are not valid. Set to V(false) when certificates are not trusted.
       - If the value is not specified in the task, the value of environment variable E(VMWARE_VALIDATE_CERTS) will be used instead.
     type: bool
     default: true
-    env:
-      - name: VMWARE_VALIDATE_CERTS
   port:
     description:
       - The port number of the vSphere vCenter server.
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PORT) will be used instead.
     type: int
     default: 443
-    env:
-      - name: VMWARE_PORT
   proxy_host:
     description:
       - The address of a proxy that will receive all HTTPS requests and relay them.
@@ -70,14 +60,10 @@ options:
       - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_HOST) will be used instead.
     type: str
     required: false
-    env:
-      - name: VMWARE_PROXY_HOST
   proxy_port:
     description:
     - The port of the HTTP proxy that will receive all HTTPS requests and relay them.
     - If the value is not specified in the task, the value of environment variable E(VMWARE_PROXY_PORT) will be used instead.
     type: int
     required: false
-    env:
-      - name: VMWARE_PROXY_PORT
 '''
