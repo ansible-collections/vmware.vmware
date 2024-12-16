@@ -1,0 +1,29 @@
+---
+- block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+
+    - name: Run Inventory Plugin
+      ansible.builtin.command: ansible-inventory -i "{{ role_path }}/files/test.esxi_hosts.yml" --list
+      register: _inventory_out
+
+    - name: Parse Inventory Results as JSON
+      ansible.builtin.set_fact:
+        inventory_results: "{{ _inventory_out.stdout | from_json }}"
+
+    # you can't reference the 'all' property here for some reason. It reverts back to the test playbook inventory
+    # instead of the inventory_results
+    - name: Check Output
+      ansible.builtin.assert:
+        that:
+          - first_host.ansible_host
+          - first_host.tags is defined
+          - first_host.tags_by_category is defined
+          - >-
+            (inventory_results.poweredOn.hosts | length) ==
+            (inventory_results._meta.hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOn') | length)
+          - (inventory_results | length) > 3
+          - ('test_' + vcenter_datacenter | replace('-', '_')) in inventory_results.keys()
+      vars:
+        first_host: "{{ (inventory_results._meta.hostvars.values() | first) }}"
