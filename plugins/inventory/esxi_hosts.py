@@ -76,7 +76,9 @@ options:
     group_by_paths:
         description:
             - If true, groups will be created based on the ESXI hosts' paths.
-            - Paths will be sanitized to match Ansible group name standards. For example, any slashes or dashes in the paths will be replaced by underscores in the group names.
+            - >-
+              Paths will be sanitized to match Ansible group name standards.
+              For example, any slashes or dashes in the paths will be replaced by underscores in the group names.
             - A group is created for each step down in the path, with the group from the step above containing subsequent groups.
             - For example, a path /DC-01/hosts/Cluster will create groups 'DC_01' which contains group 'DC_01_hosts' which contains group 'DC_01_hosts_Cluster'
         default: false
