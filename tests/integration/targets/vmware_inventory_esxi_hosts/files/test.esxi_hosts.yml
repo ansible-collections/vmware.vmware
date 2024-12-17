@@ -4,7 +4,6 @@ plugin: vmware.vmware.esxi_hosts
 hostname: "{{ vcenter_hostname }}"
 username: "{{ vcenter_username }}"
 password: "{{ vcenter_password }}"
-port: "{{ vcenter_port }}"
 validate_certs: false
 
 cache: false
