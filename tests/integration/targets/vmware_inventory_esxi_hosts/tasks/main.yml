@@ -8,6 +8,10 @@
       ansible.builtin.command: ansible-inventory -i "{{ role_path }}/files/test.esxi_hosts.yml" --list
       register: _inventory_out
 
+    - name: Debug Inventory Output
+      ansible.builtin.debug:
+        var: _inventory_out
+
     - name: Parse Inventory Results as JSON
       ansible.builtin.set_fact:
         inventory_results: "{{ _inventory_out.stdout | from_json }}"

@@ -43,9 +43,9 @@ options:
         default: ['name']
     properties:
         description:
-            - Specify a list of VMware schema properties associated with the ESXi hostsystem to collectio and return as hostvars.
+            - Specify a list of VMware schema properties associated with the ESXi hostsystem to collect and return as hostvars.
             - Each value in the list can be a path to a specific property in hostsystem object or a path to a collection of hostsystem objects.
-            - Please make sure that if you use a property in another parameter that is is included in this option.
+            - Please make sure that if you use a property in another parameter that it is included in this option.
             - Some properties are always returned, such as name, customValue, and summary.runtime.powerState
             - Use V(all) to return all properties available for the ESXi host.
         type: list
@@ -173,7 +173,7 @@ class EsxiInventoryHost():
     @classmethod
     def create_from_cache(cls, inventory_hostname, host_properties):
         """
-        Create the class from the inventory cache. We dont want to refresh the data or make any calls to vCenter.
+        Create the class from the inventory cache. We don't want to refresh the data or make any calls to vCenter.
         Properties are populated from whatever we had previously cached.
         """
         host = cls()
@@ -286,7 +286,7 @@ class InventoryModule(VmwareInventoryBase):
     def parse_properties_param(self):
         """
         The properties option can be a variety of inputs from the user and we need to
-        manipulate it into a list of props that can be used later.
+        manipulate it into a list of properties that can be used later.
         Returns:
           A list of property names that should be returned in the inventory. An empty
           list means all properties should be collected
@@ -357,7 +357,7 @@ class InventoryModule(VmwareInventoryBase):
     def set_inventory_hostname(self, esxi_host):
         """
         The user can specify a list of jinja templates, and the first valid template should be used for the
-        host's inventory hostname. The inventory hostname is mostly for decrative purposes since the
+        host's inventory hostname. The inventory hostname is mostly for decorative purposes since the
         ansible_host value takes precedence when trying to connect.
         """
         hostname = None
