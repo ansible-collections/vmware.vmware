@@ -41,7 +41,7 @@ class PyvmomiClient():
     def connect_to_api(self, connection_params, disconnect_atexit=True, return_si=False):
         """
         Connect to the vCenter/ESXi client using the pyvmomi SDK. This creates a service instance
-        which can then be used programmatically to make calls to vCenter or ESXi
+        which can then be used programmatically to make calls to the vCenter or ESXi
         Args:
             connection_params: dict, A dictionary with different authentication or connection parameters like
                                username, password, hostname, etc. The full list is found in the method below.
@@ -157,18 +157,18 @@ class PyvmomiClient():
                 service_instance = connect.SmartConnect(**connection_args)
         except vim.fault.InvalidLogin as e:
             raise ApiAccessError((
-                "Unable to log on to vCenter or ESXi API at %s:%s as %s: %s" %
+                "Unable to log on to the vCenter or ESXi API at %s:%s as %s: %s" %
                 (connection_args['host'], connection_args['port'], username, e.msg) +
                 error_msg_suffix
             ))
         except vim.fault.NoPermission as e:
             raise ApiAccessError((
-                "User %s does not have required permission to log on to vCenter or ESXi API at %s:%s : %s" %
+                "User %s does not have the required permissions to log on to the vCenter or ESXi API at %s:%s : %s" %
                 (username, connection_args['host'], connection_args['port'], e.msg)
             ))
         except (requests.ConnectionError, ssl.SSLError) as e:
             raise ApiAccessError((
-                "Unable to connect to vCenter or ESXi API at %s on TCP/%s: %s" %
+                "Unable to connect to the vCenter or ESXi API at %s on TCP/%s: %s" %
                 (connection_args['host'], connection_args['port'], e)
             ))
         except vmodl.fault.InvalidRequest as e:
@@ -179,14 +179,14 @@ class PyvmomiClient():
             ))
         except Exception as e:
             raise ApiAccessError((
-                "Unknown error while connecting to vCenter or ESXi API at %s:%s : %s" %
+                "Unknown error while connecting to the vCenter or ESXi API at %s:%s : %s" %
                 (connection_args['host'], connection_args['port'], e.msg) +
                 error_msg_suffix
             ))
 
         if service_instance is None:
             raise ApiAccessError((
-                "Unknown error while connecting to vCenter or ESXi API at %s:%s" %
+                "Unknown error while connecting to the vCenter or ESXi API at %s:%s" %
                 (connection_args['host'], connection_args['port']) +
                 error_msg_suffix
             ))
@@ -204,7 +204,7 @@ class PyvmomiClient():
 
     def get_all_objs_by_type(self, vimtype, folder=None, recurse=True):
         """
-            Returns a list of all objects matching a given VMWare type.
+            Returns a list of all objects matching a given VMware type.
             You can also limit the search by folder and recurse if desired
             Args:
                 vimtype: The type of object to search for
@@ -212,7 +212,7 @@ class PyvmomiClient():
                         none is provided, the datacenter root will be used
                 recurse: If true, the search will recurse through the folder structure
             Returns:
-                list of objs
+                A list of matching objects.
         """
         if not folder:
             folder = self.content.rootFolder

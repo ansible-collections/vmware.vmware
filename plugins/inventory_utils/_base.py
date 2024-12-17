@@ -65,9 +65,9 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
     def get_credentials_from_options(self):
         """
         The username and password options can be plain text, jinja templates, or encrypted strings.
-        This method handles these different options and returns a plain text version of username and password
+        This method handles these different options and returns a plain text version of the username and password
         Returns:
-            A tuple of plain text username and password
+            A tuple of the plain text username and password
         """
         username = self.get_option("username")
         password = self.get_option("password")
@@ -137,11 +137,11 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
     def get_objects_by_type(self, vim_type):
         """
         Searches the requested search paths for objects of type vim_type. If the search path
-        doesn't actually exist, continue. If no search path is give, check everywhere
+        doesn't actually exist, continue. If no search path is given, check everywhere
         Args:
             vim_type: The vim object type. It should be given as a list, like [vim.HostSystem]
         Returns:
-            List of objects that exist in the search path(s) and match vim type
+            List of objects that exist in the search path(s) and match the vim type
         """
         if not self.get_option('search_paths'):
             return self.pyvmomi_client.get_all_objs_by_type(vimtype=vim_type)
@@ -159,7 +159,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         """
         Given an object moid, gather any tags attached to the object.
         Args:
-            object_moid: str, The objects MOID
+            object_moid: str, The object's MOID
         Returns:
             tuple
             First item is a dict with the object's tags. Keys are tag IDs and values are tag names

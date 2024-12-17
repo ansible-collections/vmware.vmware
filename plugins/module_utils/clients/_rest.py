@@ -164,7 +164,7 @@ class VmwareRestClient():
             vm_moid: the VM MOID to use to gather tags
 
         Returns:
-            List of tag object associated with the given virtual machine
+            List of tag objects associated with the given virtual machine
         """
         dobj = DynamicID(type='VirtualMachine', id=vm_moid)
         return self.get_tags_for_dynamic_id_obj(dobj=dobj)
@@ -176,14 +176,14 @@ class VmwareRestClient():
             host_moid: the Host MOID to use to gather tags
 
         Returns:
-            List of tag object associated with the given host
+            List of tag objects associated with the given host
         """
         dobj = DynamicID(type='HostSystem', id=host_moid)
         return self.get_tags_for_dynamic_id_obj(dobj=dobj)
 
     def get_tags_for_dynamic_id_obj(self, dobj):
         """
-        Return tag objects associated with an DynamicID object.
+        Return tag objects associated with a DynamicID object.
         Args:
             dobj: Dynamic object
         Returns:
