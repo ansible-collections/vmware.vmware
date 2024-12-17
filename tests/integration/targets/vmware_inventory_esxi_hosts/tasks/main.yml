@@ -31,8 +31,8 @@
       ansible.builtin.assert:
         that:
           - first_host.ansible_host is regex('^[\d+\.]+$')
-          - first_host.tags is defined and first_host.tags is not None
-          - first_host.tags_by_category is defined and first_host.tags_by_category is not None
+          - first_host.tags is defined and first_host.tags is mapping
+          - first_host.tags_by_category is defined and first_host.tags_by_category is mapping
           - >-
             (inventory_results.poweredOn.hosts | length) ==
             (inventory_results._meta.hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOn') | length)
