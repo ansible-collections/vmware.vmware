@@ -81,7 +81,7 @@ class VmwareRestClient():
         hostname = connection_params.get('hostname')
         username = connection_params.get('username')
         password = connection_params.get('password')
-        port = connection_params.get('port')
+        port = connection_params.get('port', 443)
         validate_certs = connection_params.get('validate_certs')
         http_proxy_host = connection_params.get('http_proxy_host')
         http_proxy_port = connection_params.get('http_proxy_port')
@@ -148,12 +148,12 @@ class VmwareRestClient():
             )
         except requests.exceptions.SSLError as e:
             msg += " due to SSL verification failure"
-            raise ApiAccessError(msg="%s : %s" % (msg, to_native(e)))
+            raise ApiAccessError("%s : %s" % (msg, to_native(e)))
         except Exception as e:
-            raise ApiAccessError(msg="%s : %s" % (msg, to_native(e)))
+            raise ApiAccessError("%s : %s" % (msg, to_native(e)))
 
         if client is None:
-            raise ApiAccessError(msg="Failed to login to %s" % hostname)
+            raise ApiAccessError("Failed to login to %s" % hostname)
 
         return client
 
