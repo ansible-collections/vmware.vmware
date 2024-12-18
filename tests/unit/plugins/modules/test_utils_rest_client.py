@@ -17,7 +17,6 @@ class TestRestClient():
             }
         )
 
-
     def test_get_tags_by_moid(self, mocker):
         self.__prepare(mocker)
         mocked_tags = mocker.patch.object(self.client.tag_association_service, 'list_attached_tags')

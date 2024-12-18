@@ -28,7 +28,6 @@ class TestPyvmomiClient():
             }
         )
 
-
     def test_get_all_objs_by_type(self, mocker):
         self.__prepare(mocker)
         mocked_container_view = mocker.patch.object(self.client.content.viewManager, 'CreateContainerView')
