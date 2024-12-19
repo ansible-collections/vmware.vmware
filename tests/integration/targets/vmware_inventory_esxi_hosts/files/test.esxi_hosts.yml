@@ -1,0 +1,6 @@
+---
+plugin: vmware.vmware.esxi_hosts
+cache: false
+group_by_paths: true
+group_by_paths_prefix: test
+gather_tags: true

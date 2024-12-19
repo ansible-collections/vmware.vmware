@@ -647,3 +647,28 @@ def vmware_obj_to_json(obj, properties=None):
     else:
         result = _jsonify_vmware_object(obj)
     return result
+
+
+def flatten_dict(dictionary, separator=".", parent_key=""):
+    """
+    Changes nested dictionary keys to be their dot notation versions, so the dictionary
+    only has one level of depth.
+    For example {"foo":{"bar":1}} would become {"foo.bar":1}
+    Args:
+        dictionary: dict, The original dictionary
+        separator: str, A character to use to separate keys once they are flattened
+        parent_key: str, Used as part of the recursion inside this method.
+    Returns:
+        dict
+    """
+    new_dict_items = []
+    for k, v in dictionary.items():
+        new_key = parent_key + separator + k if parent_key else k
+        if v and isinstance(v, dict):
+            new_dict_items.extend(
+                flatten_dict(dictionary=v, separator=separator, parent_key=new_key)
+                .items()
+            )
+        else:
+            new_dict_items.append((new_key, v))
+    return dict(new_dict_items)
