@@ -60,6 +60,20 @@
           - __res.template_info.msg == "Template '" + template_name + "'."
       when: not run_on_simulator
 
+    - name: Delete template from content library
+      vmware.vmware.content_template:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        template: "{{ template_name }}"
+        library: "{{ library }}"
+        vm_name: "{{ vm }}"
+        host: "{{ template_host }}"
+        state: absent
+      when: not run_on_simulator
+
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
       community.vmware.vmware_guest:
