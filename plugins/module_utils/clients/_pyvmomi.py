@@ -148,7 +148,7 @@ class PyvmomiClient():
                 session_stub = connect.VimSessionOrientedStub(
                     smart_stub, connect.VimSessionOrientedStub.makeUserLoginMethod(username, password)
                 )
-                service_instance = vim.ServiceInstance('ServiceInstance', session_stub )
+                service_instance = vim.ServiceInstance('ServiceInstance', session_stub)
             else:
                 connection_args.update(user=username, pwd=password)
                 service_instance = connect.SmartConnect(**connection_args)
