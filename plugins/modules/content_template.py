@@ -181,7 +181,7 @@ class VmwareContentTemplate(VmwareRestClient):
         )
 
     def delete_template(self):
-        _template = self.get_library_item_ids(name=self.template, library_id=self.library)
+        _template = self.get_library_item_ids(name=self.template, library_id=self.library_id)
         if not _template:
             self.result['template_info'] = dict(
                 msg="Template '%s' doesn't exists." % self.template,
