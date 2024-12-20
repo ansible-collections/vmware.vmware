@@ -74,6 +74,23 @@
         state: absent
       when: not run_on_simulator
 
+    - name: Check for deleted template
+      vmware.vmware.content_library_item_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        port: "{{ vcenter_port }}"
+        library_name: "{{ library }}"
+        library_item_name: "{{ template_name }}"
+      register: __res
+      when: not run_on_simulator
+
+    - name: Verify Template Was Deleted
+      ansible.builtin.assert:
+        that: (__res.library_item_info | length) == 0
+        when: not run_on_simulator
+
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
       community.vmware.vmware_guest:
