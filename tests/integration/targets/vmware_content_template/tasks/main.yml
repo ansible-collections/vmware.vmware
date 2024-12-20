@@ -89,7 +89,7 @@
     - name: Verify Template Was Deleted
       ansible.builtin.assert:
         that: (__res.library_item_info | length) == 0
-        when: not run_on_simulator
+      when: not run_on_simulator
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
