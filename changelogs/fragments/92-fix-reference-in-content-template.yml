@@ -1,3 +1,0 @@
----
-minor_changes:
-  - content_template - Fix bad reference of library variable that was refactored to library_id

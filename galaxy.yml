@@ -2,7 +2,7 @@
 
 namespace: vmware
 name: vmware
-version: 1.7.1
+version: 1.8.0
 readme: README.md
 authors:
   - Ansible Cloud Content Team (@redhat-cop)

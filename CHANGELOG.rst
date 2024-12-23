@@ -4,6 +4,18 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.8.0
+======
+
+Minor Changes
+-------------
+
+- _vmware - standardize getter method names and documentation
+- argument specs - Remove redundant argument specs. Update pyvmomi modules to use new consolidated spec
+- content_template - Fix bad reference of library variable that was refactored to library_id
+- doc fragments - Remove redundant fragments. Update pyvmomi modules to use new consolidated docs
+- esxi_host - Added inventory plugin to gather info about ESXi hosts
+
 v1.7.1
 ======
 
