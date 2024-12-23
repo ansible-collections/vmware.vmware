@@ -1,3 +1,0 @@
----
-minor_changes:
-  - esxi_host - Added inventory plugin to gather info about ESXi hosts

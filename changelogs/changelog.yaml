@@ -140,3 +140,20 @@ releases:
     fragments:
     - 83-fix-content-library-item-info-args.yml
     release_date: '2024-11-25'
+  1.8.0:
+    changes:
+      minor_changes:
+      - _vmware - standardize getter method names and documentation
+      - argument specs - Remove redundant argument specs. Update pyvmomi modules to
+        use new consolidated spec
+      - content_template - Fix bad reference of library variable that was refactored
+        to library_id
+      - doc fragments - Remove redundant fragments. Update pyvmomi modules to use
+        new consolidated docs
+      - esxi_host - Added inventory plugin to gather info about ESXi hosts
+    fragments:
+    - 88-standardize-pyvmomi-methods.yml
+    - 89-consolidate-arg-specs-and-docs.yml
+    - 91-add-esxi_host-inventory.yml
+    - 92-fix-reference-in-content-template.yml
+    release_date: '2024-12-23'
