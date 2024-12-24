@@ -95,8 +95,8 @@ except ImportError:
 
 from itertools import zip_longest
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
-    PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
+    ModulePyvmomiBase
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
     base_argument_spec
@@ -108,7 +108,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import
 from ansible.module_utils._text import to_native
 
 
-class VMwareCluster(PyVmomi):
+class VMwareCluster(ModulePyvmomiBase):
     def __init__(self, module):
         super(VMwareCluster, self).__init__(module)
         datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=True)

@@ -115,11 +115,11 @@ vm_list_group_by_clusters_info:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 
 
-class VmwareVMList(VmwareRestClient):
+class VmwareVMList(ModuleRestBase):
     def __init__(self, module):
         super(VmwareVMList, self).__init__(module)
         self.module = module

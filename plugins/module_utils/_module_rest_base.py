@@ -1,146 +1,34 @@
-# -*- coding: utf-8 -*-
-
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2024, Ansible Cloud Team
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
-#
-
-# Note: This utility is considered private, and can only be referenced from inside the vmware.vmware collection.
-#       It may be made public at a later date
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-import traceback
-
-REQUESTS_IMP_ERR = None
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    REQUESTS_IMP_ERR = traceback.format_exc()
-    HAS_REQUESTS = False
-
-VSPHERE_IMP_ERR = None
 try:
     from com.vmware.vapi.std_client import DynamicID
-    from vmware.vapi.vsphere.client import create_vsphere_client
-    from com.vmware.vapi.std.errors_client import Unauthorized
-    from com.vmware.vcenter_client import (Folder,
-                                           Datacenter,
-                                           ResourcePool,
-                                           VM,
-                                           Cluster,
-                                           Host,
-                                           VM)
-    HAS_VSPHERE = True
+    from com.vmware.vcenter_client import (
+        Folder,
+        Datacenter,
+        ResourcePool,
+        VM,
+        Cluster,
+        Host,
+        VM
+    )
 except ImportError:
-    VSPHERE_IMP_ERR = traceback.format_exc()
-    HAS_VSPHERE = False
+    pass
+    # handled in base class
 
-try:
-    from requests.packages import urllib3
-    HAS_URLLIB3 = True
-except ImportError:
-    try:
-        import urllib3
-        HAS_URLLIB3 = True
-    except ImportError:
-        HAS_URLLIB3 = False
-
-from ansible.module_utils.basic import missing_required_lib
-from ansible.module_utils._text import to_native
+from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
 
 
-class VmwareRestClient(object):
+class ModuleRestBase(VmwareRestClient):
     def __init__(self, module):
-        """
-        Constructor
-
-        """
+        super().__init__(connection_params=module.params)
         self.module = module
         self.params = module.params
-        self.check_required_library()
-        self.api_client = self.connect_to_vsphere_client()
-
-        self.library_service = self.api_client.content.Library
-        self.library_item_service = self.api_client.content.library.Item
-
-    # Helper function
-    def get_error_message(self, error):
-        """
-        Helper function to show human readable error messages.
-        """
-        err_msg = []
-        if not error.messages:
-            if isinstance(error, Unauthorized):
-                return "Authorization required."
-            return "Generic error occurred."
-
-        for err in error.messages:
-            err_msg.append(err.default_message % err.args)
-
-        return " ,".join(err_msg)
-
-    def check_required_library(self):
-        """
-        Check required libraries
-
-        """
-        if not HAS_REQUESTS:
-            self.module.fail_json(msg=missing_required_lib('requests'),
-                                  exception=REQUESTS_IMP_ERR)
-        if not HAS_VSPHERE:
-            self.module.fail_json(
-                msg=missing_required_lib('vSphere Automation SDK',
-                                         url='https://code.vmware.com/web/sdk/7.0/vsphere-automation-python'),
-                exception=VSPHERE_IMP_ERR)
-
-    def connect_to_vsphere_client(self):
-        """
-        Connect to vSphere API Client with Username and Password
-
-        """
-        username = self.params.get('username')
-        password = self.params.get('password')
-        hostname = self.params.get('hostname')
-        validate_certs = self.params.get('validate_certs')
-        port = self.params.get('port')
-        session = requests.Session()
-        session.verify = validate_certs
-        protocol = self.params.get('protocol')
-        proxy_host = self.params.get('proxy_host')
-        proxy_port = self.params.get('proxy_port')
-
-        if validate_certs is False:
-            if HAS_URLLIB3:
-                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        if all([protocol, proxy_host, proxy_port]):
-            proxies = {protocol: "{0}://{1}:{2}".format(protocol, proxy_host, proxy_port)}
-            session.proxies.update(proxies)
-
-        if not all([hostname, username, password]):
-            self.module.fail_json(msg="Missing one of the following : hostname, username, password."
-                                      " Please read the documentation for more information.")
-
-        msg = "Failed to connect to vCenter or ESXi API at %s:%s" % (hostname, port)
-        try:
-            client = create_vsphere_client(
-                server="%s:%s" % (hostname, port),
-                username=username,
-                password=password,
-                session=session
-            )
-        except requests.exceptions.SSLError as ssl_exc:
-            msg += " due to SSL verification failure"
-            self.module.fail_json(msg="%s : %s" % (msg, to_native(ssl_exc)))
-        except Exception as generic_exc:
-            self.module.fail_json(msg="%s : %s" % (msg, to_native(generic_exc)))
-
-        if client is None:
-            self.module.fail_json(msg="Failed to login to %s" % hostname)
-
-        return client
 
     def get_vm_by_name(self, name):
         """
@@ -402,18 +290,6 @@ class VmwareRestClient(object):
                 set_fn(generic_param)
         self.info[param] = generic_param
 
-    def get_tags_by_vm_moid(self, vm_moid):
-        """
-        Get a list of tag objects attached to a virtual machine
-        Args:
-            vm_moid: the VM MOID to use to gather tags
-
-        Returns:
-            List of tag object associated with the given virtual machine
-        """
-        dobj = DynamicID(type='VirtualMachine', id=vm_moid)
-        return self.get_tags_for_dynamic_id_obj(dobj=dobj)
-
     def get_tags_by_cluster_moid(self, cluster_moid):
         """
         Get a list of tag objects attached to a cluster
@@ -443,24 +319,3 @@ class VmwareRestClient(object):
             'description': tag_obj.description,
             'category_id': tag_obj.category_id,
         }
-
-    def get_tags_for_dynamic_id_obj(self, dobj):
-        """
-        Return tag objects associated with an DynamicID object.
-        Args:
-            dobj: Dynamic object
-        Returns:
-            List of tag objects associated with the given object
-        """
-        tags = []
-        if not dobj:
-            return tags
-
-        tag_service = self.api_client.tagging.Tag
-        tag_assoc_svc = self.api_client.tagging.TagAssociation
-
-        tag_ids = tag_assoc_svc.list_attached_tags(dobj)
-        for tag_id in tag_ids:
-            tags.append(tag_service.get(tag_id))
-
-        return tags

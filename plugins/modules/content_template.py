@@ -108,7 +108,7 @@ template_info:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 from ansible.module_utils._text import to_native
 
@@ -121,7 +121,7 @@ except ImportError:
     pass
 
 
-class VmwareContentTemplate(VmwareRestClient):
+class VmwareContentTemplate(ModuleRestBase):
     def __init__(self, module):
         """Constructor."""
         super(VmwareContentTemplate, self).__init__(module)
