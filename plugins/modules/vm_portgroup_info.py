@@ -66,16 +66,16 @@ vm_portgroup_info:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
 from ansible_collections.vmware.vmware.plugins.module_utils import _vmware_network as vmware_network
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 
 
-class PortgroupInfo(PyVmomi):
+class PortgroupInfo(ModulePyvmomiBase):
     def __init__(self, module):
         super(PortgroupInfo, self).__init__(module)
-        self.vmware_client = VmwareRestClient(module)
+        self.vmware_client = ModuleRestBase(module)
         self.vms = self.params['vm_names']
 
     def get_dvs_portgroup_detailed(self, pg_id):

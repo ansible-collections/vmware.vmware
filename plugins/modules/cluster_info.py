@@ -156,25 +156,25 @@ try:
 except ImportError:
     pass
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
-    PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
+    ModulePyvmomiBase
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
     rest_compatible_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
     ClusterFacts,
     vmware_obj_to_json
 )
 
 
-class ClusterInfo(PyVmomi):
+class ClusterInfo(ModulePyvmomiBase):
     def __init__(self, module):
         super(ClusterInfo, self).__init__(module)
         self.rest_client = None
         if module.params['gather_tags']:
-            self.rest_client = VmwareRestClient(module)
+            self.rest_client = ModuleRestBase(module)
 
     def get_clusters(self):
         """

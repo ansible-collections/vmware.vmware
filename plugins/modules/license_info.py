@@ -44,15 +44,15 @@ licenses:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
-    PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
+    ModulePyvmomiBase
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
     base_argument_spec
 )
 
 
-class VcenterLicenseMgr(PyVmomi):
+class VcenterLicenseMgr(ModulePyvmomiBase):
     def __init__(self, module):
         super(VcenterLicenseMgr, self).__init__(module)
 

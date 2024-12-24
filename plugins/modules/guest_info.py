@@ -171,8 +171,8 @@ guests:
 
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import PyVmomi
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_rest_client import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
+from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
     VmFacts,
@@ -181,10 +181,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import
 )
 
 
-class VmwareGuestInfo(VmwareRestClient):
+class VmwareGuestInfo(ModuleRestBase):
     def __init__(self, module):
         super(VmwareGuestInfo, self).__init__(module)
-        self.pyvmomi = PyVmomi(module)
+        self.pyvmomi = ModulePyvmomiBase(module)
         self.vm_svc = self.api_client.vcenter.vm
 
     def _get_env(self, vm):

@@ -143,8 +143,8 @@ RETURN = r'''
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware import (
-    PyVmomi
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
+    ModulePyvmomiBase
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
     base_argument_spec
@@ -161,7 +161,7 @@ except ImportError:
     HAS_PYVMOMI = False
 
 
-class VmwareFolderTemplate(PyVmomi):
+class VmwareFolderTemplate(ModulePyvmomiBase):
     def __init__(self, module):
         super(VmwareFolderTemplate, self).__init__(module)
         if not self.is_vcenter():
