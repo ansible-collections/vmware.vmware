@@ -34,4 +34,3 @@ class TestModuleRestBase():
         mocker.patch.object(self.base.library_service, 'find', return_value=['1'])
 
         assert self.base.get_content_library_ids(name='foo') == ['1']
-
