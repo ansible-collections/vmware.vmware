@@ -1,3 +1,6 @@
+from unittest import mock
+
+
 class MockClusterConfiguration():
     def __init__(self):
         self.dasConfig = None
@@ -5,16 +8,23 @@ class MockClusterConfiguration():
         self.drsConfig = None
 
 
-class MockCluster():
-    def __init__(self, name="test"):
+class MockVmwareObject():
+    def __init__(self, name="test", moid="1"):
+        self.name = name
+        self._moId = moid
+
+    def _GetMoId(self):
+        return self._moId
+
+
+class MockCluster(MockVmwareObject):
+    def __init__(self, name="test", moid="1"):
+        super().__init__(name=name, moid=moid)
         self.configurationEx = MockClusterConfiguration()
         self.host = []
 
-        self.name = name
-        self._moId = "1"
-
-        self.parent = type('', (), {})()
-        self.parent.parent = type('', (), {})()
+        self.parent = mock.Mock()
+        self.parent.parent = mock.Mock()
         self.parent.parent.name = "dc"
 
     def GetResourceUsage(self):
