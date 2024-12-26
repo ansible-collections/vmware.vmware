@@ -37,7 +37,7 @@ options:
         description:
         - The name of the VM to be used to create template.
         type: str
-        required: true
+        required: only if state is set to present
     host:
         description:
         - Host onto which the virtual machine template should be placed.
@@ -206,7 +206,7 @@ def main():
     argument_spec.update(
         template=dict(type='str', required=True),
         library=dict(type='str', required=True),
-        vm_name=dict(type='str', required=True),
+        vm_name=dict(type='str', required=(argument_spec['state'] == 'present')),
         host=dict(type='str'),
         cluster=dict(type='str'),
         resource_pool=dict(type='str'),
