@@ -217,7 +217,7 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
         required_one_of=[('host', 'resource_pool', 'cluster')],
-        required_if=[('state', 'present', ('vm_name'))]
+        required_if=[('state', 'present', (vm_name))]
     )
 
     result = {'failed': False, 'changed': False}
