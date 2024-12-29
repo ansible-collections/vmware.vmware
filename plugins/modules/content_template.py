@@ -206,7 +206,7 @@ def main():
     argument_spec.update(
         template=dict(type='str', required=True),
         library=dict(type='str', required=True),
-        vm_name=dict(type='str', required=(argument_spec['state'] == 'present')),
+        vm_name=dict(type='str'),
         host=dict(type='str'),
         cluster=dict(type='str'),
         resource_pool=dict(type='str'),
@@ -217,6 +217,7 @@ def main():
         argument_spec=argument_spec,
         supports_check_mode=True,
         required_one_of=[('host', 'resource_pool', 'cluster')],
+        required_if=[('state', 'present', ('vm_name'))]
     )
 
     result = {'failed': False, 'changed': False}
