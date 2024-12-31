@@ -6,13 +6,84 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from abc import ABC, abstractmethod
+from ansible.errors import AnsibleError
 from ansible.errors import AnsibleParserError
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
 from ansible.parsing.yaml.objects import AnsibleVaultEncryptedUnicode
 from ansible.module_utils.common.text.converters import to_native
+from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
+
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import (
+    get_folder_path_of_vsphere_object
+)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
+    vmware_obj_to_json,
+    flatten_dict
+)
+
+
+class VmwareInventoryHost(ABC):
+    """
+    This is an abstract class. Its meant to be extended by a class more closely rerpresenting a specific
+    VMware object, like VM or ESXi host
+    """
+    def __init__(self):
+        self.object = None
+        self.inventory_hostname = None
+        self.path = ''
+        self.properties = dict()
+
+    @classmethod
+    def create_from_cache(cls, inventory_hostname, properties):
+        """
+        Create the class from the inventory cache. We don't want to refresh the data or make any calls to vCenter.
+        Properties are populated from whatever we had previously cached.
+        """
+        host = cls()
+        host.inventory_hostname = inventory_hostname
+        host.properties = properties
+        return host
+
+    @classmethod
+    def create_from_object(cls, vmware_object, properties_to_gather, pyvmomi_client):
+        """
+        Create the class from a host object that we got from pyvmomi. The host properties will be populated
+        from the object and additional calls to vCenter
+        """
+        host = cls()
+        host.object = vmware_object
+        host.path = get_folder_path_of_vsphere_object(vmware_object)
+        host.properties = host.get_properties_from_pyvmomi(properties_to_gather, pyvmomi_client)
+        return host
+
+    @abstractmethod
+    def get_tags(self, rest_client):
+        pass
+
+    def get_properties_from_pyvmomi(self, properties_to_gather, pyvmomi_client):
+        properties = vmware_obj_to_json(self.object, properties_to_gather)
+        properties['path'] = self.path
+
+        # Custom values
+        if hasattr(self.object, "customValue"):
+            properties['customValue'] = dict()
+            field_mgr = pyvmomi_client.custom_field_mgr
+            for cust_value in self.object.customValue:
+                properties['customValue'][
+                    [y.name for y in field_mgr if y.key == cust_value.key][0]
+                ] = cust_value.value
+
+        return properties
+
+    def sanitize_properties(self):
+        self.properties = camel_dict_to_snake_dict(self.properties)
+
+    def flatten_properties(self):
+        self.properties = flatten_dict(self.properties)
 
 
 class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
@@ -155,23 +226,21 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         return objects
 
-    def gather_tags(self, object_moid):
+    def add_tags_to_object_properties(self, vmware_host_object):
         """
-        Given an object moid, gather any tags attached to the object.
+        Given a subclass of VmwareInventoryHost object, gather any tags attached to the object and add them
+        to the properties. Also break the tags into the categories and add those to the objects properties.
         Args:
-            object_moid: str, The object's MOID
+            vmware_host_object: VmwareInventoryHost, A subclass instance of the VmwareInventoryHost class
         Returns:
-            tuple
-            First item is a dict with the object's tags. Keys are tag IDs and values are tag names
-            Second item is a dict of the object's tag categories. Keys are category names and values are a dict
-                containing the tags in the category
+            None
         """
         if not hasattr(self, '_known_tag_category_ids_to_name'):
             self._known_tag_category_ids_to_name = {}
 
         tags = {}
         tags_by_category = {}
-        for tag in self.rest_client.get_tags_by_host_moid(object_moid):
+        for tag in vmware_host_object.get_tags(self.rest_client):
             tags[tag.id] = tag.name
             try:
                 category_name = self._known_tag_category_ids_to_name[tag.category_id]
@@ -184,4 +253,75 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
             tags_by_category[category_name].append({tag.id: tag.name})
 
-        return tags, tags_by_category
+        vmware_host_object.properties['tags'] = tags
+        vmware_host_object.properties['tags_by_category'] = tags_by_category
+
+    def set_inventory_hostname(self, vmware_host_object):
+        """
+        The user can specify a list of jinja templates, and the first valid template should be used for the
+        host's inventory hostname. The inventory hostname is mostly for decorative purposes since the
+        ansible_host value takes precedence when trying to connect.
+        """
+        hostname = None
+        errors = []
+
+        for hostname_pattern in self.get_option("hostnames"):
+            try:
+                hostname = self._compose(template=hostname_pattern, variables=vmware_host_object.properties)
+            except Exception as e:
+                if self.get_option("strict"):
+                    raise AnsibleError(
+                        "Could not compose %s as hostnames - %s"
+                        % (hostname_pattern, to_native(e))
+                    )
+
+                errors.append((hostname_pattern, str(e)))
+            if hostname:
+                vmware_host_object.inventory_hostname = hostname
+                return
+
+        raise AnsibleError(
+            "Could not template any hostname for host, errors for each preference: %s"
+            % (", ".join(["%s: %s" % (pref, err) for pref, err in errors]))
+        )
+
+    def set_host_variables_from_host_properties(self, vmware_host_object):
+        if self.get_option("sanitize_property_names"):
+            vmware_host_object.sanitize_properties()
+
+        if self.get_option("flatten_nested_properties"):
+            vmware_host_object.flatten_properties()
+
+        for k, v in vmware_host_object.properties.items():
+            self.inventory.set_variable(vmware_host_object.inventory_hostname, k, v)
+
+    def add_host_to_groups_based_on_path(self, vmwre_host_object):
+        """
+        If the user desires, create groups based on each VM's path. A group is created for each
+        step down in the path, with the group from the step above containing subsequent groups.
+        Optionally, the user can add a prefix to the groups created by this process.
+        The final group in the path will be where the VM is added.
+        """
+        if not self.get_option("group_by_paths"):
+            return
+
+        path_parts = vmwre_host_object.path.split('/')
+        group_name_parts = []
+        last_created_group = None
+
+        if self.get_option("group_by_paths_prefix"):
+            group_name_parts = [self.get_option("group_by_paths_prefix")]
+
+        for path_part in path_parts:
+            if not path_part:
+                continue
+            group_name_parts.append(path_part)
+            group_name = self._sanitize_group_name('_'.join(group_name_parts))
+            group = self.inventory.add_group(group_name)
+
+            if last_created_group:
+                self.inventory.add_child(last_created_group, group)
+            last_created_group = group
+
+        if last_created_group:
+            self.inventory.add_host(vmwre_host_object.inventory_hostname, last_created_group)

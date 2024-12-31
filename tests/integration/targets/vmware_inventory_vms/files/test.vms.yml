@@ -1,0 +1,8 @@
+---
+plugin: vmware.vmware.vms
+cache: false
+group_by_paths: true
+group_by_paths_prefix: test
+gather_tags: true
+search_paths:
+  - /Eco-Datacenter/vm/ecoqe2
