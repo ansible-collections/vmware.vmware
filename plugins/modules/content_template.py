@@ -37,7 +37,6 @@ options:
         description:
         - The name of the VM to be used to create template.
         type: str
-        required: only if state is set to present
     host:
         description:
         - Host onto which the virtual machine template should be placed.
