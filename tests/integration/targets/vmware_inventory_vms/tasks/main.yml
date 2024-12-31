@@ -1,0 +1,51 @@
+---
+- block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+
+    # the ansible-inventory process does not have access to any of the variables in this playbook,
+    # so the auth vars are exposed as env vars
+    - name: Run Inventory Plugin
+      ansible.builtin.command: ansible-inventory -i "{{ role_path }}/files/test.vms.yml" --list
+      register: _inventory_out
+      environment:
+        VMWARE_HOST: "{{ vcenter_hostname }}"
+        VMWARE_USER: "{{ vcenter_username }}"
+        VMWARE_PASSWORD: "{{ vcenter_password }}"
+        VMWARE_PORT: "{{ vcenter_port }}"
+        VMWARE_VALIDATE_CERTS: "false"
+
+    - name: Parse Inventory Results as JSON
+      ansible.builtin.set_fact:
+        inventory_results: "{{ _inventory_out.stdout | from_json }}"
+
+    - name: Debug Inventory Output Because It Failed
+      when: not inventory_results._meta.hostvars
+      block:
+        - name: Try to Print Inventory Stderr
+          ansible.builtin.debug:
+            var: _inventory_out.stderr
+        - name: Try to Print the Parsed Stdout
+          ansible.builtin.debug:
+            var: (_inventory_out.stdout | from_json)
+      rescue:
+        - name: Print the Raw Output Since Parsing Failed
+          ansible.builtin.debug:
+            var: _inventory_out
+
+    # you can't reference the 'all' property here for some reason. It reverts back to the test playbook inventory
+    # instead of the inventory_results
+    - name: Check Output
+      ansible.builtin.assert:
+        that:
+          - first_host.ansible_host is regex('^[\d+\.]+$') or first_host.ansible_host is regex('^[(\w{3}|\w{4}):]+$')
+          - first_host.tags is defined and first_host.tags is mapping
+          - first_host.tags_by_category is defined and first_host.tags_by_category is mapping
+          - >-
+            (inventory_results.poweredOn.hosts | length) ==
+            (inventory_results._meta.hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOn') | length)
+          - (inventory_results | length) > 3
+          - ('test_' + vcenter_datacenter | replace('-', '_')) in inventory_results.keys()
+      vars:
+        first_host: "{{ (inventory_results._meta.hostvars.values() | first) }}"
