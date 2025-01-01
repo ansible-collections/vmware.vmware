@@ -36,6 +36,7 @@ options:
     vm_name:
         description:
         - The name of the VM to be used to create template.
+        - This attribute is required only when the state attribute is set to present
         type: str
     host:
         description:
