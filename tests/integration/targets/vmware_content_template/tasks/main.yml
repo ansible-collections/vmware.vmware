@@ -69,7 +69,6 @@
         port: "{{ vcenter_port }}"
         template: "{{ template_name }}"
         library: "{{ library }}"
-        vm_name: "{{ vm }}"
         host: "{{ template_host }}"
         state: absent
       when: not run_on_simulator
