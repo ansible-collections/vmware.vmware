@@ -18,10 +18,7 @@ jobs:
         run: |
           set -euxo pipefail
           sudo apt-get update
-
-          # recent version of podman has a bug. Fix is waiting deployment
-          # see https://github.com/actions/runner-images/issues/7753
-          sudo apt-get install podman=3.4.4+ds1-1ubuntu1 --allow-downgrades
+          sudo apt-get install podman
 
       - name: Checkout repo
         uses: actions/checkout@v4
