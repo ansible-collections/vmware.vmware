@@ -55,7 +55,7 @@ options:
   properties:
     description:
       - Specify a list of VMware schema properties associated with the host to collect and return as hostvars.
-      - Each value in the list can be a path to a specific property in ware object or a path to a collection of properties.
+      - Each value in the list can be a path to a specific property in a VMware object or a path to a collection of properties.
       - Please make sure that if you use a property in another parameter that it is included in this option.
       - Some properties are always returned, such as name, customValue, and summary.runtime.powerState
       - Use V(all) to return all properties available for the VMware object.

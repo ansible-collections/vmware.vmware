@@ -295,7 +295,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         for k, v in vmware_host_object.properties.items():
             self.inventory.set_variable(vmware_host_object.inventory_hostname, k, v)
 
-    def add_host_to_groups_based_on_path(self, vmwre_host_object):
+    def add_host_to_groups_based_on_path(self, vmware_host_object):
         """
         If the user desires, create groups based on each VM's path. A group is created for each
         step down in the path, with the group from the step above containing subsequent groups.
@@ -305,7 +305,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         if not self.get_option("group_by_paths"):
             return
 
-        path_parts = vmwre_host_object.path.split('/')
+        path_parts = vmware_host_object.path.split('/')
         group_name_parts = []
         last_created_group = None
 
@@ -324,4 +324,4 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
             last_created_group = group
 
         if last_created_group:
-            self.inventory.add_host(vmwre_host_object.inventory_hostname, last_created_group)
+            self.inventory.add_host(vmware_host_object.inventory_hostname, last_created_group)
