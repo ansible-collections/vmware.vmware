@@ -124,7 +124,7 @@ compose:
     - guest.net
 
 # Group hosts using Jinja2 conditionals
-plugin: vnware,vnware,vms
+plugin: vmware.vmware.vms
 properties:
   - 'config.datastoreUrl'
 groups:
