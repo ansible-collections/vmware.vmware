@@ -277,3 +277,24 @@ class ModulePyvmomiBase(PyvmomiClient):
             self.module.fail_json("Unable to find cluster with name or MOID %s" % identifier)
 
         return cluster
+
+    def get_esxi_host_by_name_or_moid(self, identifier, fail_on_missing=False):
+        """
+            Get the ESXi host matching the given name or MOID. ESXi names must be unique in a
+            vCenter, so at most one host is returned.
+            Args:
+                identifier: Name or MOID of the ESXi host to search for
+                fail_on_missing: If true, an error will be thrown if no hosts are found
+            Returns:
+                esxi host object or None
+        """
+        esxi_host = self.get_objs_by_name_or_moid(
+            [vim.HostSystem],
+            identifier,
+            return_all=False,
+        )
+
+        if not esxi_host and fail_on_missing:
+            self.module.fail_json("Unable to find ESXi host with name or MOID %s" % identifier)
+
+        return esxi_host

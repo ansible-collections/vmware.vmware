@@ -3,6 +3,11 @@
 # please edit according to your vcenter configs
 vcenter_cluster_name: "Eco-Cluster"
 vcenter_datacenter: "Eco-Datacenter"
+vcenter_resource_pool: "Resources"
 vcenter_port: 443
+
 shared_storage_01: "eco-iscsi-ds1"
 shared_storage_02: "eco-iscsi-ds2"
+
+ci_resources_content_library: ansible_ci_test_resources
+esxi_content_library_template: esxi-8
