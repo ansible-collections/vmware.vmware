@@ -11,6 +11,7 @@ action_groups:
         - cluster_vcls
         - content_library_item_info
         - content_template
+        - esxi_maintenance_mode
         - folder_template_from_vm
         - guest_info
         - license_info

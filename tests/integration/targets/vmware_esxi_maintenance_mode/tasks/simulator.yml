@@ -1,0 +1,60 @@
+---
+- name: Set Host Maintenance Mode
+  vmware.vmware.esxi_maintenance_mode:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    enable_maintenance_mode: True
+    name: "{{ test_esxi_hostname }}"
+  register: _set
+- name: Check Task Output
+  ansible.builtin.assert:
+    that:
+      - _set is changed
+
+- name: Set Host Maintenance Mode Again
+  vmware.vmware.esxi_maintenance_mode:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    enable_maintenance_mode: True
+    name: "{{ test_esxi_hostname }}"
+  register: _set
+- name: Check Task Output
+  ansible.builtin.assert:
+    that:
+      - _set is not changed
+
+- name: Unset Host Maintenance Mode
+  vmware.vmware.esxi_maintenance_mode:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    enable_maintenance_mode: False
+    name: "{{ test_esxi_hostname }}"
+  register: _set
+- name: Check Task Output
+  ansible.builtin.assert:
+    that:
+      - _set is changed
+
+- name: Unset Host Maintenance Mode Again
+  vmware.vmware.esxi_maintenance_mode:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    enable_maintenance_mode: False
+    name: "{{ test_esxi_hostname }}"
+  register: _set
+- name: Check Task Output
+  ansible.builtin.assert:
+    that:
+      - _set is not changed

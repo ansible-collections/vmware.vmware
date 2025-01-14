@@ -12,3 +12,5 @@ fi
 echo "ANSIBLE_COLLECTIONS_PATH: $ANSIBLE_COLLECTIONS_PATH"
 BASE_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 export ANSIBLE_ROLES_PATH=${BASE_DIR}
+
+ansible-galaxy collection install --upgrade -r ${BASE_DIR}/../requirements.yml

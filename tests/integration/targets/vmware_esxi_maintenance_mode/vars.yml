@@ -1,0 +1,7 @@
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_port: 8989
+
+test_esxi_hostname: DC0_H0
+run_on_simulator: true
