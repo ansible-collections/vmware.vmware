@@ -4,6 +4,18 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.9.0
+======
+
+Minor Changes
+-------------
+
+- esxi_maintenance_mode - migrate esxi maintenance module from community
+- info - Made vm_name variable required only when state is set to present in content_template module
+- pyvmomi module base - refactor class to use the pyvmomi shared client util class as a base
+- rest module base - refactor class to use the rest shared client util class as a base
+- vms - added vms inventory plugin. consolidated shared docs/code with esxi hosts inventory plugin
+
 v1.8.0
 ======
 

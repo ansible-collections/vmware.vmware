@@ -1,4 +1,0 @@
----
-minor_changes:
-  - pyvmomi module base - refactor class to use the pyvmomi shared client util class as a base
-  - rest module base - refactor class to use the rest shared client util class as a base
