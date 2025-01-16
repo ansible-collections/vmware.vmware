@@ -11,4 +11,4 @@ class MissingLibError(Exception):
         self.exception = exception
         self.library = library
         self.url = url
-        super().__init__(msg=missing_required_lib(self.library, url=self.url))
+        super().__init__(missing_required_lib(self.library, url=self.url))
