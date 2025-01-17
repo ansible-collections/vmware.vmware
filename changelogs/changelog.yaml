@@ -157,3 +157,25 @@ releases:
     - 91-add-esxi_host-inventory.yml
     - 92-fix-reference-in-content-template.yml
     release_date: '2024-12-23'
+  1.9.0:
+    changes:
+      bugfixes:
+      - client utils - Fixed error message when required library could not be imported
+      minor_changes:
+      - esxi_maintenance_mode - migrate esxi maintenance module from community
+      - info - Made vm_name variable required only when state is set to present in
+        content_template module
+      - pyvmomi module base - refactor class to use the pyvmomi shared client util
+        class as a base
+      - rest module base - refactor class to use the rest shared client util class
+        as a base
+      - vms - added vms inventory plugin. consolidated shared docs/code with esxi
+        hosts inventory plugin
+    fragments:
+    - 101-fix-missing-lib-error.yml
+    - 93-bugfix-vm_name-required.yml
+    - 95-use-client-utils-in-modules.yml
+    - 96-add-vms-inventory-plugin.yml
+    - 98-fix-relative-links-in-readme.yml
+    - 99-migrate-esxi-maintenance-mode.yml
+    release_date: '2025-01-17'

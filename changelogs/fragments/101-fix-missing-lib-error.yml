@@ -1,3 +1,0 @@
----
-bugfixes:
-  - client utils - Fixed error message when required library could not be imported
