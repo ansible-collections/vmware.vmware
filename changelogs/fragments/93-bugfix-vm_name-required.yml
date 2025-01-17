@@ -1,3 +1,0 @@
----
-minor_changes:
-  - info - Made vm_name variable required only when state is set to present in content_template module
