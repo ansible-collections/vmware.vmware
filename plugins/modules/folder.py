@@ -199,7 +199,7 @@ class VmwareFolder(ModulePyvmomiBase):
             The final folder object created
         """
         split_path = self.absolute_folder_path.split('/')
-        middle_index = (len(split_path)//2) + 1
+        middle_index = (len(split_path) // 2) + 1
 
         starting_index = middle_index
         starting_folder = self.lookup_folder_object('/'.join(split_path[:middle_index]))
@@ -276,9 +276,9 @@ def main():
 
         new_folder = vmware_folder.create_folder()
         module.exit_json(changed=True, folder={
-                'moid': new_folder._GetMoId(),
-                'name': new_folder.name
-            })
+            'moid': new_folder._GetMoId(),
+            'name': new_folder.name
+        })
 
     if module.params['state'] == 'absent':
         if not vmware_folder.folder_object:
