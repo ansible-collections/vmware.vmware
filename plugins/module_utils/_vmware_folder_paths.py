@@ -14,7 +14,7 @@ __metaclass__ = type
 FOLDER_TYPES = ('vm', 'host', 'network', 'datastore')
 
 
-def __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type=None):
+def prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type=None):
     """
     Formats a folder path so it is absolute, meaning it includes the datacenter name and
     type (vm, host, etc) at the start of the path. If path already starts with
@@ -39,7 +39,7 @@ def format_folder_path_as_vm_fq_path(folder_path, datacenter_name):
     the datacenter name, nothing is added.
     Eg: rest/of/path -> datacenter name/vm/rest/of/path
     """
-    return __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='vm')
+    return prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='vm')
 
 
 def format_folder_path_as_host_fq_path(folder_path, datacenter_name):
@@ -49,7 +49,7 @@ def format_folder_path_as_host_fq_path(folder_path, datacenter_name):
     the datacenter name, nothing is added.
     Eg: rest/of/path -> datacenter name/host/rest/of/path
     """
-    return __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='host')
+    return prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='host')
 
 
 def format_folder_path_as_network_fq_path(folder_path, datacenter_name):
@@ -59,7 +59,7 @@ def format_folder_path_as_network_fq_path(folder_path, datacenter_name):
     the datacenter name, nothing is added.
     Eg: rest/of/path -> datacenter name/network/rest/of/path
     """
-    return __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='network')
+    return prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='network')
 
 
 def format_folder_path_as_datastore_fq_path(folder_path, datacenter_name):
@@ -69,7 +69,7 @@ def format_folder_path_as_datastore_fq_path(folder_path, datacenter_name):
     the datacenter name, nothing is added.
     Eg: rest/of/path -> datacenter name/datastore/rest/of/path
     """
-    return __prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='datastore')
+    return prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type='datastore')
 
 
 def get_folder_path_of_vsphere_object(vsphere_obj):

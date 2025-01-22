@@ -1,0 +1,8 @@
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_port: 8989
+vcenter_datacenter: DC0
+test_folder: vmware_folder/nested/test/path
+
+run_on_simulator: true

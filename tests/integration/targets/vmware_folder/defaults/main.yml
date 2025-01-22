@@ -1,0 +1,3 @@
+---
+test_folder: "{{ tiny_prefix }}_vmware_folder/nested/test/path"
+run_on_simulator: false
