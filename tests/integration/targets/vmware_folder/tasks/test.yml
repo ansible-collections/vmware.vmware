@@ -1,0 +1,65 @@
+---
+- name: Create Folder With Relative Path
+  vmware.vmware.folder:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    relative_path: "{{ test_folder }}"
+    folder_type: "{{ vmware_folder_type }}"
+  register: _rel
+
+- name: Create With Absolute Path
+  vmware.vmware.folder:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    absolute_path: "{{ vmware_folder_absolute_folder_name }}"
+  register: _abs
+
+- name: Gather Info About Folders
+  community.vmware.vmware_folder_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    datacenter: "{{ vcenter_datacenter }}"
+  register: _folder_info
+
+- name: Check Output
+  ansible.builtin.assert:
+    that:
+      - (_folder_info.flat_folder_info | selectattr('moid', 'equalto', _rel.folder.moid) | first).path == vmware_folder_absolute_folder_name
+      - _rel.folder.moid == _abs.folder.moid
+      - _rel is changed
+      - _abs is not changed
+
+- name: Delete The Folder
+  vmware.vmware.folder:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    absolute_path: "{{ vmware_folder_absolute_folder_name }}"
+    state: absent
+
+- name: Create From Scratch Using Absolute Path
+  vmware.vmware.folder:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    absolute_path: "{{ vmware_folder_absolute_folder_name }}"
+  register: _abs
+
+- name: Check Output
+  ansible.builtin.assert:
+    that:
+      - _abs is changed

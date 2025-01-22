@@ -24,6 +24,7 @@ class MockClusterConfiguration():
 
 class MockVmwareObject():
     def __init__(self, name="test", moid="1"):
+        super().__init__()
         self.name = name
         self._moId = moid
 
