@@ -11,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: cluster
+module: folder
 short_description: Manage VMware vSphere folders
 description:
     - Adds or removes VMware vSphere folders. This module does not manage folders inside of datastores.
@@ -24,7 +24,7 @@ options:
             - The name of the datacenter where the folder should be created.
             - Only used if the O(relative_path) option is used.
         type: str
-        required: true
+        required: false
         aliases: [datacenter_name]
     folder_type:
         description:
@@ -33,6 +33,7 @@ options:
             - For example, a folder at path /DC-01/vm/my/folder has folder type 'vm'.
             - Only used if the O(relative_path) option is used.
         type: str
+        required: false
         choices: [vm, host, storage, network]
     relative_path:
         description:
@@ -275,8 +276,8 @@ def main():
 
         new_folder = vmware_folder.create_folder()
         module.exit_json(changed=True, folder={
-                'moid': vmware_folder.folder_object._GetMoId(),
-                'name': vmware_folder.folder_object.name
+                'moid': new_folder._GetMoId(),
+                'name': new_folder.name
             })
 
     if module.params['state'] == 'absent':
