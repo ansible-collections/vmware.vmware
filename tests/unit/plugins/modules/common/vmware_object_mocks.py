@@ -44,6 +44,9 @@ class MockCluster(MockVmwareObject):
     def GetResourceUsage(self):
         return {}
 
+    def ReconfigureComputeResource_Task(self, *args):
+        return MockVsphereTask()
+
 
 class MockEsxiHost(MockVmwareObject):
     def __init__(self, name="test", moid="1"):
