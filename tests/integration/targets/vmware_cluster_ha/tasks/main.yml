@@ -1,0 +1,172 @@
+---
+- name: Test On Simulator
+  when: run_on_simulator
+  block:
+    - name: Set HA Settings In Cluster
+      vmware.vmware.cluster_ha:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        host_failure_response:
+          restart_vms: true
+          default_vm_restart_priority: low
+        host_isolation_response: powerOff
+        admission_control_policy: dedicated_host
+        admission_control_dedicated_hosts:
+          - DC0_C0_H0
+          - DC0_C0_H1
+        vm_monitoring:
+          mode: vmAndAppMonitoring
+        storage_apd_response:
+          mode: restartConservative
+          delay: 100
+          restart_vms: true
+        storage_pdl_response_mode: restart
+    # The simulator never seems to update its HA settings, so there's nothing to validate here
+
+- name: Test On VCenter
+  when: not run_on_simulator
+  block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+    - name: Create Test Cluster
+      community.vmware.vmware_cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        validate_certs: false
+        port: "{{ vcenter_port }}"
+        cluster_name: "{{ test_cluster }}"
+
+    - name: Set HA Settings In Test Cluster
+      vmware.vmware.cluster_ha:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        host_failure_response:
+          restart_vms: true
+          default_vm_restart_priority: low
+        host_isolation_response: none
+      register: _first
+    - name: Set HA Settings In Test Cluster Again - Idempotency
+      vmware.vmware.cluster_ha:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        host_failure_response:
+          restart_vms: true
+          default_vm_restart_priority: low
+        host_isolation_response: none
+      register: _idem
+    - name: Gather Cluster Settings
+      vmware.vmware.cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
+    - name: Check Tasks
+      ansible.builtin.assert:
+        that:
+          - _cluster_info.clusters[test_cluster].ha_enabled
+          - _idem is not changed
+          - _first is changed
+
+    - name: Disable HA
+      vmware.vmware.cluster_ha:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        enable: false
+    - name: Gather Cluster Settings
+      vmware.vmware.cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
+    - name: Check Tasks
+      ansible.builtin.assert:
+        that:
+          - not _cluster_info.clusters[test_cluster].ha_enabled
+
+    - name: Enable HA With Verifiable Settings
+      vmware.vmware.cluster_ha:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+        admission_control_policy: cluster_resource
+        admission_control_failover_level: 5
+        admission_control_cpu_reserve_percentage: 60
+        host_failure_response:
+          restart_vms: false
+        vm_monitoring:
+          mode: vmMonitoringOnly
+          failure_interval: 90
+          minimum_uptime: 100
+          maximum_resets: 5
+          maximum_resets_window: 7200
+    - name: Gather Cluster Settings
+      vmware.vmware.cluster_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: "{{ test_cluster }}"
+        port: "{{ vcenter_port }}"
+      register: _cluster_info
+    - name: Check Tasks
+      ansible.builtin.assert:
+        that:
+          - _c.ha_enabled
+          - _c.ha_admission_control_enabled
+          - _c.ha_failover_level == 5
+          - _c.ha_host_monitoring == 'disabled'
+          - _c.ha_vm_monitoring == 'vmMonitoringOnly'
+          - _c.ha_vm_failure_interval == 90
+          - _c.ha_vm_min_up_time == 100
+          - _c.ha_vm_max_failures == 5
+          - _c.ha_vm_max_failure_window == 7200
+      vars:
+        _c: "{{ _cluster_info.clusters[test_cluster] }}"
+
+  always:
+    - name: Destroy Test Cluster
+      community.vmware.vmware_cluster:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        validate_certs: false
+        cluster_name: "{{ test_cluster }}"
+        state: absent
