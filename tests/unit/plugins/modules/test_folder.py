@@ -39,7 +39,7 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
             username="administrator@local",
             password="123456",
             add_cluster=False,
-            absolute_path="/DC0/vm/test"
+            absolute_path="/DC0/host/test"
         )
 
         with pytest.raises(AnsibleExitJson) as c:
@@ -55,7 +55,7 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
             add_cluster=False,
             relative_path="test",
             datacenter="DC0",
-            folder_type="vm"
+            folder_type="host"
         )
 
         with pytest.raises(AnsibleExitJson) as c:
@@ -76,7 +76,7 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
             state="absent",
             relative_path="test",
             datacenter="DC0",
-            folder_type="vm"
+            folder_type="host"
         )
 
         with pytest.raises(AnsibleExitJson) as c:
@@ -95,7 +95,7 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
             username="administrator@local",
             password="123456",
             add_cluster=False,
-            absolute_path="/DC0/vm/test",
+            absolute_path="/DC0/host/test",
             state="absent"
         )
 
@@ -117,7 +117,7 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
             username="administrator@local",
             password="123456",
             add_cluster=False,
-            absolute_path="/DC0/vm/test",
+            absolute_path="/DC0/host/test",
             state="present"
         )
 
