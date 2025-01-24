@@ -16,7 +16,8 @@ from .common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
 from .common.vmware_object_mocks import (
-    MockVmwareObject
+    MockVmwareObject,
+    MockVsphereTask
 )
 
 pytestmark = pytest.mark.skipif(
@@ -87,8 +88,7 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
     def test_state_absent_with_change(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(VmwareFolder, 'get_folder_by_absolute_path', return_value=self.mock_folder)
-        self.mock_folder.Destroy = mock.Mock(return_value=None)
-        self.mock_folder.childType = "foo"
+        self.mock_folder.Destroy = mock.Mock(return_value=MockVsphereTask())
 
         set_module_args(
             hostname="127.0.0.1",
