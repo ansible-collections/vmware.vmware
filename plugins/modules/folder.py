@@ -148,6 +148,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import
     RunningTaskMonitor
 )
 
+
 class VmwareFolder(ModulePyvmomiBase):
     def __init__(self, module):
         super().__init__(module)
