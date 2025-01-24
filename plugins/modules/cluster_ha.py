@@ -353,7 +353,7 @@ class VmwareCluster(ModulePyvmomiBase):
         return True
 
     def check_apd_restart_params(self):
-        if self.params[['storage_apd_response']]['mode'] in ('disabled', 'warning'):
+        if self.params['storage_apd_response']['mode'] in ('disabled', 'warning'):
             return False
         return True
 
