@@ -37,13 +37,13 @@ options:
         choices: [vm, host, storage, network]
     relative_path:
         description:
-            - The relative path of the folder to create. The relative path should not include the datacenter or the folder type.
+            - The relative path of the folder to create. The relative path should include neither the datacenter nor the folder type.
             - For example the relative path for the folder /DC-01/vm/my/folder is my/folder
             - One of O(relative_path) or O(absolute_path) must be specified.
         type: str
     absolute_path:
         description:
-            - The absolute path of the folder to create. The absolute path should include the datacenter or the folder type.
+            - The absolute path of the folder to create. The absolute path should include the datacenter and the folder type.
             - The leading slash is not required. For example the absolute path could be /DC-01/vm/my/folder or DC-01/vm/my/folder
             - One of O(relative_path) or O(absolute_path) must be specified.
         type: str
@@ -98,6 +98,7 @@ EXAMPLES = r'''
     validate_certs: false
     absolute_path: /DC01/storage/my
     state: absent
+    remove_vm_data: True
 
 
 - name: Delete A VM Folder But Keep The VM Data Disks
@@ -142,7 +143,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spe
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import (
     prepend_datacenter_and_folder_type
 )
-
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
+    TaskError,
+    RunningTaskMonitor
+)
 
 class VmwareFolder(ModulePyvmomiBase):
     def __init__(self, module):
@@ -158,6 +162,18 @@ class VmwareFolder(ModulePyvmomiBase):
         self.absolute_folder_path = self.absolute_folder_path.strip('/')
         self.folder_object = self.lookup_folder_object(self.absolute_folder_path)
 
+    @property
+    def folder_type(self):
+        """
+        Return the folder type either from the absolute path or the param supplied with the relative
+        path. We can't set this in the init if/else because the leading / may or may not exist at that
+        point which would change the index of the folder type part of the path.
+        """
+        if self.params['absolute_path']:
+            return self.absolute_folder_path.split('/')[1]
+        else:
+            return self.params['folder_type']
+
     def lookup_folder_object(self, path, fail_on_missing=False):
         try:
             return self.get_folder_by_absolute_path(
@@ -172,10 +188,18 @@ class VmwareFolder(ModulePyvmomiBase):
 
     def delete_folder(self):
         try:
-            if "vim.Virtualmachine" in self.folder_object.childType and not self.params['remove_vm_data']:
-                self.folder_object.UnregisterAndDestroy()
+            if self.folder_type == 'vm' and not self.params['remove_vm_data']:
+                task = self.folder_object.UnregisterAndDestroy()
             else:
-                self.folder_object.Destroy()
+                task = self.folder_object.Destroy()
+            RunningTaskMonitor(task).wait_for_completion()
+        except TaskError as task_e:
+            if 'in the current state (Powered on)' in to_native(task_e):
+                self.module.fail_json(msg=(
+                    "Unable to delete folder %s because it contains a VM in a powered on state." %
+                    self.folder_object.name
+                ))
+            self.module.fail_json(msg=to_native(task_e))
         except vim.fault.ConcurrentAccess as e:
             self.module.fail_json(msg=(
                 "Failed to remove folder as another client modified folder during this operation : %s"
@@ -186,9 +210,7 @@ class VmwareFolder(ModulePyvmomiBase):
                 "Failed to remove folder because it is in an invalid state : %s" % to_native(e.msg)
             ))
         except Exception as e:
-            self.module.fail_json(msg=(
-                "Failed to remove folder due to unexpected error %s " % to_native(e)
-            ))
+            self.module.fail_json(msg=("Failed to remove folder due to unexpected error %s " % to_native(e)))
 
     def create_folder(self):
         """
@@ -236,8 +258,12 @@ class VmwareFolder(ModulePyvmomiBase):
             if _folder:
                 last_known_folder = _folder
                 continue
-
-            last_known_folder = last_known_folder.CreateFolder(path_part)
+            try:
+                last_known_folder = last_known_folder.CreateFolder(path_part)
+            except vim.fault.InvalidName as e:
+                self.module.fail_json(msg="Failed to create folder %s because it has an invalid name." % path_part)
+            except Exception as e:
+                self.module.fail_json(msg=("Failed to create folder due to unexpected error %s " % to_native(e)))
         return last_known_folder
 
 
