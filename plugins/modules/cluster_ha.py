@@ -339,7 +339,7 @@ class VmwareCluster(ModulePyvmomiBase):
         all_hosts = {h.name: h for h in self.cluster.host}
         for host_name in self.params['admission_control_dedicated_hosts']:
             try:
-                self._cached_ac_failover_hosts.add(all_hosts[host_name])
+                self._cached_ac_failover_hosts.append(all_hosts[host_name])
             except KeyError:
                 self.module.fail_json(msg="Host %s is not a member of cluster %s." % (host_name, self.params.get('cluster')))
         self._cached_ac_failover_hosts.sort(key=lambda h: h.name)
