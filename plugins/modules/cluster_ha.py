@@ -324,7 +324,7 @@ class VmwareCluster(ModulePyvmomiBase):
 
     @property
     def storage_apd_restart_vms(self):
-        if self.params[['storage_apd_response']]['restart_vms']:
+        if self.params['storage_apd_response']['restart_vms']:
             return 'reset'
         return 'none'
 
