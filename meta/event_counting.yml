@@ -14,7 +14,7 @@ vmware.vmware.guest_info:
       }
     }
 
-vm_list_group_by_clusters_info:
+vmware.vmware.vm_list_group_by_clusters_info:
   query: >-
     .vm_list_group_by_clusters_info | values[] | values[] | values[] | {
       name: (.moid + "-" + .instance_uuid),
