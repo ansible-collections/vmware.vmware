@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - deploy_content_library_ovf - migrate the vmware_content_deploy_ovf_template module from community to here
+  - deploy_content_library_template - migrate the vmware_content_deploy_template module from community to here
