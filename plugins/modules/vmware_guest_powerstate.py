@@ -24,16 +24,19 @@ options:
             - The datacenter where the VM you'd like to operate the power.
         default: ha-datacenter
         type: str
+        required: false
     state:
         description:
             - Set the state of the virtual machine.
         choices: [ powered-off, powered-on, reboot-guest, restarted, shutdown-guest, suspended, present]
         default: present
         type: str
+        required: false
     name:
         description:
             - Name of the virtual machine to work with.
             - Virtual machine names in vCenter are not necessarily unique, which may be problematic, see O(name_match).
+            - This is required if O(moid) or O(uuid) is not supplied.
         type: str
     name_match:
         description:
@@ -71,12 +74,14 @@ options:
             - '   folder: folder1/datacenter1/vm'
             - '   folder: /folder1/datacenter1/vm/folder2'
         type: str
+        required: false
     scheduled_at:
         description:
             - Date and time in string format at which specified task needs to be performed.
             - "The required format for date and time - 'dd/mm/yyyy hh:mm'."
             - Scheduling task requires vCenter server. A standalone ESXi server does not support this option.
         type: str
+        required: false
     schedule_task_name:
         description:
             - Name of schedule task.
@@ -126,6 +131,7 @@ options:
                 required: true
         type: list
         elements: dict
+        required: false
 
 
 extends_documentation_fragment:
@@ -141,7 +147,6 @@ EXAMPLES = r'''
     folder: "/{{ datacenter_name }}/vm/my_folder"
     name: "{{ guest_name }}"
     state: powered-off
-  delegate_to: localhost
   register: deploy
 
 - name: Set the state of a virtual machine to poweron using MoID
@@ -152,7 +157,6 @@ EXAMPLES = r'''
     folder: "/{{ datacenter_name }}/vm/my_folder"
     moid: vm-42
     state: powered-on
-  delegate_to: localhost
   register: deploy
 
 - name: Set the state of a virtual machine to poweroff at given scheduled time
@@ -167,7 +171,6 @@ EXAMPLES = r'''
     schedule_task_name: "task_00001"
     schedule_task_description: "Sample task to poweroff VM"
     schedule_task_enabled: true
-  delegate_to: localhost
   register: deploy_at_schedule_datetime
 
 - name: Wait for the virtual machine to shutdown
@@ -178,16 +181,15 @@ EXAMPLES = r'''
     name: "{{ guest_name }}"
     state: shutdown-guest
     state_change_timeout: 200
-  delegate_to: localhost
   register: deploy
 
 - name: Automatically answer if a question locked a virtual machine
   block:
     - name: Power on a virtual machine without the answer param
       community.vmware.vmware_guest_powerstate:
-        hostname: "{{ esxi_hostname }}"
-        username: "{{ esxi_username }}"
-        password: "{{ esxi_password }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         validate_certs: false
         folder: "{{ f1 }}"
         name: "{{ vm_name }}"
@@ -195,9 +197,9 @@ EXAMPLES = r'''
   rescue:
     - name: Power on a virtual machine with the answer param
       community.vmware.vmware_guest_powerstate:
-        hostname: "{{ esxi_hostname }}"
-        username: "{{ esxi_username }}"
-        password: "{{ esxi_password }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         validate_certs: false
         folder: "{{ f1 }}"
         name: "{{ vm_name }}"
@@ -254,6 +256,9 @@ def main():
         mutually_exclusive=[
             ['name', 'uuid', 'moid'],
             ['scheduled_at', 'answer']
+        ],
+        required_one_of=[
+            ['name', 'uuid', 'moid']
         ],
     )
 
