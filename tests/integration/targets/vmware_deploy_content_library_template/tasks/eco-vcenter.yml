@@ -1,0 +1,82 @@
+---
+- name: Import common vars
+  ansible.builtin.include_vars:
+    file: ../group_vars.yml
+
+- name: Lookup Root Resource Pool ID
+  ansible.builtin.set_fact:
+    vcenter_rp_id: >-
+      {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      vcenter_hostname=vcenter_hostname,
+      vcenter_username=vcenter_username,
+      vcenter_password=vcenter_password,
+      vcenter_validate_certs=false,
+      ) }}
+
+- name: Test
+  block:
+    - name: Create a test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        name: "{{ test_resource_pool }}"
+        parent: "{{ vcenter_rp_id }}"
+      register: _test_rp
+
+    - name: Deploy VM
+      vmware.vmware.deploy_content_library_template:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ shared_storage_02 }}"
+        library_item_name: "{{ rhel9_content_library_template }}"
+        library_name: "{{ ci_resources_content_library }}"
+        vm_name: "{{ test_vm_name }}"
+        resource_pool: "{{ test_resource_pool }}"
+      register: _deploy
+
+    - name: Deploy VM Again - Idempotency
+      vmware.vmware.deploy_content_library_template:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ shared_storage_02 }}"
+        library_item_name: "{{ rhel9_content_library_template }}"
+        library_name: "{{ ci_resources_content_library }}"
+        vm_name: "{{ test_vm_name }}"
+        resource_pool: "{{ test_resource_pool }}"
+      register: _deploy_idem
+
+    - name: Check Task Output
+      ansible.builtin.assert:
+        that:
+          - _deploy is changed
+          - _deploy.vm_moid == _deploy_idem.vm_moid
+          - _deploy.vm_name == _deploy_idem.vm_name
+          - _deploy_idem is not changed
+
+  always:
+    - name: "Test cleanup: Delete Virtual VM"
+      vmware.vmware.deploy_content_library_template:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        vm_name: "{{ test_vm_name }}"
+        state: absent
+    - name: "Test cleanup: Delete Resource Pool"
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent
+      when: _test_rp.id is defined
