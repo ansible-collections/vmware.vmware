@@ -12,6 +12,8 @@ action_groups:
         - cluster_vcls
         - content_library_item_info
         - content_template
+        - deploy_content_library_ovf
+        - deploy_content_library_template
         - esxi_maintenance_mode
         - folder
         - folder_template_from_vm
