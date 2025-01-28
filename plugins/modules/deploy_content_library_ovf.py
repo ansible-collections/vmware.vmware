@@ -273,10 +273,10 @@ def main():
             result['vm_moid'] = vm._GetMoId()
         else:
             result['changed'] = True
-            spec = vmware_template.create_deploy_spec()
+            deployment_target, deploy_spec = vmware_template.create_deploy_spec()
             if module.check_mode:
                 module.exit_json(**result)
-            vm_id = vmware_template.deploy(spec)
+            vm_id = vmware_template.deploy(deployment_target, deploy_spec)
             result['vm_moid'] = vm_id
 
     elif module.params['state'] == 'absent':
