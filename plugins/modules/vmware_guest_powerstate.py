@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2017, Abhijeet Kasurde <akasurde@redhat.com>
+# Copyright: (c) 2025, Ansible Cloud Team (@ansible-collections)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -9,127 +9,130 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: vmware_guest_powerstate
 short_description: Manages power states of virtual machines in vCenter
 description:
-- Power on / Power off / Restart a virtual machine.
+    - Manages power states of virtual machines in vCenter, e.g., Power on / Power off / Restart.
 author:
-- Abhijeet Kasurde (@Akasurde) <akasurde@redhat.com>
-options:
-  datacenter:
-    description:
-      - The datacenter where the VM you'd like to operate the power.
-    default: ha-datacenter
-    type: str
-  state:
-    description:
-    - Set the state of the virtual machine.
-    choices: [ powered-off, powered-on, reboot-guest, restarted, shutdown-guest, suspended, present]
-    default: present
-    type: str
-  name:
-    description:
-    - Name of the virtual machine to work with.
-    - Virtual machine names in vCenter are not necessarily unique, which may be problematic, see O(name_match).
-    type: str
-  name_match:
-    description:
-    - If multiple virtual machines matching the name, use the first or last found.
-    default: first
-    choices: [ first, last ]
-    type: str
-  uuid:
-    description:
-    - UUID of the instance to manage if known, this is VMware's unique identifier.
-    - This is required if O(name) or O(moid) is not supplied.
-    type: str
-  moid:
-    description:
-    - Managed Object ID of the instance to manage if known, this is a unique identifier only within a single vCenter instance.
-    - This is required if O(name) or O(uuid) is not supplied.
-    type: str
-  use_instance_uuid:
-    description:
-    - Whether to use the VMware instance UUID rather than the BIOS UUID.
-    default: false
-    type: bool
-  folder:
-    description:
-    - Destination folder, absolute or relative path to find an existing guest.
-    - The folder should include the datacenter. ESX's datacenter is ha-datacenter
-    - 'Examples:'
-    - '   folder: /ha-datacenter/vm'
-    - '   folder: ha-datacenter/vm'
-    - '   folder: /datacenter1/vm'
-    - '   folder: datacenter1/vm'
-    - '   folder: /datacenter1/vm/folder1'
-    - '   folder: datacenter1/vm/folder1'
-    - '   folder: /folder1/datacenter1/vm'
-    - '   folder: folder1/datacenter1/vm'
-    - '   folder: /folder1/datacenter1/vm/folder2'
-    type: str
-  scheduled_at:
-    description:
-    - Date and time in string format at which specified task needs to be performed.
-    - "The required format for date and time - 'dd/mm/yyyy hh:mm'."
-    - Scheduling task requires vCenter server. A standalone ESXi server does not support this option.
-    type: str
-  schedule_task_name:
-    description:
-    - Name of schedule task.
-    - Valid only if O(scheduled_at) is specified.
-    type: str
-    required: false
-  schedule_task_description:
-    description:
-    - Description of schedule task.
-    - Valid only if O(scheduled_at) is specified.
-    type: str
-    required: false
-  schedule_task_enabled:
-    description:
-    - Flag to indicate whether the scheduled task is enabled or disabled.
-    type: bool
-    required: false
-    default: true
-  force:
-    description:
-    - Ignore warnings and complete the actions.
-    - This parameter is useful while forcing virtual machine state.
-    default: false
-    type: bool
-  state_change_timeout:
-    description:
-    - If the O(state=shutdown-guest), by default the module will return immediately after sending the shutdown signal.
-    - If this argument is set to a positive integer, the module will instead wait for the VM to reach the poweredoff state.
-    - The value sets a timeout in seconds for the module to wait for the state change.
-    default: 0
-    type: int
-  answer:
-    description:
-    - A list of questions to answer, should one or more arise while waiting for the task to complete.
-    - Some common uses are to allow a cdrom to be changed even if locked, or to answer the question as to whether a VM was copied or moved.
-    - Can be used if O(state=powered-on).
-    suboptions:
-      question:
-        description:
-        - The message id, for example C(msg.uuid.altered).
-        type: str
-        required: true
-      response:
-        description:
-        - The choice key, for example C(button.uuid.copiedTheVM).
-        type: str
-        required: true
-    type: list
-    elements: dict
-extends_documentation_fragment:
-- community.vmware.vmware.documentation
-"""
+    - Ansible Cloud Team (@ansible-collections)
 
-EXAMPLES = r"""
+options:
+    datacenter:
+        description:
+            - The datacenter where the VM you'd like to operate the power.
+        default: ha-datacenter
+        type: str
+    state:
+        description:
+            - Set the state of the virtual machine.
+        choices: [ powered-off, powered-on, reboot-guest, restarted, shutdown-guest, suspended, present]
+        default: present
+        type: str
+    name:
+        description:
+            - Name of the virtual machine to work with.
+            - Virtual machine names in vCenter are not necessarily unique, which may be problematic, see O(name_match).
+        type: str
+    name_match:
+        description:
+            - If multiple virtual machines matching the name, use the first or last found.
+        default: first
+        choices: [ first, last ]
+        type: str
+    uuid:
+        description:
+            - UUID of the instance to manage if known, this is VMware's unique identifier.
+            - This is required if O(name) or O(moid) is not supplied.
+        type: str
+    moid:
+        description:
+            - Managed Object ID of the instance to manage if known, this is a unique identifier only within a single vCenter instance.
+            - This is required if O(name) or O(uuid) is not supplied.
+        type: str
+    use_instance_uuid:
+        description:
+            - Whether to use the VMware instance UUID rather than the BIOS UUID.
+        default: false
+        type: bool
+    folder:
+        description:
+            - Destination folder, absolute or relative path to find an existing guest.
+            - The folder should include the datacenter. ESX's datacenter is ha-datacenter
+            - 'Examples:'
+            - '   folder: /ha-datacenter/vm'
+            - '   folder: ha-datacenter/vm'
+            - '   folder: /datacenter1/vm'
+            - '   folder: datacenter1/vm'
+            - '   folder: /datacenter1/vm/folder1'
+            - '   folder: datacenter1/vm/folder1'
+            - '   folder: /folder1/datacenter1/vm'
+            - '   folder: folder1/datacenter1/vm'
+            - '   folder: /folder1/datacenter1/vm/folder2'
+        type: str
+    scheduled_at:
+        description:
+            - Date and time in string format at which specified task needs to be performed.
+            - "The required format for date and time - 'dd/mm/yyyy hh:mm'."
+            - Scheduling task requires vCenter server. A standalone ESXi server does not support this option.
+        type: str
+    schedule_task_name:
+        description:
+            - Name of schedule task.
+            - Valid only if O(scheduled_at) is specified.
+        type: str
+        required: false
+    schedule_task_description:
+        description:
+            - Description of schedule task.
+            - Valid only if O(scheduled_at) is specified.
+        type: str
+        required: false
+    schedule_task_enabled:
+        description:
+            - Flag to indicate whether the scheduled task is enabled or disabled.
+        type: bool
+        required: false
+        default: true
+    force:
+        description:
+            - Ignore warnings and complete the actions.
+            - This parameter is useful while forcing virtual machine state.
+        default: false
+        type: bool
+    state_change_timeout:
+        description:
+            - If the O(state=shutdown-guest), by default the module will return immediately after sending the shutdown signal.
+            - If this argument is set to a positive integer, the module will instead wait for the VM to reach the poweredoff state.
+            - The value sets a timeout in seconds for the module to wait for the state change.
+        default: 0
+        type: int
+    answer:
+        description:
+            - A list of questions to answer, should one or more arise while waiting for the task to complete.
+            - Some common uses are to allow a cdrom to be changed even if locked, or to answer the question as to whether a VM was copied or moved.
+            - Can be used if O(state=powered-on).
+        suboptions:
+            question:
+                description:
+                    - The message id, for example C(msg.uuid.altered).
+                type: str
+                required: true
+            response:
+                description:
+                    - The choice key, for example C(button.uuid.copiedTheVM).
+                type: str
+                required: true
+        type: list
+        elements: dict
+
+
+extends_documentation_fragment:
+    - vmware.vmware.base_options
+'''
+
+EXAMPLES = r'''
 - name: Set the state of a virtual machine to poweroff
   community.vmware.vmware_guest_powerstate:
     hostname: "{{ vcenter_hostname }}"
@@ -202,9 +205,9 @@ EXAMPLES = r"""
           - question: "msg.uuid.altered"
             response: "button.uuid.copiedTheVM"
         state: powered-on
-"""
+'''
 
-RETURN = r""" # """
+RETURN = r''' # '''
 
 try:
     from pyVmomi import vim, vmodl
