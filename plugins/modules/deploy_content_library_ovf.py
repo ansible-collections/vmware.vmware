@@ -131,26 +131,56 @@ options:
 
 EXAMPLES = r'''
 - name: Create template in content library from Virtual Machine
-  vmware.vmware.content_template:
+  vmware.vmware.deploy_content_library_ovf:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
     password: '{{ vcenter_password }}'
-    template: mytemplate
-    library: mylibrary
+    library_item_name: mytemplate
+    library_name: mylibrary
     vm_name: myvm
-    host: myhost
+    datacenter: DC01
+    datastore: DS01
+    resource_pool: RP01
+
+
+- name: Create Virtual Machine Using Absolute Folder Destination
+  vmware.vmware.deploy_content_library_ovf:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    library_item_name: mytemplate
+    library_name: mylibrary
+    vm_name: myvm
+    datacenter: DC01
+    datastore: DS01
+    folder: /DC01/vm/my/deploys
+
+- name: Create Virtual Machine Using Relative Folder Destination
+  vmware.vmware.deploy_content_library_ovf:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    library_item_name: mytemplate
+    library_name: mylibrary
+    vm_name: myvm
+    datacenter: DC01
+    datastore: DS01
+    folder: my/deploys
 '''
 
 RETURN = r'''
-template_info:
-  description: Template creation message and template_id
-  returned: on success
-  type: dict
-  sample: {
-        "msg": "Template 'mytemplate'.",
-        "template_id": "template-1009"
-    }
+vm_name:
+  description: The name of the vm, as specified by the input parameter vm_name
+  returned: always
+  type: str
+  sample: myvm
+vm_moid:
+  description: The MOID of the deployed VM
+  returned: when state is present
+  type: str
+  sample: vm-1000
 '''
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
 from ansible.module_utils.common.text.converters import to_native
