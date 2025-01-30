@@ -207,6 +207,35 @@ class ModulePyvmomiBase(PyvmomiClient):
             self.module.fail_json("Unable to find datastore with name or MOID %s" % identifier)
         return ds
 
+    def get_datastore_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
+        """
+            Get the datastore cluster matching the given name or MOID. Datastore cluster names must
+            be unique in a given datacenter, so only one object is returned at most.
+            Args:
+                identifier: Name or MOID of the datastore cluster to search for
+                fail_on_missing: If true, an error will be thrown if no clusters are found
+                datacenter: The datacenter object to use as a filter when searching for clusters. If
+                            not provided then all datacenters will be examined
+            Returns:
+                datastore cluster object or None
+
+        """
+        search_folder = None
+        if datacenter and hasattr(datacenter, 'datastoreFolder'):
+            search_folder = datacenter.hostFolder
+
+        data_store_cluster = self.get_objs_by_name_or_moid(
+            [vim.StoragePod],
+            identifier,
+            return_all=False,
+            search_root_folder=search_folder
+        )
+
+        if not data_store_cluster and fail_on_missing:
+            self.module.fail_json("Unable to find datastore cluster with name or MOID %s" % identifier)
+
+        return data_store_cluster
+
     def get_resource_pool_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
             Get the resource pool matching the given name or MOID. Pool names must be unique
@@ -298,3 +327,47 @@ class ModulePyvmomiBase(PyvmomiClient):
             self.module.fail_json("Unable to find ESXi host with name or MOID %s" % identifier)
 
         return esxi_host
+
+    def get_sdrs_recommended_datastore_from_ds_cluster(self, ds_cluster):
+        """
+            Returns the Storage DRS recommended datastore from a datastore cluster
+            Args:
+                ds_cluster: datastore cluster managed object
+
+            Returns:
+                Datastore object, or none if sdrs is not configured for the cluster
+
+        """
+        # Check if Datastore Cluster provided by user is SDRS ready
+        if not ds_cluster.podStorageDrsEntry.storageDrsConfig.podConfig.enabled:
+            return None
+
+        pod_sel_spec = vim.storageDrs.PodSelectionSpec()
+        pod_sel_spec.storagePod = ds_cluster
+        storage_spec = vim.storageDrs.StoragePlacementSpec()
+        storage_spec.podSelectionSpec = pod_sel_spec
+        storage_spec.type = 'create'
+
+        rec = self.content.storageResourceManager.RecommendDatastores(storageSpec=storage_spec)
+        rec_action = rec.recommendations[0].action[0]
+        return rec_action.destination
+
+    def get_datastore_with_max_free_space(self, datastores):
+        """
+            Returns the datasotre object with the maximum amount of freespace from a list of datastores.
+            Args:
+                datastores: list of datastore managed objects
+
+            Returns:
+                Datastore object
+
+        """
+        datastore = None
+        datastore_freespace = 0
+        for ds in datastores:
+            if isinstance(ds, vim.Datastore) and ds.summary.freeSpace > datastore_freespace:
+                if ds.summary.maintenanceMode == 'normal' and ds.summary.accessible:
+                    datastore = ds
+                    datastore_freespace = ds.summary.freeSpace
+
+        return datastore

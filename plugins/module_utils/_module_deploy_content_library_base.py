@@ -40,14 +40,16 @@ class VmwareContentDeploy(ModulePyvmomiBase):
                 fail_on_missing=True,
             )._GetMoId()
 
-        # Find the datastore by the given datastore cluster name
         if self.params.get('datastore_cluster'):
-            dsc = self.find_datastore_cluster_by_name(self.datastore_cluster)
-            if dsc:
-                self.datastore = self._pyv.get_recommended_datastore(dsc)
-                self._datastore_id = self.get_datastore_by_name(self.datacenter, self.datastore)
-            else:
-                self.module.fail_json(msg="Failed to find the datastore cluster %s" % self.datastore_cluster)
+            dsc = self.get_datastore_cluster_by_name_or_moid(
+                self.params['datastore_cluster'],
+                fail_on_missing=True,
+                datacenter=self.datacenter
+            )
+            datastore = self.get_sdrs_recommended_datastore_from_ds_cluster(dsc)
+            if not datastore:
+                datastore = self.get_datastore_with_max_free_space(dsc.childEntity)
+            return datastore._GetMoId()
 
     def get_deployment_folder(self):
         if not self.params.get('folder'):
