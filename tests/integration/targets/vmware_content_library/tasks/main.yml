@@ -1,0 +1,146 @@
+---
+- name: Import common vars
+  ansible.builtin.include_vars:
+    file: ../group_vars.yml
+  when: not run_on_simulator
+
+- name: Test
+  when: not run_on_simulator
+  block:
+    - name: Create Local Content Library
+      vmware.vmware.local_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}"
+        state: present
+
+    - name: Publish Library
+      vmware.vmware.local_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}"
+        authentication_method: BASIC
+        authentication_password: "{{ test_library_password }}"
+        publish: true
+        persist_json_enabled: true
+        state: present
+      register: _pub
+
+    - name: Publish Library - Idempotency
+      vmware.vmware.local_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}"
+        authentication_method: BASIC
+        authentication_password: "{{ test_library_password }}"
+        publish: true
+        persist_json_enabled: true
+        state: present
+      register: _pub_idem
+
+    - name: Create Subscribed Library
+      vmware.vmware.subscribed_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}-subscribed"
+        authentication_method: BASIC
+        authentication_password: "{{ test_library_password }}"
+        subscription_url: "{{ _pub.library.publish_url }}"
+        always_update_password: False
+        state: present
+
+    - name: Create Subscribed Library - Idemptoency
+      vmware.vmware.subscribed_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}-subscribed"
+        authentication_method: BASIC
+        authentication_password: "{{ test_library_password }}"
+        subscription_url: "{{ _pub.library.publish_url }}"
+        always_update_password: False
+        state: present
+      register: _sub_idem
+
+    - name: Change Local Password
+      vmware.vmware.local_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}"
+        authentication_method: BASIC
+        authentication_password: "{{ test_library_password }}!"
+        authentication_current_password: "{{ test_library_password }}"
+        publish: true
+        state: present
+      register: _change_local
+
+    - name: Change Subscribed Password
+      vmware.vmware.subscribed_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}-subscribed"
+        authentication_method: BASIC
+        authentication_password: "{{ test_library_password }}!"
+        subscription_url: "{{ _pub.library.publish_url }}"
+        state: present
+      register: _change_sub
+
+    - name: Stop Publishing
+      vmware.vmware.local_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datastore_name: "{{ shared_storage_02 }}"
+        name: "{{ test_library_name }}"
+        authentication_current_password: "{{ test_library_password }}!"
+        publish: false
+        state: present
+      register: _stop_pub
+
+    - name: Check Outputs
+      ansible.builtin.assert:
+        that:
+          - _pub_idem is not changed
+          - _sub_idem is not changed
+          - _change_local is changed
+          - _change_local.library.id == _pub_idem.library.id
+          - _change_sub is changed
+          - _change_sub.library.id == _sub_idem.library.id
+  always:
+    - name: Destroy local library
+      vmware.vmware.local_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ test_library_name }}"
+        state: absent
+    - name: Destroy subscribed library
+      vmware.vmware.subscribed_content_library:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ test_library_name }}-subscribed"
+        state: absent
