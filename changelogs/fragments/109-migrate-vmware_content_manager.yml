@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - local_content_library - migrate the vmware_content_library_manager module from community to here
+  - subscribed_content_library - migrate the vmware_content_library_manager module from community to here
