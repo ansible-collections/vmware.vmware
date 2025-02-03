@@ -156,7 +156,7 @@ class ModulePyvmomiBase(PyvmomiClient):
                 self.module.fail_json(msg="Unrecognized name_match option '%s' " % self.params.get(name_match_param))
 
         if not vms and fail_on_missing:
-            self.module.fail_json(msg="Unable to find VM with %s %s" % _search_id, _search_value)
+            self.module.fail_json(msg="Unable to find VM with %s %s" % (_search_id, _search_value))
 
         return vms
 
