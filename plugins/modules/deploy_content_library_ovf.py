@@ -130,7 +130,7 @@ options:
 '''
 
 EXAMPLES = r'''
-- name: Create template in content library from Virtual Machine
+- name: Create Virtual Machine From OVF Template
   vmware.vmware.deploy_content_library_ovf:
     hostname: '{{ vcenter_hostname }}'
     username: '{{ vcenter_username }}'
