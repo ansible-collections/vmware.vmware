@@ -22,18 +22,31 @@
       when: not run_on_simulator
 
     - name: Set the state of a virtual machine to poweron
-      vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
-        state: powered-on
+        state: present
       register: deploy
 
+    - name: Restart the virtual machine
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: restarted
+
     - name: Set the state of a virtual machine to poweroff using MoID
-      vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -43,7 +56,8 @@
         state: powered-off
 
     - name: Set the state of a virtual machine to poweron using MoID
-      vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -53,8 +67,50 @@
         state: powered-on
       register: deploy
 
+    - name: Suspend the virtual machine
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: suspended
+
+    - name: Power on the virtual machine without force
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: present
+      ignore_errors: true
+      register: failed_power_on
+
+    - name: Verify power on failed
+      ansible.builtin.assert:
+        that:
+          - failed_power_on.failed
+
+    - name: Power on the virtual machine with force
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: present
+        force: true
+
     - name: Set the state of a virtual machine to poweroff at given scheduled time
-      vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -68,7 +124,8 @@
         schedule_task_enabled: true
 
     - name: Wait for the virtual machine to shutdown
-      vmware_guest_powerstate:
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -77,30 +134,19 @@
         state: shutdown-guest
         state_change_timeout: 200
 
-    - name: Automatically answer if a question locked a virtual machine
-      block:
-        - name: Power on a virtual machine without the answer param
-          vmware_guest_powerstate:
-            hostname: "{{ vcenter_hostname }}"
-            username: "{{ vcenter_username }}"
-            password: "{{ vcenter_password }}"
-            validate_certs: false
-            folder: "{{ vm_folder }}"
-            name: "{{ vm_name }}"
-            state: powered-on
-      rescue:
-        - name: Power on a virtual machine with the answer param
-          vmware_guest_powerstate:
-            hostname: "{{ vcenter_hostname }}"
-            username: "{{ vcenter_username }}"
-            password: "{{ vcenter_password }}"
-            validate_certs: false
-            folder: "{{ vm_folder }}"
-            name: "{{ vm_name }}"
-            answer:
-              - question: "msg.uuid.altered"
-                response: "button.uuid.copiedTheVM"
-            state: powered-on
+    - name: Power on a virtual machine with the answer param
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        answer:
+          - question: "msg.uuid.altered"
+            response: "button.uuid.copiedTheVM"
+        state: powered-on
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
