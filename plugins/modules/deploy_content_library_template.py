@@ -22,6 +22,7 @@ author:
 
 requirements:
     - vSphere Automation SDK
+    - aiohttp
 
 seealso:
     - module: vmware.vmware.deploy_content_library_ovf
