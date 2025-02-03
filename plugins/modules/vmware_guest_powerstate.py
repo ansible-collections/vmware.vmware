@@ -257,7 +257,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         if not self.current_state_matches_desired_state(vm, pyv):  
             scheduled_at = self.module.params.get('scheduled_at', None)
             if scheduled_at:
-                self.configure_vm_scheduled_powerstate(vm, pyv) #TODO: does this function actually change the state?
+                self.configure_vm_scheduled_powerstate(vm, pyv, scheduled_at) #TODO: does this function actually change the state?
             else:
                 # Check if a virtual machine is locked by a question
                 if check_answer_question_status(vm) and self.module.params['answer']:
@@ -272,7 +272,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         self.result['result']['name'] = vm.name
         self.result['result']['instance'] = gather_vm_facts(pyv.content, vm)
 
-    def configure_vm_scheduled_powerstate(self, vm, pyv):
+    def configure_vm_scheduled_powerstate(self, vm, pyv, scheduled_at):
         """
         Configures a VM powerstate when scheduled task option is set
         """
@@ -317,7 +317,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                                                             to_native(e.msg)))
         except vmodl.fault.InvalidArgument as e:
             self.module.fail_json(msg="Failed to create scheduled task %s as specifications "
-                                "given are invalid: %s" % (self.module.params.get('state'),
+                                "given are invalidss: %s | %s" % (self.module.params.get('state'), schedule_task_spec,
                                                             to_native(e.msg)))
             
     def configure_vm_answerable_powerstate(self, vm, pyv):

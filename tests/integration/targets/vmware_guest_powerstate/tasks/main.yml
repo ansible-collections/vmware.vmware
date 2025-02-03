@@ -1,0 +1,118 @@
+---
+- block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+      when: not run_on_simulator
+
+    - name: "Test setup: Create VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: present
+        name: "{{ vm }}"
+        disk: "{{ vm_disk }}"
+        guest_id: "{{ vm_guest_id }}"
+        hardware: "{{ vm_hardware }}"
+      when: not run_on_simulator
+
+    - name: Set the state of a virtual machine to poweron
+      vmware_guest_powerstate:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-on
+      register: deploy
+
+    - name: Set the state of a virtual machine to poweroff using MoID
+      vmware_guest_powerstate:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        moid: "{{ deploy.instance.moid }}"
+        state: powered-off
+
+    - name: Set the state of a virtual machine to poweron using MoID
+      vmware_guest_powerstate:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        moid: "{{ deploy.instance.moid }}"
+        state: powered-on
+      register: deploy
+
+    - name: Set the state of a virtual machine to poweroff at given scheduled time
+      vmware_guest_powerstate:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-off
+        scheduled_at: "09/01/2025 10:18"
+        schedule_task_name: "task_00001"
+        schedule_task_description: "Sample task to poweroff VM"
+        schedule_task_enabled: true
+
+    - name: Wait for the virtual machine to shutdown
+      vmware_guest_powerstate:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        state: shutdown-guest
+        state_change_timeout: 200
+
+    - name: Automatically answer if a question locked a virtual machine
+      block:
+        - name: Power on a virtual machine without the answer param
+          vmware_guest_powerstate:
+            hostname: "{{ vcenter_hostname }}"
+            username: "{{ vcenter_username }}"
+            password: "{{ vcenter_password }}"
+            validate_certs: false
+            folder: "{{ vm_folder }}"
+            name: "{{ vm_name }}"
+            state: powered-on
+      rescue:
+        - name: Power on a virtual machine with the answer param
+          vmware_guest_powerstate:
+            hostname: "{{ vcenter_hostname }}"
+            username: "{{ vcenter_username }}"
+            password: "{{ vcenter_password }}"
+            validate_certs: false
+            folder: "{{ vm_folder }}"
+            name: "{{ vm_name }}"
+            answer:
+              - question: "msg.uuid.altered"
+                response: "button.uuid.copiedTheVM"
+            state: powered-on
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm }}"
+      when: not run_on_simulator
