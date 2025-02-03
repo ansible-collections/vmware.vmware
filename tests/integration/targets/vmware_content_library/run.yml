@@ -11,5 +11,4 @@
       ansible.builtin.import_role:
         name: vmware_content_library
       tags:
-        - integration-ci
         - eco-vcenter-ci

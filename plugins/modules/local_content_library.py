@@ -42,7 +42,7 @@ options:
         description:
             - The name of the datastore that should be a storage backing for the library.
             - This parameter is required when O(state) is V(present)
-            - This parameter only takes affect when the library is first created. You cannot change the
+            - This parameter only takes effect when the library is first created. You cannot change the
               storage backing for an existing library, and the module will not check this value in that case.
         type: str
         required: false
@@ -331,7 +331,7 @@ class VmwareContentLibrary(ModuleRestBase):
             We need to add the publish URL to the output epending on if the library has been published or not.
         """
         if not library_id and not library:
-            self.module.fail_json('You need to supply either the library object or ID to format them for output')
+            self.module.fail_json(msg='You need to supply either the library object or ID to format them for output')
 
         out = dict.fromkeys(['id', 'publish_url'], None)
         if library_id:

@@ -43,7 +43,7 @@ options:
         description:
             - The name of the datastore that should be a storage backing for the library.
             - This parameter is required when O(state) is V(present)
-            - This parameter only takes affect when the library is first created. You cannot change the
+            - This parameter only takes effect when the library is first created. You cannot change the
               storage backing for an existing library, and the module will not check this value in that case.
         type: str
         required: false
@@ -58,7 +58,7 @@ options:
     authentication_method:
         description:
             - The method of authentication to use if this is a subscribed or published local library.
-            - If the library is a local, non-published library, this option has no affect.
+            - If the library is a local, non-published library, this option has no effect.
             - The only options are NONE for no authentication or BASIC for username and password authentication.
             - The username for BASIC auth cannot be changed, and is vcsp.
         type: str
