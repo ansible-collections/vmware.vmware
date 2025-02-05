@@ -11,21 +11,28 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: host
+module: esxi_host
 short_description: Manage VMware ESXi host status in vCenter
 description:
-    - Manage VMware ESXi host status in vCenter, including host location and connection status.
+    - Manage VMware ESXi host status in vCenter, including cluster or folder membership.
     - The host must be in maintenance mode to remove it or update its placement.
+    - This module does not manage the connection status of hosts in vCenter. That functionality
+      is in vmware.vmware.esxi_connection
+
 
 author:
     - Ansible Cloud Team (@ansible-collections)
+
+seealso:
+    - module: vmware.vmware.esxi_connection
 
 options:
     cluster:
         description:
             - The name of the cluster to be managed.
+            - One of O(cluster) or O(folder) is required when O(state) is V(present)
         type: str
-        required: true
+        required: false
         aliases: [cluster_name]
     datacenter:
         description:
@@ -36,12 +43,12 @@ options:
     folder:
         description:
             - Name of the folder under which host to add.
-            - If O(cluster_name) is not set, then this parameter is required.
+            - One of O(cluster) or O(folder) is required when O(state) is V(present)
         type: str
     add_connected:
         description:
             - If set to V(true), then the host should be connected as soon as it is added.
-            - This parameter is ignored if not O(state=present).
+            - This parameter is ignored if not O(state) is V(present).
         default: true
         type: bool
     esxi_host_name:
@@ -51,33 +58,25 @@ options:
         type: str
     esxi_username:
         description:
-            - ESXi username.
-            - Required for adding a host.
-            - Optional for reconnect. If both O(esxi_username) and O(esxi_password) are used
-            - Unused for removing.
-            - No longer a required parameter from version 2.5.
+            - The username to use when authenticating to the ESXi host.
+            - Required when O(state) is V(present).
         type: str
     esxi_password:
-            description:
-                - ESXi password.
-                - Required for adding a host.
-                - Optional for reconnect.
-                - Unused for removing.
-                - No longer a required parameter from version 2.5.
-            type: str
+        description:
+            - The password to use when authenticating to the ESXi host.
+            - Required when O(state) is V(present).
+        type: str
     esxi_port:
         description:
             - The port on which the ESXi host's SSL certificate can be seen.
             - This is used when fetching the SSL thumbrpint, and is not used if
-                O(ssl_thumbprint) is provided.
-        type: str
+              O(ssl_thumbprint) is provided.
+        type: int
         default: 443
     state:
         description:
-            - If set to V(present), add the host if host is absent.
-            - If set to V(present), update the location of the host if host already exists.
-            - If set to V(absent), remove the host if host is present.
-            - If set to V(absent), do nothing if host already does not exists.
+            - If set to V(present), make sure the host is registered in vCenter in the desired folder or cluster.
+            - If set to V(absent), remove the host from vCenter if it exists.
         default: present
         choices: ['present', 'absent']
         type: str
@@ -190,13 +189,18 @@ class VmwareHost(ModulePyvmomiBase):
         self.host = self.get_esxi_host_by_name_or_moid(identifier=self.params['esxi_host_name'])
 
     def __host_parent_type_is_folder(self):
+        """
+            Checks if the host is in a cluster or folder. Returns true if its in a folder.
+            Technically, the parent of a host in a folder is a ComputeResource. Clusters are
+            also a type of ComputeResource, so we need to check for the cluster type specifically.
+        """
         if isinstance(self.host.parent, vim.ClusterComputeResource):
             # the parent is a cluster
             return False
         else:
             return True
 
-    def validate_maintenance_mode(func):
+    def validate_maintenance_mode(func):   # pylint: disable=no-self-argument
         """
             Decorator function that adds a maintenance mode check before the wrapped method is called.
         """
@@ -208,8 +212,9 @@ class VmwareHost(ModulePyvmomiBase):
 
     def create_host_connect_spec(self):
         """
-        Function to return Host connection specification
-        Returns: host connection specification
+            Function to create a host connection spec based on user params
+            Returns:
+                host connection specification
         """
         # Get the thumbprint of the SSL certificate
         ssl_thumbprint = self.params['ssl_thumbprint']
@@ -311,6 +316,12 @@ class VmwareHost(ModulePyvmomiBase):
         return True
 
     def get_host_ssl_thumbprint(self):
+        """
+            Connect to the UI provided by the host and parse the SSL thumbprint
+            from it
+            Returns:
+                str, the thumbprint presented by the host
+        """
         host_fqdn = self.params['esxi_host_name']
         host_port = self.params['esxi_port']
         if self.params['proxy_host']:
@@ -340,6 +351,7 @@ class VmwareHost(ModulePyvmomiBase):
         else:
             self.module.fail_json(msg=f"Unable to fetch SSL thumbprint for host: {host_fqdn}")
 
+
 def main():
     module = AnsibleModule(
         argument_spec={
@@ -353,7 +365,7 @@ def main():
                 esxi_host_name=dict(type='str', required=True),
                 esxi_username=dict(type='str', required=False),
                 esxi_password=dict(type='str', required=False, no_log=True),
-                esxi_port=dict(type='str', default='443'),
+                esxi_port=dict(type='int', default=443),
                 ssl_thumbprint=dict(type='str', required=False),
                 force_add=dict(type='bool', default=False),
             )
@@ -364,11 +376,9 @@ def main():
             ('state', 'present', ('cluster', 'folder'), True)
         ],
         mutually_exclusive=[
-            ('cluster', 'folder'),
-            ('fetch_ssl_thumbprint', 'ssl_thumbprint')
+            ('cluster', 'folder')
         ]
     )
-
 
     result = dict(changed=False, host=dict(name=module.params['esxi_host_name']))
 

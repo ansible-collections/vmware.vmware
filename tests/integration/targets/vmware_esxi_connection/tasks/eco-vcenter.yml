@@ -25,19 +25,6 @@
         parent: "{{ vcenter_rp_id }}"
       register: _test_rp
 
-    - name: Create a test folders
-      vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        relative_path: "{{ item }}"
-        type: host
-        datacenter: "{{ vcenter_datacenter }}"
-      loop:
-        - "{{ test_folder_1 }}"
-        - "{{ test_folder_2 }}"
-
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
         vcenter_hostname: "{{ vcenter_hostname }}"
@@ -118,51 +105,45 @@
         esxi_host_name: "{{ test_esxi_ip | default(_esxi_info.guests[0].ipv4) }}"
         enable_maintenance_mode: true
 
-    - name: Move Host To Folder
-      vmware.vmware.esxi_host:
+    - name: Connect Host - Idempotence
+      vmware.vmware.esxi_connection:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
-        folder: "{{ test_folder_1 }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
-        esxi_username: "{{ test_esxi_username }}"
-        esxi_password: "{{ test_esxi_password }}"
-      register: _f1
+        state: connected
+      register: _conn_idem
 
-    - name: Move Host To Another Folder
-      vmware.vmware.esxi_host:
+    - name: Disconnect Host
+      vmware.vmware.esxi_connection:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
-        folder: "{{ test_folder_2 }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
-        esxi_username: "{{ test_esxi_username }}"
-        esxi_password: "{{ test_esxi_password }}"
-      register: _f2
+        state: disconnected
+      register: _disconn
 
-    - name: Move Host To Cluster
-      vmware.vmware.esxi_host:
+    - name: Disconnect Host - Idempotence
+      vmware.vmware.esxi_connection:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ test_cluster }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
-        esxi_username: "{{ test_esxi_username }}"
-        esxi_password: "{{ test_esxi_password }}"
-      register: _c2
+        state: disconnected
+      register: _disconn_idem
 
     - name: Check Output
       ansible.builtin.assert:
         that:
-          - _f1 is changed
-          - _f2 is changed
-          - _c1 is changed
+          - _conn_idem is not changed
+          - _disconn is changed
+          - _disconn_idem is not changed
 
   always:
     - name: Remove Host From vCenter
@@ -186,19 +167,6 @@
         state: absent
         name: "{{ test_esxi_hostname }}"
         force: true
-    - name: Delete test folders
-      vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        relative_path: "{{ item }}"
-        type: host
-        datacenter: "{{ vcenter_datacenter }}"
-        state: absent
-      loop:
-        - "{{ test_folder_1 }}"
-        - "{{ test_folder_2 }}"
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
         vcenter_hostname: "{{ vcenter_hostname }}"
