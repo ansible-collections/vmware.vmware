@@ -69,7 +69,7 @@ class VmwareContentDeploy(ModulePyvmomiBase):
 
         if self.params['library_id']:
             library_id = self.params['library_id']
-        else:
+        elif self.params['library_name']:
             library_ids = self.rest_base.get_content_library_ids(
                 name=self.params['library_name'],
                 fail_on_missing=True
@@ -80,6 +80,8 @@ class VmwareContentDeploy(ModulePyvmomiBase):
                     self.params['library_name']
                 ))
             library_id = library_ids[0]
+        else:
+            library_id = None
 
         item_ids = self.rest_base.get_library_item_ids(
             name=self.params['library_item_name'],
