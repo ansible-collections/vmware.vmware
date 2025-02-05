@@ -162,7 +162,7 @@
         that:
           - _f1 is changed
           - _f2 is changed
-          - _c1 is changed
+          - _c2 is changed
 
   always:
     - name: Remove Host From vCenter
