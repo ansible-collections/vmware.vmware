@@ -155,6 +155,7 @@
         datacenter: "{{ vcenter_datacenter }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
         state: absent
+      when: _esxi_info.guests[0] is defined
     - name: "Test cleanup: Delete Virtual ESXi Host"
       community.vmware.vmware_guest:
         validate_certs: false
