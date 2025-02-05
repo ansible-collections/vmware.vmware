@@ -1,27 +1,13 @@
 - hosts: localhost
   gather_facts: no
-  collections:
-    - community.general
 
   tasks:
     - name: Import eco-vcenter credentials
       ansible.builtin.include_vars:
         file: ../../integration_config.yml
       tags: eco-vcenter-ci
-
-    - name: Import simulator vars
-      ansible.builtin.include_vars:
-        file: vars.yml
-      tags: integration-ci
-
-    - name: Vcsim
+    - name: Import vmware_esxi_host role
       ansible.builtin.import_role:
-        name: prepare_vcsim
-      tags: integration-ci
-
-    - name: Import vmware_esxi_maintenance_mode role
-      ansible.builtin.import_role:
-        name: vmware_esxi_maintenance_mode
+        name: vmware_esxi_host
       tags:
-        - integration-ci
         - eco-vcenter-ci
