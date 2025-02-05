@@ -194,7 +194,7 @@
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         relative_path: "{{ item }}"
-        type: host
+        folder_type: host
         datacenter: "{{ vcenter_datacenter }}"
         state: absent
       loop:

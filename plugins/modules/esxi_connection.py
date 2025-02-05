@@ -109,19 +109,11 @@ class VmwareHostConnection(ModulePyvmomiBase):
         self.datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=True)
         self.host = self.get_esxi_host_by_name_or_moid(identifier=self.params['esxi_host_name'], fail_on_missing=True)
 
-    def actual_state_matches_desired_state(self):
-        if self.params['state'] == self.host.runtime.connectionState:
-            return True
-        if self.params['state'] == 'connected' and self.host.runtime.connectionState == 'connected':
-            return True
-
-        return False
-
-    def reconnect_host(self, host_object):
+    def reconnect_host(self):
         reconnect_spec = vim.HostSystem.ReconnectSpec()
         reconnect_spec.syncState = True
         try:
-            task = host_object.ReconnectHost_Task(reconnectSpec=reconnect_spec)
+            task = self.host.ReconnectHost_Task(reconnectSpec=reconnect_spec)
             _, task_result = RunningTaskMonitor(task).wait_for_completion()   # pylint: disable=disallowed-name
         except (vmodl.RuntimeFault, vmodl.MethodFault)as vmodl_fault:
             self.module.fail_json(msg=to_native(vmodl_fault.msg))
@@ -135,9 +127,9 @@ class VmwareHostConnection(ModulePyvmomiBase):
 
         return task_result
 
-    def disconnect_host(self, host_object):
+    def disconnect_host(self):
         try:
-            task = host_object.DisconnectHost_Task()
+            task = self.host.DisconnectHost_Task()
             _, task_result = RunningTaskMonitor(task).wait_for_completion()   # pylint: disable=disallowed-name
         except (vmodl.RuntimeFault, vmodl.MethodFault)as vmodl_fault:
             self.module.fail_json(msg=to_native(vmodl_fault.msg))
