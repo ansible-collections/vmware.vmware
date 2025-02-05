@@ -16,7 +16,7 @@ action_groups:
         - deploy_content_library_template
         - esxi_maintenance_mode
         - folder
-        - folder_template_from_vm
+        - folder_template
         - guest_info
         - license_info
         - local_content_library
@@ -31,3 +31,8 @@ plugin_routing:
             deprecation:
                 removal_version: 2.0.0
                 warning_text: Use M(vmware.vmware.vm_list_group_by_clusters_info) instead.
+        folder_template:
+            redirect: vmware.vmware.folder_template
+            deprecation:
+                removal_version: 3.0.0
+                warning_text: Use M(vmware.vmware.folder_template) instead.

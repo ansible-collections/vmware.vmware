@@ -10,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: folder_template_from_vm
+module: folder_template
 short_description: Create a template in a local VCenter folder from an existing VM
 description:
     - >-
@@ -115,7 +115,7 @@ EXAMPLES = r'''
     template_name: "my_template"
 
 - name: Create A New Template Using VM Name
-  vmware.vmware.folder_template_from_vm:
+  vmware.vmware.folder_template:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
@@ -126,7 +126,7 @@ EXAMPLES = r'''
     template_folder: "nested/folder/path/templates"
 
 - name: Destroy A Template In A Folder
-  vmware.vmware.folder_template_from_vm:
+  vmware.vmware.folder_template:
     hostname: "https://vcenter"
     username: "username"
     password: "password"

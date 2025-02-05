@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - folder_template - renamed folder_template_from_vm to folder_template, in order to match content_template module and
+    reduce confusion with the new deploy_folder_template module. Included a redirect until v3.0.0

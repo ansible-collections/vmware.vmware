@@ -27,7 +27,7 @@
         name: "{{ vm_name }}"
 
     - name: Create template from vm in vcenter folder
-      vmware.vmware.folder_template_from_vm:
+      vmware.vmware.folder_template:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -89,7 +89,7 @@
         name: "{{ vm_name }}"
 
     - name: Create templates from vm in vcenter folders
-      vmware.vmware.folder_template_from_vm:
+      vmware.vmware.folder_template:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -107,7 +107,7 @@
       loop: "{{ template_folders }}"
 
     - name: Destroy template
-      vmware.vmware.folder_template_from_vm:
+      vmware.vmware.folder_template:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
