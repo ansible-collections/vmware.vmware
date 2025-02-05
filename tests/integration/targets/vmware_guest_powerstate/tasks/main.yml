@@ -19,6 +19,12 @@
         disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
+        # cdrom:
+        # - controller_number: 0
+        #   unit_number: 0
+        #   state: present
+        #   type: iso
+        #   iso_path: "[ro_datastore] fedora.iso"
       when: not run_on_simulator
 
     - name: Set the state of a virtual machine to poweron
@@ -108,6 +114,7 @@
         state: present
         force: true
 
+
     - name: Set the state of a virtual machine to poweroff at given scheduled time
       vmware.vmware.vmware_guest_powerstate:
         datacenter: "{{ vm_datacenter }}"
@@ -118,10 +125,43 @@
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-off
-        scheduled_at: "09/01/2025 10:18"
+        scheduled_at: "09/03/2025 10:18"
         schedule_task_name: "task_00001"
         schedule_task_description: "Sample task to poweroff VM"
         schedule_task_enabled: true
+
+    - name: Reboot the virtual machine with force
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: reboot-guest
+        force: true
+        
+    - name: Set the state of a virtual machine to poweron using MoID
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        moid: "{{ deploy.instance.moid }}"
+        state: powered-on
+      register: deploy
+
+    - name: Update the vm-tools
+      vmware.vmware_rest.vcenter_vm_tools_installer:
+        vcenter_validate_certs: false
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vm: "{{ deploy.instance.moid }}"
+        state: connect
 
     - name: Wait for the virtual machine to shutdown
       vmware.vmware.vmware_guest_powerstate:

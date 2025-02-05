@@ -216,8 +216,7 @@ except ImportError:
 from random import randint
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.vmware.plugins.module_utils.vmware import PyVmomi, set_vm_power_state, vmware_argument_spec, \
-    check_answer_question_status, make_answer_response, answer_question, gather_vm_facts
+from ansible_collections.community.vmware.plugins.module_utils import vmware
 from ansible.module_utils._text import to_native
 
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
@@ -240,7 +239,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         if self.module.params['folder']:
             self.module.params['folder'] = self.module.params['folder'].rstrip('/')
 
-        pyv = PyVmomi(self.module)
+        pyv = vmware.PyVmomi(self.module)
 
         vm = pyv.get_vm()
 
@@ -260,16 +259,16 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                 self.configure_vm_scheduled_powerstate(vm, pyv, scheduled_at)
             else:
                 # Check if a virtual machine is locked by a question
-                if check_answer_question_status(vm) and self.module.params['answer']:
+                if vmware.check_answer_question_status(vm) and self.module.params['answer']:
                     self.configure_vm_answerable_powerstate(vm)
                 else:
-                    self.result = set_vm_power_state(pyv.content, vm, self.module.params['state'], self.module.params['force'], self.module.params['state_change_timeout'],
+                    self.result = vmware.set_vm_power_state(pyv.content, vm, self.module.params['state'], self.module.params['force'], self.module.params['state_change_timeout'],
                                                 self.module.params['answer'])
                 self.result['answer'] = self.module.params['answer']
         
         self.result['moid'] = vm._GetMoId()
         self.result['name'] = vm.name
-        self.result['instance'] = gather_vm_facts(pyv.content, vm)
+        self.result['instance'] = vmware.gather_vm_facts(pyv.content, vm)
 
     def configure_vm_scheduled_powerstate(self, vm, pyv, scheduled_at):
         """
@@ -324,14 +323,14 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         Configures a VM powerstate when answer option is set
         """
         try:
-            responses = make_answer_response(vm, self.module.params['answer'])
-            answer_question(vm, responses)
+            responses = vmware.make_answer_response(vm, self.module.params['answer'])
+            vmware.answer_question(vm, responses)
         except Exception as e:
             self.module.fail_json(msg="%s" % e)
 
         # Wait until a virtual machine is unlocked
         while True:
-            if check_answer_question_status(vm) is False:
+            if vmware.check_answer_question_status(vm) is False:
                 break
 
         self.result['changed'] = True
@@ -342,7 +341,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         Returns:
             bool, true if they match, otherwise false
         """
-        facts = gather_vm_facts(pyv.content, vm)
+        facts = vmware.gather_vm_facts(pyv.content, vm)
         state = self.module.params['state']
         if state == 'present':
             state = 'poweredon'
@@ -356,7 +355,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
 
 
 def main():
-    argument_spec = vmware_argument_spec()
+    argument_spec = vmware.vmware_argument_spec()
     argument_spec.update(
         datacenter=dict(type='str', required=True),
         state=dict(type='str', default='present',
