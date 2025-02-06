@@ -57,8 +57,8 @@
       ansible.builtin.assert:
         that:
           - _deploy is changed
-          - _deploy.vm_moid == _deploy_idem.vm_moid
-          - _deploy.vm_name == _deploy_idem.vm_name
+          - _deploy.vm.moid == _deploy_idem.vm.moid
+          - _deploy.vm.name == _deploy_idem.vm.name
           - _deploy_idem is not changed
 
   always:
