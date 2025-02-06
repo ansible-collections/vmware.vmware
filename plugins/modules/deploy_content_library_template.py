@@ -177,10 +177,10 @@ class VmwareContentDeployTemplate(ModuleVmDeployBase):
 
         if self.datastore:
             vm_home_storage_spec = TemplateLibraryItems.DeploySpecVmHomeStorage(
-                datastore=to_native(self.datastore._GetModId())
+                datastore=to_native(self.datastore._GetMoId())
             )
             disk_storage_spec = TemplateLibraryItems.DeploySpecDiskStorage(
-                datastore=to_native(self.datastore._GetModId())
+                datastore=to_native(self.datastore._GetMoId())
             )
 
         return TemplateLibraryItems.DeploySpec(

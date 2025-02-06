@@ -1,4 +1,5 @@
 ---
 minor_changes:
-  - local_content_library - migrate the vmware_content_library_manager module from community to here
-  - subscribed_content_library - migrate the vmware_content_library_manager module from community to here
+  - deploy_folder_template - add module to deploy a vm from a template in a vsphere folder
+  - deploy_content_library_ovf - update parameters to be consistent with other deploy modules
+  - deploy_content_library_template - update parameters to be consistent with other deploy modules
