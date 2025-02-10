@@ -4,6 +4,11 @@ __metaclass__ = type
 import sys
 import pytest
 
+try:
+    from pyVmomi import vmodl
+except ImportError:
+    pass
+
 from ansible_collections.vmware.vmware.plugins.modules.vmware_guest_powerstate import (
     VmwareGuestPowerstateModule,
     main as module_main
@@ -12,7 +17,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
     PyvmomiClient
 )
 from .common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    AnsibleExitJson, AnsibleFailJson, ModuleTestCase, set_module_args,
 )
 from .common.vmware_object_mocks import (
     MockEsxiHost, MockVmwareObject
@@ -83,6 +88,54 @@ class TestVmwareGuestPowerstate(ModuleTestCase):
             state="powered-on",
             validate_certs=False,
             add_cluster=False
+        )
+
+        with pytest.raises(AnsibleExitJson) as c:
+            module_main()
+
+        assert c.value.args[0]["changed"] is True
+
+    def test_scheduled_power_off_invalid_argument(self, mocker):
+        self.__prepare(mocker)
+
+        set_module_args(
+            hostname="127.0.0.1",
+            username="administrator@local",
+            password="123456",
+            datacenter="DC0",
+            folder="DC0/vm/e2e-qe",
+            name="vm1",
+            state="powered-off",
+            validate_certs=False,
+            add_cluster=False,
+            scheduled_at="09/03/2024 10:18",
+            schedule_task_name="task_00001",
+            schedule_task_description="Sample task to poweroff VM",
+            schedule_task_enabled=True
+        )
+
+        self.pyv_mock.content.scheduledTaskManager.CreateScheduledTask = mocker.Mock(return_value=dict(changed=False, failed=True), side_effect=vmodl.fault.InvalidArgument)
+
+        with pytest.raises(AnsibleFailJson) as c:
+            module_main()
+
+    def test_scheduled_power_off(self, mocker):
+        self.__prepare(mocker)
+
+        set_module_args(
+            hostname="127.0.0.1",
+            username="administrator@local",
+            password="123456",
+            datacenter="DC0",
+            folder="DC0/vm/e2e-qe",
+            name="vm1",
+            state="powered-off",
+            validate_certs=False,
+            add_cluster=False,
+            scheduled_at="09/03/2025 10:18",
+            schedule_task_name="task_00001",
+            schedule_task_description="Sample task to poweroff VM",
+            schedule_task_enabled=True
         )
 
         with pytest.raises(AnsibleExitJson) as c:
