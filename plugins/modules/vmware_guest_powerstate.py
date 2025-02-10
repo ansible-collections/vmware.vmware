@@ -206,7 +206,98 @@ EXAMPLES = r'''
         state: powered-on
 '''
 
-RETURN = r''' # '''
+RETURN = r'''
+result:
+    description:
+        - Information about the target VM 
+    returned: Always
+    type: dict
+    sample: {
+        "answer": null,
+        "changed": true,
+        "failed": false,
+        "instance": {
+            "advanced_settings": {
+                "cpuid.coresPerSocket.cookie": "2",
+                "hpet0.present": "TRUE",
+                "migrate.hostLog": "test-d9c1-vm-58744247.hlog",
+                "migrate.hostLogState": "none",
+                "migrate.migrationId": "0",
+                "monitor.phys_bits_used": "45",
+                "numa.autosize.cookie": "20012",
+                "numa.autosize.vcpu.maxPerVirtualNode": "2",
+                "nvram": "test-d9c1-vm.nvram",
+                "pciBridge0.functions": "1",
+                "pciBridge0.present": "TRUE",
+                "pciBridge0.pxm": "-1",
+                "pciBridge0.virtualDev": "pciRootBridge",
+                "pciBridge1.functions": "1",
+                "pciBridge1.present": "TRUE",
+                "pciBridge1.virtualDev": "pciRootBridge",
+                "pciBridge1:0.pxm": "0",
+                "sched.swap.derivedName": "/vmfs/volumes/66a298c3-952f0f94-c4fe-48df37c800b0/test-d9c1-vm/test-d9c1-vm-0c8181fb.vswp",
+                "scsi0.pciSlotNumber": "32",
+                "scsi0.sasWWID": "50 05 05 6a b3 96 11 d0",
+                "scsi0:0.redo": "",
+                "softPowerOff": "FALSE",
+                "svga.present": "TRUE",
+                "viv.moid": "502d878c-af91-4a6f-93e9-61c4a1986172:vm-79828:FZXZFzQ45POS15g8cwqho3Ym+MqkSfWabAVYH+/t69Q=",
+                "vmotion.checkpointFBSize": "8388608",
+                "vmotion.checkpointSVGAPrimarySize": "8388608",
+                "vmotion.svga.graphicsMemoryKB": "8192",
+                "vmotion.svga.mobMaxSize": "8388608",
+                "vmware.tools.internalversion": "0",
+                "vmware.tools.requiredversion": "12448",
+                "vmxstats.filename": "test-d9c1-vm.scoreboard"
+            },
+            "annotation": "",
+            "current_snapshot": null,
+            "customvalues": {},
+            "guest_consolidation_needed": false,
+            "guest_question": null,
+            "guest_tools_status": "guestToolsNotRunning",
+            "guest_tools_version": "0",
+            "hw_cluster": "Eco-Cluster",
+            "hw_cores_per_socket": 2,
+            "hw_datastores": [
+                "eco-iscsi-ds1"
+            ],
+            "hw_esxi_host": "10.46.29.129",
+            "hw_files": [
+                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.vmx",
+                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.vmsd",
+                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.nvram",
+                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.vmdk"
+            ],
+            "hw_folder": "/Eco-Datacenter/vm/e2e-qe",
+            "hw_guest_full_name": null,
+            "hw_guest_ha_state": null,
+            "hw_guest_id": null,
+            "hw_interfaces": [],
+            "hw_is_template": false,
+            "hw_memtotal_mb": 2000,
+            "hw_name": "test-d9c1-vm",
+            "hw_power_status": "poweredOn",
+            "hw_processor_count": 2,
+            "hw_product_uuid": "420bdfca-b396-11d3-b696-ca9c57f75b9c",
+            "hw_version": "vmx-21",
+            "instance_uuid": "500b94ae-dd52-55aa-8e98-b7524300c1a3",
+            "ipv4": null,
+            "ipv6": null,
+            "module_hw": true,
+            "moid": "vm-79828",
+            "snapshots": [],
+            "tpm_info": {
+                "provider_id": null,
+                "tpm_present": false
+            },
+            "vimref": "vim.VirtualMachine:vm-79828",
+            "vnc": {}
+        },
+        "moid": "vm-79828",
+        "name": "test-d9c1-vm"
+    }
+'''
 
 try:
     from pyVmomi import vim, vmodl
