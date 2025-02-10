@@ -253,18 +253,17 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         Configures a VMs powerstate
         """
-        if not self.current_state_matches_desired_state(vm, pyv):  
-            scheduled_at = self.module.params.get('scheduled_at', None)
-            if scheduled_at:
-                self.configure_vm_scheduled_powerstate(vm, pyv, scheduled_at)
+        scheduled_at = self.module.params.get('scheduled_at', None)
+        if scheduled_at:
+            self.configure_vm_scheduled_powerstate(vm, pyv, scheduled_at)
+        else:
+            # Check if a virtual machine is locked by a question
+            if vmware.check_answer_question_status(vm) and self.module.params['answer']:
+                self.configure_vm_answerable_powerstate(vm)
             else:
-                # Check if a virtual machine is locked by a question
-                if vmware.check_answer_question_status(vm) and self.module.params['answer']:
-                    self.configure_vm_answerable_powerstate(vm)
-                else:
-                    self.result = vmware.set_vm_power_state(pyv.content, vm, self.module.params['state'], self.module.params['force'], self.module.params['state_change_timeout'],
-                                                self.module.params['answer'])
-                self.result['answer'] = self.module.params['answer']
+                self.result = vmware.set_vm_power_state(pyv.content, vm, self.module.params['state'], self.module.params['force'], self.module.params['state_change_timeout'],
+                                            self.module.params['answer'])
+            self.result['answer'] = self.module.params['answer']
         
         self.result['moid'] = vm._GetMoId()
         self.result['name'] = vm.name
@@ -383,7 +382,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=False,
+        supports_check_mode=True,
         mutually_exclusive=[
             ['name', 'uuid', 'moid'],
             ['scheduled_at', 'answer']
@@ -393,8 +392,20 @@ def main():
         ],
     )
 
+    result = dict(
+        changed=False,
+        result={}
+    )
+
     vmware_guest_powerstate = VmwareGuestPowerstateModule(module)
     vm, pyv = vmware_guest_powerstate.get_vm()
+    if vmware_guest_powerstate.current_state_matches_desired_state(vm, pyv):
+        module.exit_json(**result)
+
+    if module.check_mode:
+        result['changed'] = True
+        module.exit_json(**result)
+    
     vmware_guest_powerstate.configure_vm_powerstate(vm, pyv)
     result = vmware_guest_powerstate.result
     
