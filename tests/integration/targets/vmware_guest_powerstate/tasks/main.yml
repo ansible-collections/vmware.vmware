@@ -154,7 +154,7 @@
         state: powered-on
       register: deploy
 
-    - name: Update the vm-tools
+    - name: Install vm-tools
       vmware.vmware_rest.vcenter_vm_tools_installer:
         vcenter_validate_certs: false
         vcenter_hostname: "{{ vcenter_hostname }}"
