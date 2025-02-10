@@ -130,6 +130,15 @@
         schedule_task_description: "Sample task to poweroff VM"
         schedule_task_enabled: true
 
+    - name: Install vm-tools
+      vmware.vmware_rest.vcenter_vm_tools_installer:
+        vcenter_validate_certs: false
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vm: "{{ deploy.instance.moid }}"
+        state: connect
+
     - name: Reboot the virtual machine with force
       vmware.vmware.vmware_guest_powerstate:
         datacenter: "{{ vm_datacenter }}"
@@ -153,15 +162,6 @@
         moid: "{{ deploy.instance.moid }}"
         state: powered-on
       register: deploy
-
-    - name: Install vm-tools
-      vmware.vmware_rest.vcenter_vm_tools_installer:
-        vcenter_validate_certs: false
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vm: "{{ deploy.instance.moid }}"
-        state: connect
 
     - name: Wait for the virtual machine to shutdown
       vmware.vmware.vmware_guest_powerstate:
