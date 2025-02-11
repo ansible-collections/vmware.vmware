@@ -272,7 +272,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         Returns:
             list(vm), or None if no matches were found 
         """
-        vm = self.get_vm_using_params(name_param=self.module.params['name'], moid_param=self.module.params['moid'], uuid_param=self.module.params['uuid'])
+        vm = self.get_vm_using_params(fail_on_missing=True)
         
         # TODO: delete if unnecessary
         # if self.module.params['name']:
