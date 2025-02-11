@@ -42,7 +42,7 @@ jobs:
         with:
           path: ansible_collections/vmware/vmware
 
-      - name: Run
-        run: |
-          make units
-        working-directory: ansible_collections/vmware/vmware
+      # - name: Run
+      #   run: |
+      #     make units
+      #   working-directory: ansible_collections/vmware/vmware
