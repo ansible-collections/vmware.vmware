@@ -14,5 +14,6 @@ vm_hardware:
   num_cpus: 2
   boot_firmware: efi
 
-datastore: "{{ shared_storage_01 }}"
+datastore: "{{ shared_storage_02 }}"
 library: "{{ tiny_prefix }}-content-library"
+test_resource_pool: "{{ tiny_prefix }}_vmware_guest_powerstate"

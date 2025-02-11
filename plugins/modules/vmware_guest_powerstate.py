@@ -60,17 +60,8 @@ options:
     folder:
         description:
             - Destination folder, absolute or relative path to find an existing guest.
-            - The folder should include the datacenter. ESX's datacenter is ha-datacenter
-            - 'Examples:'
-            - '   folder: /ha-datacenter/vm'
-            - '   folder: ha-datacenter/vm'
-            - '   folder: /datacenter1/vm'
-            - '   folder: datacenter1/vm'
-            - '   folder: /datacenter1/vm/folder1'
-            - '   folder: datacenter1/vm/folder1'
-            - '   folder: /folder1/datacenter1/vm'
-            - '   folder: folder1/datacenter1/vm'
-            - '   folder: /folder1/datacenter1/vm/folder2'
+            - Should be the full folder path, with or without the 'datacenter/vm/' prefix
+            - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
         type: str
         required: false
     scheduled_at:
@@ -80,19 +71,19 @@ options:
             - Scheduling task requires vCenter server. A standalone ESXi server does not support this option.
         type: str
         required: false
-    schedule_task_name:
+    scheduled_task_name:
         description:
-            - Name of schedule task.
+            - Name of scheduled task.
             - Valid only if O(scheduled_at) is specified.
         type: str
         required: false
-    schedule_task_description:
+    scheduled_task_description:
         description:
-            - Description of schedule task.
+            - Description of scheduled task.
             - Valid only if O(scheduled_at) is specified.
         type: str
         required: false
-    schedule_task_enabled:
+    scheduled_task_enabled:
         description:
             - Flag to indicate whether the scheduled task is enabled or disabled.
         type: bool
@@ -103,14 +94,14 @@ options:
             - This parameter is useful while forcing virtual machine state.
         default: false
         type: bool
-    state_change_timeout:
+    timeout:
         description:
             - If the O(state=shutdown-guest), by default the module will return immediately after sending the shutdown signal.
             - If this argument is set to a positive integer, the module will instead wait for the VM to reach the poweredoff state.
             - The value sets a timeout in seconds for the module to wait for the state change.
         default: 0
         type: int
-    answer:
+    question_answers:
         description:
             - A list of questions to answer, should one or more arise while waiting for the task to complete.
             - Some common uses are to allow a cdrom to be changed even if locked, or to answer the question as to whether a VM was copied or moved.
@@ -165,10 +156,10 @@ EXAMPLES = r'''
     name: "{{ guest_name }}"
     state: powered-off
     scheduled_at: "09/01/2018 10:18"
-    schedule_task_name: "task_00001"
-    schedule_task_description: "Sample task to poweroff VM"
-    schedule_task_enabled: true
-  register: deploy_at_schedule_datetime
+    scheduled_task_name: "task_00001"
+    scheduled_task_description: "Sample task to poweroff VM"
+    scheduled_task_enabled: true
+  register: deploy_at_scheduled_datetime
 
 - name: Wait for the virtual machine to shutdown
   community.vmware.vmware_guest_powerstate:
@@ -177,7 +168,7 @@ EXAMPLES = r'''
     password: "{{ vcenter_password }}"
     name: "{{ guest_name }}"
     state: shutdown-guest
-    state_change_timeout: 200
+    timeout: 200
   register: deploy
 
 - name: Automatically answer if a question locked a virtual machine
@@ -200,7 +191,7 @@ EXAMPLES = r'''
         validate_certs: false
         folder: "{{ f1 }}"
         name: "{{ vm_name }}"
-        answer:
+        question_answers:
           - question: "msg.uuid.altered"
             response: "button.uuid.copiedTheVM"
         state: powered-on
@@ -213,7 +204,7 @@ result:
     returned: Always
     type: dict
     sample: {
-        "answer": null,
+        "question_answers": null,
         "changed": true,
         "failed": false,
         "instance": {
@@ -349,12 +340,12 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             self.configure_vm_scheduled_powerstate(vm, pyv, scheduled_at)
         else:
             # Check if a virtual machine is locked by a question
-            if vmware.check_answer_question_status(vm) and self.module.params['answer']:
+            if vmware.check_answer_question_status(vm) and self.module.params['question_answers']:
                 self.configure_vm_answerable_powerstate(vm)
             else:
-                self.result = vmware.set_vm_power_state(pyv.content, vm, self.module.params['state'], self.module.params['force'], self.module.params['state_change_timeout'],
-                                            self.module.params['answer'])
-            self.result['answer'] = self.module.params['answer']
+                self.result = vmware.set_vm_power_state(pyv.content, vm, self.module.params['state'], self.module.params['force'], self.module.params['timeout'],
+                                            self.module.params['question_answers'])
+            self.result['question_answers'] = self.module.params['question_answers']
         
         self.result['moid'] = vm._GetMoId()
         self.result['name'] = vm.name
@@ -381,18 +372,18 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         except ValueError as e:
             self.module.fail_json(msg="Failed to convert given date and time string to Python datetime object,"
                                 "please specify string in 'dd/mm/yyyy hh:mm' format: %s" % to_native(e))
-        schedule_task_spec = vim.scheduler.ScheduledTaskSpec()
-        schedule_task_spec.name = self.module.params['schedule_task_name'] or 'task_%s' % str(randint(10000, 99999))
-        schedule_task_spec.description = self.module.params['schedule_task_description'] or 'Schedule task for vm %s for ' \
+        scheduled_task_spec = vim.scheduler.ScheduledTaskSpec()
+        scheduled_task_spec.name = self.module.params['scheduled_task_name'] or 'task_%s' % str(randint(10000, 99999))
+        scheduled_task_spec.description = self.module.params['scheduled_task_description'] or 'Scheduled task for vm %s for ' \
                                                 'operation %s at %s' % (vm.name, self.module.params['state'], scheduled_at)
-        schedule_task_spec.scheduler = vim.scheduler.OnceTaskScheduler()
-        schedule_task_spec.scheduler.runAt = scheduled_date
-        schedule_task_spec.action = vim.action.MethodAction()
-        schedule_task_spec.action.name = powerstate[self.module.params['state']]
-        schedule_task_spec.enabled = self.module.params['schedule_task_enabled']
+        scheduled_task_spec.scheduler = vim.scheduler.OnceTaskScheduler()
+        scheduled_task_spec.scheduler.runAt = scheduled_date
+        scheduled_task_spec.action = vim.action.MethodAction()
+        scheduled_task_spec.action.name = powerstate[self.module.params['state']]
+        scheduled_task_spec.enabled = self.module.params['scheduled_task_enabled']
 
         try:
-            pyv.content.scheduledTaskManager.CreateScheduledTask(vm, schedule_task_spec)
+            pyv.content.scheduledTaskManager.CreateScheduledTask(vm, scheduled_task_spec)
             # As this is async task, we create scheduled task and mark state to changed.
             self.result['changed'] = True
         except vim.fault.InvalidName as e:
@@ -410,10 +401,10 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             
     def configure_vm_answerable_powerstate(self, vm):
         """
-        Configures a VM powerstate when answer option is set
+        Configures a VM powerstate when question_answers option is set
         """
         try:
-            responses = vmware.make_answer_response(vm, self.module.params['answer'])
+            responses = vmware.make_answer_response(vm, self.module.params['question_answers'])
             vmware.answer_question(vm, responses)
         except Exception as e:
             self.module.fail_json(msg="%s" % e)
@@ -458,11 +449,11 @@ def main():
         folder=dict(type='str', required=False),
         force=dict(type='bool', default=False),
         scheduled_at=dict(type='str', required=False),
-        schedule_task_name=dict(type='str', required=False),
-        schedule_task_description=dict(type='str', required=False),
-        schedule_task_enabled=dict(type='bool', default=True),
-        state_change_timeout=dict(type='int', default=0),
-        answer=dict(type='list',
+        scheduled_task_name=dict(type='str', required=False),
+        scheduled_task_description=dict(type='str', required=False),
+        scheduled_task_enabled=dict(type='bool', default=True),
+        timeout=dict(type='int', default=0),
+        question_answers=dict(type='list',
                     required=False,
                     elements='dict',
                     options=dict(
@@ -476,7 +467,7 @@ def main():
         supports_check_mode=True,
         mutually_exclusive=[
             ['name', 'uuid', 'moid'],
-            ['scheduled_at', 'answer']
+            ['scheduled_at', 'question_answers']
         ],
         required_one_of=[
             ['name', 'uuid', 'moid']

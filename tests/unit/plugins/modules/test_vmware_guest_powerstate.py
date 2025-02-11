@@ -109,9 +109,9 @@ class TestVmwareGuestPowerstate(ModuleTestCase):
             validate_certs=False,
             add_cluster=False,
             scheduled_at="09/03/2024 10:18",
-            schedule_task_name="task_00001",
-            schedule_task_description="Sample task to poweroff VM",
-            schedule_task_enabled=True
+            scheduled_task_name="task_00001",
+            scheduled_task_description="Sample task to poweroff VM",
+            scheduled_task_enabled=True
         )
 
         self.pyv_mock.content.scheduledTaskManager.CreateScheduledTask = mocker.Mock(return_value=dict(changed=False, failed=True), side_effect=vmodl.fault.InvalidArgument)
@@ -133,9 +133,9 @@ class TestVmwareGuestPowerstate(ModuleTestCase):
             validate_certs=False,
             add_cluster=False,
             scheduled_at="09/03/2025 10:18",
-            schedule_task_name="task_00001",
-            schedule_task_description="Sample task to poweroff VM",
-            schedule_task_enabled=True
+            scheduled_task_name="task_00001",
+            scheduled_task_description="Sample task to poweroff VM",
+            scheduled_task_enabled=True
         )
 
         with pytest.raises(AnsibleExitJson) as c:
