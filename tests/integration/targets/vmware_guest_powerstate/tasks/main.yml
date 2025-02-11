@@ -37,6 +37,7 @@
         datacenter: "{{ vm_datacenter }}"
         name: "Sample_VM"
         resource_pool: "{{ test_resource_pool }}"
+        cluster: "{{ vm_cluster }}"
         state: present
       delegate_to: localhost
 
@@ -225,7 +226,7 @@
         name: "{{ test_resource_pool }}"
         parent: "{{ vcenter_rp_id }}"
         state: absent
-        
+
     - name: "Test teardown: Destroy VM guest {{ vm }}"
       community.vmware.vmware_guest:
         validate_certs: false
