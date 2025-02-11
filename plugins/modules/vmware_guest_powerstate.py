@@ -272,21 +272,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         Returns:
             list(vm), or None if no matches were found 
         """
-        vm = self.get_vm_using_params(fail_on_missing=True)
-        
-        # TODO: delete if unnecessary
-        # if self.module.params['name']:
-        #     vm = self.get_vm_using_params(name_param=self.module.params['name'])
-        # elif self.module.params['moid']:
-        #     vm = self.get_vm_using_params(moid_param=self.module.params['moid'])
-        # elif self.module.params['uuid']:
-        #     vm = self.get_vm_using_params(uuid_param=self.module.params['uuid'])
-
-        if not vm:
-            id = self.module.params.get('uuid') or self.module.params.get('moid') or self.module.params.get('name')
-            self.module.fail_json(msg="Unable to set power state for non-existing virtual machine : '%s'" % id)
-
-        return vm
+        return self.get_vm_using_params(fail_on_missing=True)
 
     def make_answer_response(vm, answers):
         """
