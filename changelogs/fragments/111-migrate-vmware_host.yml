@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - esxi_host - migrate the vmware_host module from community to here
+  - esxi_connection - migrate the vmware_host module from community to here
