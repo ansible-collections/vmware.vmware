@@ -132,6 +132,7 @@ EXAMPLES = r'''
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
+    datacenter: "{{ vm_datacenter }}"
     folder: "/{{ datacenter_name }}/vm/my_folder"
     name: "{{ guest_name }}"
     state: powered-off
@@ -142,6 +143,7 @@ EXAMPLES = r'''
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
+    datacenter: "{{ vm_datacenter }}"
     folder: "/{{ datacenter_name }}/vm/my_folder"
     moid: vm-42
     state: powered-on
@@ -152,6 +154,7 @@ EXAMPLES = r'''
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
+    datacenter: "{{ vm_datacenter }}"
     folder: "/{{ datacenter_name }}/vm/my_folder"
     name: "{{ guest_name }}"
     state: powered-off
@@ -166,6 +169,7 @@ EXAMPLES = r'''
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
+    datacenter: "{{ vm_datacenter }}"
     name: "{{ guest_name }}"
     state: shutdown-guest
     timeout: 200
@@ -178,6 +182,7 @@ EXAMPLES = r'''
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         folder: "{{ f1 }}"
         name: "{{ vm_name }}"
@@ -188,6 +193,7 @@ EXAMPLES = r'''
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
         validate_certs: false
         folder: "{{ f1 }}"
         name: "{{ vm_name }}"
@@ -201,92 +207,15 @@ RETURN = r'''
 result:
     description:
         - Information about the target VM 
-    returned: Always
+    returned: On success
     type: dict
     sample: {
-        "question_answers": null,
         "changed": true,
         "failed": false,
-        "instance": {
-            "advanced_settings": {
-                "cpuid.coresPerSocket.cookie": "2",
-                "hpet0.present": "TRUE",
-                "migrate.hostLog": "test-d9c1-vm-58744247.hlog",
-                "migrate.hostLogState": "none",
-                "migrate.migrationId": "0",
-                "monitor.phys_bits_used": "45",
-                "numa.autosize.cookie": "20012",
-                "numa.autosize.vcpu.maxPerVirtualNode": "2",
-                "nvram": "test-d9c1-vm.nvram",
-                "pciBridge0.functions": "1",
-                "pciBridge0.present": "TRUE",
-                "pciBridge0.pxm": "-1",
-                "pciBridge0.virtualDev": "pciRootBridge",
-                "pciBridge1.functions": "1",
-                "pciBridge1.present": "TRUE",
-                "pciBridge1.virtualDev": "pciRootBridge",
-                "pciBridge1:0.pxm": "0",
-                "sched.swap.derivedName": "/vmfs/volumes/66a298c3-952f0f94-c4fe-48df37c800b0/test-d9c1-vm/test-d9c1-vm-0c8181fb.vswp",
-                "scsi0.pciSlotNumber": "32",
-                "scsi0.sasWWID": "50 05 05 6a b3 96 11 d0",
-                "scsi0:0.redo": "",
-                "softPowerOff": "FALSE",
-                "svga.present": "TRUE",
-                "viv.moid": "502d878c-af91-4a6f-93e9-61c4a1986172:vm-79828:FZXZFzQ45POS15g8cwqho3Ym+MqkSfWabAVYH+/t69Q=",
-                "vmotion.checkpointFBSize": "8388608",
-                "vmotion.checkpointSVGAPrimarySize": "8388608",
-                "vmotion.svga.graphicsMemoryKB": "8192",
-                "vmotion.svga.mobMaxSize": "8388608",
-                "vmware.tools.internalversion": "0",
-                "vmware.tools.requiredversion": "12448",
-                "vmxstats.filename": "test-d9c1-vm.scoreboard"
-            },
-            "annotation": "",
-            "current_snapshot": null,
-            "customvalues": {},
-            "guest_consolidation_needed": false,
-            "guest_question": null,
-            "guest_tools_status": "guestToolsNotRunning",
-            "guest_tools_version": "0",
-            "hw_cluster": "Eco-Cluster",
-            "hw_cores_per_socket": 2,
-            "hw_datastores": [
-                "eco-iscsi-ds1"
-            ],
-            "hw_esxi_host": "10.46.29.129",
-            "hw_files": [
-                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.vmx",
-                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.vmsd",
-                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.nvram",
-                "[eco-iscsi-ds1] test-d9c1-vm/test-d9c1-vm.vmdk"
-            ],
-            "hw_folder": "/Eco-Datacenter/vm/e2e-qe",
-            "hw_guest_full_name": null,
-            "hw_guest_ha_state": null,
-            "hw_guest_id": null,
-            "hw_interfaces": [],
-            "hw_is_template": false,
-            "hw_memtotal_mb": 2000,
-            "hw_name": "test-d9c1-vm",
-            "hw_power_status": "poweredOn",
-            "hw_processor_count": 2,
-            "hw_product_uuid": "420bdfca-b396-11d3-b696-ca9c57f75b9c",
-            "hw_version": "vmx-21",
-            "instance_uuid": "500b94ae-dd52-55aa-8e98-b7524300c1a3",
-            "ipv4": null,
-            "ipv6": null,
-            "module_hw": true,
+        "vm": {
             "moid": "vm-79828",
-            "snapshots": [],
-            "tpm_info": {
-                "provider_id": null,
-                "tpm_present": false
-            },
-            "vimref": "vim.VirtualMachine:vm-79828",
-            "vnc": {}
-        },
-        "moid": "vm-79828",
-        "name": "test-d9c1-vm"
+            "name": "test-d9c1-vm"
+        }
     }
 '''
 
@@ -309,11 +238,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
     base_argument_spec
 )
-
-
-class TaskError(Exception):
-    def __init__(self, *args, **kwargs):
-        super(TaskError, self).__init__(*args, **kwargs)
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import TaskError
 
 
 class VmwareGuestPowerstateModule(ModulePyvmomiBase):
@@ -334,7 +260,11 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         Removes all "/" characters in the folder path if the folder param exists
         """
         if self.module.params['folder']:
-            self.module.params['folder'] = self.module.params['folder'].rstrip('/')
+            fq_folder_path = format_folder_path_as_vm_fq_path(
+                self.module.params['folder'],
+                self.module.params['datacenter']
+            )
+            self.module.params['folder'] = fq_folder_path.rstrip('/')
 
     def get_vm(self):
         """
@@ -530,7 +460,8 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         scheduled_at = self.module.params.get('scheduled_at', None)
         if scheduled_at:
-            self.configure_vm_scheduled_powerstate(vm, scheduled_at)
+            scheduled_task_spec = self.configure_scheduled_task_spec(scheduled_at)
+            self.configure_vm_scheduled_powerstate(vm, scheduled_task_spec)
         else:
             # Check if a virtual machine is locked by a question
             if hasattr(vm, "runtime") and vm.runtime.question and self.module.params['question_answers']:
@@ -541,9 +472,10 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         self.result["vm"]['moid'] = vm._GetMoId()
         self.result["vm"]['name'] = vm.name
 
-    def configure_vm_scheduled_powerstate(self, vm, scheduled_at):
+    def configure_scheduled_task_spec(self, scheduled_at):
         """
-        Configures a VM powerstate when scheduled task option is set
+        Reurns:
+            ScheduledTaskSpec, object that contains all specifications regarding the scheduled task
         """
         if not self.is_vcenter():
             self.module.fail_json(msg="Scheduling task requires vCenter, hostname %s "
@@ -572,6 +504,13 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         scheduled_task_spec.action.name = powerstate[self.module.params['state']]
         scheduled_task_spec.enabled = self.module.params['scheduled_task_enabled']
 
+        return scheduled_task_spec
+
+
+    def configure_vm_scheduled_powerstate(self, vm, scheduled_task_spec):
+        """
+        Configures a VM powerstate when scheduled task option is set
+        """
         try:
             self.content.scheduledTaskManager.CreateScheduledTask(vm, scheduled_task_spec)
             # As this is async task, we create scheduled task and mark state to changed.
