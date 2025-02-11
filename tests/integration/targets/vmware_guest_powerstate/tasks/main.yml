@@ -35,11 +35,10 @@
         datastore: "{{ datastore }}"
         folder: "{{ vm_folder }}"
         datacenter: "{{ vm_datacenter }}"
-        name: "Sample_VM"
+        name: "{{ vm }}"
         resource_pool: "{{ test_resource_pool }}"
         cluster: "{{ vm_cluster }}"
         state: present
-      delegate_to: localhost
 
     # - name: Deploy VM
     #   vmware.vmware.vmware_content_deploy_template:
