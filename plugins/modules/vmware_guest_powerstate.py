@@ -105,7 +105,7 @@ options:
         description:
             - A list of questions to answer, should one or more arise while waiting for the task to complete.
             - Some common uses are to allow a cdrom to be changed even if locked, or to answer the question as to whether a VM was copied or moved.
-            - Can be used if O(state=powered-on).
+            - Can be used if O(state) is V(powered-on).
         suboptions:
             question:
                 description:
