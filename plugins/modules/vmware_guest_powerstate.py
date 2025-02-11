@@ -96,7 +96,7 @@ options:
         type: bool
     timeout:
         description:
-            - If the O(state=shutdown-guest), by default the module will return immediately after sending the shutdown signal.
+            - If the O(state) is V(shutdown-guest), by default the module will return immediately after sending the shutdown signal.
             - If this argument is set to a positive integer, the module will instead wait for the VM to reach the poweredoff state.
             - The value sets a timeout in seconds for the module to wait for the state change.
         default: 0
