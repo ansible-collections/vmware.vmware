@@ -264,7 +264,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                 self.module.params['folder'],
                 self.module.params['datacenter']
             )
-            self.module.params['folder'] = fq_folder_path.rstrip('/')
 
     def get_vm(self):
         """
