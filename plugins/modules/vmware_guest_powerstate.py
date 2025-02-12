@@ -396,12 +396,12 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                     self.result['failed'] = True
                     self.result['msg'] = to_text(e)
                 finally:
-                    if task_result.state == 'error':
+                    if task.info.state == 'error':
                         self.result['failed'] = True
-                        self.result['msg'] = task_result.error.msg
+                        self.result['msg'] = task.info.error.msg
                     else:
                         self.result['changed'] = True
-                        self.result['result'] = task_result
+                        self.result['result'] = task.info
 
         self.result['result'] = vm.summary
 
