@@ -239,7 +239,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spe
     base_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import TaskError
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import TaskError, RunningTaskMonitor
 
 
 class VmwareGuestPowerstateModule(ModulePyvmomiBase):
@@ -273,7 +273,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         vm_list = self.get_vm_using_params(fail_on_missing=True)
         first_vm = vm_list[0] if len(vm_list) > 0 else None
-        self.module.fail_json(msg="%s" % vars(first_vm))
+        self.module.fail_json(msg="%s" % vars(vm_list))
         return first_vm
     
     def make_answer_response(vm, answers):
@@ -313,42 +313,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                 vm.AnswerVM(response["id"], response["response_num"])
             except Exception as e:
                 raise TaskError("answer failed: %s" % to_text(e))
-
-    def wait_for_task(self, task, max_backoff=64, timeout=3600, vm=None, answers=None):
-        """
-        Wait for given task using exponential back-off algorithm.
-        Returns: Tuple with True and result for successful task
-        Raises: TaskError on failure
-        """
-        failure_counter = 0
-        start_time = time.time()
-
-        while True:
-            if hasattr(vm, "runtime") and vm.runtime.question:
-                if answers:
-                    responses = self.make_answer_response(vm, answers)
-                    self.answer_question(vm, responses)
-                else:
-                    raise TaskError("%s" % to_text(vm.runtime.question.text))
-            if time.time() - start_time >= timeout:
-                raise TaskError("Timeout")
-            if task.info.state == vim.TaskInfo.State.success:
-                return True, task.info.result
-            if task.info.state == vim.TaskInfo.State.error:
-                error_msg = task.info.error
-                host_thumbprint = None
-                try:
-                    error_msg = error_msg.msg
-                    if hasattr(task.info.error, 'thumbprint'):
-                        host_thumbprint = task.info.error.thumbprint
-                except AttributeError:
-                    pass
-                finally:
-                    raise_from(TaskError(error_msg, host_thumbprint), task.info.error)
-            if task.info.state in [vim.TaskInfo.State.running, vim.TaskInfo.State.queued]:
-                sleep_time = min(2 ** failure_counter + randint(1, 1000) / 1000, max_backoff)
-                time.sleep(sleep_time)
-                failure_counter += 1
 
     def wait_for_poweroff(self, vm, timeout=300):
         interval = 15
@@ -429,16 +393,17 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
 
             if task:
                 try:
-                    self.wait_for_task(task, vm=vm, answers=answers)
+                    _, task_result = RunningTaskMonitor(task).wait_for_completion()
                 except TaskError as e:
                     self.result['failed'] = True
                     self.result['msg'] = to_text(e)
                 finally:
                     if task.info.state == 'error':
                         self.result['failed'] = True
-                        self.result['msg'] = task.info.error.msg
+                        self.result['msg'] = task_result.info.error.msg
                     else:
                         self.result['changed'] = True
+                        self.result['result'] = task_result.info
 
         self.result['result'] = vm.summary
 
