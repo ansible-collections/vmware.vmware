@@ -404,6 +404,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                         self.result['result'] = task.info
 
         self.result['result'] = vm.summary
+        raise Exception("passed set func")
 
     def configure_vm_powerstate(self, vm):
         """
