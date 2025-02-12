@@ -230,7 +230,6 @@ from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.community.vmware.plugins.module_utils import vmware
 from ansible.module_utils._text import to_text, to_native
-from ansible.module_utils.six import raise_from
 
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
     ModulePyvmomiBase
@@ -404,7 +403,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                         self.result['result'] = task.info
 
         self.result['result'] = vm.summary
-        raise Exception("passed set func")
+        self.module.fail_json(msg="hi")
 
     def configure_vm_powerstate(self, vm):
         """
