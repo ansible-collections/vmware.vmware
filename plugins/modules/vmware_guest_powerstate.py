@@ -27,8 +27,8 @@ options:
     state:
         description:
             - Set the state of the virtual machine.
-        choices: [ powered-off, powered-on, reboot-guest, restarted, shutdown-guest, suspended, present]
-        default: present
+        choices: [ powered-off, powered-on, reboot-guest, restarted, shutdown-guest, suspended]
+        default: powered-on
         type: str
     name:
         description:
@@ -260,7 +260,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         Removes all "/" characters in the folder path if the folder param exists
         """
         if self.module.params['folder']:
-            fq_folder_path = format_folder_path_as_vm_fq_path(
+            self.module.params['folder'] = format_folder_path_as_vm_fq_path(
                 self.module.params['folder'],
                 self.module.params['datacenter']
             )
@@ -432,7 +432,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             self.module.fail_json(msg="Scheduling task requires vCenter, hostname %s "
                                 "is an ESXi server." % self.module.params.get('hostname'))
         powerstate = {
-            'present': vim.VirtualMachine.PowerOn,
             'powered-off': vim.VirtualMachine.PowerOff,
             'powered-on': vim.VirtualMachine.PowerOn,
             'reboot-guest': vim.VirtualMachine.RebootGuest,
@@ -511,8 +510,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
     
     def get_current_and_desired_states(self, vm):
         state = self.module.params['state']
-        if state == 'present':
-            state = 'poweredon'
         desired_state = state.replace('_', '').replace('-', '').lower()
         current_state = vm.summary.runtime.powerState.lower()
 
@@ -524,8 +521,8 @@ def main():
         argument_spec={
             **base_argument_spec(), **dict(
                 datacenter=dict(type='str', required=True),
-                state=dict(type='str', default='present',
-                        choices=['present', 'powered-off', 'powered-on', 'reboot-guest', 'restarted', 'shutdown-guest', 'suspended']),
+                state=dict(type='str', default='powered-on',
+                        choices=['powered-off', 'powered-on', 'reboot-guest', 'restarted', 'shutdown-guest', 'suspended']),
                 name=dict(type='str'),
                 name_match=dict(type='str', choices=['first', 'last'], default='first'),
                 uuid=dict(type='str'),
