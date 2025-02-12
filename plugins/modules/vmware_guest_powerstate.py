@@ -269,10 +269,11 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         Finds and gets VM according to the specified name/uuid/moid
         Returns:
-            list(vm), or None if no matches were found 
+            first vm object found or None if no matches were found 
         """
-        return self.get_vm_using_params(fail_on_missing=True)
-
+        vm_list = self.get_vm_using_params(fail_on_missing=True)
+        first_vm = vm_list[0] if len(vm_list) > 0 else None
+        return first_vm
     def make_answer_response(vm, answers):
         """
         Make the response contents to answer against locked a virtual machine.
