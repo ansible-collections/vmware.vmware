@@ -273,8 +273,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         vm_list = self.get_vm_using_params(fail_on_missing=True)
         first_vm = vm_list[0] if len(vm_list) > 0 else None
-        self.module.fail_json(msg="%s" % vars(vm_list))
-        return first_vm
+        return vm_list
     
     def make_answer_response(vm, answers):
         """
@@ -411,6 +410,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         Configures a VMs powerstate
         """
+        self.result["vm"]['moid'] = vm._GetMoId()
         scheduled_at = self.module.params.get('scheduled_at', None)
         if scheduled_at:
             scheduled_task_spec = self.configure_scheduled_task_spec(scheduled_at)
@@ -422,7 +422,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             else:
                 self.set_vm_powerstate(vm, self.module.params['force'], self.module.params['timeout'], self.module.params['question_answers'])
         
-        self.result["vm"]['moid'] = vm._GetMoId()
         self.result["vm"]['name'] = vm.name
 
     def configure_scheduled_task_spec(self, scheduled_at):
