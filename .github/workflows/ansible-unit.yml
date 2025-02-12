@@ -38,12 +38,6 @@ on:
       - main
       - stable-*
   pull_request:
-  # Run CI once per day (at 06:00 UTC)
-  # This ensures that even if there haven't been commits that we are still
-  # testing against latest version of ansible-test for each ansible-core
-  # version
-  schedule:
-    - cron: "0 6 * * *"
 
 concurrency:
   group: >-
@@ -58,17 +52,8 @@ jobs:
     strategy:
       matrix:
         versions:
-          # It's important that Sanity is tested against all stable-X.Y branches
-          # Testing against `devel` may fail as new tests are added.
-          # An alternative to `devel` is the `milestone` branch with
-          # gets synchronized with `devel` every few weeks and therefore
-          # tends to be a more stable target. Be aware that it is not updated
-          # around creation of a new stable branch, this might cause a problem
-          # that two different versions of ansible-test use the same sanity test
-          # ignore.txt file.
-          # Add new versions announced in
-          # https://github.com/ansible-collections/news-for-maintainers in a timely manner,
-          # consider dropping testing against EOL versions and versions you don't support.
+          # Testing all ansible and python versions is impractical. Only test the newest and
+          # oldest versions of each that we support
           - { python: 3.13, ansible: stable-2.18 }
           - { python: 3.8, ansible: stable-2.18 }
           - { python: 3.11, ansible: stable-2.15 }
