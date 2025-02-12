@@ -574,6 +574,7 @@ def main():
     if hasattr(result, "failed") and result.get('failed') is True:
         module.fail_json(**result)
 
+    module.fail_json(msg="%s" % result)
     module.exit_json(**result)
 
 
