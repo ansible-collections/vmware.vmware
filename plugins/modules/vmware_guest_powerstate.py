@@ -403,7 +403,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                         self.result['result'] = task.info
 
         self.result['result'] = vm.summary
-        self.module.fail_json(msg="hi")
 
     def configure_vm_powerstate(self, vm):
         """
@@ -571,6 +570,7 @@ def main():
     
     vmware_guest_powerstate.configure_vm_powerstate(vm)
     result = vmware_guest_powerstate.result
+    module.fail_json(msg="hi")
     
     if result.get('failed') is True:
         module.fail_json(**result)
