@@ -61,8 +61,6 @@ EXAMPLES = r'''
     validate_certs: false
     datacenter: "{{ vcenter_datacenter }}"
     esxi_host_name: 10.10.10.10
-    esxi_username: root
-    esxi_password: password!
     state: connected
 
 - name: Disconnect Host

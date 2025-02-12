@@ -18,6 +18,8 @@ description:
     - The host must be in maintenance mode to remove it or update its placement.
     - This module does not manage the connection status of hosts in vCenter. That functionality
       is in vmware.vmware.esxi_connection
+    - The host must be in maintenance mode if it is already registered with vCenter but should
+      be moved to a new cluster or folder.
 
 author:
     - Ansible Cloud Team (@ansible-collections)
@@ -29,7 +31,8 @@ options:
     cluster:
         description:
             - The name of the cluster to be managed.
-            - One of O(cluster) or O(folder) is required when O(state) is V(present)
+            - One of O(cluster) or O(folder) is required when O(state) is V(present).
+            - Since ESXi names are unique in a datacenter, this option is not used when O(state) is V(absent).
         type: str
         required: false
         aliases: [cluster_name]
@@ -43,6 +46,7 @@ options:
         description:
             - Name of the folder under which host to add.
             - One of O(cluster) or O(folder) is required when O(state) is V(present)
+            - Since ESXi names are unique in a datacenter, this option is not used when O(state) is V(absent).
         type: str
     esxi_host_name:
         description:
@@ -70,6 +74,8 @@ options:
         description:
             - If set to V(present), make sure the host is registered in vCenter in the desired folder or cluster.
             - If set to V(absent), remove the host from vCenter if it exists.
+            - If set to V(absent), the host must either be disconnected or be in maintenance mode before it can be
+              removed.
         default: present
         choices: ['present', 'absent']
         type: str
@@ -206,16 +212,21 @@ class VmwareHost(ModulePyvmomiBase):
         else:
             return True
 
-    def __run_and_wait_for_task(self, task, error_msg):
+    def __run_and_wait_for_task(self, task, error_msg, state_msg):
         """
             Helper method to run and wait for an arbitrary vCenter task
         """
         try:
             _, task_result = RunningTaskMonitor(task).wait_for_completion()   # pylint: disable=disallowed-name
-        except (vmodl.RuntimeFault, vmodl.MethodFault)as vmodl_fault:
+        except (vmodl.RuntimeFault)as vmodl_fault:
+            try:
+                if vmodl_fault.msg[0].startswith('The operation is not allowed in the current state'):
+                    self.module.fail_json(msg=state_msg)
+            except (AttributeError, KeyError):
+                pass
             self.module.fail_json(msg=to_native(vmodl_fault.msg))
         except TaskError as task_e:
-            self.module.fail_json(msg=to_native(task_e))
+            self.module.fail_json(msg="ESXi task failed to complete due to: %s" % to_native(task_e))
         except Exception as generic_exc:
             self.module.fail_json(msg="%s due to exception %s" % (error_msg, to_native(generic_exc)))
 
@@ -250,7 +261,8 @@ class VmwareHost(ModulePyvmomiBase):
 
         task_result = self.__run_and_wait_for_task(
             task=task,
-            error_msg="Failed to add host %s" % self.params['esxi_host_name']
+            error_msg="Failed to add host %s" % self.params['esxi_host_name'],
+            state_msg="Host %s is not in a valid state to be added. Try using the force_add parameter." % self.params['esxi_host_name']
         )
         self.host = task_result['result']
         del task_result['result']
@@ -262,11 +274,12 @@ class VmwareHost(ModulePyvmomiBase):
             task = self.host.parent.Destroy_Task()
         else:
             task = self.host.Destroy_Task()
-
         return self.__run_and_wait_for_task(
             task=task,
-            error_msg="Failed to remove host %s" % self.params['esxi_host_name']
+            error_msg="Failed to remove host %s" % self.params['esxi_host_name'],
+            state_msg="Host %s is not in a valid state to be remove. It must either be disconnected or in maintenance mode." % self.params['esxi_host_name']
         )
+
 
     def move_host(self):
         """
@@ -284,7 +297,8 @@ class VmwareHost(ModulePyvmomiBase):
 
         return self.__run_and_wait_for_task(
             task=task,
-            error_msg="Failed to move host %s" % self.params['esxi_host_name']
+            error_msg="Failed to move host %s" % self.params['esxi_host_name'],
+            state_msg="Host %s is not in a valid state to be moved. It must be in maintenance mode." % self.params['esxi_host_name']
         )
 
     def host_needs_to_be_moved(self):
