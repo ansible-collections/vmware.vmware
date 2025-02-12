@@ -273,7 +273,9 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         vm_list = self.get_vm_using_params(fail_on_missing=True)
         first_vm = vm_list[0] if len(vm_list) > 0 else None
+        self.module.fail_json(msg="%s" % first_vm)
         return first_vm
+    
     def make_answer_response(vm, answers):
         """
         Make the response contents to answer against locked a virtual machine.
