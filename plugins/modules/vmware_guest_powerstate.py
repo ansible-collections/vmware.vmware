@@ -272,7 +272,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             first vm object found or None if no matches were found 
         """
         vm_list = self.get_vm_using_params(fail_on_missing=True)
-        self.module.fail_json(msg="%s" % dir(vm_list[0].CheckCustomizationSpec()))
+        self.module.fail_json(msg="%s" % dir(vm_list[0]['_moId']))
         first_vm = vm_list[0]
         return first_vm
     
