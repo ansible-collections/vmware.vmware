@@ -570,7 +570,6 @@ def main():
     
     vmware_guest_powerstate.configure_vm_powerstate(vm)
     result = vmware_guest_powerstate.result
-    module.fail_json(msg="%s" % result)
     
     if hasattr(result, "failed") and result.get('failed') is True:
         module.fail_json(**result)
