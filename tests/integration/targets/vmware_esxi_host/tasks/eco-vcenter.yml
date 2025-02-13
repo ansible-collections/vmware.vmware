@@ -86,6 +86,10 @@
       retries: 15
       delay: 5
 
+    - name: Pause for 15 seconds to ensure host is ready
+      ansible.builtin.pause:
+        seconds: 15
+
     - name: Join Hosts To Cluster
       vmware.vmware.esxi_host:
         hostname: "{{ vcenter_hostname }}"

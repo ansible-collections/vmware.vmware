@@ -73,6 +73,10 @@
       retries: 15
       delay: 5
 
+    - name: Pause for 15 seconds to ensure host is ready
+      ansible.builtin.pause:
+        seconds: 15
+
     - name: Join Hosts To Cluster
       vmware.vmware.esxi_host:
         hostname: "{{ vcenter_hostname }}"
@@ -117,16 +121,6 @@
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
         state: connected
       register: _conn_idem
-
-    # # Needed for disconnect task
-    # - name: Put Host In Maintenance Mode
-    #   vmware.vmware.esxi_maintenance_mode:
-    #     hostname: "{{ vcenter_hostname }}"
-    #     username: "{{ vcenter_username }}"
-    #     password: "{{ vcenter_password }}"
-    #     validate_certs: false
-    #     esxi_host_name: "{{ test_esxi_ip | default(_esxi_info.guests[0].ipv4) }}"
-    #     enable_maintenance_mode: true
 
     - name: Disconnect Host
       vmware.vmware.esxi_connection:
