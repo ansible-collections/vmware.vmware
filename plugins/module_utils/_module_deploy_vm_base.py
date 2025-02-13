@@ -5,42 +5,47 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import re
 from abc import abstractmethod
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
-from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
-from ansible.module_utils.common.text.converters import to_native
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
-    TaskError,
-    RunningTaskMonitor
-)
 
 try:
-    from pyVmomi import vim, vmodl
+    from pyVmomi import vim
 except ImportError:
     pass
 
 
-class VmwareContentDeploy(ModulePyvmomiBase):
-    def __init__(self, module):
-        """Constructor."""
-        super(VmwareContentDeploy, self).__init__(module)
-        self.rest_base = ModuleRestBase(module)
+def vm_deploy_module_argument_spec():
+    return dict(
+        vm_name=dict(type='str', required=True),
+        vm_folder=dict(type='str', required=False, aliases=['folder']),
+        cluster=dict(type='str', required=False, aliases=['cluster_name']),
+        resource_pool=dict(type='str', required=False),
+        datacenter=dict(type='str', required=True, aliases=['datacenter_name']),
+        datastore=dict(type='str', required=False),
+        datastore_cluster=dict(type='str', required=False),
+    )
 
-        # Initialize member variables
+
+class ModuleVmDeployBase(ModulePyvmomiBase):
+    def __init__(self, module):
+        super().__init__(module)
         self.datacenter = self.get_datacenter_by_name_or_moid(self.params['datacenter'], fail_on_missing=True)
-        self._library_item_id = self.params.get('library_item_id')
+        self._vm_folder = None
+        self._datastore = None
+        self._resource_pool = None
 
     @property
-    def datastore_id(self):
+    def datastore(self):
+        if self._datastore:
+            return self._datastore
+
         if self.params.get('datastore'):
-            return self.get_datastore_by_name_or_moid(
+            self._datastore = self.get_datastore_by_name_or_moid(
                 self.params['datastore'],
                 fail_on_missing=True,
-            )._GetMoId()
-
-        if self.params.get('datastore_cluster'):
+            )
+        elif self.params.get('datastore_cluster'):
             dsc = self.get_datastore_cluster_by_name_or_moid(
                 self.params['datastore_cluster'],
                 fail_on_missing=True,
@@ -49,18 +54,41 @@ class VmwareContentDeploy(ModulePyvmomiBase):
             datastore = self.get_sdrs_recommended_datastore_from_ds_cluster(dsc)
             if not datastore:
                 datastore = self.get_datastore_with_max_free_space(dsc.childEntity)
-            return datastore._GetMoId()
+            self._datastore = datastore
 
-    def get_deployment_folder(self):
-        if not self.params.get('folder'):
+        return self._datastore
+
+    @property
+    def resource_pool(self):
+        if self._resource_pool:
+            return self._resource_pool
+
+        if self.params['resource_pool']:
+            self._resource_pool = self.get_resource_pool_by_name_or_moid(
+                self.params['resource_pool'],
+                fail_on_missing=True
+            )
+        elif self.params['cluster']:
+            cluster = self.get_cluster_by_name_or_moid(
+                self.params['cluster'],
+                fail_on_missing=True,
+                datacenter=self.datacenter
+            )
+            self._resource_pool = cluster.resource_pool
+
+        return self._resource_pool
+
+    @property
+    def vm_folder(self):
+        if self._vm_folder:
+            return self._vm_folder
+        if not self.params.get('vm_folder'):
             fq_folder = format_folder_path_as_vm_fq_path('', self.params['datacenter'])
         else:
-            fq_folder = self.params.get('folder').strip('/')
-            if not re.match('^%s' % self.params['datacenter'], fq_folder, re.I):
-                # this is not a fully qualified path
-                fq_folder = format_folder_path_as_vm_fq_path(fq_folder, self.params['datacenter'])
+            fq_folder = format_folder_path_as_vm_fq_path(self.params.get('vm_folder'), self.params['datacenter'])
 
-        return self.get_folder_by_absolute_path(fq_folder, fail_on_missing=True)
+        self._vm_folder = self.get_folder_by_absolute_path(fq_folder, fail_on_missing=True)
+        return self._vm_folder
 
     @property
     def library_item_id(self):
@@ -96,6 +124,13 @@ class VmwareContentDeploy(ModulePyvmomiBase):
         self._library_item_id = item_ids[0]
         return self._library_item_id
 
+    def get_deployed_vm(self):
+        return self.get_objs_by_name_or_moid(
+            vimtype=[vim.VirtualMachine],
+            name=self.params['vm_name'],
+            search_root_folder=self.vm_folder
+        )
+
     @abstractmethod
     def create_deploy_spec(self):
         raise NotImplementedError
@@ -103,26 +138,3 @@ class VmwareContentDeploy(ModulePyvmomiBase):
     @abstractmethod
     def deploy(self):
         raise NotImplementedError
-
-    def get_deployed_vm(self):
-        folder = self.get_deployment_folder()
-        return self.get_objs_by_name_or_moid(
-            vimtype=[vim.VirtualMachine],
-            name=self.params['vm_name'],
-            search_root_folder=folder
-        )
-
-    def delete_vm(self, vm):
-        if vm.runtime.powerState.lower() == "poweredon":
-            self.module.fail_json(msg="Cannot delete a VM in the powered on state: %s" % vm.name)
-        try:
-            task = vm.Destroy_Task()
-            _, task_result = RunningTaskMonitor(task).wait_for_completion()   # pylint: disable=disallowed-name
-        except (vmodl.RuntimeFault, vmodl.MethodFault)as vmodl_fault:
-            self.module.fail_json(msg=to_native(vmodl_fault.msg))
-        except TaskError as task_e:
-            self.module.fail_json(msg=to_native(task_e))
-        except Exception as generic_exc:
-            self.module.fail_json(msg="Failed to delete VM due to exception %s" % to_native(generic_exc))
-
-        return task_result
