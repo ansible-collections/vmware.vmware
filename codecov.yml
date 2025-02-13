@@ -8,10 +8,12 @@ coverage:
       default: # default is the status check's name, not default settings
         target: 50
         base: auto
-        paths: "!tests/"
+        paths:
+          - "!tests/"
 
     patch:
       default: # default is the status check's name, not default settings
         target: 50
         base: auto
-        paths: "!tests/"
+        paths:
+          - "!tests/"
