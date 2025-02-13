@@ -15,7 +15,8 @@ from .common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
 from .common.vmware_object_mocks import (
-    MockEsxiHost
+    create_mock_vsphere_object,
+    MockVsphereTask
 )
 
 pytestmark = pytest.mark.skipif(
@@ -27,8 +28,7 @@ class TestEsxiConnection(ModuleTestCase):
 
     def __prepare(self, mocker):
         mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
-        self.test_esxi = MockEsxiHost(name="test")
-        self.mock_cluster = mocker.Mock()
+        self.test_esxi = create_mock_vsphere_object()
 
         mocker.patch.object(VmwareHostConnection, 'get_datacenter_by_name_or_moid')
         mocker.patch.object(VmwareHostConnection, 'get_esxi_host_by_name_or_moid', return_value=self.test_esxi)
@@ -66,3 +66,41 @@ class TestEsxiConnection(ModuleTestCase):
             module_main()
 
         assert c.value.args[0]["changed"] is False
+
+    def test_state_connected(self, mocker):
+        self.__prepare(mocker)
+        self.test_esxi.runtime.connectionState = 'disconnected'
+        self.test_esxi.ReconnectHost_Task.return_value = MockVsphereTask()
+
+        set_module_args(
+            hostname="127.0.0.1",
+            username="administrator@local",
+            password="123456",
+            add_cluster=False,
+            datacenter="",
+            esxi_host_name=self.test_esxi.name,
+            state="connected"
+        )
+        with pytest.raises(AnsibleExitJson) as c:
+            module_main()
+
+        assert c.value.args[0]["changed"] is True
+
+    def test_state_disconnected(self, mocker):
+        self.__prepare(mocker)
+        self.test_esxi.runtime.connectionState = 'connected'
+        self.test_esxi.DisconnectHost_Task.return_value = MockVsphereTask()
+
+        set_module_args(
+            hostname="127.0.0.1",
+            username="administrator@local",
+            password="123456",
+            add_cluster=False,
+            datacenter="",
+            esxi_host_name=self.test_esxi.name,
+            state="disconnected"
+        )
+        with pytest.raises(AnsibleExitJson) as c:
+            module_main()
+
+        assert c.value.args[0]["changed"] is True
