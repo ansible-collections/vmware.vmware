@@ -78,105 +78,91 @@
         seconds: 15
 
     - name: Join Hosts To Cluster
-      community.vmware.vmware_host:
+      vmware.vmware.esxi_host:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ vcenter_cluster_name }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
-        esxi_username: root
-        esxi_password: "!#%135qEt"
+        cluster: "{{ test_cluster }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        esxi_username: "{{ test_esxi_username }}"
+        esxi_password: "{{ test_esxi_password }}"
         state: present
 
-    - name: Disable Maintenance Mode For Host That Is Not In Maintenance Mode
-      vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
+    - name: Disconnect Host
+      vmware.vmware.esxi_connection:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        enable_maintenance_mode: False
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _set
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        state: disconnected
 
-    - name: Check Task Output
+    - name: Connect Host
+      vmware.vmware.esxi_connection:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        state: connected
+      register: _conn
+
+    - name: Connect Host - Idempotence
+      vmware.vmware.esxi_connection:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        state: connected
+      register: _conn_idem
+
+    - name: Disconnect Host
+      vmware.vmware.esxi_connection:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        state: disconnected
+      register: _disconn
+
+    - name: Disconnect Host - Idempotence
+      vmware.vmware.esxi_connection:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter_datacenter }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        state: disconnected
+      register: _disconn_idem
+
+    - name: Check Output
       ansible.builtin.assert:
         that:
-          - _set is not changed
-
-    - name: Enable Maintenance Mode For Host That Is Not In Maintenance Mode
-      vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        enable_maintenance_mode: true
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _set
-
-    - name: Gather Info about ESXi Host
-      community.vmware.vmware_host_facts:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _host_info
-
-    - name: Check Task Output
-      ansible.builtin.assert:
-        that:
-          - _set is changed
-          - _set.result.state == 'success'
-          - _host_info.ansible_facts.ansible_in_maintenance_mode
-
-    - name: Disable Maintenance Mode For Host That Is In Maintenance Mode
-      vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        enable_maintenance_mode: false
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _set
-
-    - name: Gather Info about ESXi Host
-      community.vmware.vmware_host_facts:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _host_info
-
-    - name: Check Task Output
-      ansible.builtin.assert:
-        that:
-          - _set is changed
-          - _set.result.state == 'success'
-          - not _host_info.ansible_facts.ansible_in_maintenance_mode
-
-    - name: Enable Maintenance Mode Before Cleanup
-      vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        enable_maintenance_mode: true
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
+          - _conn is changed
+          - _conn_idem is not changed
+          - _disconn is changed
+          - _disconn_idem is not changed
 
   always:
-    - name: Disconnect Host From vCenter
-      community.vmware.vmware_host:
-        validate_certs: false
+    - name: Remove Host From vCenter
+      vmware.vmware.esxi_host:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        cluster: "{{ vcenter_cluster_name }}"
+        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 | default(test_esxi_hostname) }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
         state: absent
+      when: _esxi_info.guests[0] is defined
     - name: "Test cleanup: Delete Virtual ESXi Host"
       community.vmware.vmware_guest:
         validate_certs: false
