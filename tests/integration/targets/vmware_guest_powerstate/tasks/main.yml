@@ -98,7 +98,6 @@
         folder: "{{ vm_folder }}"
         moid: "{{ deploy.instance.moid }}"
         state: powered-on
-      register: deploy
 
     - name: Suspend the virtual machine
       vmware.vmware.vmware_guest_powerstate:
@@ -188,7 +187,6 @@
         folder: "{{ vm_folder }}"
         moid: "{{ deploy.instance.moid }}"
         state: powered-on
-      register: deploy
 
     - name: Wait for the virtual machine to shutdown
       vmware.vmware.vmware_guest_powerstate:
@@ -222,8 +220,7 @@
         vcenter_username: "{{ vcenter_username }}"
         vcenter_password: "{{ vcenter_password }}"
         vcenter_validate_certs: false
-        name: "{{ test_resource_pool }}"
-        parent: "{{ vcenter_rp_id }}"
+        resource_pool: "{{ _test_rp.id }}"
         state: absent
 
     - name: "Test teardown: Destroy VM guest {{ vm }}"
