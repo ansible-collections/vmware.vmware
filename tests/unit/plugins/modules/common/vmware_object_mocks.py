@@ -11,9 +11,6 @@ class MockVsphereTask():
         self.info.entityName = 'some entity'
         self.info.error = ''
 
-    def set_failed(self):
-        self.info.state = vim.TaskInfo.State.error
-
 
 class MockClusterConfiguration():
     def __init__(self):
