@@ -45,46 +45,18 @@ class AnsibleDummyException(Exception):
     pass
 
 
-def raise_dummy_exception(*args, **kwargs):
-    raise AnsibleDummyException()
-
-
 def exit_json(*args, **kwargs):
     if 'changed' not in kwargs:
         kwargs['changed'] = False
     raise AnsibleExitJson(kwargs)
 
 
-def fail_json(*args, **kwargs):
-    """function to patch over fail_json; package return data into an exception """
-    kwargs['failed'] = True
-    raise AnsibleFailJson(kwargs)
-
-
-def resource_task_success(*args, **kwargs):
-    task_mock = mock.Mock()
-    task_mock.info = mock.Mock()
-    task_mock.info.state = "success"
-    return task_mock
-
-
-def resource_task_fail(*args, **kwargs):
-    task_mock = mock.Mock()
-    task_mock.info = mock.Mock()
-    task_mock.info.state = "error"
-    return task_mock
-
-
 class ModuleTestCase:
     def setup_method(self):
         self.mock_module = mock.patch.multiple(
-            basic.AnsibleModule, exit_json=exit_json, fail_json=fail_json,
+            basic.AnsibleModule, exit_json=exit_json,
         )
         self.mock_module.start()
 
     def teardown_method(self):
         self.mock_module.stop()
-
-
-def generate_name(test_case):
-    return test_case['name']
