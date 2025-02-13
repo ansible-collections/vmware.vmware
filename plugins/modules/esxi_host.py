@@ -246,8 +246,11 @@ class VmwareHost(ModulePyvmomiBase):
         host_connect_spec.force = self.params['force_add']
         return host_connect_spec
 
-    # decorator function
-    def validate_host_state(func):
+    def validate_host_state(func):   # pylint: disable=no-self-argument
+        """
+            Decorator function to perform a state check on a host before moving or removing it. Both of
+            these changes require that the host is in maintenance mode, or in some state other than connected.
+        """
         def wrapper(self):
             try:
                 if not self.host.runtime.inMaintenanceMode and self.host.runtime.connectionState == 'connected':
