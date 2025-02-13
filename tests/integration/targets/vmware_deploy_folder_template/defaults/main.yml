@@ -1,0 +1,5 @@
+---
+test_vm_name: "{{ tiny_prefix }}_deploy_folder_template"
+test_resource_pool: "{{ tiny_prefix }}_deploy_folder_template"
+
+run_on_simulator: false

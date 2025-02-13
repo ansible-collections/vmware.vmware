@@ -26,29 +26,29 @@
       register: _test_rp
 
     - name: Deploy VM
-      vmware.vmware.deploy_content_library_template:
+      vmware.vmware.deploy_folder_template:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         datastore: "{{ shared_storage_02 }}"
-        library_item_name: "{{ rhel9_content_library_template }}"
-        library_name: "{{ ci_resources_content_library }}"
+        template_name: "{{ rhel9_folder_template }}"
+        template_folder: "{{ ci_resources_vm_folder }}"
         vm_name: "{{ test_vm_name }}"
         resource_pool: "{{ test_resource_pool }}"
       register: _deploy
 
-    - name: Deploy VM Again - Idempotency
-      vmware.vmware.deploy_content_library_template:
+    - name: Deploy VM - Idempotence
+      vmware.vmware.deploy_folder_template:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         datastore: "{{ shared_storage_02 }}"
-        library_item_name: "{{ rhel9_content_library_template }}"
-        library_name: "{{ ci_resources_content_library }}"
+        template_name: "{{ rhel9_folder_template }}"
+        template_folder_id: "{{ lookup('vmware.vmware_rest.folder_moid', vcenter_datacenter + '/vm/' + ci_resources_vm_folder) }}"
         vm_name: "{{ test_vm_name }}"
         resource_pool: "{{ test_resource_pool }}"
       register: _deploy_idem

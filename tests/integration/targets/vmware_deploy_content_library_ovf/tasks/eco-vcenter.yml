@@ -57,19 +57,19 @@
       ansible.builtin.assert:
         that:
           - _deploy is changed
-          - _deploy.vm_moid == _deploy_idem.vm_moid
-          - _deploy.vm_name == _deploy_idem.vm_name
+          - _deploy.vm.moid == _deploy_idem.vm.moid
+          - _deploy.vm.name == _deploy_idem.vm.name
           - _deploy_idem is not changed
 
   always:
     - name: "Test cleanup: Delete Virtual VM"
-      vmware.vmware.deploy_content_library_ovf:
+      community.vmware.vmware_guest:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
-        vm_name: "{{ test_vm_name }}"
+        name: "{{ test_vm_name }}"
         state: absent
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:

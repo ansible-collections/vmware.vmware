@@ -21,7 +21,9 @@ def prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type
     the datacenter name, nothing is added.
     Eg: rest/of/path -> datacenter name/type/rest/of/path
     """
-    folder_path = folder_path.lstrip('/')
+    if not folder_path:
+        folder_path = ''
+    folder_path = folder_path.strip('/')
     if folder_path.startswith(datacenter_name):
         return folder_path
 
@@ -29,7 +31,7 @@ def prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type
         raise ValueError("folder_type %s not in acceptable " % folder_type +
                          "folder type values %s" % ', '.join(FOLDER_TYPES))
 
-    return '/'.join([datacenter_name, folder_type, folder_path])
+    return '/'.join([datacenter_name, folder_type, folder_path]).rstrip('/')
 
 
 def format_folder_path_as_vm_fq_path(folder_path, datacenter_name):
