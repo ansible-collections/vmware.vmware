@@ -219,13 +219,13 @@ class VmwareHost(ModulePyvmomiBase):
         try:
             _, task_result = RunningTaskMonitor(task).wait_for_completion()   # pylint: disable=disallowed-name
         except (vmodl.RuntimeFault)as vmodl_fault:
+            self.module.fail_json(msg=to_native(vmodl_fault.msg))
+        except TaskError as task_e:
             try:
-                if vmodl_fault.msg[0].startswith('The operation is not allowed in the current state'):
+                if task_e[0].startswith('The operation is not allowed in the current state'):
                     self.module.fail_json(msg=state_msg)
             except (AttributeError, KeyError):
                 pass
-            self.module.fail_json(msg=to_native(vmodl_fault.msg))
-        except TaskError as task_e:
             self.module.fail_json(msg="ESXi task failed to complete due to: %s" % to_native(task_e))
         except Exception as generic_exc:
             self.module.fail_json(msg="%s due to exception %s" % (error_msg, to_native(generic_exc)))
