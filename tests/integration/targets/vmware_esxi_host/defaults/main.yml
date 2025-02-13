@@ -1,0 +1,9 @@
+---
+test_esxi_hostname: "{{ tiny_prefix }}_esxi_host"
+test_resource_pool: "{{ tiny_prefix }}_esxi_host_rp"
+test_cluster: Eco-Cluster
+test_esxi_username: root
+test_esxi_password: "!#%135qEt"
+test_folder_1: "{{ tiny_prefix }}_esxi_host_folder_1"
+test_folder_2: "{{ tiny_prefix }}_esxi_host_folder_2"
+run_on_simulator: false
