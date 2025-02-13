@@ -54,7 +54,7 @@ def exit_json(*args, **kwargs):
 class ModuleTestCase:
     def setup_method(self):
         self.mock_module = mock.patch.multiple(
-            basic.AnsibleModule, exit_json=exit_json, fail_json=fail_json,
+            basic.AnsibleModule, exit_json=exit_json,
         )
         self.mock_module.start()
 
