@@ -1,3 +1,17 @@
-# CHANGE THIS
+---
 fixes:
-   - "/ansible_collections/NAMESPACE/COLLECTION/::"
+  - "/ansible_collections/vmware/vmware/::"
+
+coverage:
+  status:
+    project:
+      default: # default is the status check's name, not default settings
+        target: 50
+        base: auto
+        paths: "!tests/"
+
+    patch:
+      default: # default is the status check's name, not default settings
+        target: 50
+        base: auto
+        paths: "!tests/"
