@@ -221,11 +221,6 @@ class VmwareHost(ModulePyvmomiBase):
         except (vmodl.RuntimeFault)as vmodl_fault:
             self.module.fail_json(msg=to_native(vmodl_fault.msg))
         except TaskError as task_e:
-            try:
-                if task_e[0].startswith('The operation is not allowed in the current state'):
-                    self.module.fail_json(msg=state_msg)
-            except (AttributeError, KeyError):
-                pass
             self.module.fail_json(msg="ESXi task failed to complete due to: %s" % to_native(task_e))
         except Exception as generic_exc:
             self.module.fail_json(msg="%s due to exception %s" % (error_msg, to_native(generic_exc)))
@@ -251,6 +246,17 @@ class VmwareHost(ModulePyvmomiBase):
         host_connect_spec.force = self.params['force_add']
         return host_connect_spec
 
+    # decorator function
+    def validate_host_state(func):
+        def wrapper(self):
+            try:
+                if not self.host.runtime.inMaintenanceMode and self.host.runtime.connectionState == 'connected':
+                    self.module.fail_json(msg='Host is not in valid state to be moved or removed. It must either be in maintenance mode or disconnected.')
+            except AttributeError:
+                pass
+            func(self)
+        return wrapper
+
     def add_host(self):
         host_connect_spec = self.create_host_connect_spec()
         _kwargs = {'spec': host_connect_spec, 'license': None}
@@ -269,6 +275,7 @@ class VmwareHost(ModulePyvmomiBase):
 
         return task_result
 
+    @validate_host_state
     def remove_host(self):
         if self.__host_parent_type_is_folder():
             task = self.host.parent.Destroy_Task()
@@ -280,13 +287,11 @@ class VmwareHost(ModulePyvmomiBase):
             state_msg="Host %s is not in a valid state to be remove. It must either be disconnected or in maintenance mode." % self.params['esxi_host_name']
         )
 
-
+    @validate_host_state
     def move_host(self):
         """
             Move the host to a new folder or cluster
         """
-        if not self.host.runtime.inMaintenanceMode:
-            self.module.fail_json(msg='Host is not in maintenance mode. It must be in maintenance mode before it can be moved.')
         if self.folder:
             if self.__host_parent_type_is_folder():
                 task = self.folder.MoveIntoFolder_Task([self.host.parent])
