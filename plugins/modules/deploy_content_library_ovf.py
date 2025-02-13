@@ -15,7 +15,7 @@ DOCUMENTATION = r'''
 module: deploy_content_library_ovf
 short_description: Deploy a virtual machine from an OVF in a content library.
 description:
-    - Create or destroy a VM based on an OVF in a content library.
+    - Create a VM based on an OVF in a content library.
     - The module basis idempotentency on if the deployed VM exists or not, not the storage or deployment spec applied at deployment time.
 author:
     - Ansible Cloud Team (@ansible-collections)

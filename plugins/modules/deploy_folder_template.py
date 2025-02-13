@@ -37,6 +37,14 @@ options:
             - The path to the folder where the template with O(template_name) exists.
             - This parameter is not used if O(template_id) is supplied.
             - This can be an absolute (/datacenter/vm/my/folder) or relative (my/folder) path.
+            - This parameter is mutually exclusive with O(template_folder_id).
+        type: str
+        required: False
+    template_folder_id:
+        description:
+            - The ID of the folder where the template with O(template_name) exists.
+            - This parameter is not used if O(template_id) is supplied.
+            - This parameter is mutually exclusive with O(template_folder).
         type: str
         required: False
     template_id:
@@ -75,37 +83,25 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-- name: Create A New Template Using VM UUID
-  vmware.vmware.folder_template:
-    hostname: "https://vcenter"
-    username: "username"
-    password: "password"
-    datacenter: "my-datacenter"
-    vm_uuid: "11111111-11111111-11111111"
-    template_folder: "my-datacenter/vm/netsted/folder/path/templates"
-    template_name: "my_template"
-
-- name: Create A New Template Using VM Name
-  vmware.vmware.folder_template_from_vm:
+- name: Create A New VM From A Template
+  vmware.vmware.deploy_folder_template:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
     datacenter: "my-datacenter"
     vm_name: "my_vm"
-    vm_name_match: "first"
     template_name: "my_template"
-    template_folder: "nested/folder/path/templates"
 
-- name: Destroy A Template In A Folder
-  vmware.vmware.folder_template_from_vm:
+- name: Create A New Template Using Folders To Specify Which VM and Template
+  vmware.vmware.deploy_folder_template:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
     datacenter: "my-datacenter"
-    vm_name: "foo"
-    state: "absent"
+    vm_name: "my_vm"
     template_name: "my_template"
-    template_folder: "nested/folder/path/templates"
+    vm_folder: foo/bar/my/vms
+    template_folder: /my-datacenter/vm/foo/bar/my/templates
 '''
 
 RETURN = r'''
@@ -138,11 +134,18 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
         super().__init__(module)
         self.template = None
 
+    def __lookup_template_folder(self):
+        if self.params['template_folder_id']:
+            folder = self.get_folders_by_name_or_moid(self.params['template_folder_id'], fail_on_missing=True)[0]
+        else:
+            fq_folder_path = format_folder_path_as_vm_fq_path(
+                self.params.get("template_folder"), self.params.get("datacenter")
+            )
+            folder = self.get_folder_by_absolute_path(fq_folder_path, fail_on_missing=True)
+        return folder
+
     def __lookup_template_from_name_and_folder(self):
-        fq_folder_path = format_folder_path_as_vm_fq_path(
-            self.params.get("template_folder"), self.params.get("datacenter")
-        )
-        folder = self.get_folder_by_absolute_path(fq_folder_path, fail_on_missing=True)
+        folder = self.__lookup_template_folder()
         templates = self.get_objs_by_name_or_moid(
             [vim.VirtualMachine], self.params['template_name'], return_all=True, search_root_folder=folder
         )
@@ -154,7 +157,7 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
             if template:
                 self.module.fail_json(msg=(
                     "Found multiple templates with the name %s in folder %s" %
-                    (self.params['template_name'], fq_folder_path)
+                    (self.params['template_name'], folder.name)
                 ))
 
             template = possible_template
@@ -162,7 +165,7 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
 
         if not template:
             self.module.fail_json(msg=(
-                "Unable to find template with name %s in folder %s" % (self.params['template_name'], fq_folder_path)
+                "Unable to find template with name %s in folder %s" % (self.params['template_name'], folder.name)
             ))
         return template
 
@@ -193,7 +196,9 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
             task = self.template.Clone(name=self.params['vm_name'], folder=self.vm_folder, spec=deploy_spec)
             _, task_result = RunningTaskMonitor(task).wait_for_completion()   # pylint: disable=disallowed-name
         except TaskError as e:
-            self.module.fail_json(msg="Failed to clone VM from template with exception: %s" % e)
+            self.module.fail_json(msg="Failed to complete VM clone from template task due to: %s" % e)
+        except Exception as e:
+            self.module.fail_json(msg="Failed to clone VM from template due to unexpected exception: %s" % e)
 
         return task_result['result']
 
@@ -226,6 +231,7 @@ def main():
                 template_id=dict(type='str', required=False),
                 template_name=dict(type='str', required=False),
                 template_folder=dict(type='str', required=False),
+                template_folder_id=dict(type='str', required=False),
                 esxi_host=dict(type='str', required=False, aliases=['host']),
                 power_on_after_deploy=dict(type='bool', default=False)
             )
@@ -233,7 +239,8 @@ def main():
         mutually_exclusive=[
             ('template_id', 'template_name'),
             ('datastore', 'datastore_cluster'),
-            ('cluster', 'resource_pool')
+            ('cluster', 'resource_pool'),
+            ('template_folder', 'template_folder_id')
         ],
         required_one_of=[
             ('template_id', 'template_name')

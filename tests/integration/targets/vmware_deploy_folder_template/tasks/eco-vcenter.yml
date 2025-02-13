@@ -38,7 +38,7 @@
         resource_pool: "{{ test_resource_pool }}"
       register: _deploy
 
-    - name: Deploy VM
+    - name: Deploy VM - Idempotence
       vmware.vmware.deploy_folder_template:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -46,8 +46,7 @@
         validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         datastore: "{{ shared_storage_02 }}"
-        template_name: "{{ test_template_name }}"
-        template_folder: "{{ test_template_folder }}"
+        template_name: "{{ rhel9_folder_template }}"
         vm_name: "{{ test_vm_name }}"
         resource_pool: "{{ test_resource_pool }}"
       register: _deploy_idem
