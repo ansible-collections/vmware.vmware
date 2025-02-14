@@ -317,6 +317,23 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             self.result['failed'] = True
             self.result['msg'] = 'Timeout while waiting for VM power off.'
 
+            
+    def fail_with_message(self, msg):
+        self.result['failed'] = True
+        self.result['msg'] = msg
+
+    def run_vm_configuration_task(self, task):
+        if task:
+            try:
+                _, task_result = RunningTaskMonitor(task).wait_for_completion()
+            except TaskError as e:
+                self.fail_with_message(to_text(e))
+            finally:
+                if task.info.state == 'error':
+                    self.fail_with_message(task.info.error.msg)
+                else:
+                    self.result['changed'] = True
+
     def set_vm_powerstate(self, force, timeout=0):
         """
         Set the power status for a VM determined by the current and
@@ -324,8 +341,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         # Need Force
         if not force and self.current_state not in ['poweredon', 'poweredoff']:
-            self.result['failed'] = True
-            self.result['msg'] = "Virtual Machine is in %s power state. Force is required!" % self.current_state
+            self.fail_with_message("Virtual Machine is in %s power state. Force is required!" % self.current_state)
 
         # State is not already true
         if self.current_state != self.desired_state:
@@ -341,15 +357,13 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                     if self.current_state in ('poweredon', 'poweringon', 'resetting', 'poweredoff'):
                         task = self.vm.Reset()
                     else:
-                        self.result['failed'] = True
-                        self.result['msg'] = "Cannot restart virtual machine in the current state %s" % self.current_state
+                        self.fail_with_message("Cannot restart virtual machine in the current state %s" % self.current_state)
 
                 elif self.desired_state == 'suspended':
                     if self.current_state in ('poweredon', 'poweringon'):
                         task = self.vm.Suspend()
                     else:
-                        self.result['failed'] = True
-                        self.result['msg'] = 'Cannot suspend virtual machine in the current state %s' % self.current_state
+                        self.fail_with_message('Cannot suspend virtual machine in the current state %s' % self.current_state)
 
                 elif self.desired_state in ['shutdownguest', 'rebootguest']:
                     if self.current_state == 'poweredon':
@@ -364,34 +378,19 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                             # shutdown and reboot return None.
                             self.result['changed'] = True
                         else:
-                            self.result['failed'] = True
-                            self.result['msg'] = "VMware tools should be installed for guest shutdown/reboot"
+                            self.fail_with_message("VMware tools should be installed for guest shutdown/reboot")
                     elif self.current_state == 'poweredoff':
                         self.result['changed'] = False
                     else:
-                        self.result['failed'] = True
-                        self.result['msg'] = "Virtual machine %s must be in poweredon state for guest reboot" % self.vm.name
+                        self.fail_with_message("Virtual machine %s must be in poweredon state for guest reboot" % self.vm.name)
 
                 else:
-                    self.result['failed'] = True
-                    self.result['msg'] = "Unsupported expected state provided: %s" % self.desired_state
+                    self.fail_with_message("Unsupported expected state provided: %s" % self.desired_state)
 
             except Exception as e:
-                self.result['failed'] = True
-                self.result['msg'] = to_text(e)
+                self.fail_with_message(to_text(e))
 
-            if task:
-                try:
-                    _, task_result = RunningTaskMonitor(task).wait_for_completion()
-                except TaskError as e:
-                    self.result['failed'] = True
-                    self.result['msg'] = to_text(e)
-                finally:
-                    if task.info.state == 'error':
-                        self.result['failed'] = True
-                        self.result['msg'] = task.info.error.msg
-                    else:
-                        self.result['changed'] = True
+            self.run_vm_configuration_task(task)
 
     def configure_vm_powerstate(self):
         """
