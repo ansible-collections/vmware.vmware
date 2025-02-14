@@ -81,7 +81,7 @@ class TestVmwareGuestPowerstate(ModuleTestCase):
         mocker.patch.object(RunningTaskMonitor, 'wait_for_completion', return_value=(True, True))
         self.vm_mock.configure_mock(
             **{
-                "PowerOn.return_value": {"info": {"state": "success"}}
+                "PowerOff.return_value": type('',(object,),{"info": type('',(object,),{"state": "success"})()})()
             }
         )
 
@@ -108,7 +108,7 @@ class TestVmwareGuestPowerstate(ModuleTestCase):
         mocker.patch.object(RunningTaskMonitor, 'wait_for_completion', return_value=(True, True))
         self.vm_mock.configure_mock(
             **{
-                "PowerOff.return_value": {"info": {"state": "success"}}
+                "PowerOff.return_value": type('',(object,),{"info": type('',(object,),{"state": "success"})()})()
             }
         )
 

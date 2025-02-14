@@ -357,7 +357,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                             if self.desired_state == 'shutdownguest':
                                 task = self.vm.ShutdownGuest()
                                 if timeout > 0:
-                                    self.wait_for_poweroff(self.vm, timeout)
+                                    self.wait_for_poweroff(timeout)
                             else:
                                 task = self.vm.RebootGuest()
                             # Set result['changed'] immediately because
@@ -387,7 +387,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                     self.result['failed'] = True
                     self.result['msg'] = to_text(e)
                 finally:
-                    if task['info']['state'] == 'error':
+                    if task.info.state == 'error':
                         self.result['failed'] = True
                         self.result['msg'] = task.info.error.msg
                     else:
