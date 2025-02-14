@@ -228,7 +228,6 @@ import time
 from random import randint
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.vmware.plugins.module_utils import vmware
 from ansible.module_utils._text import to_text, to_native
 
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
@@ -253,6 +252,12 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             )
         )
 
+        vm_list = self.get_vm_using_params(fail_on_missing=True)
+        self.vm = vm_list[0]
+        state = self.module.params['state']
+        self.desired_state = state.replace('_', '').replace('-', '').lower()
+        self.current_state = self.vm.summary.runtime.powerState.lower()
+
     def standardize_folder_param(self):
         """
         Removes all "/" characters in the folder path if the folder param exists
@@ -262,17 +267,8 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                 self.module.params['folder'],
                 self.module.params['datacenter']
             )
-
-    def get_vm(self):
-        """
-        Finds and gets VM according to the specified name/uuid/moid
-        Returns:
-            first vm object found or None if no matches were found 
-        """
-        vm_list = self.get_vm_using_params(fail_on_missing=True)
-        return vm_list[0]
     
-    def make_answer_response(vm, answers):
+    def make_answer_response(self, answers):
         """
         Make the response contents to answer against locked a virtual machine.
         Returns:
@@ -281,9 +277,9 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             TaskError on failure
         """
         response_list = {}
-        for message in vm.runtime.question.message:
+        for message in self.vm.runtime.question.message:
             response_list[message.id] = {}
-            for choice in vm.runtime.question.choice.choiceInfo:
+            for choice in self.vm.runtime.question.choice.choiceInfo:
                 response_list[message.id].update({
                     choice.label: choice.key
                 })
@@ -292,7 +288,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         try:
             for answer in answers:
                 responses.append({
-                    "id": vm.runtime.question.id,
+                    "id": self.vm.runtime.question.id,
                     "response_num": response_list[answer["question"]][answer["response"]]
                 })
         except Exception:
@@ -300,20 +296,20 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
 
         return responses
     
-    def answer_question(vm, responses):
+    def answer_question(self, responses):
         """
         Answer against the question for unlocking a virtual machine.
         """
         for response in responses:
             try:
-                vm.AnswerVM(response["id"], response["response_num"])
+                self.vm.AnswerVM(response["id"], response["response_num"])
             except Exception as e:
                 raise TaskError("answer failed: %s" % to_text(e))
 
-    def wait_for_poweroff(self, vm, timeout=300):
+    def wait_for_poweroff(self, timeout=300):
         interval = 15
         while timeout > 0:
-            if vm.runtime.powerState.lower() == 'poweredoff':
+            if self.vm.runtime.powerState.lower() == 'poweredoff':
                 break
             time.sleep(interval)
             timeout -= interval
@@ -321,66 +317,64 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             self.result['failed'] = True
             self.result['msg'] = 'Timeout while waiting for VM power off.'
 
-    def set_vm_powerstate(self, vm, force, timeout=0, answers=None):
+    def set_vm_powerstate(self, force, timeout=0):
         """
         Set the power status for a VM determined by the current and
         requested states. force is forceful
         """
-        current_state, desired_state = self.get_current_and_desired_states(vm)
-
         # Need Force
-        if not force and current_state not in ['poweredon', 'poweredoff']:
+        if not force and self.current_state not in ['poweredon', 'poweredoff']:
             self.result['failed'] = True
-            self.result['msg'] = "Virtual Machine is in %s power state. Force is required!" % current_state
+            self.result['msg'] = "Virtual Machine is in %s power state. Force is required!" % self.current_state
 
         # State is not already true
-        if current_state != desired_state:
+        if self.current_state != self.desired_state:
             task = None
             try:
-                if desired_state == 'poweredoff':
-                    task = vm.PowerOff()
+                if self.desired_state == 'poweredoff':
+                    task = self.vm.PowerOff()
 
-                elif desired_state == 'poweredon':
-                    task = vm.PowerOn()
+                elif self.desired_state == 'poweredon':
+                    task = self.vm.PowerOn()
 
-                elif desired_state == 'restarted':
-                    if current_state in ('poweredon', 'poweringon', 'resetting', 'poweredoff'):
-                        task = vm.Reset()
+                elif self.desired_state == 'restarted':
+                    if self.current_state in ('poweredon', 'poweringon', 'resetting', 'poweredoff'):
+                        task = self.vm.Reset()
                     else:
                         self.result['failed'] = True
-                        self.result['msg'] = "Cannot restart virtual machine in the current state %s" % current_state
+                        self.result['msg'] = "Cannot restart virtual machine in the current state %s" % self.current_state
 
-                elif desired_state == 'suspended':
-                    if current_state in ('poweredon', 'poweringon'):
-                        task = vm.Suspend()
+                elif self.desired_state == 'suspended':
+                    if self.current_state in ('poweredon', 'poweringon'):
+                        task = self.vm.Suspend()
                     else:
                         self.result['failed'] = True
-                        self.result['msg'] = 'Cannot suspend virtual machine in the current state %s' % current_state
+                        self.result['msg'] = 'Cannot suspend virtual machine in the current state %s' % self.current_state
 
-                elif desired_state in ['shutdownguest', 'rebootguest']:
-                    if current_state == 'poweredon':
-                        if vm.guest.toolsRunningStatus == 'guestToolsRunning':
-                            if desired_state == 'shutdownguest':
-                                task = vm.ShutdownGuest()
+                elif self.desired_state in ['shutdownguest', 'rebootguest']:
+                    if self.current_state == 'poweredon':
+                        if self.vm.guest.toolsRunningStatus == 'guestToolsRunning':
+                            if self.desired_state == 'shutdownguest':
+                                task = self.vm.ShutdownGuest()
                                 if timeout > 0:
-                                    self.wait_for_poweroff(vm, timeout)
+                                    self.wait_for_poweroff(self.vm, timeout)
                             else:
-                                task = vm.RebootGuest()
+                                task = self.vm.RebootGuest()
                             # Set result['changed'] immediately because
                             # shutdown and reboot return None.
                             self.result['changed'] = True
                         else:
                             self.result['failed'] = True
                             self.result['msg'] = "VMware tools should be installed for guest shutdown/reboot"
-                    elif current_state == 'poweredoff':
+                    elif self.current_state == 'poweredoff':
                         self.result['changed'] = False
                     else:
                         self.result['failed'] = True
-                        self.result['msg'] = "Virtual machine %s must be in poweredon state for guest reboot" % vm.name
+                        self.result['msg'] = "Virtual machine %s must be in poweredon state for guest reboot" % self.vm.name
 
                 else:
                     self.result['failed'] = True
-                    self.result['msg'] = "Unsupported expected state provided: %s" % desired_state
+                    self.result['msg'] = "Unsupported expected state provided: %s" % self.desired_state
 
             except Exception as e:
                 self.result['failed'] = True
@@ -393,29 +387,29 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                     self.result['failed'] = True
                     self.result['msg'] = to_text(e)
                 finally:
-                    if task.info.state == 'error':
+                    if task['info']['state'] == 'error':
                         self.result['failed'] = True
                         self.result['msg'] = task.info.error.msg
                     else:
                         self.result['changed'] = True
 
-    def configure_vm_powerstate(self, vm):
+    def configure_vm_powerstate(self):
         """
         Configures a VMs powerstate
         """
         scheduled_at = self.module.params.get('scheduled_at', None)
         if scheduled_at:
             scheduled_task_spec = self.configure_scheduled_task_spec(scheduled_at)
-            self.configure_vm_scheduled_powerstate(vm, scheduled_task_spec)
+            self.configure_vm_scheduled_powerstate(scheduled_task_spec)
         else:
             # Check if a virtual machine is locked by a question
-            if hasattr(vm, "runtime") and vm.runtime.question and self.module.params['question_answers']:
-                self.configure_vm_answerable_powerstate(vm)
+            if hasattr(self.vm, "runtime") and self.vm.runtime.question and self.module.params['question_answers']:
+                self.configure_vm_answerable_powerstate(self.vm)
             else:
-                self.set_vm_powerstate(vm, self.module.params['force'], self.module.params['timeout'], self.module.params['question_answers'])
+                self.set_vm_powerstate(self.module.params['force'], self.module.params['timeout'])
         
-        self.result["vm"]['moid'] = vm._GetMoId()
-        self.result["vm"]['name'] = vm.name
+        self.result["vm"]['moid'] = self.vm._GetMoId()
+        self.result["vm"]['name'] = self.vm.name
 
     def configure_scheduled_task_spec(self, scheduled_at):
         """
@@ -441,7 +435,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         scheduled_task_spec = vim.scheduler.ScheduledTaskSpec()
         scheduled_task_spec.name = self.module.params['scheduled_task_name'] or 'task_%s' % str(randint(10000, 99999))
         scheduled_task_spec.description = self.module.params['scheduled_task_description'] or 'Scheduled task for vm %s for ' \
-                                                'operation %s at %s' % (vm.name, self.module.params['state'], scheduled_at)
+                                                'operation %s at %s' % (self.vm.name, self.module.params['state'], scheduled_at)
         scheduled_task_spec.scheduler = vim.scheduler.OnceTaskScheduler()
         scheduled_task_spec.scheduler.runAt = scheduled_date
         scheduled_task_spec.action = vim.action.MethodAction()
@@ -451,17 +445,17 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         return scheduled_task_spec
 
 
-    def configure_vm_scheduled_powerstate(self, vm, scheduled_task_spec):
+    def configure_vm_scheduled_powerstate(self, scheduled_task_spec):
         """
         Configures a VM powerstate when scheduled task option is set
         """
         try:
-            self.content.scheduledTaskManager.CreateScheduledTask(vm, scheduled_task_spec)
+            self.content.scheduledTaskManager.CreateScheduledTask(self.vm, scheduled_task_spec)
             # As this is async task, we create scheduled task and mark state to changed.
             self.result['changed'] = True
         except vim.fault.InvalidName as e:
             self.module.fail_json(msg="Failed to create scheduled task %s for %s : %s" % (self.module.params.get('state'),
-                                                                                    vm.name,
+                                                                                    self.vm.name,
                                                                                     to_native(e.msg)))
         except vim.fault.DuplicateName as e:
             self.module.fail_json(msg="Failed to create scheduled task %s as specified task "
@@ -472,42 +466,33 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                                 "given are invalid: %s" % (self.module.params.get('state'),
                                                             to_native(e.msg)))
             
-    def configure_vm_answerable_powerstate(self, vm):
+    def configure_vm_answerable_powerstate(self):
         """
         Configures a VM powerstate when question_answers option is set
         """
         try:
-            responses = vmware.make_answer_response(vm, self.module.params['question_answers'])
-            vmware.answer_question(vm, responses)
+            responses = self.make_answer_response(self.module.params['question_answers'])
+            self.answer_question(responses)
         except Exception as e:
             self.module.fail_json(msg="%s" % e)
 
         # Wait until a virtual machine is unlocked
         while True:
-            if vmware.check_answer_question_status(vm) is False:
+            if not (hasattr(self.vm, "runtime") and self.vm.runtime.question):
                 break
 
         self.result['changed'] = True
     
-    def current_state_matches_desired_state(self, vm):
+    def current_state_matches_desired_state(self):
         """
         Checks the hosts current power state and compares it to the desired power state setting.
         Returns:
             bool, true if they match, otherwise false
         """
-        current_state, desired_state = self.get_current_and_desired_states(vm)
-
-        if current_state == desired_state:
+        if self.current_state == self.desired_state:
             return True
         
         return False
-    
-    def get_current_and_desired_states(self, vm):
-        state = self.module.params['state']
-        desired_state = state.replace('_', '').replace('-', '').lower()
-        current_state = vm.summary.runtime.powerState.lower()
-
-        return current_state, desired_state
 
 
 def main():
@@ -555,15 +540,14 @@ def main():
 
     vmware_guest_powerstate = VmwareGuestPowerstateModule(module)
     vmware_guest_powerstate.standardize_folder_param()
-    vm = vmware_guest_powerstate.get_vm()
-    if vmware_guest_powerstate.current_state_matches_desired_state(vm):
+    if vmware_guest_powerstate.current_state_matches_desired_state():
         module.exit_json(**result)
 
     if module.check_mode:
         result['changed'] = True
         module.exit_json(**result)
     
-    vmware_guest_powerstate.configure_vm_powerstate(vm)
+    vmware_guest_powerstate.configure_vm_powerstate()
     result = vmware_guest_powerstate.result
     
     if hasattr(result, "failed") and result.get('failed') is True:
