@@ -40,20 +40,6 @@
         cluster: "{{ vm_cluster }}"
         state: present
 
-    # - name: Deploy VM
-    #   vmware.vmware.vmware_content_deploy_template:
-    #     hostname: "{{ vcenter_hostname }}"
-    #     username: "{{ vcenter_username }}"
-    #     password: "{{ vcenter_password }}"
-    #     validate_certs: false
-    #     datacenter: "{{ vm_datacenter }}"
-    #     datastore: "{{ datastore }}"
-    #     library_item_name: "{{ rhel9_content_library_template }}"
-    #     library_name: "{{ ci_resources_content_library }}"
-    #     vm_name: "{{ test_vm_name }}"
-    #     resource_pool: "{{ test_resource_pool }}"
-    #   register: _deploy
-
     - name: Set the state of a virtual machine to poweredon
       vmware.vmware.vmware_guest_powerstate:
         datacenter: "{{ vm_datacenter }}"
@@ -85,7 +71,7 @@
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         folder: "{{ vm_folder }}"
-        moid: "{{ deploy.instance.moid }}"
+        moid: "{{ deploy.vm.moid }}"
         state: powered-off
 
     - name: Set the state of a virtual machine to poweron using MoID
@@ -96,7 +82,7 @@
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         folder: "{{ vm_folder }}"
-        moid: "{{ deploy.instance.moid }}"
+        moid: "{{ deploy.vm.moid }}"
         state: powered-on
 
     - name: Suspend the virtual machine
@@ -140,7 +126,6 @@
         state: powered-on
         force: true
 
-
     - name: Set the state of a virtual machine to poweroff at given scheduled time
       vmware.vmware.vmware_guest_powerstate:
         datacenter: "{{ vm_datacenter }}"
@@ -156,14 +141,30 @@
         scheduled_task_description: "Sample task to poweroff VM"
         scheduled_task_enabled: true
 
-    - name: Install vm-tools
-      vmware.vmware_rest.vcenter_vm_tools_installer:
+    - name: Wait until VM is ready
+      vmware.vmware_rest.vcenter_vm_tools_info:
+        vm: "{{ deploy.vm.moid }}"
         vcenter_validate_certs: false
         vcenter_hostname: "{{ vcenter_hostname }}"
         vcenter_username: "{{ vcenter_username }}"
         vcenter_password: "{{ vcenter_password }}"
-        vm: "{{ deploy.instance.moid }}"
-        state: connect
+      register: vm_tools_info
+      until:
+        - vm_tools_info is not failed
+        - vm_tools_info.value.run_state == "RUNNING"
+      retries: 60
+      delay: 5
+
+    - name: Wait for the virtual machine to shutdown
+      vmware.vmware.vmware_guest_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        state: shutdown-guest
+        timeout: 200
 
     - name: Reboot the virtual machine with force
       vmware.vmware.vmware_guest_powerstate:
@@ -176,28 +177,6 @@
         name: "{{ vm }}"
         state: reboot-guest
         force: true
-        
-    - name: Set the state of a virtual machine to poweron using MoID
-      vmware.vmware.vmware_guest_powerstate:
-        datacenter: "{{ vm_datacenter }}"
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        folder: "{{ vm_folder }}"
-        moid: "{{ deploy.instance.moid }}"
-        state: powered-on
-
-    - name: Wait for the virtual machine to shutdown
-      vmware.vmware.vmware_guest_powerstate:
-        datacenter: "{{ vm_datacenter }}"
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        state: shutdown-guest
-        timeout: 200
 
     - name: Power on a virtual machine with the question_answers param
       vmware.vmware.vmware_guest_powerstate:
@@ -235,4 +214,3 @@
         state: absent
         force: true
         name: "{{ vm }}"
-      when: not run_on_simulator

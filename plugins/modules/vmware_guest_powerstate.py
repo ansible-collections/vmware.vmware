@@ -250,8 +250,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             vm=dict(
                 name=None,
                 moid=None
-            ),
-            result={}
+            )
         )
 
     def standardize_folder_param(self):
@@ -333,7 +332,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         if not force and current_state not in ['poweredon', 'poweredoff']:
             self.result['failed'] = True
             self.result['msg'] = "Virtual Machine is in %s power state. Force is required!" % current_state
-            self.result['result'] = vm.summary
 
         # State is not already true
         if current_state != desired_state:
@@ -365,7 +363,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                             if desired_state == 'shutdownguest':
                                 task = vm.ShutdownGuest()
                                 if timeout > 0:
-                                    self.result.update(self.wait_for_poweroff(vm, timeout))
+                                    self.wait_for_poweroff(vm, timeout)
                             else:
                                 task = vm.RebootGuest()
                             # Set result['changed'] immediately because
@@ -400,9 +398,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                         self.result['msg'] = task.info.error.msg
                     else:
                         self.result['changed'] = True
-                        self.result['result'] = task.info
-
-        self.result['result'] = vm.summary
 
     def configure_vm_powerstate(self, vm):
         """
