@@ -3,10 +3,17 @@
   ansible.builtin.include_vars:
     file: ../group_vars.yml
 
-- name: Lookup Root Resource Pool ID
+- name: Lookup Resource IDs
   ansible.builtin.set_fact:
     vcenter_rp_id: >-
       {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      vcenter_hostname=vcenter_hostname,
+      vcenter_username=vcenter_username,
+      vcenter_password=vcenter_password,
+      vcenter_validate_certs=false,
+      ) }}
+    _template_folder_id: >-
+      {{ lookup('vmware.vmware_rest.folder_moid', vcenter_datacenter + '/vm/' + ci_resources_vm_folder,
       vcenter_hostname=vcenter_hostname,
       vcenter_username=vcenter_username,
       vcenter_password=vcenter_password,
@@ -48,7 +55,7 @@
         datacenter: "{{ vcenter_datacenter }}"
         datastore: "{{ shared_storage_02 }}"
         template_name: "{{ rhel9_folder_template }}"
-        template_folder_id: "{{ lookup('vmware.vmware_rest.folder_moid', vcenter_datacenter + '/vm/' + ci_resources_vm_folder) }}"
+        template_folder_id: "{{ _template_folder_id }}"
         vm_name: "{{ test_vm_name }}"
         resource_pool: "{{ test_resource_pool }}"
       register: _deploy_idem
