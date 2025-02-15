@@ -221,3 +221,90 @@ class PyvmomiClient():
             except vmodl.fault.ManagedObjectNotFound:
                 pass
         return objs
+
+    def get_managed_object_references(self, vimtype, properties=None, folder=None, recurse=True):
+        """
+            Use the property collector to create a list of managed object references with select properties.
+            By default, this will return light weight objects with the _moid and the name property. You
+            can then filter the list down and fully populate the remaining objects with
+            create_vim_object_from_moid.
+            Args:
+                vimtype: The type of object to search for
+                properties: A list of properties that should be included in the managed object reference. The more
+                            properties you use, the longer the search will take.
+                folder: vim.Folder, the folder object to use as a base for the search. If
+                        none is provided, the datacenter root will be used
+                recurse: If true, the search will recurse through the folder structure
+            Returns:
+                list(managed object references). MORs are not full objects, they are reference objects that have
+                a moid corresponding to an object, and select properties from said object.
+        """
+        if not folder:
+            folder = self.content.rootFolder
+        if not properties:
+            properties = ['name']
+
+        container_view = self.content.viewManager.CreateContainerView(folder, [vimtype], recurse)
+        prop_spec = vim.PropertyCollector.PropertySpec(type=vimtype, pathSet=properties, all=False)
+        obj_spec = vim.PropertyCollector.ObjectSpec(
+            obj=container_view,
+            skip=True,
+            selectSet=[
+                vim.PropertyCollector.TraversalSpec(
+                    type=vim.view.ContainerView,  # Must be ContainerView
+                    path="view",
+                    skip=False
+                )
+            ]
+        )
+        filter_spec = vim.PropertyCollector.FilterSpec(
+            propSet=[prop_spec],
+            objectSet=[obj_spec],
+            reportMissingObjectsInResults=False
+        )
+
+        retrieve_result = self.content.propertyCollector.RetrieveContents([filter_spec])
+        container_view.Destroy()
+        return retrieve_result
+
+    def create_vim_object_from_moid(self, moid, vimtype):
+        # Construct the actual objects by MOID
+        obj = vimtype(moid, self.si._stub)
+        try:
+            # Force a property fetch to confirm validity
+            _ = obj.name
+        except vmodl.fault.ManagedObjectNotFound:
+            return None
+
+        return obj
+
+    def _find_obj_fast_by_moid(self, object_class, target_name, first, folder=None):
+        """
+        Fast approach: Use the Property Collector to filter by 'name' only,
+        then build the object via the MOID and the ServiceInstance stub.
+        Requires ServiceInstance (self.si)
+        """
+        managed_object_references = []
+        for obj_content in self.get_properties_by_type(object_class):
+            managed_object_reference = obj_content.obj
+            for property in obj_content.propSet:
+                if property.name == "name" and property.val == target_name:
+                    managed_object_references.append(managed_object_reference)
+                    if first:
+                        break
+            if first and managed_object_references:
+                break
+
+        # If no matches
+        if not managed_object_references:
+            return None if first else []
+
+        # Construct the actual objects by MOID
+        results = []
+        for mo_ref in managed_object_references:
+            obj = self.create_vim_object_from_moid(mo_ref, object_class)
+            if not obj:
+                continue
+            results.append(obj)
+
+        return results

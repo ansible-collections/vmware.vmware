@@ -58,25 +58,36 @@ class ModulePyvmomiBase(PyvmomiClient):
         Returns:
             list(object) or list() if no matches are found
         """
+        identifier = name
         if not search_root_folder:
             search_root_folder = self.content.rootFolder
+        if len(vimtype) == 1:
+            vimtype = vimtype[0]
 
-        obj = list()
-        container = self.content.viewManager.CreateContainerView(
-            search_root_folder, vimtype, True)
+        moids = set()
+        for mo_ref in self.get_managed_object_references(vimtype, properties=['name'], folder=search_root_folder):
+            if len(moids) > 0 and not return_all:
+                break
 
-        for c in container.view:
-            if name in [c.name, c._GetMoId()]:
-                if return_all is False:
-                    return c
-                else:
-                    obj.append(c)
+            obj = mo_ref.obj
+            if obj._GetMoId() == identifier:
+                moids.append(obj._GetMoId())
+                continue
 
-        if len(obj) > 0:
-            return obj
-        else:
-            # for backwards-compat
+            for property in mo_ref.propSet:
+                if property.name == "name" and property.val == identifier:
+                    moids.add(obj._GetMoId())
+                    break
+
+        if not moids:
             return None
+
+        results = []
+        for moid in moids:
+            obj = self.create_vim_object_from_moid(moid, vimtype)
+            results.append(obj)
+
+        return results
 
     def get_standard_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
