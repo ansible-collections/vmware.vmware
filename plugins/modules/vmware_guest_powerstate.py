@@ -317,20 +317,17 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
             self.result['failed'] = True
             self.result['msg'] = 'Timeout while waiting for VM power off.'
 
-            
-    def fail_with_message(self, msg):
-        self.result['failed'] = True
-        self.result['msg'] = msg
-
-    def run_vm_configuration_task(self, task):
+    def run_vm_configuration_task(self, task, timeout):
         if task:
             try:
+                if timeout > 0:
+                    self.wait_for_poweroff(timeout)
                 _, task_result = RunningTaskMonitor(task).wait_for_completion()
             except TaskError as e:
-                self.fail_with_message(to_text(e))
+                self.module.fail_json(msg=to_text(e))
             finally:
                 if task.info.state == 'error':
-                    self.fail_with_message(task.info.error.msg)
+                    self.module.fail_json(msg=task.info.error.msg)
                 else:
                     self.result['changed'] = True
 
@@ -341,7 +338,7 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         """
         # Need Force
         if not force and self.current_state not in ['poweredon', 'poweredoff']:
-            self.fail_with_message("Virtual Machine is in %s power state. Force is required!" % self.current_state)
+            self.module.fail_json(msg="Virtual Machine is in %s power state. Force is required!" % self.current_state)
 
         # State is not already true
         if self.current_state != self.desired_state:
@@ -357,40 +354,38 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                     if self.current_state in ('poweredon', 'poweringon', 'resetting', 'poweredoff'):
                         task = self.vm.Reset()
                     else:
-                        self.fail_with_message("Cannot restart virtual machine in the current state %s" % self.current_state)
+                        self.module.fail_json(msg="Cannot restart virtual machine in the current state %s" % self.current_state)
 
                 elif self.desired_state == 'suspended':
                     if self.current_state in ('poweredon', 'poweringon'):
                         task = self.vm.Suspend()
                     else:
-                        self.fail_with_message('Cannot suspend virtual machine in the current state %s' % self.current_state)
+                        self.module.fail_json(msg='Cannot suspend virtual machine in the current state %s' % self.current_state)
 
                 elif self.desired_state in ['shutdownguest', 'rebootguest']:
                     if self.current_state == 'poweredon':
                         if self.vm.guest.toolsRunningStatus == 'guestToolsRunning':
                             if self.desired_state == 'shutdownguest':
                                 task = self.vm.ShutdownGuest()
-                                if timeout > 0:
-                                    self.wait_for_poweroff(timeout)
                             else:
                                 task = self.vm.RebootGuest()
                             # Set result['changed'] immediately because
                             # shutdown and reboot return None.
                             self.result['changed'] = True
                         else:
-                            self.fail_with_message("VMware tools should be installed for guest shutdown/reboot")
+                            self.module.fail_json(msg="VMware tools should be installed for guest shutdown/reboot")
                     elif self.current_state == 'poweredoff':
                         self.result['changed'] = False
                     else:
-                        self.fail_with_message("Virtual machine %s must be in poweredon state for guest reboot" % self.vm.name)
+                        self.module.fail_json(msg="Virtual machine %s must be in poweredon state for guest reboot" % self.vm.name)
 
                 else:
-                    self.fail_with_message("Unsupported expected state provided: %s" % self.desired_state)
+                    self.module.fail_json(msg="Unsupported expected state provided: %s" % self.desired_state)
 
             except Exception as e:
-                self.fail_with_message(to_text(e))
+                self.module.fail_json(msg=to_text(e))
 
-            self.run_vm_configuration_task(task)
+            self.run_vm_configuration_task(task, timeout)
 
     def configure_vm_powerstate(self):
         """
@@ -529,27 +524,21 @@ def main():
         ],
     )
 
-    result = dict(
-        changed=False,
-        result={}
-    )
-
     vmware_guest_powerstate = VmwareGuestPowerstateModule(module)
     vmware_guest_powerstate.standardize_folder_param()
-    if vmware_guest_powerstate.current_state_matches_desired_state():
-        module.exit_json(**result)
+    if vmware_guest_powerstate.current_state == vmware_guest_powerstate.desired_state:
+        module.exit_json(**vmware_guest_powerstate.result)
 
     if module.check_mode:
-        result['changed'] = True
-        module.exit_json(**result)
+        vmware_guest_powerstate.result['changed'] = True
+        module.exit_json(**vmware_guest_powerstate.result)
     
     vmware_guest_powerstate.configure_vm_powerstate()
-    result = vmware_guest_powerstate.result
     
-    if hasattr(result, "failed") and result.get('failed') is True:
-        module.fail_json(**result)
+    if hasattr(vmware_guest_powerstate.result, "failed") and vmware_guest_powerstate.result.get('failed') is True:
+        module.fail_json(**vmware_guest_powerstate.result)
 
-    module.exit_json(**result)
+    module.exit_json(**vmware_guest_powerstate.result)
 
 
 if __name__ == '__main__':
