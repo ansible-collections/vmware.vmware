@@ -209,14 +209,12 @@ result:
         - Information about the target VM 
     returned: On success
     type: dict
-    sample: {
-        "changed": true,
-        "failed": false,
-        "vm": {
-            "moid": "vm-79828",
-            "name": "test-d9c1-vm"
-        }
-    }
+    sample:
+        changed: true,
+        failed false,
+        vm:
+            moid: vm-79828,
+            name: test-d9c1-vm
 '''
 
 try:
@@ -257,6 +255,8 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
         state = self.module.params['state']
         self.desired_state = state.replace('_', '').replace('-', '').lower()
         self.current_state = self.vm.summary.runtime.powerState.lower()
+        self.result["vm"]['moid'] = self.vm._GetMoId()
+        self.result["vm"]['name'] = self.vm.name
 
     def standardize_folder_param(self):
         """
@@ -406,9 +406,6 @@ class VmwareGuestPowerstateModule(ModulePyvmomiBase):
                 self.configure_vm_answerable_powerstate(self.vm)
             else:
                 self.set_vm_powerstate(self.module.params['force'], self.module.params['timeout'])
-        
-        self.result["vm"]['moid'] = self.vm._GetMoId()
-        self.result["vm"]['name'] = self.vm.name
 
     def configure_scheduled_task_spec(self, scheduled_at):
         """
