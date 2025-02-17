@@ -1,3 +1,0 @@
----
-minor_changes:
-  - cluster_ha - migrate the vmware_cluster_ha module from community to here

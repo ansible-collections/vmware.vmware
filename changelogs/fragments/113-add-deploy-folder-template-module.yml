@@ -1,5 +1,0 @@
----
-minor_changes:
-  - deploy_folder_template - add module to deploy a vm from a template in a vsphere folder
-  - deploy_content_library_ovf - update parameters to be consistent with other deploy modules
-  - deploy_content_library_template - update parameters to be consistent with other deploy modules

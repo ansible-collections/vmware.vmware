@@ -19,6 +19,36 @@ releases:
     fragments:
     - 16-vm_list_group_by_clusters.yml
     release_date: '2024-05-16'
+  1.10.0:
+    changes:
+      minor_changes:
+      - cluster_ha - migrate the vmware_cluster_ha module from community to here
+      - deploy_content_library_ovf - migrate the vmware_content_deploy_ovf_template
+        module from community to here
+      - deploy_content_library_ovf - update parameters to be consistent with other
+        deploy modules
+      - deploy_content_library_template - migrate the vmware_content_deploy_template
+        module from community to here
+      - deploy_content_library_template - update parameters to be consistent with
+        other deploy modules
+      - deploy_folder_template - add module to deploy a vm from a template in a vsphere
+        folder
+      - esxi_connection - migrate the vmware_host module from community to here
+      - esxi_host - migrate the vmware_host module from community to here
+      - folder - migrate vmware_folder module from community to here
+      - local_content_library - migrate the vmware_content_library_manager module
+        from community to here
+      - subscribed_content_library - migrate the vmware_content_library_manager module
+        from community to here
+    fragments:
+    - 103-migrate-vmware_folder.yml
+    - 104-migrate-cluster-ha.yml
+    - 105-add-event-counting-file.yml
+    - 108-migrate-deploy_content_library.yml
+    - 109-migrate-vmware_content_manager.yml
+    - 111-migrate-vmware_host.yml
+    - 113-add-deploy-folder-template-module.yml
+    release_date: '2025-02-17'
   1.2.0:
     changes:
       bugfixes:
