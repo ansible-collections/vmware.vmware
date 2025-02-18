@@ -12,11 +12,6 @@ from pyVim import connect
 from pyVmomi import vim
 
 
-class MockContainerView():
-    def __init__(self):
-        self.view = []
-
-
 class TestPyvmomiClient():
 
     def __prepare(self, mocker):
@@ -62,7 +57,7 @@ class TestPyvmomiClient():
         self.__prepare(mocker)
         client = self.__prepare_client()
         mocked_container_view = mocker.patch.object(client.content.viewManager, 'CreateContainerView')
-        mocked_container_view.return_value = MockContainerView()
+        mocked_container_view.return_value = mocker.Mock()
         mocked_container_view.return_value.view = [
             object(),
             object()
@@ -71,3 +66,22 @@ class TestPyvmomiClient():
         objs = client.get_all_objs_by_type(vimtype='blah', folder=object())
 
         assert len(objs) == 2
+
+    def test_get_managed_object_references(self, mocker):
+        self.__prepare(mocker)
+        client = self.__prepare_client()
+        cv = vim.view.ContainerView(moId='1')
+        mocker.patch.object(client.content.viewManager, 'CreateContainerView', return_value=cv)
+        mocker.patch.object(vim.view.ContainerView, 'Destroy', return_value=None)
+        mocker.patch.object(client.content.propertyCollector, 'RetrieveContents', return_value=[object(), object()])
+
+        objs = client.get_managed_object_references(vimtype=vim.VirtualMachine, folder=object())
+
+        assert len(objs) == 2
+
+    def test_create_vim_object_from_moid(self, mocker):
+        self.__prepare(mocker)
+        client = self.__prepare_client()
+        obj = client.create_vim_object_from_moid(moid='1', vimtype=vim.VirtualMachine)
+
+        assert obj is not None
