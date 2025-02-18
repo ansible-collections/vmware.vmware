@@ -129,7 +129,7 @@ class ModuleVmDeployBase(ModulePyvmomiBase):
             vimtype=[vim.VirtualMachine],
             name=self.params['vm_name'],
             search_root_folder=self.vm_folder
-        )
+        )[0]
 
     @abstractmethod
     def create_deploy_spec(self):
