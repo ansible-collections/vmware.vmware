@@ -71,7 +71,7 @@ class ModulePyvmomiBase(PyvmomiClient):
 
             obj = mo_ref.obj
             if obj._GetMoId() == identifier:
-                moids.append(obj._GetMoId())
+                moids.add(obj._GetMoId())
                 continue
 
             for property in mo_ref.propSet:
