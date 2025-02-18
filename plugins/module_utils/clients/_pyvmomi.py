@@ -277,34 +277,3 @@ class PyvmomiClient():
             return None
 
         return obj
-
-    def _find_obj_fast_by_moid(self, object_class, target_name, first, folder=None):
-        """
-        Fast approach: Use the Property Collector to filter by 'name' only,
-        then build the object via the MOID and the ServiceInstance stub.
-        Requires ServiceInstance (self.si)
-        """
-        managed_object_references = []
-        for obj_content in self.get_properties_by_type(object_class):
-            managed_object_reference = obj_content.obj
-            for property in obj_content.propSet:
-                if property.name == "name" and property.val == target_name:
-                    managed_object_references.append(managed_object_reference)
-                    if first:
-                        break
-            if first and managed_object_references:
-                break
-
-        # If no matches
-        if not managed_object_references:
-            return None if first else []
-
-        # Construct the actual objects by MOID
-        results = []
-        for mo_ref in managed_object_references:
-            obj = self.create_vim_object_from_moid(mo_ref, object_class)
-            if not obj:
-                continue
-            results.append(obj)
-
-        return results
