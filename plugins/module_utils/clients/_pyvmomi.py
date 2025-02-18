@@ -201,6 +201,8 @@ class PyvmomiClient():
     def get_all_objs_by_type(self, vimtype, folder=None, recurse=True):
         """
             Returns a list of all objects matching a given VMware type.
+            This is much slower than get_managed_object_references because it gets all properties for all
+            objects found during the search.
             You can also limit the search by folder and recurse if desired
             Args:
                 vimtype: The type of object to search for
@@ -268,6 +270,17 @@ class PyvmomiClient():
         return retrieve_result
 
     def create_vim_object_from_moid(self, moid, vimtype):
+        """
+            Given an object MOID, create a fully populated vim object. This is useful
+            to pair with get_managed_object_references. That method will return a list of object
+            references, with the _moid attribute. You can then fully populate the object properties
+            using this method
+            Args:
+                moid: The MOID of the object to create
+                vimtype: The type of object to search for
+            Returns:
+                list(vim objects)
+        """
         # Construct the actual objects by MOID
         obj = vimtype(moid, self.si._stub)
         try:

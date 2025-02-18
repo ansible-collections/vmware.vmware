@@ -61,7 +61,7 @@ class ModulePyvmomiBase(PyvmomiClient):
         identifier = name
         if not search_root_folder:
             search_root_folder = self.content.rootFolder
-        if len(vimtype) == 1:
+        if isinstance(vimtype, list):
             vimtype = vimtype[0]
 
         moids = set()
