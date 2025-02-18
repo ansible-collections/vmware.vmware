@@ -214,9 +214,11 @@ class ModulePyvmomiBase(PyvmomiClient):
                 datastore object or None
         """
         ds = self.get_objs_by_name_or_moid([vim.Datastore], identifier)
-        if not ds and fail_on_missing:
+        if ds:
+            return ds[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find datastore with name or MOID %s" % identifier)
-        return ds[0]
+        return None
 
     def get_datastore_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
         """
@@ -242,10 +244,12 @@ class ModulePyvmomiBase(PyvmomiClient):
             search_root_folder=search_folder
         )
 
-        if not data_store_cluster and fail_on_missing:
+        if data_store_cluster:
+            return data_store_cluster[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find datastore cluster with name or MOID %s" % identifier)
 
-        return data_store_cluster[0]
+        return None
 
     def get_resource_pool_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
@@ -258,9 +262,11 @@ class ModulePyvmomiBase(PyvmomiClient):
                 resource pool object or None
         """
         pool = self.get_objs_by_name_or_moid([vim.ResourcePool], identifier)
-        if not pool and fail_on_missing:
+        if pool:
+            return pool[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find resource pool with name %s" % identifier)
-        return pool[0]
+        return None
 
     def get_all_vms(self, folder=None, recurse=True):
         """
@@ -286,9 +292,11 @@ class ModulePyvmomiBase(PyvmomiClient):
                 datacenter object or None
         """
         ds = self.get_objs_by_name_or_moid([vim.Datacenter], identifier)
-        if not ds and fail_on_missing:
+        if ds:
+            return ds[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find datacenter with name or MOID %s" % identifier)
-        return ds[0]
+        return None
 
     def get_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
         """
@@ -312,11 +320,13 @@ class ModulePyvmomiBase(PyvmomiClient):
             return_all=False,
             search_root_folder=search_folder
         )
+        if cluster:
+            return cluster[0]
 
-        if not cluster and fail_on_missing:
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find cluster with name or MOID %s" % identifier)
 
-        return cluster[0]
+        return None
 
     def get_esxi_host_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
