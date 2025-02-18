@@ -272,7 +272,7 @@ class PyvmomiClient():
         obj = vimtype(moid, self.si._stub)
         try:
             # Force a property fetch to confirm validity
-            _ = obj.name
+            _ = obj.name    # pylint: disable=disallowed-name
         except vmodl.fault.ManagedObjectNotFound:
             return None
 

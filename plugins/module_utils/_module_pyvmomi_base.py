@@ -80,7 +80,7 @@ class ModulePyvmomiBase(PyvmomiClient):
                     break
 
         if not moids:
-            return None
+            return []
 
         results = []
         for moid in moids:
