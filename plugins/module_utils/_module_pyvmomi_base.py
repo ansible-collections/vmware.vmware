@@ -343,11 +343,12 @@ class ModulePyvmomiBase(PyvmomiClient):
             identifier,
             return_all=False,
         )
-
-        if not esxi_host and fail_on_missing:
+        if esxi_host:
+            return esxi_host[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find ESXi host with name or MOID %s" % identifier)
 
-        return esxi_host
+        return None
 
     def get_sdrs_recommended_datastore_from_ds_cluster(self, ds_cluster):
         """
