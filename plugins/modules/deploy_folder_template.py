@@ -179,9 +179,10 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
                 template object or None
         """
         if self.params['template_id']:
-            template = self.get_objs_by_name_or_moid([vim.VirtualMachine], self.params['template_id'])
-            if not template:
+            templates = self.get_objs_by_name_or_moid([vim.VirtualMachine], self.params['template_id'])
+            if not templates:
                 self.module.fail_json(msg="Unable to find template with ID %s" % self.params['template_id'])
+            template = templates[0]
         else:
             template = self.__lookup_template_from_name_and_folder()
 
