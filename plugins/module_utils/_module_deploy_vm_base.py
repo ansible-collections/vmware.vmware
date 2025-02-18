@@ -125,11 +125,14 @@ class ModuleVmDeployBase(ModulePyvmomiBase):
         return self._library_item_id
 
     def get_deployed_vm(self):
-        return self.get_objs_by_name_or_moid(
+        vms = self.get_objs_by_name_or_moid(
             vimtype=[vim.VirtualMachine],
             name=self.params['vm_name'],
             search_root_folder=self.vm_folder
-        )[0]
+        )
+        if vms:
+            return vms[0]
+        return None
 
     @abstractmethod
     def create_deploy_spec(self):

@@ -99,9 +99,11 @@ class ModulePyvmomiBase(PyvmomiClient):
             The standard portgroup object
         """
         pg = self.get_objs_by_name_or_moid([vim.Network], identifier)
-        if not pg and fail_on_missing:
+        if pg:
+            return pg[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find standard portgroup with name or MOID %s" % identifier)
-        return pg
+        return None
 
     def get_dvs_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
@@ -113,9 +115,11 @@ class ModulePyvmomiBase(PyvmomiClient):
             The distributed portgroup object
         """
         pg = self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], identifier)
-        if not pg and fail_on_missing:
+        if pg:
+            return pg[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find distributed portgroup with name or MOID %s" % identifier)
-        return pg
+        return None
 
     def get_vm_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
