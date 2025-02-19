@@ -95,7 +95,6 @@ class TestVmwareFolderTemplate(ModuleTestCase):
         assert c.value.args[0]["changed"] is False
         assert c.value.args[0]["vm"]["moid"] is self.test_vm._GetMoId()
 
-
     def test_template_error(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(VmwareFolderTemplate, 'get_deployed_vm', return_value=None)
