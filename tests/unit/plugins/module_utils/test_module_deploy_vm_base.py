@@ -58,3 +58,12 @@ class TestDeployContentLibraryOvf():
         mocker.patch.object(VmwareFolderTemplate, 'get_folder_by_absolute_path', return_value=folder_obj)
         test_module = VmwareFolderTemplate(self.mock_module)
         assert test_module.vm_folder is folder_obj
+
+    def test_get_deployed_vm(self, mocker):
+        self.__prepare(mocker)
+        mocker.patch.object(VmwareFolderTemplate, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        test_module = VmwareFolderTemplate(self.mock_module)
+        assert test_module.get_deployed_vm()
+
+        mocker.patch.object(VmwareFolderTemplate, 'get_objs_by_name_or_moid', return_value=[])
+        assert test_module.get_deployed_vm() is None

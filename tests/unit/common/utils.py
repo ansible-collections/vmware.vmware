@@ -51,10 +51,16 @@ def exit_json(*args, **kwargs):
     raise AnsibleExitJson(kwargs)
 
 
+def fail_json(*args, **kwargs):
+    if 'failed' not in kwargs:
+        kwargs['failed'] = True
+    raise AnsibleFailJson(kwargs)
+
+
 class ModuleTestCase:
     def setup_method(self):
         self.mock_module = mock.patch.multiple(
-            basic.AnsibleModule, exit_json=exit_json,
+            basic.AnsibleModule, exit_json=exit_json, fail_json=fail_json
         )
         self.mock_module.start()
 
