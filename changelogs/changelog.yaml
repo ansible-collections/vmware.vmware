@@ -49,6 +49,14 @@ releases:
     - 111-migrate-vmware_host.yml
     - 113-add-deploy-folder-template-module.yml
     release_date: '2025-02-17'
+  1.10.1:
+    changes:
+      bugfixes:
+      - folder - replaced non-existent 'storage' type with 'datastore' type
+      - module_deploy_vm_base - fix attribute error when deploying to a resource pool
+    fragments:
+    - 121-fix-bugs-in-new-modules.yml
+    release_date: '2025-02-20'
   1.2.0:
     changes:
       bugfixes:

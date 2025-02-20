@@ -4,6 +4,15 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.10.1
+=======
+
+Bugfixes
+--------
+
+- folder - replaced non-existent 'storage' type with 'datastore' type
+- module_deploy_vm_base - fix attribute error when deploying to a resource pool
+
 v1.10.0
 =======
 
