@@ -74,7 +74,7 @@ class ModuleVmDeployBase(ModulePyvmomiBase):
                 fail_on_missing=True,
                 datacenter=self.datacenter
             )
-            self._resource_pool = cluster.resource_pool
+            self._resource_pool = cluster.resourcePool
 
         return self._resource_pool
 

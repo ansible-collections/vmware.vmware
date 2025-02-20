@@ -34,7 +34,7 @@ options:
             - Only used if the O(relative_path) option is used.
         type: str
         required: false
-        choices: [vm, host, storage, network]
+        choices: [vm, host, datastore, network]
     relative_path:
         description:
             - The relative path of the folder to create. The relative path should include neither the datacenter nor the folder type.
@@ -70,7 +70,7 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-- name: Create Folder Using A Relative Path (/DC01/storage/my/test/folder)
+- name: Create Folder Using A Relative Path (/DC01/datastore/my/test/folder)
   vmware.vmware.folder:
     hostname: "https://vcenter"
     username: "username"
@@ -78,7 +78,7 @@ EXAMPLES = r'''
     validate_certs: false
     datacenter: DC01
     relative_path: my/test/folder
-    folder_type: storage
+    folder_type: datastore
 
 # This is the same as the example above, but shows how to do it using different params.
 - name: Create A Folder Using An Absolute Path
@@ -87,7 +87,7 @@ EXAMPLES = r'''
     username: "username"
     password: "password"
     validate_certs: false
-    absolute_path: /DC01/storage/my/test/folder
+    absolute_path: /DC01/datastore/my/test/folder
 
 
 - name: Delete The Folder and All Of Its Contents
@@ -96,7 +96,7 @@ EXAMPLES = r'''
     username: "username"
     password: "password"
     validate_certs: false
-    absolute_path: /DC01/storage/my
+    absolute_path: /DC01/datastore/my
     state: absent
     remove_vm_data: True
 
@@ -273,7 +273,7 @@ def main():
         argument_spec={
             **base_argument_spec(), **dict(
                 datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
-                folder_type=dict(type='str', choices=['vm', 'host', 'network', 'storage'], required=False),
+                folder_type=dict(type='str', choices=['vm', 'host', 'network', 'datastore'], required=False),
                 relative_path=dict(type='str', required=False),
                 absolute_path=dict(type='str', required=False),
                 state=dict(type='str', default='present', choices=['absent', 'present']),

@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - folder - replaced non-existent 'storage' type with 'datastore' type
+  - module_deploy_vm_base - fix attribute error when deploying to a resource pool
