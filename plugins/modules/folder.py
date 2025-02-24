@@ -98,7 +98,7 @@ EXAMPLES = r'''
     validate_certs: false
     absolute_path: /DC01/datastore/my
     state: absent
-    remove_vm_data: True
+    remove_vm_data: true
 
 
 - name: Delete A VM Folder But Keep The VM Data Disks
@@ -109,7 +109,7 @@ EXAMPLES = r'''
     validate_certs: false
     absolute_path: /DC01/vm/sql
     state: absent
-    remove_vm_data: False
+    remove_vm_data: false
 '''
 
 RETURN = r'''

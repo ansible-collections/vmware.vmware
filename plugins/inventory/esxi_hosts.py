@@ -39,14 +39,16 @@ EXAMPLES = r"""
 
 
 # Simple configuration with in-file authentication parameters
+---
 plugin: vmware.vmware.esxi_hosts
 hostname: 10.65.223.31
 username: administrator@vsphere.local
 password: Esxi@123$%
 validate_certs: false
-
+...
 
 # More complex configuration. Authentication parameters are assumed to be set as environment variables.
+---
 plugin: vmware.vmware.esxi_hosts
 
 # Create groups based on host paths
@@ -75,6 +77,7 @@ compose:
   # assuming path is something like /MyDC/host/MyCluster
   datacenter: "(path | split('/'))[1]"
   cluster: "(path | split('/'))[3]"
+...
 """
 
 try:

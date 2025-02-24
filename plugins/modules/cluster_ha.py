@@ -229,19 +229,19 @@ EXAMPLES = r'''
     datacenter: DC01
     cluster: my-cluster
     host_failure_response:
-        restart_vms: true
-        default_vm_restart_priority: low
+      restart_vms: true
+      default_vm_restart_priority: low
     host_isolation_response: powerOff
     admission_control_policy: dedicated_host
     admission_control_dedicated_hosts:
-        - DC0_C0_H0
-        - DC0_C0_H1
+      - DC0_C0_H0
+      - DC0_C0_H1
     vm_monitoring:
-        mode: vmAndAppMonitoring
+      mode: vmAndAppMonitoring
     storage_apd_response:
-        mode: restartConservative
-        delay: 100
-        restart_vms: true
+      mode: restartConservative
+      delay: 100
+      restart_vms: true
     storage_pdl_response_mode: restart
 
 # If you do not set a parameter and it has no default, the module will ignore
@@ -254,8 +254,8 @@ EXAMPLES = r'''
     datacenter: DC01
     cluster: my-cluster
     host_failure_response:
-        restart_vms: true
-        default_vm_restart_priority: low
+      restart_vms: true
+      default_vm_restart_priority: low
 '''
 
 RETURN = r'''

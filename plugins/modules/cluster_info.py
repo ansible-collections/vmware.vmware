@@ -87,9 +87,9 @@ EXAMPLES = r'''
     cluster_name: my_cluster
     schema: vsphere
     properties:
-        - name
-        - configuration.dasConfig.enabled
-        - summary.totalCpu
+      - name
+      - configuration.dasConfig.enabled
+      - summary.totalCpu
   register: _out
 '''
 
