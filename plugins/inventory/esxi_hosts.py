@@ -45,6 +45,7 @@ hostname: 10.65.223.31
 username: administrator@vsphere.local
 password: Esxi@123$%
 validate_certs: false
+...
 
 # More complex configuration. Authentication parameters are assumed to be set as environment variables.
 ---
@@ -76,6 +77,7 @@ compose:
   # assuming path is something like /MyDC/host/MyCluster
   datacenter: "(path | split('/'))[1]"
   cluster: "(path | split('/'))[3]"
+...
 """
 
 try:
