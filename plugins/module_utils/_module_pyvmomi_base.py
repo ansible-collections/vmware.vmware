@@ -58,25 +58,30 @@ class ModulePyvmomiBase(PyvmomiClient):
         Returns:
             list(object) or list() if no matches are found
         """
+        identifier = name
         if not search_root_folder:
             search_root_folder = self.content.rootFolder
+        if isinstance(vimtype, list):
+            vimtype = vimtype[0]
 
-        obj = list()
-        container = self.content.viewManager.CreateContainerView(
-            search_root_folder, vimtype, True)
+        results = []
+        for managed_object_ref in self.get_managed_object_references(vimtype, properties=['name'], folder=search_root_folder):
+            if len(results) > 0 and not return_all:
+                break
 
-        for c in container.view:
-            if name in [c.name, c._GetMoId()]:
-                if return_all is False:
-                    return c
-                else:
-                    obj.append(c)
+            obj_skeleton = managed_object_ref.obj
+            if obj_skeleton._GetMoId() == identifier:
+                vim_obj = self.create_vim_object_from_moid(obj_skeleton._GetMoId(), vimtype)
+                results.append(vim_obj)
+                continue
 
-        if len(obj) > 0:
-            return obj
-        else:
-            # for backwards-compat
-            return None
+            for property in managed_object_ref.propSet:
+                if property.name == "name" and property.val == identifier:
+                    vim_obj = self.create_vim_object_from_moid(obj_skeleton._GetMoId(), vimtype)
+                    results.append(vim_obj)
+                    break
+
+        return results
 
     def get_standard_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
@@ -88,9 +93,11 @@ class ModulePyvmomiBase(PyvmomiClient):
             The standard portgroup object
         """
         pg = self.get_objs_by_name_or_moid([vim.Network], identifier)
-        if not pg and fail_on_missing:
+        if pg:
+            return pg[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find standard portgroup with name or MOID %s" % identifier)
-        return pg
+        return None
 
     def get_dvs_portgroup_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
@@ -102,9 +109,11 @@ class ModulePyvmomiBase(PyvmomiClient):
             The distributed portgroup object
         """
         pg = self.get_objs_by_name_or_moid([vim.dvs.DistributedVirtualPortgroup], identifier)
-        if not pg and fail_on_missing:
+        if pg:
+            return pg[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find distributed portgroup with name or MOID %s" % identifier)
-        return pg
+        return None
 
     def get_vm_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
@@ -203,9 +212,11 @@ class ModulePyvmomiBase(PyvmomiClient):
                 datastore object or None
         """
         ds = self.get_objs_by_name_or_moid([vim.Datastore], identifier)
-        if not ds and fail_on_missing:
+        if ds:
+            return ds[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find datastore with name or MOID %s" % identifier)
-        return ds
+        return None
 
     def get_datastore_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
         """
@@ -231,10 +242,12 @@ class ModulePyvmomiBase(PyvmomiClient):
             search_root_folder=search_folder
         )
 
-        if not data_store_cluster and fail_on_missing:
+        if data_store_cluster:
+            return data_store_cluster[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find datastore cluster with name or MOID %s" % identifier)
 
-        return data_store_cluster
+        return None
 
     def get_resource_pool_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
@@ -247,9 +260,11 @@ class ModulePyvmomiBase(PyvmomiClient):
                 resource pool object or None
         """
         pool = self.get_objs_by_name_or_moid([vim.ResourcePool], identifier)
-        if not pool and fail_on_missing:
+        if pool:
+            return pool[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find resource pool with name %s" % identifier)
-        return pool
+        return None
 
     def get_all_vms(self, folder=None, recurse=True):
         """
@@ -275,9 +290,11 @@ class ModulePyvmomiBase(PyvmomiClient):
                 datacenter object or None
         """
         ds = self.get_objs_by_name_or_moid([vim.Datacenter], identifier)
-        if not ds and fail_on_missing:
+        if ds:
+            return ds[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find datacenter with name or MOID %s" % identifier)
-        return ds
+        return None
 
     def get_cluster_by_name_or_moid(self, identifier, fail_on_missing=False, datacenter=None):
         """
@@ -301,11 +318,13 @@ class ModulePyvmomiBase(PyvmomiClient):
             return_all=False,
             search_root_folder=search_folder
         )
+        if cluster:
+            return cluster[0]
 
-        if not cluster and fail_on_missing:
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find cluster with name or MOID %s" % identifier)
 
-        return cluster
+        return None
 
     def get_esxi_host_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
@@ -322,11 +341,12 @@ class ModulePyvmomiBase(PyvmomiClient):
             identifier,
             return_all=False,
         )
-
-        if not esxi_host and fail_on_missing:
+        if esxi_host:
+            return esxi_host[0]
+        if fail_on_missing:
             self.module.fail_json(msg="Unable to find ESXi host with name or MOID %s" % identifier)
 
-        return esxi_host
+        return None
 
     def get_sdrs_recommended_datastore_from_ds_cluster(self, ds_cluster):
         """
