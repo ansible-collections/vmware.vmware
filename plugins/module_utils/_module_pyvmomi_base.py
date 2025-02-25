@@ -64,28 +64,22 @@ class ModulePyvmomiBase(PyvmomiClient):
         if isinstance(vimtype, list):
             vimtype = vimtype[0]
 
-        moids = set()
-        for mo_ref in self.get_managed_object_references(vimtype, properties=['name'], folder=search_root_folder):
-            if len(moids) > 0 and not return_all:
+        results = []
+        for managed_object_ref in self.get_managed_object_references(vimtype, properties=['name'], folder=search_root_folder):
+            if len(results) > 0 and not return_all:
                 break
 
-            obj = mo_ref.obj
-            if obj._GetMoId() == identifier:
-                moids.add(obj._GetMoId())
+            obj_skeleton = managed_object_ref.obj
+            if obj_skeleton._GetMoId() == identifier:
+                vim_obj = self.create_vim_object_from_moid(obj_skeleton._GetMoId(), vimtype)
+                results.append(vim_obj)
                 continue
 
-            for property in mo_ref.propSet:
+            for property in managed_object_ref.propSet:
                 if property.name == "name" and property.val == identifier:
-                    moids.add(obj._GetMoId())
+                    vim_obj = self.create_vim_object_from_moid(obj_skeleton._GetMoId(), vimtype)
+                    results.append(vim_obj)
                     break
-
-        if not moids:
-            return []
-
-        results = []
-        for moid in moids:
-            obj = self.create_vim_object_from_moid(moid, vimtype)
-            results.append(obj)
 
         return results
 
