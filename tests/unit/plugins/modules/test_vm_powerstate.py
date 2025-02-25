@@ -80,7 +80,7 @@ class TestVmPowerstate(ModuleTestCase):
         mocker.patch.object(RunningTaskMonitor, 'wait_for_completion', return_value=(True, True))
         self.vm_mock.configure_mock(
             **{
-                "PowerOn.return_value": type('',(object,),{"info": type('',(object,),{"state": "success"})()})(),
+                "PowerOn.return_value": type('', (object,), {"info": type('', (object,), {"state": "success"})()})(),
                 "summary.runtime.powerState.lower.return_value": "poweredoff"
             }
         )
@@ -108,7 +108,7 @@ class TestVmPowerstate(ModuleTestCase):
         mocker.patch.object(RunningTaskMonitor, 'wait_for_completion', return_value=(True, True))
         self.vm_mock.configure_mock(
             **{
-                "PowerOff.return_value": type('',(object,),{"info": type('',(object,),{"state": "success"})()})()
+                "PowerOff.return_value": type('', (object,), {"info": type('', (object,), {"state": "success"})()})()
             }
         )
 

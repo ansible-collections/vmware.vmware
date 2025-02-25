@@ -205,7 +205,7 @@ EXAMPLES = r'''
 RETURN = r'''
 vm:
     description:
-        - Information about the target VM 
+        - Information about the target VM
     returned: On success
     type: dict
     sample:
@@ -350,7 +350,7 @@ class VmPowerstateModule(ModulePyvmomiBase):
         """
         if not self.is_vcenter():
             self.module.fail_json(msg="Scheduling task requires vCenter, hostname %s "
-                                "is an ESXi server." % self.module.params.get('hostname'))
+                                        "is an ESXi server." % self.module.params.get('hostname'))
         powerstate = {
             'powered-off': vim.VirtualMachine.PowerOff,
             'powered-on': vim.VirtualMachine.PowerOn,
@@ -363,11 +363,11 @@ class VmPowerstateModule(ModulePyvmomiBase):
             scheduled_date = datetime.strptime(scheduled_at, '%d/%m/%Y %H:%M')
         except ValueError as e:
             self.module.fail_json(msg="Failed to convert given date and time string to Python datetime object,"
-                                "please specify string in 'dd/mm/yyyy hh:mm' format: %s" % to_native(e))
+                                        "please specify string in 'dd/mm/yyyy hh:mm' format: %s" % to_native(e))
         scheduled_task_spec = vim.scheduler.ScheduledTaskSpec()
         scheduled_task_spec.name = self.module.params['scheduled_task_name'] or 'task_%s' % str(randint(10000, 99999))
         scheduled_task_spec.description = self.module.params['scheduled_task_description'] or 'Scheduled task for vm %s for ' \
-                                                'operation %s at %s' % (self.vm.name, self.module.params['state'], scheduled_at)
+                                        'operation %s at %s' % (self.vm.name, self.module.params['state'], scheduled_at)
         scheduled_task_spec.scheduler = vim.scheduler.OnceTaskScheduler()
         scheduled_task_spec.scheduler.runAt = scheduled_date
         scheduled_task_spec.action = vim.action.MethodAction()
@@ -386,23 +386,23 @@ class VmPowerstateModule(ModulePyvmomiBase):
             self.result['changed'] = True
         except vim.fault.InvalidName as e:
             self.module.fail_json(msg="Failed to create scheduled task %s for %s : %s" % (self.module.params.get('state'),
-                                                                                    self.vm.name,
-                                                                                    to_native(e.msg)))
+                                                                                                self.vm.name,
+                                                                                                to_native(e.msg)))
         except vim.fault.DuplicateName as e:
             self.module.fail_json(msg="Failed to create scheduled task %s as specified task "
                                 "name is invalid: %s" % (self.module.params.get('state'),
-                                                            to_native(e.msg)))
+                                                        to_native(e.msg)))
         except vmodl.fault.InvalidArgument as e:
             self.module.fail_json(msg="Failed to create scheduled task %s as specifications "
-                                "given are invalid: %s" % (self.module.params.get('state'),
-                                                            to_native(e.msg)))
+                                        "given are invalid: %s" % (self.module.params.get('state'),
+                                                    to_native(e.msg)))
 
     def answer_questions(self):
         if not self.vm.runtime.question:
             return
         if not self.module.params['question_answers']:
             self.module.fail_json(msg="No answers provided for question %s, set answers using the question_answers option"
-                            % self.vm.runtime.question.text)
+                                                        % self.vm.runtime.question.text)
         self.result['changed'] = True
         if self.module.check_mode:
             return
@@ -418,7 +418,7 @@ def main():
             **base_argument_spec(), **dict(
                 datacenter=dict(type='str', required=True),
                 state=dict(type='str', default='powered-on',
-                        choices=['powered-off', 'powered-on', 'reboot-guest', 'restarted', 'shutdown-guest', 'suspended']),
+                                choices=['powered-off', 'powered-on', 'reboot-guest', 'restarted', 'shutdown-guest', 'suspended']),
                 name=dict(type='str'),
                 name_match=dict(type='str', choices=['first', 'last'], default='first'),
                 uuid=dict(type='str'),
@@ -432,12 +432,12 @@ def main():
                 scheduled_task_enabled=dict(type='bool', default=True),
                 timeout=dict(type='int', default=3600),
                 question_answers=dict(type='list',
-                            required=False,
-                            elements='dict',
-                            options=dict(
-                                question=dict(type='str', required=True),
-                                response=dict(type='str', required=True)
-                            ))
+                                    required=False,
+                                    elements='dict',
+                                    options=dict(
+                                        question=dict(type='str', required=True),
+                                        response=dict(type='str', required=True)
+                                    ))
             )
         },
         supports_check_mode=True,
