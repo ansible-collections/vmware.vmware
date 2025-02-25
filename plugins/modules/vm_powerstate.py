@@ -366,9 +366,10 @@ class VmPowerstateModule(ModulePyvmomiBase):
                                   "please specify string in 'dd/mm/yyyy hh:mm' format: %s" % to_native(e))
         scheduled_task_spec = vim.scheduler.ScheduledTaskSpec()
         scheduled_task_spec.name = self.module.params['scheduled_task_name'] or 'task_%s' % str(randint(10000, 99999))
-        scheduled_task_spec.description = self.module.params['scheduled_task_description'] or 'Scheduled task for vm %s for ' \
-        'operation %s at %s' % (self.vm.name, self.module.params['state'], scheduled_at)
+        default_desciption = 'Scheduled task for vm %s for operation %s at %s' % (self.vm.name, self.module.params['state'],
+                                                                                   scheduled_at)
         scheduled_task_spec.scheduler = vim.scheduler.OnceTaskScheduler()
+        scheduled_task_spec.description = self.module.params['scheduled_task_description'] or default_desciption
         scheduled_task_spec.scheduler.runAt = scheduled_date
         scheduled_task_spec.action = vim.action.MethodAction()
         scheduled_task_spec.action.name = powerstate[self.module.params['state']]
@@ -402,7 +403,7 @@ class VmPowerstateModule(ModulePyvmomiBase):
             return
         if not self.module.params['question_answers']:
             self.module.fail_json(msg="No answers provided for question %s, set answers using the question_answers option"
-                                        % self.vm.runtime.question.text)
+                                  % self.vm.runtime.question.text)
         self.result['changed'] = True
         if self.module.check_mode:
             return
@@ -435,7 +436,6 @@ def main():
                                       required=False,
                                       elements='dict',
                                       options=dict(
-                                          
                                           question=dict(type='str', required=True),
                                           response=dict(type='str', required=True)
                                       ))
