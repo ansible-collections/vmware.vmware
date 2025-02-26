@@ -203,7 +203,7 @@ class TestModulePyvmomiBase():
         self.base.get_esxi_host_by_name_or_moid('foo', fail_on_missing=True)
         mock_fail.assert_called_once()
 
-    def get_datastore_with_max_free_space(self, mocker):
+    def test_get_datastore_with_max_free_space(self, mocker):
         self.__prepare(mocker)
         # test found object
         ds1, ds2, ds3, ds4 = mocker.MagicMock()
