@@ -205,8 +205,7 @@ class TestModulePyvmomiBase():
 
     def test_get_datastore_with_max_free_space(self, mocker):
         self.__prepare(mocker)
-        # test found object
-        ds1, ds2, ds3, ds4 = mocker.MagicMock()
+        ds1, ds2, ds3, ds4, other = mocker.MagicMock(), mocker.MagicMock(), mocker.MagicMock(), mocker.MagicMock(), object()
         ds1.summary.freeSpace = 1
         ds2.summary.freeSpace = 100
         ds3.summary.freeSpace = 10
@@ -221,4 +220,4 @@ class TestModulePyvmomiBase():
         ds4.summary.accessible = False
 
         mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
-        assert self.base.get_datastore_with_max_free_space([ds1, ds2, ds3, ds4]) == ds2
+        assert self.base.get_datastore_with_max_free_space([ds1, ds2, ds3, ds4, other]) == ds2
