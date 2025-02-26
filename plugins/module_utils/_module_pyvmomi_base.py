@@ -385,9 +385,12 @@ class ModulePyvmomiBase(PyvmomiClient):
         datastore = None
         datastore_freespace = 0
         for ds in datastores:
-            if isinstance(ds, vim.Datastore) and ds.summary.freeSpace > datastore_freespace:
-                if ds.summary.maintenanceMode == 'normal' and ds.summary.accessible:
-                    datastore = ds
-                    datastore_freespace = ds.summary.freeSpace
+            try:
+                if ds.summary.freeSpace > datastore_freespace:
+                    if ds.summary.maintenanceMode == 'normal' and ds.summary.accessible:
+                        datastore = ds
+                        datastore_freespace = ds.summary.freeSpace
+            except AttributeError:
+                continue
 
         return datastore
