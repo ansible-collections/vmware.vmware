@@ -52,8 +52,7 @@ def exit_json(*args, **kwargs):
 
 
 def fail_json(*args, **kwargs):
-    if 'failed' not in kwargs:
-        kwargs['failed'] = True
+    kwargs['failed'] = True
     raise AnsibleFailJson(kwargs)
 
 
