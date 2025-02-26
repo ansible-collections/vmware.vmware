@@ -106,7 +106,7 @@ class VmQuestionHandler():
                 raise TaskError("Unanswered VM question: '%s'" % to_text(self.vm.runtime.question.text))
 
         responses = self.format_vm_question_responses()
-        self.send_vm_question_responses(self.vm, responses)
+        self.send_vm_question_responses(responses)
 
     def format_vm_question_responses(self):
         """

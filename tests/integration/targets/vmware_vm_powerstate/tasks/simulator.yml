@@ -1,0 +1,127 @@
+---
+# - name: Lookup Root Resource Pool ID
+#   ansible.builtin.set_fact:
+#     vcenter_rp_id: >-
+#       {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+#       vcenter_hostname=vcenter_hostname,
+#       vcenter_username=vcenter_username,
+#       vcenter_password=vcenter_password,
+#       vcenter_validate_certs=false,
+#       port=vcenter_port,
+#       ) }}
+
+# - name: Create a test resource pool
+#   vmware.vmware_rest.vcenter_resourcepool:
+#     vcenter_hostname: "{{ vcenter_hostname }}"
+#     vcenter_username: "{{ vcenter_username }}"
+#     vcenter_password: "{{ vcenter_password }}"
+#     port: "{{ vcenter_port }}"
+#     vcenter_validate_certs: false
+#     name: "{{ test_resource_pool }}"
+#     parent: "{{ vcenter_rp_id }}"
+#   register: _test_rp
+
+# - name: Deploy Virtual Machine from template in content library
+#   community.vmware.vmware_content_deploy_template:
+#     hostname: '{{ vcenter_hostname }}'
+#     username: '{{ vcenter_username }}'
+#     password: '{{ vcenter_password }}'
+#     port: "{{ vcenter_port }}"
+#     validate_certs: false
+#     template: "{{ rhel9_content_library_template }}"
+#     datastore: "{{ datastore }}"
+#     folder: "{{ vm_folder }}"
+#     datacenter: "{{ vcenter_datacenter }}"
+#     name: "{{ test_esxi_hostname }}"
+#     resource_pool: "{{ test_resource_pool }}"
+#     cluster: "{{ test_cluster }}"
+#     state: present
+
+- name: Set the state of a virtual machine to poweredon
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: powered-on
+  register: deploy
+
+- name: Restart the virtual machine
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: restarted
+
+- name: Power on a virtual machine with the question_answers param
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    validate_certs: false
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    question_answers:
+      - question: "msg.uuid.altered"
+        response: "button.uuid.copiedTheVM"
+    state: powered-on
+
+- name: Set the state of a virtual machine to poweroff using MoID
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    moid: "{{ deploy.vm.moid }}"
+    state: powered-off
+
+- name: Set the state of a virtual machine to poweron using MoID
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    moid: "{{ deploy.vm.moid }}"
+    state: powered-on
+
+- name: Suspend the virtual machine
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: suspended
+
+- name: Power on the virtual machine with force
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: powered-on
+    force: true
