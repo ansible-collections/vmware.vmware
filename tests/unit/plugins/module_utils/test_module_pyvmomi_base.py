@@ -58,3 +58,167 @@ class TestModulePyvmomiBase():
         mock_mor_2.propSet = [mock_prop_2]
         mocker.patch.object(self.base, 'get_managed_object_references', return_value=[mock_mor_2])
         assert self.base.get_objs_by_name_or_moid(vim.VirtualMachine, mock_prop.val) == []
+
+    def test_get_standard_portgroup_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_standard_portgroup_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_standard_portgroup_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_standard_portgroup_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_dvs_portgroup_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_dvs_portgroup_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_dvs_portgroup_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_dvs_portgroup_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_folders_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert len(self.base.get_folders_by_name_or_moid('foo')) == 1
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_folders_by_name_or_moid('foo') == []
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_folders_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_datastore_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_datastore_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_datastore_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_datastore_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_datastore_cluster_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_datastore_cluster_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_datastore_cluster_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_datastore_cluster_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_resource_pool_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_resource_pool_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_resource_pool_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_resource_pool_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_datacenter_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_datacenter_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_datacenter_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_datacenter_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_cluster_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_cluster_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_cluster_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_cluster_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def test_get_esxi_host_by_name_or_moid(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_esxi_host_by_name_or_moid('foo')
+
+        # test no object found, no failure
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        assert self.base.get_esxi_host_by_name_or_moid('foo') is None
+
+        # test fail on no object found
+        mock_fail = mocker.patch.object(self.base.module, 'fail_json')
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_esxi_host_by_name_or_moid('foo', fail_on_missing=True)
+        mock_fail.assert_called_once()
+
+    def get_datastore_with_max_free_space(self, mocker):
+        self.__prepare(mocker)
+        # test found object
+        ds1, ds2, ds3, ds4 = mocker.MagicMock()
+        ds1.summary.freeSpace = 1
+        ds2.summary.freeSpace = 100
+        ds3.summary.freeSpace = 10
+        ds4.summary.freeSpace = 1000
+        ds1.summary.maintenanceMode = 'normal'
+        ds1.summary.accessible = True
+        ds2.summary.maintenanceMode = 'normal'
+        ds2.summary.accessible = True
+        ds3.summary.maintenanceMode = 'normal'
+        ds3.summary.accessible = True
+        ds4.summary.maintenanceMode = 'normal'
+        ds4.summary.accessible = False
+
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        assert self.base.get_datastore_with_max_free_space([ds1, ds2, ds3, ds4]) == ds2
