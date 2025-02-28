@@ -8,6 +8,11 @@
 - name: Gather VM Resource Info
   vmware.vmware.vm_resource_info:
     name: "{{ vm_name }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
   register: _vm_info
 
 - name: Check Output
