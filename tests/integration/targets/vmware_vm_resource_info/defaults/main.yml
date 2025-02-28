@@ -1,0 +1,3 @@
+---
+run_on_simulator: false
+vm_name: eco-vcenter-server
