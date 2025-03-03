@@ -55,11 +55,11 @@ class TestInventoryUtilsBase():
     def test_update_cached_result(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(self.test_base, 'get_option', return_value=False)
-        assert self.test_base.update_cached_result(None, None, None) == None
+        assert self.test_base.update_cached_result(None, None, None) is None
 
         mocker.patch.object(self.test_base, 'get_option', return_value=True)
         self.test_base._cache = {'bizz': 'bar'}
-        assert self.test_base.update_cached_result(True, 'bizz', 'test') == None
+        assert self.test_base.update_cached_result(True, 'bizz', 'test') is None
         self.test_base.update_cached_result(True, 'foo', 'test')
         assert self.test_base._cache['foo'] == 'test'
 
