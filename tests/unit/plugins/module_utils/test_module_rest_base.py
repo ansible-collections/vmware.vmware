@@ -5,7 +5,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base im
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import (
     VmwareRestClient
 )
-from .common.utils import set_module_args
+from ...common.utils import set_module_args
 
 
 class TestModuleRestBase():

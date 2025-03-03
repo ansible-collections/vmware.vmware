@@ -6,7 +6,7 @@ import pytest
 
 from ansible_collections.vmware.vmware.plugins.modules import content_library_item_info
 
-from .common.utils import (
+from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
 

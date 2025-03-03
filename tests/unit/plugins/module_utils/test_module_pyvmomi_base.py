@@ -5,8 +5,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
     PyvmomiClient
 )
-from .common.utils import set_module_args
-from .common.vmware_object_mocks import MockCluster
+from ...common.utils import set_module_args
+from ...common.vmware_object_mocks import MockCluster
 
 
 class TestModulePyvmomiBase():
