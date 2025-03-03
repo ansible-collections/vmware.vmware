@@ -1,0 +1,4 @@
+---
+minor_change:
+  - esxi_hosts - Add inventory host filtering based on jinja statements
+  - vms - Add inventory host filtering based on jinja statements
