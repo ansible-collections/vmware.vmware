@@ -325,3 +325,22 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         if last_created_group:
             self.inventory.add_host(vmware_host_object.inventory_hostname, last_created_group)
+
+    def host_should_be_filtered_out(self, vmware_host_object):
+        """
+            Returns true if the provided host and properties cause any of the filter expressions
+            to evaluate to true. This indicates that the host should be removed from the final
+            inventory.
+            Returns false otherwise.
+        """
+        for jinja_expression in self.get_option('filter_expressions'):
+            try:
+                if self._compose(jinja_expression, vmware_host_object.properties):
+                    return True
+            except Exception as e:  # pylint: disable=broad-except
+                if self.get_option("strict"):
+                    raise AnsibleError(
+                        "Could not evaluate %s as host filter - %s" % (jinja_expression, to_native(e))
+                    )
+
+        return False
