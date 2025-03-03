@@ -1,31 +1,38 @@
 ---
-# VMs
 vmware.vmware.guest_info:
   query: >-
     .guests[] | {
-      name: (.moid + "-" + .instance_uuid),
+      name: .moid,
       canonical_facts: {
-        ansible_vmware_instance_uuid: .instance_uuid,
-        ansible_vmware_bios_uuid: .hw_product_uuid,
-        ansible_vmware_moid: .moid
+        name: .name,
+        moid: .moid,
+        esxi_host: .hw_esxi_host
       },
       facts: {
         device_type: "VM"
+      }
+    }, {
+      name: .hw_esxi_host,
+      facts: {
+        device_type: "ESXi"
       }
     }
 
 vmware.vmware.vm_list_group_by_clusters_info:
   query: >-
     .vm_list_group_by_clusters_info | values[] | values[] | values[] | {
-      name: (.moid + "-" + .instance_uuid),
+      name: .moid,
       canonical_facts: {
-        ansible_vmware_instance_uuid: .instance_uuid,
-        ansible_vmware_bios_uuid: .hw_product_uuid,
-        ansible_vmware_moid: .moid
+        name: .name,
+        moid: .moid,
+        esxi_host: .hw_esxi_host
       },
       facts: {
         device_type: "VM"
       }
+    }, {
+      name: .hw_esxi_host,
+      facts: {
+        device_type: "ESXi"
+      }
     }
-
-# ESXis
