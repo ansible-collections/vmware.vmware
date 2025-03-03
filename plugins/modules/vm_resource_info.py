@@ -268,7 +268,7 @@ class VmwareGuestInfo(ModulePyvmomiBase):
                     'memory': self._format_memory_stats_output(vm)
                 }
             }
-            all_vm_info += [info]
+            all_vm_info.append(info)
 
         return all_vm_info
 
