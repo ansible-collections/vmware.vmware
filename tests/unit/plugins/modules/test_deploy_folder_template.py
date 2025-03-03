@@ -14,10 +14,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import (
     VmwareRestClient
 )
-from .common.utils import (
+from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
-from .common.vmware_object_mocks import (
+from ...common.vmware_object_mocks import (
     MockVmwareObject
 )
 

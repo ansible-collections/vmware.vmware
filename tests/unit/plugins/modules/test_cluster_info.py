@@ -12,10 +12,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
     PyvmomiClient
 )
 
-from .common.utils import (
+from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args
 )
-from .common.vmware_object_mocks import MockCluster
+from ...common.vmware_object_mocks import MockCluster
 
 pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"

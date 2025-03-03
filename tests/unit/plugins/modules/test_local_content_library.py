@@ -11,7 +11,7 @@ from ansible_collections.vmware.vmware.plugins.modules.local_content_library imp
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
-from .common.utils import (
+from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
 

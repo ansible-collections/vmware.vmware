@@ -11,7 +11,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
     PyvmomiClient
 )
 
-from .common.vmware_object_mocks import (
+from ...common.vmware_object_mocks import (
     MockVmwareObject
 )
 
