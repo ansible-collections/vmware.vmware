@@ -108,5 +108,14 @@ options:
       - This option also transforms property names to snake case. For example, powerState would become power_state.
     type: bool
     default: false
-
+  filter_expressions:
+    description:
+      - A list of jinja expressions to filter out hosts from the final inventory.
+      - If any of the expressions evaluate to True, the host will not be included in the inventory.
+      - This filtering is done after the host information has been collected from vSphere. It does not affect
+        the speed of the inventory plugin. For faster collection time, refer to the O(search_paths) option.
+    type: list
+    elements: list
+    default: []
+    aliases: ['filters']
 '''

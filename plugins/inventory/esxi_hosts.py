@@ -59,6 +59,10 @@ properties: ["name", "capability"]
 groups:
   vmotion_supported: capability.vmotionSupported
 
+# Filter out hosts using jinja patterns. For example, filter out powered off hosts
+filter_expressions:
+  - 'summary.runtime.powerState == "poweredOff"'
+
 # Only gather hosts found in certain paths
 search_paths:
   - /DC1/host/ClusterA
@@ -243,6 +247,8 @@ class InventoryModule(VmwareInventoryBase):
         return hostvars
 
     def __update_inventory(self, esxi_host):
+        if self.host_should_be_filtered_out(esxi_host):
+            return
         self.add_host_to_inventory(esxi_host)
         self.add_host_to_groups_based_on_path(esxi_host)
         self.set_host_variables_from_host_properties(esxi_host)

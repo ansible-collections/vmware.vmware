@@ -76,6 +76,9 @@ search_paths:
   - /DC1/vm/ClusterA
   - /DC1/vm/ClusterC
   - /DC3
+# Filter out VMs using jinja patterns. For example, filter out powered off VMs
+filter_expressions:
+  - 'summary.runtime.powerState == "poweredOff"'
 # Set custom inventory hostnames based on attributes
 hostnames:
   - "'VM - ' + name + ' - ' + guest.ipAddress"
