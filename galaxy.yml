@@ -13,7 +13,7 @@ tags:
   - vmware
   - virtualization
 repository: https://github.com/ansible-collections/vmware.vmware
-#documentation: https://github.com/ansible-collection-migration/community.REPO_NAME/tree/main/docs
+documentation: https://github.com/ansible-collections/vmware.vmware/blob/main/README.md
 homepage: https://github.com/ansible-collections/vmware.vmware
 issues: https://github.com/ansible-collections/vmware.vmware/issues
 build_ignore:
