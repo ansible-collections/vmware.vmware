@@ -30,11 +30,9 @@ class TestPyvmomiClient():
 
     def __prepare_client(self):
         return PyvmomiClient(
-            {
-                'hostname': 'a',
-                'username': 'a',
-                'password': 'a',
-            }
+            hostname='a',
+            username='a',
+            password='a'
         )
 
     def test_class_init(self, mocker):
@@ -49,16 +47,16 @@ class TestPyvmomiClient():
             'http_proxy_port': 443
         }
 
-        PyvmomiClient(init_args)
+        PyvmomiClient(**init_args)
 
         with pytest.raises(ApiAccessError):
-            PyvmomiClient({**init_args, **{'hostname': ''}})
+            PyvmomiClient(**{**init_args, **{'hostname': ''}})
 
         with pytest.raises(ApiAccessError):
-            PyvmomiClient({**init_args, **{'username': ''}})
+            PyvmomiClient(**{**init_args, **{'username': ''}})
 
         with pytest.raises(ApiAccessError):
-            PyvmomiClient({**init_args, **{'password': ''}})
+            PyvmomiClient(**{**init_args, **{'password': ''}})
 
     def test_get_all_objs_by_type(self, mocker):
         self.__prepare(mocker)

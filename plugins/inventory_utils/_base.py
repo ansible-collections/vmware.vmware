@@ -98,15 +98,15 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         username, password = self.get_credentials_from_options()
 
         try:
-            self.pyvmomi_client = PyvmomiClient({
-                'hostname': self.get_option("hostname"),
-                'username': username,
-                'password': password,
-                'port': self.get_option("port"),
-                'validate_certs': self.get_option("validate_certs"),
-                'http_proxy_host': self.get_option("proxy_host"),
-                'http_proxy_port': self.get_option("proxy_port")
-            })
+            self.pyvmomi_client = PyvmomiClient(
+                hostname=self.get_option("hostname"),
+                username=username,
+                password=password,
+                port=self.get_option("port"),
+                validate_certs=self.get_option("validate_certs"),
+                http_proxy_host=self.get_option("proxy_host"),
+                http_proxy_port=self.get_option("proxy_port")
+            )
         except Exception as e:
             raise AnsibleParserError(message=to_native(e))
 

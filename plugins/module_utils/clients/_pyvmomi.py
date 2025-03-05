@@ -31,14 +31,20 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._errors impo
 
 
 class PyvmomiClient():
-    def __init__(self, connection_params):
+    def __init__(self, hostname, username, password, port=443, validate_certs=True, http_proxy_host=None, http_proxy_port=None, **_):
         self.check_requirements()
-        self.si, self.content = self.connect_to_api(connection_params, return_si=True)
+        self.hostname = hostname
+        self.username = username
+        self.port = port
+        self.validate_certs = validate_certs
+        self.http_proxy_host = http_proxy_host
+        self.http_proxy_port = http_proxy_port
+        self.si, self.content = self.connect_to_api(password=password, return_si=True)
         self.custom_field_mgr = []
         if self.content.customFieldsManager:  # not an ESXi
             self.custom_field_mgr = self.content.customFieldsManager.field
 
-    def connect_to_api(self, connection_params, disconnect_atexit=True, return_si=False):
+    def connect_to_api(self, password, disconnect_atexit=True, return_si=False):
         """
         Connect to the vCenter/ESXi client using the pyvmomi SDK. This creates a service instance
         which can then be used programmatically to make calls to the vCenter or ESXi
@@ -56,28 +62,21 @@ class PyvmomiClient():
                 service_instance.RetrieveContent()
 
         """
-        hostname = connection_params.get('hostname')
-        username = connection_params.get('username')
-        password = connection_params.get('password')
-        port = connection_params.get('port')
-        validate_certs = connection_params.get('validate_certs')
-        http_proxy_host = connection_params.get('http_proxy_host')
-        http_proxy_port = connection_params.get('http_proxy_port')
-
-        self.__validate_required_connection_params(hostname, username, password)
-        ssl_context = self.__set_ssl_context(validate_certs)
+        self._password = password
+        self.__validate_required_connection_params()
+        ssl_context = self.__set_ssl_context()
 
         service_instance = None
 
         connection_args = dict(
-            host=hostname,
-            port=port,
+            host=self.hostname,
+            port=self.port,
         )
         if ssl_context:
             connection_args.update(sslContext=ssl_context)
 
-        service_instance = self.__create_service_instance(
-            connection_args, username, password, http_proxy_host, http_proxy_port)
+        service_instance = self.__create_service_instance(connection_args)
+        self._password = None
 
         # Disabling atexit should be used in special cases only.
         # Such as IP change of the ESXi host which removes the connection anyway.
@@ -88,40 +87,40 @@ class PyvmomiClient():
             return service_instance, service_instance.RetrieveContent()
         return service_instance.RetrieveContent()
 
-    def __validate_required_connection_params(self, hostname, username, password):
+    def __validate_required_connection_params(self):
         """
         Validate the user provided the required connection parameters and throw an error
         if they were not found. Usually the module/plugin validation will do this first so
         this is more of a safety/sanity check.
         """
-        if not hostname:
+        if not self.hostname:
             raise ApiAccessError((
                 "Hostname parameter is missing. Please specify this parameter in task or "
                 "export environment variable like 'export VMWARE_HOST=ESXI_HOSTNAME'"
             ))
 
-        if not username:
+        if not self.username:
             raise ApiAccessError((
                 "Username parameter is missing. Please specify this parameter in task or "
                 "export environment variable like 'export VMWARE_USER=ESXI_USERNAME'"
             ))
 
-        if not password:
+        if not self._password:
             raise ApiAccessError((
                 "Password parameter is missing. Please specify this parameter in task or "
                 "export environment variable like 'export VMWARE_PASSWORD=ESXI_PASSWORD'"
             ))
 
-    def __set_ssl_context(self, validate_certs):
+    def __set_ssl_context(self):
         """
         Configure SSL context settings, depending on user inputs
         """
-        if validate_certs and not hasattr(ssl, 'SSLContext'):
+        if self.validate_certs and not hasattr(ssl, 'SSLContext'):
             raise ApiAccessError((
                 'pyVim does not support changing verification mode with python < 2.7.9. '
                 'Either update python or use validate_certs=false.'
             ))
-        elif validate_certs:
+        elif self.validate_certs:
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
             ssl_context.verify_mode = ssl.CERT_REQUIRED
             ssl_context.check_hostname = True
@@ -135,33 +134,33 @@ class PyvmomiClient():
 
         return ssl_context
 
-    def __create_service_instance(self, connection_args, username, password, http_proxy_host, http_proxy_port):
+    def __create_service_instance(self, connection_args):
         """
         Attempt to connect to the vCenter/ESXi host and pass the resulting service instance back
         """
         error_msg_suffix = ''
         try:
-            if http_proxy_host:
-                error_msg_suffix = " [proxy: %s:%s]" % (http_proxy_host, http_proxy_port)
-                connection_args.update(httpProxyHost=http_proxy_host, httpProxyPort=http_proxy_port)
+            if self.http_proxy_host:
+                error_msg_suffix = " [proxy: %s:%s]" % (self.http_proxy_host, self.http_proxy_port)
+                connection_args.update(httpProxyHost=self.http_proxy_host, httpProxyPort=self.http_proxy_port)
                 smart_stub = connect.SmartStubAdapter(**connection_args)
                 session_stub = connect.VimSessionOrientedStub(
-                    smart_stub, connect.VimSessionOrientedStub.makeUserLoginMethod(username, password)
+                    smart_stub, connect.VimSessionOrientedStub.makeUserLoginMethod(self.username, self._password)
                 )
                 service_instance = vim.ServiceInstance('ServiceInstance', session_stub)
             else:
-                connection_args.update(user=username, pwd=password)
+                connection_args.update(user=self.username, pwd=self._password)
                 service_instance = connect.SmartConnect(**connection_args)
         except vim.fault.InvalidLogin as e:
             raise ApiAccessError((
                 "Unable to log on to the vCenter or ESXi API at %s:%s as %s: %s" %
-                (connection_args['host'], connection_args['port'], username, e.msg) +
+                (connection_args['host'], connection_args['port'], self.username, e.msg) +
                 error_msg_suffix
             ))
         except vim.fault.NoPermission as e:
             raise ApiAccessError((
                 "User %s does not have the required permissions to log on to the vCenter or ESXi API at %s:%s : %s" %
-                (username, connection_args['host'], connection_args['port'], e.msg)
+                (self.username, connection_args['host'], connection_args['port'], e.msg)
             ))
         except (requests.ConnectionError, ssl.SSLError) as e:
             raise ApiAccessError((

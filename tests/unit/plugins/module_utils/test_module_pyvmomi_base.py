@@ -14,9 +14,9 @@ class TestModulePyvmomiBase():
     def __prepare(self, mocker):
         mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
         set_module_args()
-        self.base = ModulePyvmomiBase(
-            module=mocker.Mock()
-        )
+        module=mocker.Mock()
+        module.params = {"hostname": "a", "username": "b", "password": "c"}
+        self.base = ModulePyvmomiBase(module=module)
 
     def test_is_vcenter(self, mocker):
         self.__prepare(mocker)

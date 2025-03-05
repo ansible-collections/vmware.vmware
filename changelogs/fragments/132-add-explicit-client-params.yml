@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - clients/_pyvmomi - adds explicit init params instead of using dict

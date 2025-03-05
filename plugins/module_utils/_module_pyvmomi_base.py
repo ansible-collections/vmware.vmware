@@ -20,7 +20,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
 
 class ModulePyvmomiBase(PyvmomiClient):
     def __init__(self, module):
-        super().__init__(module.params)
+        super().__init__(**module.params)
         self.module = module
         self.params = module.params
 
