@@ -120,16 +120,16 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         username, password = self.get_credentials_from_options()
 
         try:
-            self.rest_client = VmwareRestClient({
-                'hostname': self.get_option("hostname"),
-                'username': username,
-                'password': password,
-                'port': self.get_option("port"),
-                'validate_certs': self.get_option("validate_certs"),
-                'http_proxy_host': self.get_option("proxy_host"),
-                'http_proxy_port': self.get_option("proxy_port"),
-                'http_proxy_protocol': self.get_option("proxy_protocol")
-            })
+            self.rest_client = VmwareRestClient(
+                hostname=self.get_option("hostname"),
+                username=username,
+                password=password,
+                port=self.get_option("port"),
+                validate_certs=self.get_option("validate_certs"),
+                http_proxy_host=self.get_option("proxy_host"),
+                http_proxy_port=self.get_option("proxy_port"),
+                http_proxy_protocol=self.get_option("proxy_protocol")
+            )
         except Exception as e:
             raise AnsibleParserError(message=to_native(e))
 

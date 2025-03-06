@@ -10,11 +10,9 @@ class TestRestClient():
         client_mock = mocker.patch('ansible_collections.vmware.vmware.plugins.module_utils.clients._rest.create_vsphere_client')
         client_mock.return_value = mocker.Mock()
         self.client = VmwareRestClient(
-            {
-                'hostname': 'a',
-                'username': 'a',
-                'password': 'a',
-            }
+            hostname='a',
+            username='a',
+            password='a',
         )
 
     def test_get_tags_by_moid(self, mocker):
