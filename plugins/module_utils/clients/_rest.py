@@ -44,9 +44,19 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._errors impo
 
 
 class VmwareRestClient():
-    def __init__(self, connection_params):
+    def __init__(
+            self, hostname, username, password, port=443, validate_certs=True,
+            http_proxy_host=None, http_proxy_port=None, http_proxy_protocol=None, **_
+        ):
         self.check_requirements()
-        self.api_client = self.connect_to_api(connection_params)
+        self.hostname = hostname
+        self.username = username
+        self.port = port
+        self.validate_certs = validate_certs
+        self.http_proxy_host = http_proxy_host
+        self.http_proxy_port = http_proxy_port
+        self.http_proxy_protocol = http_proxy_protocol
+        self.api_client = self.connect_to_api(password=password)
 
         self.library_service = self.api_client.content.Library
         self.library_item_service = self.api_client.content.library.Item
@@ -67,83 +77,78 @@ class VmwareRestClient():
                 url='https://code.vmware.com/web/sdk/7.0/vsphere-automation-python'
             )
 
-    def connect_to_api(self, connection_params):
+    def connect_to_api(self, password):
         """
         Connect to the vCenter/ESXi client using the REST SDK. This creates a service instance
         which can then be used programmatically to make calls to vCenter or ESXi
         Args:
-            connection_params: dict, A dictionary with different authentication or connection parameters like
-                               username, password, hostname, etc. The full list is found in the method below.
+            password: str, The password to use to authenticate to the REST API. The password
+                      will not be stored as a class attribute, unlike the other connections
+                      parameters.
         Returns:
             Authenticated REST client instance
 
         """
-        hostname = connection_params.get('hostname')
-        username = connection_params.get('username')
-        password = connection_params.get('password')
-        port = connection_params.get('port', 443)
-        validate_certs = connection_params.get('validate_certs')
-        http_proxy_host = connection_params.get('http_proxy_host')
-        http_proxy_port = connection_params.get('http_proxy_port')
-        http_proxy_protocol = connection_params.get('http_proxy_protocol')
-
-        self.__validate_required_connection_params(hostname, username, password)
+        self._password = password
+        self.__validate_required_connection_params()
 
         session = requests.Session()
+        self.__configure_session_ssl_context(session)
+        self.__configure_session_proxies(session)
+        client = self.__create_client_connection(session)
 
-        self.__configure_session_ssl_context(session, validate_certs)
-        self.__configure_session_proxies(session, http_proxy_host, http_proxy_port, http_proxy_protocol)
-        return self.__create_client_connection(session, hostname, username, password, port)
+        self._password = None
+        return client
 
-    def __validate_required_connection_params(self, hostname, username, password):
+    def __validate_required_connection_params(self):
         """
         Validate the user provided the required connection parameters and throw an error
         if they were not found. Usually the module/plugin validation will do this first so
         this is more of a safety/sanity check.
         """
-        if not hostname:
+        if not self.hostname:
             raise ApiAccessError((
                 "Hostname parameter is missing. Please specify this parameter in task or "
                 "export environment variable like 'export VMWARE_HOST=ESXI_HOSTNAME'"
             ))
 
-        if not username:
+        if not self.username:
             raise ApiAccessError((
                 "Username parameter is missing. Please specify this parameter in task or "
                 "export environment variable like 'export VMWARE_USER=ESXI_USERNAME'"
             ))
 
-        if not password:
+        if not self._password:
             raise ApiAccessError((
                 "Password parameter is missing. Please specify this parameter in task or "
                 "export environment variable like 'export VMWARE_PASSWORD=ESXI_PASSWORD'"
             ))
 
-    def __configure_session_ssl_context(self, session, validate_certs):
-        session.verify = validate_certs
+    def __configure_session_ssl_context(self, session):
+        session.verify = self.validate_certs
 
-        if not validate_certs:
+        if not self.validate_certs:
             if HAS_URLLIB3:
                 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    def __configure_session_proxies(self, session, http_proxy_host, http_proxy_port, http_proxy_protocol):
-        if all([http_proxy_host, http_proxy_port, http_proxy_protocol]):
+    def __configure_session_proxies(self, session):
+        if all([self.http_proxy_host, self.http_proxy_port, self.http_proxy_protocol]):
             http_proxies = {
-                http_proxy_protocol: (
+                self.http_proxy_protocol: (
                     "{%s}://{%s}:{%s}" %
-                    http_proxy_protocol, http_proxy_host, http_proxy_port
+                    self.http_proxy_protocol, self.http_proxy_host, self.http_proxy_port
                 )
             }
 
             session.proxies.update(http_proxies)
 
-    def __create_client_connection(self, session, hostname, username, password, port):
-        msg = "Failed to connect to vCenter or ESXi API at %s:%s" % (hostname, port)
+    def __create_client_connection(self, session):
+        msg = "Failed to connect to vCenter or ESXi API at %s:%s" % (self.hostname, self.port)
         try:
             client = create_vsphere_client(
-                server="%s:%s" % (hostname, port),
-                username=username,
-                password=password,
+                server="%s:%s" % (self.hostname, self.port),
+                username=self.username,
+                password=self._password,
                 session=session
             )
         except requests.exceptions.SSLError as e:
@@ -153,7 +158,7 @@ class VmwareRestClient():
             raise ApiAccessError("%s : %s" % (msg, to_native(e)))
 
         if client is None:
-            raise ApiAccessError("Failed to login to %s" % hostname)
+            raise ApiAccessError("Failed to login to %s" % self.hostname)
 
         return client
 

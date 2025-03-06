@@ -26,7 +26,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import
 
 class ModuleRestBase(VmwareRestClient):
     def __init__(self, module):
-        super().__init__(connection_params=module.params)
+        super().__init__(**module.params)
         self.module = module
         self.params = module.params
 

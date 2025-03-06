@@ -1,3 +1,4 @@
 ---
 minor_changes:
   - clients/_pyvmomi - adds explicit init params instead of using dict
+  - clients/_rest - adds explicit init params instead of using dict
