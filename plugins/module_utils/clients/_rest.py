@@ -45,9 +45,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._errors impo
 
 class VmwareRestClient():
     def __init__(
-            self, hostname, username, password, port=443, validate_certs=True,
-            http_proxy_host=None, http_proxy_port=None, http_proxy_protocol=None, **_
-        ):
+        self, hostname, username, password, port=443, validate_certs=True,
+        http_proxy_host=None, http_proxy_port=None, http_proxy_protocol=None, **_
+    ):
         self.check_requirements()
         self.hostname = hostname
         self.username = username
