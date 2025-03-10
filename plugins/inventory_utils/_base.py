@@ -67,6 +67,7 @@ class VmwareInventoryHost(ABC):
     def get_properties_from_pyvmomi(self, properties_to_gather, pyvmomi_client):
         properties = vmware_obj_to_json(self.object, properties_to_gather)
         properties['path'] = self.path
+        properties['moid'] = self.object._GetMoId()
 
         # Custom values
         if hasattr(self.object, "customValue"):
