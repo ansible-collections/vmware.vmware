@@ -136,8 +136,10 @@ class TestVmPowerstate(ModuleTestCase):
             scheduled_task_enabled=True
         )
 
-        with pytest.raises(AnsibleFailJson) as c:
+        with pytest.raises(AnsibleExitJson) as c:
             module_main()
+        
+        assert c.value.args[0]["failed"] is True
 
     def test_scheduled_power_off(self, mocker):
         self.__prepare(mocker)
