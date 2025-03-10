@@ -11,7 +11,7 @@ from ansible_collections.vmware.vmware.plugins.modules.vm_snapshot import (
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
     PyvmomiClient
 )
-from .common.utils import (
+from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor
