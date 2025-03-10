@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vms inventory - include moid property in output always
+  - esxi_hosts inventory - include moid property in output always
