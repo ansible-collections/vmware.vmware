@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, AnsibleFailJson, ModuleTestCase, set_module_args,
+    AnsibleExitJson, ModuleTestCase, set_module_args,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor, VmQuestionHandler
 
