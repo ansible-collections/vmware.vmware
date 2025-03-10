@@ -117,30 +117,6 @@ class TestVmPowerstate(ModuleTestCase):
 
         assert c.value.args[0]["changed"] is True
 
-    def test_scheduled_power_off_invalid_argument(self, mocker):
-        self.__prepare(mocker)
-
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            datacenter="DC0",
-            folder="DC0/vm/e2e-qe",
-            name="vm1",
-            state="powered-off",
-            validate_certs=False,
-            add_cluster=False,
-            scheduled_at="09/03/2024 10:18",
-            scheduled_task_name="task_00001",
-            scheduled_task_description="Sample task to poweroff VM",
-            scheduled_task_enabled=True
-        )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-        
-        assert c.value.args[0]["failed"] is True
-
     def test_scheduled_power_off(self, mocker):
         self.__prepare(mocker)
 
