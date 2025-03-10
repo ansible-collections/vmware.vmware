@@ -1,0 +1,19 @@
+run_on_simulator: false
+
+vm: "{{ tiny_prefix }}-vm"
+vm_cluster: "{{ vcenter_cluster_name }}"
+vm_datacenter: "{{ vcenter_datacenter }}"
+vm_folder: "/{{ vcenter_datacenter }}/vm/e2e-qe"
+vm_guest_id: "rhel8_64Guest"
+vm_disk:
+  - size_gb: 10
+    type: thin
+    autoselect_datastore: true
+vm_hardware:
+  memory_mb: 2000
+  num_cpus: 2
+  boot_firmware: efi
+
+datastore: "{{ shared_storage_02 }}"
+library: "{{ tiny_prefix }}-content-library"
+test_resource_pool: "{{ tiny_prefix }}_vm_powerstate"
