@@ -7,10 +7,13 @@ import pytest
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.inventory_utils._base import (
-    VmwareInventoryBase
+    VmwareInventoryBase,
+    VmwareInventoryHost
 )
 from ansible.errors import AnsibleError
-
+from ...common.vmware_object_mocks import (
+    create_mock_vsphere_object,
+)
 pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"
 )
@@ -83,3 +86,34 @@ class TestInventoryUtilsBase():
         ])
         with pytest.raises(AnsibleError):
             self.test_base.host_should_be_filtered_out(test_obj)
+
+
+class TestVmwareInventoryHost():
+    class TestHost(VmwareInventoryHost):
+        def __init__(self):
+            super().__init__()
+            self._guest_ip = None
+
+        def get_tags(self, rest_client):
+            pass
+
+    def __prepare(self, mocker):
+        self.test_host = self.TestHost()
+
+    def test_get_properties_from_pyvmomi(self, mocker):
+        self.__prepare(mocker)
+        self.test_host.object = create_mock_vsphere_object()
+        cust_val = mocker.Mock()
+        cust_val.key, cust_val.value = "foo", "bar"
+        self.test_host.object.customValue = [cust_val]
+
+        pyvmomi_client = mocker.Mock()
+        field = mocker.Mock()
+        field.name, field.key = "bizz", "foo"
+        pyvmomi_client.custom_field_mgr = [field]
+        mocker.patch('ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json', return_value={})
+
+        properties = self.test_host.get_properties_from_pyvmomi([], pyvmomi_client)
+        print(properties)
+        assert properties['moid'] == self.test_host.object._GetMoId()
+        assert properties['customValue']['bizz'] == "bar"
