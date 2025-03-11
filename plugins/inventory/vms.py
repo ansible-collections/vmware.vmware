@@ -279,6 +279,8 @@ class InventoryModule(VmwareInventoryBase):
         return hostvars
 
     def __update_inventory(self, vm):
+        if self.host_should_be_filtered_out(vm):
+            return
         self.add_host_to_inventory(vm)
         self.add_host_to_groups_based_on_path(vm)
         self.set_host_variables_from_host_properties(vm)
