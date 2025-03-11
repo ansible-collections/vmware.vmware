@@ -89,8 +89,8 @@ class TestVmSnapshot(ModuleTestCase):
             name="vm1",
             state="rename",
             snapshot_name="snap1",
-            new_snapshot_name= "im_renamed",
-            new_description= "im_redescribed",
+            new_snapshot_name="im_renamed",
+            new_description="im_redescribed",
             description="snap1_description",
             validate_certs=False,
             add_cluster=False

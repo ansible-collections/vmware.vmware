@@ -244,17 +244,6 @@ snapshot_results:
             id: 4
             name: snapshot4
             state: poweredOff
-        snapshots:
-            - creation_time: 2019-04-09T14:38:24.667543+00:00
-                description: Snapshot 4 example
-                id: 4
-                name: snapshot4
-                state: poweredOff
-            - creation_time: 2019-04-09T14:40:26.617427+00:00
-                description: Snapshot 4 example
-                id: 4
-                name: snapshot4
-                state: poweredOff
 '''
 
 try:
@@ -293,14 +282,13 @@ class VmSnapshotModule(ModulePyvmomiBase):
         if self.vm.snapshot is None:
             self.snap_object = None
         else:
-            self.snap_object = self.get_snapshots_recursively()
-            if len(self.snap_object) == 1:
-                self.snap_object = self.snap_object[0].snapshot
-            else:
-                self.snap_object = None
-        self.vm_id = self.module.params.get('uuid') or self.module.params.get('name') or self.module.params.get('moid')
-        if not self.vm:
-            module.fail_json(msg="Unable to manage snapshots for non-existing VM %s" % self.vm_id)
+            if self.params["snapshot_name"]:
+                self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
+                                                            self.params["snapshot_name"])
+            elif self.params["snapshot_id"] and self.params["state"] in ['absent', 'revert']:
+                self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
+                                                            self.params["snapshot_id"])
+        self.vm_id = self.params.get('uuid') or self.params.get('name') or self.params.get('moid')
 
         if not (module.params['snapshot_name'] or module.params['snapshot_id']) and module.params['state'] != 'remove_all':
             module.fail_json(msg="snapshot_name param required when state is '%(state)s'" % module.params)
@@ -315,28 +303,13 @@ class VmSnapshotModule(ModulePyvmomiBase):
                 return None
         return result
 
-    def deserialize_snapshot_obj(self, obj):
+    def serialize_snapshot_obj_to_json(self, obj):
         return {'id': obj.id,
                 'name': obj.name,
                 'description': obj.description,
                 'creation_time': obj.createTime,
                 'state': obj.state,
                 'quiesced': obj.quiesced}
-
-    def list_snapshots_recursively(self, snapshots):
-        snapshot_data = []
-        for snapshot in snapshots:
-            snapshot_data.append(self.deserialize_snapshot_obj(snapshot))
-            snapshot_data = snapshot_data + self.list_snapshots_recursively(snapshot.childSnapshotList)
-        return snapshot_data
-
-    def get_current_snap_obj(self, snapshots, snapob):
-        snap_obj = []
-        for snapshot in snapshots:
-            if snapshot.snapshot == snapob:
-                snap_obj.append(snapshot)
-            snap_obj = snap_obj + self.get_current_snap_obj(snapshot.childSnapshotList, snapob)
-        return snap_obj
 
     def list_snapshots(self, vm):
         result = {}
@@ -346,51 +319,31 @@ class VmSnapshotModule(ModulePyvmomiBase):
         if vm.snapshot is None:
             return result
 
-        result['snapshots'] = self.list_snapshots_recursively(vm.snapshot.rootSnapshotList)
-        current_snapref = vm.snapshot.currentSnapshot
-        current_snap_obj = self.get_current_snap_obj(vm.snapshot.rootSnapshotList, current_snapref)
+        current_snap_obj = self.get_snapshots_by_identifier_recursively(vm.snapshot.rootSnapshotList, vm.snapshot.currentSnapshot)
         if current_snap_obj:
-            result['current_snapshot'] = self.deserialize_snapshot_obj(current_snap_obj[0])
+            result['current_snapshot'] = self.serialize_snapshot_obj_to_json(current_snap_obj)
         else:
             result['current_snapshot'] = dict()
         return result
 
-    def get_snapshots_by_name_recursively(self, snapshots, snapname):
-        snap_obj = []
+    def get_snapshots_by_identifier_recursively(self, snapshots, snapidentifier):
         for snapshot in snapshots:
-            if snapshot.name == snapname:
-                snap_obj.append(snapshot)
+            if snapidentifier in [snapshot.name, snapshot.id, snapshot.snapshot]:
+                return snapshot
             else:
-                snap_obj = snap_obj + self.get_snapshots_by_name_recursively(snapshot.childSnapshotList, snapname)
-        return snap_obj
-
-    def get_snapshots_by_id_recursively(self, snapshots, snapid):
-        snap_obj = []
-        for snapshot in snapshots:
-            if snapshot.id == snapid:
-                snap_obj.append(snapshot)
-            else:
-                snap_obj = snap_obj + self.get_snapshots_by_id_recursively(snapshot.childSnapshotList, snapid)
-        return snap_obj
-
-    def get_snapshots_recursively(self):
-        if self.module.params["snapshot_name"]:
-            return self.get_snapshots_by_name_recursively(self.vm.snapshot.rootSnapshotList,
-                                                              self.module.params["snapshot_name"])
-        elif self.module.params["snapshot_id"] and self.module.params["state"] in ['absent', 'revert']:
-            return self.get_snapshots_by_id_recursively(self.vm.snapshot.rootSnapshotList,
-                                                            self.module.params["snapshot_id"])
+                self.get_snapshots_by_name_recursively(snapshot.childSnapshotList, snapidentifier)
+        return None
 
     def snapshot_vm(self):
         if self.snap_object:
             self.module.exit_json(changed=False,
-                                  msg="Snapshot named [%(snapshot_name)s] already exists" % self.module.params)
+                                  msg="Snapshot named [%(snapshot_name)s] already exists" % self.params)
 
-        memory_dump = self.module.params['memory_dump'] and self.vm.capability.memorySnapshotsSupported
-        quiesce = self.module.params['quiesce'] and self.vm.capability.quiescedSnapshotsSupported
+        memory_dump = self.params['memory_dump'] and self.vm.capability.memorySnapshotsSupported
+        quiesce = self.params['quiesce'] and self.vm.capability.quiescedSnapshotsSupported
         try:
-            return self.vm.CreateSnapshot(self.module.params["snapshot_name"],
-                                          self.module.params["description"],
+            return self.vm.CreateSnapshot(self.params["snapshot_name"],
+                                          self.params["description"],
                                           memory_dump,
                                           quiesce)
         except vim.fault.RestrictedVersion as e:
@@ -398,25 +351,25 @@ class VmSnapshotModule(ModulePyvmomiBase):
                                       " restriction : %s" % to_native(e.msg))
         except Exception as e:
             self.module.fail_json(msg="Failed to create snapshot of virtual machine"
-                                      " %s due to %s" % (self.module.params['name'], to_native(e)))
+                                      " %s due to %s" % (self.params['name'], to_native(e)))
 
     def rename_snapshot(self):
-        if self.module.params["new_snapshot_name"] and self.module.params["new_description"]:
-            task = self.snap_object.RenameSnapshot(name=self.module.params["new_snapshot_name"],
-                                            description=self.module.params["new_description"])
-        elif self.module.params["new_snapshot_name"]:
-            task = self.snap_object.RenameSnapshot(name=self.module.params["new_snapshot_name"])
+        if self.params["new_snapshot_name"] and self.params["new_description"]:
+            task = self.snap_object.RenameSnapshot(name=self.params["new_snapshot_name"],
+                                                   description=self.params["new_description"])
+        elif self.params["new_snapshot_name"]:
+            task = self.snap_object.RenameSnapshot(name=self.params["new_snapshot_name"])
         else:
-            task = self.snap_object.RenameSnapshot(description=self.module.params["new_description"])
+            task = self.snap_object.RenameSnapshot(description=self.params["new_description"])
 
         self.result['renamed'] = True
         return task
 
     def apply_snapshot_op(self):
-        if self.module.params["state"] in ["absent", "revert", "rename", "remove_all"] and self.snap_object is None:
+        if self.params["state"] in ["absent", "revert", "rename", "remove_all"] and self.snap_object is None:
             self.module.exit_json(changed=False,
-                msg="Couldn't find any snapshots with specified name: %s on VM: %s" %
-                    (self.module.params["snapshot_name"] or self.module.params["snapshot_id"], self.vm_id))
+                                  msg="Couldn't find any snapshots with specified name: %s on VM: %s" %
+                                  (self.params["snapshot_name"] or self.params["snapshot_id"], self.vm_id))
 
         if self.module.check_mode:
             self.result['changed'] = True
@@ -425,22 +378,17 @@ class VmSnapshotModule(ModulePyvmomiBase):
         snapshot_state_function = {
             'present': lambda: self.snapshot_vm(),
             'rename': lambda: self.rename_snapshot(),
-            'absent': lambda: self.snap_object.RemoveSnapshot_Task(self.module.params.get('remove_children', False)),
+            'absent': lambda: self.snap_object.RemoveSnapshot_Task(self.params.get('remove_children', False)),
             'revert': lambda: self.snap_object.RevertToSnapshot_Task(),
             'remove_all': lambda: self.vm.RemoveAllSnapshots()
         }
 
         try:
-            task = snapshot_state_function[self.module.params['state']]()
-        except Exception as e:
-            self.module.fail_json(msg=to_text(e))
-
-        if not task:
-            return
-
-        try:
+            task = snapshot_state_function[self.params['state']]()
+            if not task:
+                return
             success, task_result = RunningTaskMonitor(task).wait_for_completion(vm=self.vm)
-        except TaskError as e:
+        except Exception as e:
             self.module.fail_json(msg=to_text(e))
 
         self.result['changed'] = True
@@ -470,6 +418,12 @@ def main():
             )
         },
         supports_check_mode=True,
+        required_if=[
+            ['state', 'present', ('snapshot_name', 'snapshot_id'), True],
+            ['state', 'absent', ('snapshot_name', 'snapshot_id'), True],
+            ['state', 'rename', ('snapshot_name', 'snapshot_id'), True],
+            ['state', 'revert', ('snapshot_name', 'snapshot_id'), True]
+        ],
         required_together=[
             ['name', 'folder']
         ],
