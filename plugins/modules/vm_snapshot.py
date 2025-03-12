@@ -279,23 +279,22 @@ class VmSnapshotModule(ModulePyvmomiBase):
         self.vm = vm_list[0]
         self.result["vm"]['moid'] = self.vm._GetMoId()
         self.result["vm"]['name'] = self.vm.name
-        if self.vm.snapshot is None:
-            self.snap_object = None
-        else:
+        self.snap_object = None
+        if self.vm.snapshot is not None:
             if self.params["snapshot_name"]:
                 self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
-                                                            self.params["snapshot_name"])
+                                                                                self.params["snapshot_name"]).snapshot
             elif self.params["snapshot_id"] and self.params["state"] in ['absent', 'revert']:
                 self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
-                                                            self.params["snapshot_id"])
+                                                                                self.params["snapshot_id"]).snapshot
         self.vm_id = self.params.get('uuid') or self.params.get('name') or self.params.get('moid')
 
         if not (module.params['snapshot_name'] or module.params['snapshot_id']) and module.params['state'] != 'remove_all':
             module.fail_json(msg="snapshot_name param required when state is '%(state)s'" % module.params)
 
-    def get_vm_prop(self, vm, attributes):
+    def get_vm_prop(self, attributes):
         """Safely get a property or return None"""
-        result = vm
+        result = self.vm
         for attribute in attributes:
             try:
                 result = getattr(result, attribute)
@@ -311,15 +310,16 @@ class VmSnapshotModule(ModulePyvmomiBase):
                 'state': obj.state,
                 'quiesced': obj.quiesced}
 
-    def list_snapshots(self, vm):
+    def list_snapshots(self):
         result = {}
-        snapshot = self.get_vm_prop(vm, ('snapshot',))
+        snapshot = self.get_vm_prop(('snapshot',))
         if not snapshot:
             return result
-        if vm.snapshot is None:
+        if self.vm.snapshot is None:
             return result
 
-        current_snap_obj = self.get_snapshots_by_identifier_recursively(vm.snapshot.rootSnapshotList, vm.snapshot.currentSnapshot)
+        current_snap_obj = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
+                                                                        self.vm.snapshot.currentSnapshot)
         if current_snap_obj:
             result['current_snapshot'] = self.serialize_snapshot_obj_to_json(current_snap_obj)
         else:
@@ -328,10 +328,12 @@ class VmSnapshotModule(ModulePyvmomiBase):
 
     def get_snapshots_by_identifier_recursively(self, snapshots, snapidentifier):
         for snapshot in snapshots:
-            if snapidentifier in [snapshot.name, snapshot.id, snapshot.snapshot]:
+            if ((isinstance(snapidentifier, vim.vm.Snapshot) and snapidentifier == snapshot.snapshot) or
+                (isinstance(snapidentifier, int) and snapidentifier == snapshot.id) or
+                (isinstance(snapidentifier, str) and snapidentifier == snapshot.name)):
                 return snapshot
             else:
-                self.get_snapshots_by_name_recursively(snapshot.childSnapshotList, snapidentifier)
+                self.get_snapshots_by_identifier_recursively(snapshot.childSnapshotList, snapidentifier)
         return None
 
     def snapshot_vm(self):
@@ -392,7 +394,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
             self.module.fail_json(msg=to_text(e))
 
         self.result['changed'] = True
-        self.result['snapshot_results'] = self.list_snapshots(self.vm)
+        self.result['snapshot_results'] = self.list_snapshots()
 
 
 def main():
