@@ -1,0 +1,89 @@
+---
+- name: Set the state of a virtual machine to poweredon
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: powered-on
+  register: deploy
+
+- name: Restart the virtual machine
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: restarted
+
+- name: Power on a virtual machine with the question_answers param
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    validate_certs: false
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    question_answers:
+      - question: "msg.uuid.altered"
+        response: "button.uuid.copiedTheVM"
+    state: powered-on
+
+- name: Set the state of a virtual machine to poweroff using MoID
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    moid: "{{ deploy.vm.moid }}"
+    state: powered-off
+
+- name: Set the state of a virtual machine to poweron using MoID
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    moid: "{{ deploy.vm.moid }}"
+    state: powered-on
+
+- name: Suspend the virtual machine
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: suspended
+
+- name: Power on the virtual machine with force
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    port: "{{ vcenter_port }}"
+    folder: "{{ vm_folder }}"
+    name: "{{ test_esxi_hostname }}"
+    state: powered-on
+    force: true

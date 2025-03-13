@@ -1,0 +1,378 @@
+---
+- block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+      when: not run_on_simulator
+
+    - name: Lookup Root Resource Pool ID
+      ansible.builtin.set_fact:
+        vcenter_rp_id: >-
+          {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+          vcenter_hostname=vcenter_hostname,
+          vcenter_username=vcenter_username,
+          vcenter_password=vcenter_password,
+          vcenter_validate_certs=false,
+          ) }}
+
+    - name: Create a test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        name: "{{ test_resource_pool }}"
+        parent: "{{ vcenter_rp_id }}"
+      register: _test_rp
+
+    - name: Deploy Virtual Machine from template in content library
+      community.vmware.vmware_content_deploy_template:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: false
+        template: "{{ rhel9_content_library_template }}"
+        datastore: "{{ datastore }}"
+        folder: "{{ vm_folder }}"
+        datacenter: "{{ vm_datacenter }}"
+        name: "{{ vm }}"
+        resource_pool: "{{ test_resource_pool }}"
+        cluster: "{{ vm_cluster }}"
+        state: present
+
+    - name: Set the state of a virtual machine to poweredon
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-on
+      register: deploy
+
+    - name: Wait for the virtual machine to power on
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOn"
+      retries: 60
+      delay: 5
+
+    - name: Restart the virtual machine
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: restarted
+
+    - name: Wait for the virtual machine to power on
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOn"
+      retries: 60
+      delay: 5
+
+    - name: Power on a virtual machine with the question_answers param
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        question_answers:
+          - question: "msg.uuid.altered"
+            response: "button.uuid.copiedTheVM"
+        state: powered-on
+
+    - name: Wait for the virtual machine to power on
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOn"
+      retries: 60
+      delay: 5
+
+    - name: Set the state of a virtual machine to poweroff using MoID
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        moid: "{{ deploy.vm.moid }}"
+        state: powered-off
+
+    - name: Wait for the virtual machine to power off
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOff"
+      retries: 60
+      delay: 5
+
+    - name: Set the state of a virtual machine to poweron using MoID
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        moid: "{{ deploy.vm.moid }}"
+        state: powered-on
+
+    - name: Wait for the virtual machine to power on
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOn"
+      retries: 60
+      delay: 5
+
+    - name: Suspend the virtual machine
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: suspended
+
+    - name: Wait for the virtual machine to be suspended
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "suspended"
+      retries: 60
+      delay: 5
+
+    - name: Power on the virtual machine without force
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-on
+      ignore_errors: true
+      register: failed_power_on
+
+    - name: Verify power on failed
+      ansible.builtin.assert:
+        that:
+          - failed_power_on.failed
+
+    - name: Power on the virtual machine with force
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-on
+        force: true
+
+    - name: Wait for the virtual machine to power on
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOn"
+      retries: 60
+      delay: 5
+
+    - name: Set the state of a virtual machine to poweroff at given scheduled time
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-off
+        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime((ansible_date_time.epoch | int) + 120)}}"
+        scheduled_task_name: "task_001"
+        scheduled_task_description: "Sample task to poweroff VM"
+        scheduled_task_enabled: true
+
+    - name: Wait for the virtual machine to power off
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOff"
+      retries: 60
+      delay: 5
+
+    - name: Set the state of a virtual machine to poweron using MoID
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        moid: "{{ deploy.vm.moid }}"
+        state: powered-on
+
+    - name: Wait until VM is ready
+      vmware.vmware_rest.vcenter_vm_tools_info:
+        vm: "{{ deploy.vm.moid }}"
+        vcenter_validate_certs: false
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+      register: vm_tools_info
+      until:
+        - vm_tools_info is not failed
+        - vm_tools_info.value.run_state == "RUNNING"
+      retries: 60
+      delay: 5
+
+    - name: Shutdown virtual machine
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        validate_certs: false
+        state: shutdown-guest
+
+    - name: Wait for the virtual machine to shutdown
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        vm_name: "{{ vm }}"
+        validate_certs: false
+      register: vm_info
+      until:
+        - vm_info is not failed
+        - vm_info.virtual_machines[0].power_state == "poweredOff"
+      retries: 60
+      delay: 5
+
+    - name: Set the state of a virtual machine to poweredon
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-on
+      register: deploy
+
+    - name: Wait until VM is ready
+      vmware.vmware_rest.vcenter_vm_tools_info:
+        vm: "{{ deploy.vm.moid }}"
+        vcenter_validate_certs: false
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+      register: vm_tools_info
+      until:
+        - vm_tools_info is not failed
+        - vm_tools_info.value.run_state == "RUNNING"
+      retries: 60
+      delay: 5
+
+    - name: Reboot the virtual machine with force
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: reboot-guest
+        force: true
+
+  always:
+    - name: Delete test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent
+
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm }}"
