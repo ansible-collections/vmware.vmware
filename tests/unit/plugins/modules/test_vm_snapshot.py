@@ -29,7 +29,6 @@ class TestVmSnapshot(ModuleTestCase):
         self.vm_mock = mocker.MagicMock()
         self.vm_mock.configure_mock(
             **{
-                "snapshot.return_value": mocker.Mock(),
                 "RemoveAllSnapshots.return_value": type('', (object,), {"info": type('', (object,), {"state": "success"})()})(),
                 "CreateSnapshot.return_value": type('', (object,), {"info": type('', (object,), {"state": "success"})()})()
             }
@@ -49,7 +48,7 @@ class TestVmSnapshot(ModuleTestCase):
             }
         )
         mocker.patch.object(VmSnapshotModule, 'get_vm_using_params', return_value=([self.vm_mock]))
-        mocker.patch.object(VmSnapshotModule, 'get_snapshots_recursively', return_value=([self.external_snap_object_mock]))
+        mocker.patch.object(VmSnapshotModule, 'get_snapshots_by_identifier_recursively', return_value=(self.external_snap_object_mock))
         mocker.patch.object(VmSnapshotModule, 'list_snapshots', return_value="")
         mocker.patch.object(RunningTaskMonitor, 'wait_for_completion', return_value=(True, True))
 
@@ -70,7 +69,8 @@ class TestVmSnapshot(ModuleTestCase):
             add_cluster=False
         )
 
-        mocker.patch.object(VmSnapshotModule, 'get_snapshots_recursively', return_value=([]))
+        self.vm_mock.snapshot = None
+        mocker.patch.object(VmSnapshotModule, 'get_snapshots_by_identifier_recursively', return_value=None)
 
         with pytest.raises(AnsibleExitJson) as c:
             module_main()
@@ -87,7 +87,7 @@ class TestVmSnapshot(ModuleTestCase):
             datacenter="DC0",
             folder="DC0/vm/e2e-qe",
             name="vm1",
-            state="rename",
+            state="present",
             snapshot_name="snap1",
             new_snapshot_name="im_renamed",
             new_description="im_redescribed",

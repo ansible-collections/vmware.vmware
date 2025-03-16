@@ -263,7 +263,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spe
     base_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import TaskError, RunningTaskMonitor
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text, to_native
 
@@ -285,7 +285,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
         self.result["vm"]['moid'] = self.vm._GetMoId()
         self.result["vm"]['name'] = self.vm.name
         self.snap_object = None
-        if self.vm.snapshot is not None:
+        if self.vm.snapshot:
             if self.params["snapshot_name"]:
                 self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
                                                                                 self.params["snapshot_name"]).snapshot
