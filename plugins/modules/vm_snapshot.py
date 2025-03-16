@@ -385,11 +385,6 @@ class VmSnapshotModule(ModulePyvmomiBase):
         self.result['changed'] = True
 
     def apply_snapshot_op(self):
-        # if self.params["state"] in ["absent", "revert", "rename", "remove_all"] and self.snap_object is None:
-        #     self.module.exit_json(changed=False,
-        #                           msg="Couldn't find any snapshots with specified name: %s on VM: %s" %
-        #                           (self.params["snapshot_name"] or self.params["snapshot_id"], self.vm_id))
-
         if self.module.check_mode:
             self.result['changed'] = True
             self.module.exit_json(**self.result)
