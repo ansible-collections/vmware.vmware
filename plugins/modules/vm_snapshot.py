@@ -24,10 +24,7 @@ options:
      - Manage snapshot(s) attached to a specific virtual machine.
      - If set to V(present) and snapshot absent, then will create a new snapshot with the given name.
      - If set to V(absent) and snapshot present, then snapshot with the given name is removed.
-     - If set to V(rename) and snapshot present, then snapshot will be given new name and description.
-     - If set to V(revert) and snapshot present, then virtual machine state is reverted to the given snapshot.
-     - If set to V(remove_all) and snapshot(s) present, then all snapshot(s) will be removed.
-     choices: ['present', 'absent', 'rename', 'revert', 'remove_all']
+     choices: ['present', 'absent']
      default: 'present'
      type: str
    name:
@@ -56,6 +53,12 @@ options:
      - Whether to use the VMware instance UUID rather than the BIOS UUID.
      default: false
      type: bool
+    remove_all:
+     description:
+     - Removes all snapshots in VM if set to true.
+     - Allowed only when O(state) is C(absent)
+     default: false
+     type: bool
    folder:
      description:
      - Destination folder, absolute or relative path to find an existing guest.
@@ -71,7 +74,7 @@ options:
    snapshot_name:
      description:
      - Sets the snapshot name to manage.
-     - This param or O(snapshot_id) is required only if O(state) is not C(remove_all)
+     - This param or O(snapshot_id) is required only if C(remove_all) is set to True.
      type: str
    snapshot_id:
      description:
@@ -162,7 +165,8 @@ EXAMPLES = r'''
       datacenter: "{{ datacenter_name }}"
       folder: "/{{ datacenter_name }}/vm/"
       name: "{{ guest_name }}"
-      state: remove_all
+      state: absent
+      remove_all: True
 
   - name: Remove all snapshots of a VM using MoID
     vmware.vmware.vm_snapshot:
@@ -172,7 +176,8 @@ EXAMPLES = r'''
       datacenter: "{{ datacenter_name }}"
       folder: "/{{ datacenter_name }}/vm/"
       moid: vm-42
-      state: remove_all
+      state: absent
+      remove_all: True
 
   - name: Take snapshot of a VM using quiesce and memory flag on
     vmware.vmware.vm_snapshot:
@@ -218,7 +223,7 @@ EXAMPLES = r'''
       datacenter: "{{ datacenter_name }}"
       folder: "/{{ datacenter_name }}/vm/"
       name: "{{ guest_name }}"
-      state: rename
+      state: present
       snapshot_name: current_snap_name
       new_snapshot_name: im_renamed
       new_description: "{{ new_snapshot_description }}"
@@ -289,7 +294,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
                                                                                 self.params["snapshot_id"]).snapshot
         self.vm_id = self.params.get('uuid') or self.params.get('name') or self.params.get('moid')
 
-        if not (module.params['snapshot_name'] or module.params['snapshot_id']) and module.params['state'] != 'remove_all':
+        if not (module.params['snapshot_name'] or module.params['snapshot_id']) and not module.params['remove_all']:
             module.fail_json(msg="snapshot_name param required when state is '%(state)s'" % module.params)
 
     def get_vm_prop(self, attributes):
@@ -338,16 +343,17 @@ class VmSnapshotModule(ModulePyvmomiBase):
 
     def snapshot_vm(self):
         if self.snap_object:
-            self.module.exit_json(changed=False,
-                                  msg="Snapshot named [%(snapshot_name)s] already exists" % self.params)
+            self.rename_snapshot()
 
         memory_dump = self.params['memory_dump'] and self.vm.capability.memorySnapshotsSupported
         quiesce = self.params['quiesce'] and self.vm.capability.quiescedSnapshotsSupported
         try:
-            return self.vm.CreateSnapshot(self.params["snapshot_name"],
+            snapshot = self.vm.CreateSnapshot(self.params["snapshot_name"],
                                           self.params["description"],
                                           memory_dump,
                                           quiesce)
+            self.result['changed'] = True
+            return snapshot
         except vim.fault.RestrictedVersion as e:
             self.module.fail_json(msg="Failed to take snapshot due to VMware Licence"
                                       " restriction : %s" % to_native(e.msg))
@@ -361,17 +367,28 @@ class VmSnapshotModule(ModulePyvmomiBase):
                                                    description=self.params["new_description"])
         elif self.params["new_snapshot_name"]:
             task = self.snap_object.RenameSnapshot(name=self.params["new_snapshot_name"])
-        else:
+        elif self.params['new_description']:
             task = self.snap_object.RenameSnapshot(description=self.params["new_description"])
+        else:
+            return task
 
+        self.result['changed'] = True
         self.result['renamed'] = True
         return task
+    
+    def remove_snapshot(self):
+        if self.params['remove_all']:
+            self.vm.RemoveAllSnapshots()
+        else:
+            self.snap_object.RemoveSnapshot_Task(self.params.get('remove_children', False))
+
+        self.result['changed'] = True
 
     def apply_snapshot_op(self):
-        if self.params["state"] in ["absent", "revert", "rename", "remove_all"] and self.snap_object is None:
-            self.module.exit_json(changed=False,
-                                  msg="Couldn't find any snapshots with specified name: %s on VM: %s" %
-                                  (self.params["snapshot_name"] or self.params["snapshot_id"], self.vm_id))
+        # if self.params["state"] in ["absent", "revert", "rename", "remove_all"] and self.snap_object is None:
+        #     self.module.exit_json(changed=False,
+        #                           msg="Couldn't find any snapshots with specified name: %s on VM: %s" %
+        #                           (self.params["snapshot_name"] or self.params["snapshot_id"], self.vm_id))
 
         if self.module.check_mode:
             self.result['changed'] = True
@@ -379,10 +396,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
 
         snapshot_state_function = {
             'present': lambda: self.snapshot_vm(),
-            'rename': lambda: self.rename_snapshot(),
-            'absent': lambda: self.snap_object.RemoveSnapshot_Task(self.params.get('remove_children', False)),
-            'revert': lambda: self.snap_object.RevertToSnapshot_Task(),
-            'remove_all': lambda: self.vm.RemoveAllSnapshots()
+            'absent': lambda: self.remove_snapshot()
         }
 
         try:
@@ -393,7 +407,6 @@ class VmSnapshotModule(ModulePyvmomiBase):
         except Exception as e:
             self.module.fail_json(msg=to_text(e))
 
-        self.result['changed'] = True
         self.result['snapshot_results'] = self.list_snapshots()
 
 
@@ -401,12 +414,13 @@ def main():
     module = AnsibleModule(
         argument_spec={
             **base_argument_spec(), **dict(
-                state=dict(default='present', choices=['present', 'absent', 'rename', 'revert', 'remove_all']),
+                state=dict(default='present', choices=['present', 'absent']),
                 name=dict(type='str'),
                 name_match=dict(type='str', choices=['first', 'last'], default='first'),
                 uuid=dict(type='str'),
                 moid=dict(type='str'),
                 use_instance_uuid=dict(type='bool', default=False),
+                remove_all=dict(type='bool', default=False),
                 folder=dict(type='str'),
                 datacenter=dict(required=True, type='str'),
                 snapshot_name=dict(type='str'),
@@ -421,19 +435,17 @@ def main():
         },
         supports_check_mode=True,
         required_if=[
-            ['state', 'present', ('snapshot_name', 'snapshot_id'), True],
-            ['state', 'absent', ('snapshot_name', 'snapshot_id'), True],
-            ['state', 'rename', ('snapshot_name', 'snapshot_id'), True],
-            ['state', 'revert', ('snapshot_name', 'snapshot_id'), True]
+            ['state', 'present', ('snapshot_name', 'snapshot_id'), True]
         ],
         required_together=[
             ['name', 'folder']
         ],
         required_one_of=[
+            ['snapshot_name', 'snapshot_id', 'remove_all'],
             ['name', 'uuid', 'moid']
         ],
         mutually_exclusive=[
-            ['snapshot_name', 'snapshot_id'],
+            ['snapshot_name', 'snapshot_id', 'remove_all'],
             ['name', 'uuid', 'moid']
         ]
     )

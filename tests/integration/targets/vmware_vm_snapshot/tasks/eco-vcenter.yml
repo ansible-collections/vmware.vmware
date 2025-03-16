@@ -54,17 +54,17 @@
         validate_certs: false
       register: deploy
 
-    - name: Revert to a snapshot
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: revert
-        snapshot_name: snap1
-        validate_certs: false
+    # - name: Revert to a snapshot
+    #   vmware.vmware.vm_snapshot:
+    #     hostname: "{{ vcenter_hostname }}"
+    #     username: "{{ vcenter_username }}"
+    #     password: "{{ vcenter_password }}"
+    #     datacenter: "{{ vm_datacenter }}"
+    #     folder: "/{{ vm_datacenter }}/vm/"
+    #     name: "{{ vm }}"
+    #     state: revert
+    #     snapshot_name: snap1
+    #     validate_certs: false
 
     - name: Remove a snapshot
       vmware.vmware.vm_snapshot:
@@ -86,7 +86,8 @@
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
-        state: remove_all
+        state: absent
+        remove_all: True
         validate_certs: false
 
     - name: Remove all snapshots of a VM using MoID
@@ -96,7 +97,8 @@
         password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         moid: "{{ deploy.vm.moid }}"
-        state: remove_all
+        state: absent
+        remove_all: True
         validate_certs: false
 
     - name: Take snapshot of a VM using quiesce and memory flag on
@@ -149,7 +151,7 @@
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
-        state: rename
+        state: present
         snapshot_name: snap1
         new_snapshot_name: im_renamed
         new_description: im_redescribed
