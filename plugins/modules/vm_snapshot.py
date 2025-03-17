@@ -79,7 +79,7 @@ options:
    snapshot_id:
      description:
      - Sets the snapshot id to manage.
-     - This param is available when O(state=absent) or O(state=revert).
+     - This param is available when O(state=absent).
      type: int
      version_added: 3.10.0
    description:
@@ -144,17 +144,6 @@ EXAMPLES = r'''
       folder: "/{{ datacenter_name }}/vm/"
       name: "{{ guest_name }}"
       state: absent
-      snapshot_name: snap1
-
-  - name: Revert to a snapshot
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: revert
       snapshot_name: snap1
 
   - name: Remove all snapshots of a VM
@@ -289,7 +278,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
             if self.params["snapshot_name"]:
                 self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
                                                                                 self.params["snapshot_name"]).snapshot
-            elif self.params["snapshot_id"] and self.params["state"] in ['absent', 'revert']:
+            elif self.params["snapshot_id"] and self.params["state"] == 'absent':
                 self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
                                                                                 self.params["snapshot_id"]).snapshot
         self.vm_id = self.params.get('uuid') or self.params.get('name') or self.params.get('moid')
