@@ -69,7 +69,6 @@ options:
    datacenter:
      description:
      - Destination datacenter for the deploy operation.
-     required: true
      type: str
    snapshot_name:
      description:
@@ -227,17 +226,16 @@ vm:
     sample:
         moid: vm-79828,
         name: test-d9c1-vm
-snapshot_results:
+snapshot_result:
     description: metadata about the virtual machine snapshots
     returned: always
     type: dict
     sample:
-        current_snapshot:
-            creation_time: 2019-04-09T14:40:26.617427+00:00
-            description: Snapshot 4 example
-            id: 4
-            name: snapshot4
-            state: poweredOff
+        creation_time: 2019-04-09T14:40:26.617427+00:00
+        description: Snapshot 4 example
+        id: 4
+        name: snapshot4
+        state: poweredOff
 '''
 
 try:
@@ -274,27 +272,6 @@ class VmSnapshotModule(ModulePyvmomiBase):
         self.result["vm"]['moid'] = self.vm._GetMoId()
         self.result["vm"]['name'] = self.vm.name
         self.snap_object = None
-        if self.vm.snapshot:
-            if self.params["snapshot_name"]:
-                self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
-                                                                                self.params["snapshot_name"]).snapshot
-            elif self.params["snapshot_id"] and self.params["state"] == 'absent':
-                self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
-                                                                                self.params["snapshot_id"]).snapshot
-        self.vm_id = self.params.get('uuid') or self.params.get('name') or self.params.get('moid')
-
-        if not (module.params['snapshot_name'] or module.params['snapshot_id']) and not module.params['remove_all']:
-            module.fail_json(msg="snapshot_name param required when state is '%(state)s'" % module.params)
-
-    def get_vm_prop(self, attributes):
-        """Safely get a property or return None"""
-        result = self.vm
-        for attribute in attributes:
-            try:
-                result = getattr(result, attribute)
-            except (AttributeError, IndexError):
-                return None
-        return result
 
     def serialize_snapshot_obj_to_json(self, obj):
         return {'id': obj.id,
@@ -304,23 +281,19 @@ class VmSnapshotModule(ModulePyvmomiBase):
                 'state': obj.state,
                 'quiesced': obj.quiesced}
 
-    def list_snapshots(self):
-        result = {}
-        snapshot = self.get_vm_prop(('snapshot',))
+    def list_snapshot(self):
+        snapshot = getattr(self.vm, 'snapshot', None)
         if not snapshot:
-            return result
-        if self.vm.snapshot is None:
-            return result
+            return {}
 
         current_snap_obj = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
                                                                         self.vm.snapshot.currentSnapshot)
         if current_snap_obj:
-            result['current_snapshot'] = self.serialize_snapshot_obj_to_json(current_snap_obj)
+            return self.serialize_snapshot_obj_to_json(current_snap_obj)
         else:
-            result['current_snapshot'] = dict()
-        return result
+            return dict()
 
-    def get_snapshots_by_identifier_recursively(self, snapshots, snapidentifier):
+    def get_snapshot_by_identifier_recursively(self, snapshots, snapidentifier):
         for snapshot in snapshots:
             if ((isinstance(snapidentifier, vim.vm.Snapshot) and snapidentifier == snapshot.snapshot) or
                 (isinstance(snapidentifier, int) and snapidentifier == snapshot.id) or
@@ -333,11 +306,13 @@ class VmSnapshotModule(ModulePyvmomiBase):
     def snapshot_vm(self):
         if self.snap_object:
             self.rename_snapshot()
+            return
 
         memory_dump = self.params['memory_dump'] and self.vm.capability.memorySnapshotsSupported
         quiesce = self.params['quiesce'] and self.vm.capability.quiescedSnapshotsSupported
         try:
-            snapshot = self.vm.CreateSnapshot(self.params["snapshot_name"],
+            self.changed_check_mode_exit()
+            snapshot = self.vm.CreateSnapshot_Task(self.params["snapshot_name"],
                                           self.params["description"],
                                           memory_dump,
                                           quiesce)
@@ -352,11 +327,14 @@ class VmSnapshotModule(ModulePyvmomiBase):
 
     def rename_snapshot(self):
         if self.params["new_snapshot_name"] and self.params["new_description"]:
+            self.changed_check_mode_exit()
             task = self.snap_object.RenameSnapshot(name=self.params["new_snapshot_name"],
                                                    description=self.params["new_description"])
         elif self.params["new_snapshot_name"]:
+            self.changed_check_mode_exit()
             task = self.snap_object.RenameSnapshot(name=self.params["new_snapshot_name"])
         elif self.params['new_description']:
+            self.changed_check_mode_exit()
             task = self.snap_object.RenameSnapshot(description=self.params["new_description"])
         else:
             return task
@@ -367,31 +345,42 @@ class VmSnapshotModule(ModulePyvmomiBase):
     
     def remove_snapshot(self):
         if self.params['remove_all']:
+            self.changed_check_mode_exit()
             self.vm.RemoveAllSnapshots()
+            self.result['changed'] = True
         else:
-            self.snap_object.RemoveSnapshot_Task(self.params.get('remove_children', False))
-
-        self.result['changed'] = True
+            if self.snap_object:
+                self.changed_check_mode_exit()
+                self.snap_object.RemoveSnapshot_Task(self.params.get('remove_children', False))
+                self.result['changed'] = True
 
     def apply_snapshot_op(self):
-        if self.module.check_mode:
-            self.result['changed'] = True
-            self.module.exit_json(**self.result)
+        if self.vm.snapshot:
+            if self.params["snapshot_name"]:
+                self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
+                                                                                self.params["snapshot_name"]).snapshot
+            elif self.params["snapshot_id"] and self.params["state"] == 'absent':
+                self.snap_object = self.get_snapshots_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
+                                                                                self.params["snapshot_id"]).snapshot
 
-        snapshot_state_function = {
-            'present': lambda: self.snapshot_vm(),
-            'absent': lambda: self.remove_snapshot()
-        }
-
+        task = None
         try:
-            task = snapshot_state_function[self.params['state']]()
+            if (self.params['state'] == 'present'):
+                task = self.snapshot_vm()
+            elif (self.params['state'] == 'absent'):
+                task = self.remove_snapshot()
             if not task:
                 return
             success, task_result = RunningTaskMonitor(task).wait_for_completion(vm=self.vm)
         except Exception as e:
             self.module.fail_json(msg=to_text(e))
 
-        self.result['snapshot_results'] = self.list_snapshots()
+        self.result['snapshot_result'] = self.list_snapshot()
+
+    def changed_check_mode_exit(self):
+        if self.module.check_mode:
+            self.result['changed'] = True
+            self.module.exit_json(**self.result)
 
 
 def main():
@@ -406,7 +395,7 @@ def main():
                 use_instance_uuid=dict(type='bool', default=False),
                 remove_all=dict(type='bool', default=False),
                 folder=dict(type='str'),
-                datacenter=dict(required=True, type='str'),
+                datacenter=dict(type='str'),
                 snapshot_name=dict(type='str'),
                 snapshot_id=dict(type='int'),
                 description=dict(type='str', default=''),
@@ -429,12 +418,13 @@ def main():
             ['name', 'uuid', 'moid']
         ],
         mutually_exclusive=[
-            ['snapshot_name', 'snapshot_id', 'remove_all'],
+            ['snapshot_name', 'remove_all'],
+            ['snapshot_id', 'remove_all'],
             ['name', 'uuid', 'moid']
         ]
     )
 
-    if module.params['folder']:
+    if module.params['folder'] and module.params['datacenter']:
         module.params['folder'] = format_folder_path_as_vm_fq_path(
             module.params['folder'],
             module.params['datacenter']
