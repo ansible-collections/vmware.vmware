@@ -23,7 +23,7 @@ author:
     - Ansible Cloud Team (@ansible-collections)
 
 seealso:
-    - module: vmware.vmware.deploy_remote_ovf
+    - module: vmware.vmware.deploy_content_library_ovf
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
