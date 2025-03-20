@@ -8,8 +8,8 @@
         file: ../../integration_config.yml
       tags: eco-vcenter-ci
 
-    - name: Import vmware_upload_content_library_ovf role
+    - name: Import vmware_import_content_library_ovf role
       ansible.builtin.import_role:
-        name: vmware_upload_content_library_ovf
+        name: vmware_import_content_library_ovf
       tags:
         - eco-vcenter-ci

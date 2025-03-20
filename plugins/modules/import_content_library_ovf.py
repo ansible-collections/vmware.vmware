@@ -10,10 +10,10 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: upload_content_library_ovf
-short_description: Upload an OVF or OVA file to a content library from a remote source.
+module: import_content_library_ovf
+short_description: Import an OVF or OVA file to a content library from a remote source.
 description:
-    - Create an OVF or OVA library item from a remote source, such as a file on the Ansible host or a URL.
+    - Import an OVF or OVA library item from a remote source, such as a file on the Ansible host or a URL.
     - Source files should be OVAs or directories matching the OVF standard. OVF directories should contain an .ovf
       file and at least on .vmdk file.
     - This module manages the content library item, not the remote OVF/OVA. If state is absent, only the content library item
@@ -32,9 +32,9 @@ extends_documentation_fragment:
 options:
     src:
         description:
-            - The source OVF or OVA file that should be uploaded to the content library. This can be a local path or a URL.
+            - The source OVF or OVA file that should be imported to the content library. This can be a local path or a URL.
             - If it is a local path, it should be a valid path on the Ansible host.
-            - If it is a URL, its scheme can be HTTPS, HTTP, file (file://), or datastore (ds://). The file is acquired directly
+            - If it is a URL, its scheme can be HTTPS, HTTP, or datastore (ds://). The file is acquired directly
               from the vCenter appliance.
             - The module will not encode URLs for you. If this is a URL with special characters (like $ or ~), you should
               use the urlencode filter.
@@ -82,13 +82,15 @@ options:
         description:
             - The checksum algorithm to use when validating uploads.
             - This is required if O(checksum) is provided.
+            - This is not used if the source is an OVF. In that case he local file size is used to validate the upload.
         type: str
         required: false
         choices: ['SHA1', 'MD5', 'SHA512', 'SHA256']
     checksum:
         description:
-            - The checksum that should be used to validated the upload.
+            - The checksum that should be used to validate the upload.
             - O(checksum_algorithm) is required if this is provided.
+            - This is not used if the source is an OVF. In that case he local file size is used to validate the upload.
         type: str
         required: false
     timeout:
@@ -111,7 +113,7 @@ attributes:
 
 EXAMPLES = r'''
 - name: Acquire An OVA From A Url
-  vmware.vmware.upload_content_library_ovf:
+  vmware.vmware.import_content_library_ovf:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
@@ -120,7 +122,7 @@ EXAMPLES = r'''
     library_name: MyContentLibrary
 
 - name: Acquire An OVA From A Url With Special Chars
-  vmware.vmware.upload_content_library_ovf:
+  vmware.vmware.import_content_library_ovf:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
@@ -129,7 +131,7 @@ EXAMPLES = r'''
     library_name: MyContentLibrary
 
 - name: Upload an OVF From The Ansible Host
-  vmware.vmware.upload_content_library_ovf:
+  vmware.vmware.import_content_library_ovf:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
@@ -138,7 +140,7 @@ EXAMPLES = r'''
     dest: my_ovf_file
 
 - name: Delete an OVF
-  vmware.vmware.upload_content_library_ovf:
+  vmware.vmware.import_content_library_ovf:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
@@ -186,7 +188,7 @@ class VmwareRemoteOvf(ModuleRestBase):
         self._library_item_id = None
 
         if self.params['src']:
-            self.source_is_url = self.params['src'].startswith(('http://', 'https://', 'file://', 'ds://'))
+            self.source_is_url = self.params['src'].startswith(('http://', 'https://', 'ds://'))
             self.source_is_ovf = os.path.isdir(self.params['src'])
 
     def __generate_uuid(self):
@@ -217,8 +219,8 @@ class VmwareRemoteOvf(ModuleRestBase):
         if self._library_item_id:
             return self._library_item_id
 
-        library_ids = self.get_library_item_ids(name=self.params['dest'], library_id=self.library_id)
-        self._library_item_id = library_ids[0] if library_ids else None
+        library_item_ids = self.get_library_item_ids(name=self.params['dest'], library_id=self.library_id)
+        self._library_item_id = library_item_ids[0] if library_item_ids else None
         return self._library_item_id
 
     def create_library_item(self):
@@ -313,10 +315,10 @@ class VmwareRemoteOvf(ModuleRestBase):
                     headers=headers, validate_certs=self.params['validate_certs']
                 )
 
-    def __handle_warnings(self):
+    def __handle_preview_warnings(self):
         """
         Depending on module parameters, handle any warnings that have occurred during the file transfer.
-        If there are warnings and the user has disabled fail_on_warnigns, the warnings are essentially
+        If there are warnings and the user has disabled fail_on_warnings, the warnings are essentially
         muted. Otherwise, they cause the transfer to fail.
         """
         if self.params['fail_on_warnings']:
@@ -347,14 +349,14 @@ class VmwareRemoteOvf(ModuleRestBase):
         )
         try:
             self.__start_upload(file_map=file_map)
-            self.__handle_warnings()
+            self.__handle_preview_warnings()
             self.__wait_for_upload()
         except Exception as e:
             self.module.fail_json(msg="Failed to complete upload of OVF to vCenter: %s" % to_native(e))
         finally:
-            self.__cleanup_tranfer()
+            self.__cleanup_transfer()
 
-    def __cleanup_tranfer(self):
+    def __cleanup_transfer(self):
         """
         Cleans up the session object and temporary library item
         """
@@ -384,7 +386,7 @@ class VmwareRemoteOvf(ModuleRestBase):
         while (time.time() - start_time) < self.params['timeout']:
             session = self.upload_service.get(self.session_id)
             if session.state == 'ERROR':
-                raise Exception('Session is in error state, error message: {}'.format(session.error_message))
+                raise Exception('Session is in error state, error message: %s' % session.error_message)
 
             if session.preview_info.state in [PreviewInfo.State.NOT_APPLICABLE, PreviewInfo.State.AVAILABLE]:
                 break
@@ -393,15 +395,26 @@ class VmwareRemoteOvf(ModuleRestBase):
 
     def __wait_for_upload(self):
         """
-        Periodically checks the current upload and waits for it to reach any state besides ACTIVE
+        Periodically checks the current upload and waits for it to reach any state besides ACTIVE.
+        Raise errors if the timeout is reached, an unexpected state occurs, or the session has an error.
+        Do not fail the module at this point, so we have a chance to clean up.
         """
         start_time = time.time()
         while (time.time() - start_time) < self.params['timeout']:
             session = self.upload_service.get(self.session_id)
             if session.state != 'ACTIVE':
                 break
-
             time.sleep(1)
+        else:
+            raise Exception("Upload has reached timeout limit %s and has been canceled." % self.params['timeout'])
+
+        if session.state == 'ERROR':
+            raise Exception("Upload session failed with message: %s" % session.error_message)
+
+        if session.state != 'DONE':
+            raise Exception("Upload session is in an unexpected state at the end of the upload, %s" % session.state)
+
+
 
     def delete_library_item(self):
         try:

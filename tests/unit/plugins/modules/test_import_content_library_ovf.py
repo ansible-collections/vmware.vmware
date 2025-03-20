@@ -4,7 +4,7 @@ __metaclass__ = type
 import sys
 import pytest
 
-from ansible_collections.vmware.vmware.plugins.modules.upload_content_library_ovf import (
+from ansible_collections.vmware.vmware.plugins.modules.import_content_library_ovf import (
     VmwareRemoteOvf,
     main as module_main
 )
@@ -115,7 +115,7 @@ class TestVmwareRemoteOvf(ModuleTestCase):
         mocker.patch.object(os.path, 'getsize', return_value=10)
         mocker.patch.object(os, 'listdir', return_value=['foo', 'foo.ovf', 'foo.vmdk'])
         mocker.patch("builtins.open", new_callable=mocker.mock_open, read_data="data")
-        mocker.patch('ansible_collections.vmware.vmware.plugins.modules.upload_content_library_ovf.open_url')
+        mocker.patch('ansible_collections.vmware.vmware.plugins.modules.import_content_library_ovf.open_url')
 
         with pytest.raises(AnsibleExitJson) as c:
             module_main()
