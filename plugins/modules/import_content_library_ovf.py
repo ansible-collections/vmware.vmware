@@ -414,8 +414,6 @@ class VmwareRemoteOvf(ModuleRestBase):
         if session.state != 'DONE':
             raise Exception("Upload session is in an unexpected state at the end of the upload, %s" % session.state)
 
-
-
     def delete_library_item(self):
         try:
             self.api_client.content.library.Item.delete(self.library_item_id)
