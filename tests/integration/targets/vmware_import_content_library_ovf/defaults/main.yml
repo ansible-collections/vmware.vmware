@@ -1,0 +1,7 @@
+---
+test_dest: "{{ tiny_prefix }}_content_library_ovf_from_remote"
+
+# hopefully this link is stable enough for the test. We may want to host our own OVA somehow for the test one day
+test_src_url: https://cloud-images.ubuntu.com/oracular/current/oracular-server-cloudimg-amd64.ova
+
+run_on_simulator: false
