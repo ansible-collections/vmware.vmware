@@ -1,0 +1,194 @@
+---
+- block:
+    - name: Import common vars
+      ansible.builtin.include_vars:
+        file: ../group_vars.yml
+      when: not run_on_simulator
+
+    - name: Lookup Root Resource Pool ID
+      ansible.builtin.set_fact:
+        vcenter_rp_id: >-
+          {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+          vcenter_hostname=vcenter_hostname,
+          vcenter_username=vcenter_username,
+          vcenter_password=vcenter_password,
+          vcenter_validate_certs=false,
+          ) }}
+
+    - name: Create a test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        name: "{{ test_resource_pool }}"
+        parent: "{{ vcenter_rp_id }}"
+      register: _test_rp
+
+    - name: Deploy Virtual Machine from template in content library
+      community.vmware.vmware_content_deploy_template:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: false
+        template: "{{ rhel9_content_library_template }}"
+        datastore: "{{ datastore }}"
+        folder: "{{ vm_folder }}"
+        datacenter: "{{ vm_datacenter }}"
+        name: "{{ vm }}"
+        resource_pool: "{{ test_resource_pool }}"
+        cluster: "{{ vm_cluster }}"
+        state: present
+
+    - name: Create a snapshot
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap1
+        description: snap1_description
+        validate_certs: false
+      register: deploy
+
+    # - name: Revert to a snapshot
+    #   vmware.vmware.vm_snapshot:
+    #     hostname: "{{ vcenter_hostname }}"
+    #     username: "{{ vcenter_username }}"
+    #     password: "{{ vcenter_password }}"
+    #     datacenter: "{{ vm_datacenter }}"
+    #     folder: "/{{ vm_datacenter }}/vm/"
+    #     name: "{{ vm }}"
+    #     state: revert
+    #     snapshot_name: snap1
+    #     validate_certs: false
+
+    - name: Remove a snapshot
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: absent
+        snapshot_name: snap1
+        validate_certs: false
+
+    - name: Remove all snapshots of a VM
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: absent
+        remove_all: True
+        validate_certs: false
+
+    - name: Remove all snapshots of a VM using MoID
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        moid: "{{ deploy.vm.moid }}"
+        state: absent
+        remove_all: True
+        validate_certs: false
+
+    - name: Take snapshot of a VM using quiesce and memory flag on
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: dummy_vm_snap_0001
+        quiesce: true
+        memory_dump: true
+        validate_certs: false
+      register: deploy
+
+    - name: Remove a snapshot and snapshot subtree
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: absent
+        remove_children: true
+        snapshot_name: dummy_vm_snap_0001
+        validate_certs: false
+
+    - name: Create a snapshot
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap1
+        description: snap1_description
+        validate_certs: false
+      register: deploy
+
+    - name: Rename a snapshot
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap1
+        new_snapshot_name: im_renamed
+        new_description: im_redescribed
+        validate_certs: false
+
+    - name: Remove a snapshot with a snapshot id
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        snapshot_id: "{{ deploy.snapshot_results.current_snapshot.id }}"
+        state: absent
+        validate_certs: false
+
+
+  always:
+    - name: Delete test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent
+
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vm_cluster }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        state: absent
+        force: true
+        name: "{{ vm }}"
