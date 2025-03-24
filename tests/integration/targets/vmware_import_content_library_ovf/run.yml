@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Import eco-vcenter credentials
+      ansible.builtin.include_vars:
+        file: ../../integration_config.yml
+      tags: eco-vcenter-ci
+
+    - name: Import vmware_import_content_library_ovf role
+      ansible.builtin.import_role:
+        name: vmware_import_content_library_ovf
+      tags:
+        - eco-vcenter-ci
