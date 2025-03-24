@@ -1,0 +1,90 @@
+---
+- name: Import common vars
+  ansible.builtin.include_vars:
+    file: ../group_vars.yml
+
+- name: Test
+  block:
+    - name: Upload OVF From URL
+      vmware.vmware.import_content_library_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        src: "{{ test_src_url }}"
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+        timeout: 1200
+      register: _test_url
+
+    - name: Upload OVF From URL - Idempotency
+      vmware.vmware.import_content_library_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        src: "{{ test_src_url }}"
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+      register: _test_url_idem
+
+    - name: Assert Upload From URL
+      ansible.builtin.assert:
+        that:
+          - _test_url is changed
+          - _test_url.library_item.id == _test_url_idem.library_item.id
+          - _test_url_idem is not changed
+
+    - name: Delete OVF
+      vmware.vmware.import_content_library_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+        state: absent
+      register: _test_url_del
+
+    - name: Assert Deletion
+      ansible.builtin.assert:
+        that:
+          - _test_url_del is changed
+          - _test_url.library_item.id == _test_url_del.library_item.id
+
+    - name: Download OVF Directly
+      ansible.builtin.get_url:
+        url: "{{ test_src_url }}"
+        dest: /tmp/{{ test_dest }}.ova
+
+    - name: Upload OVF From Local
+      vmware.vmware.import_content_library_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        src: /tmp/{{ test_dest }}.ova
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+      register: _test_local
+
+    - name: Assert Upload From Local
+      ansible.builtin.assert:
+        that:
+          - _test_local is changed
+          - _test_local.library_item.id
+
+  always:
+    - name: Delete Library OVF
+      vmware.vmware.import_content_library_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+        state: absent
+    - name: Delete Local OVF
+      ansible.builtin.file:
+        state: absent
+        path: /tmp/{{ test_dest }}.ova

@@ -23,6 +23,7 @@ action_groups:
         - license_info
         - local_content_library
         - subscribed_content_library
+        - import_content_library_ovf
         - vcsa_settings
         - vm_list_group_by_clusters_info
         - vm_resource_info

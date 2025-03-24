@@ -27,9 +27,9 @@
 
     - name: Deploy Virtual Machine from template in content library
       community.vmware.vmware_content_deploy_template:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         validate_certs: false
         template: "{{ rhel9_content_library_template }}"
         datastore: "{{ datastore }}"
@@ -54,9 +54,9 @@
 
     - name: Wait for the virtual machine to power on
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -79,9 +79,9 @@
 
     - name: Wait for the virtual machine to power on
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -107,9 +107,9 @@
 
     - name: Wait for the virtual machine to power on
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -132,9 +132,9 @@
 
     - name: Wait for the virtual machine to power off
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -157,9 +157,9 @@
 
     - name: Wait for the virtual machine to power on
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -182,9 +182,9 @@
 
     - name: Wait for the virtual machine to be suspended
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -226,9 +226,9 @@
 
     - name: Wait for the virtual machine to power on
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -248,16 +248,16 @@
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-off
-        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime((ansible_date_time.epoch | int) + 120)}}"
+        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime((ansible_date_time.epoch | int) + 180)}}"
         scheduled_task_name: "task_001"
         scheduled_task_description: "Sample task to poweroff VM"
         scheduled_task_enabled: true
 
     - name: Wait for the virtual machine to power off
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
@@ -304,9 +304,9 @@
 
     - name: Wait for the virtual machine to shutdown
       community.vmware.vmware_vm_info:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         vm_name: "{{ vm }}"
         validate_certs: false
       register: vm_info
