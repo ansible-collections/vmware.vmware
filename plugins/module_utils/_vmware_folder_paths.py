@@ -83,13 +83,23 @@ def get_folder_path_of_vsphere_object(vsphere_obj):
     Returns: Folder of object if exists, else None
 
     """
-    _folder = vsphere_obj.parent
-    folder_path = [_folder.name]
-    while getattr(_folder, 'parent', None) is not None:
-        _folder = _folder.parent
-        if _folder.name == 'Datacenters':
+    folder_path = []
+
+    # Start with the immediate parent, accounting for different parent types
+    # - Regular VMs have 'parent'
+    # - VMs in VApps have 'parentVApp'
+    parent = getattr(vsphere_obj, 'parent', None) or getattr(vsphere_obj, 'parentVApp', None)
+
+    while parent:
+        if parent.name == 'Datacenters':
             break
-        folder_path += [_folder.name]
+
+        folder_path.append(parent.name)
+
+        # Get the next parent in the hierarchy, accounting for different parent types
+        # - Regular folders have 'parent'
+        # - VApps can have 'parentFolder' (top-level VApp) or 'parent' (nested VApp)
+        parent = getattr(parent, 'parentFolder', None) or getattr(parent, 'parent', None)
 
     folder_path.reverse()
     out = '/'.join(folder_path)
