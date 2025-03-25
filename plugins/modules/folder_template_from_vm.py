@@ -179,7 +179,7 @@ class VmwareFolderTemplate(ModulePyvmomiBase):
         """
         Checks if a template with the given name and folder already exists
         """
-        templates = self.get_vm_using_params(name_param='template_name', fail_on_missing=False)
+        templates = self.get_vms_using_params(name_param='template_name', fail_on_missing=False)
         if not templates:
             return False
 
@@ -199,7 +199,7 @@ class VmwareFolderTemplate(ModulePyvmomiBase):
         Uses the UUID, MOID, or name provided to find the source VM for the template. Returns an error if using the name,
         multiple matches are found, and the user did not provide a name_match strategy.
         """
-        vms = self.get_vm_using_params(
+        vms = self.get_vms_using_params(
             name_param='vm_name',
             moid_param='vm_moid',
             uuid_param='vm_uuid',

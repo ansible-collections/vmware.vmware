@@ -29,7 +29,7 @@ class TestVmwareVmResourceInfo(ModuleTestCase):
         mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
         self.test_vm = create_mock_vsphere_object()
 
-        mocker.patch.object(VmwareGuestInfo, 'get_vm_using_params', return_value=[self.test_vm])
+        mocker.patch.object(VmwareGuestInfo, 'get_vms_using_params', return_value=[self.test_vm])
         mocker.patch.object(VmwareGuestInfo, 'get_all_vms', return_value=[self.test_vm])
 
     def test_get_by_id(self, mocker):

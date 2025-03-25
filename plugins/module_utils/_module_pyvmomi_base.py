@@ -16,6 +16,7 @@ except ImportError:
     # handled in base class
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
+from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
 
 
 class ModulePyvmomiBase(PyvmomiClient):
@@ -115,9 +116,9 @@ class ModulePyvmomiBase(PyvmomiClient):
             self.module.fail_json(msg="Unable to find distributed portgroup with name or MOID %s" % identifier)
         return None
 
-    def get_vm_using_params(
+    def get_vms_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
-            name_match_param='name_match', use_instance_uuid_param='use_instance_uuid'):
+            name_match_param='name_match', use_instance_uuid_param='use_instance_uuid', folder_param='folder'):
         """
             Get the vms matching the common module params related to vm identification: name, uuid, or moid. Since
             MOID and UUID are unique identifiers, they are tried first. If they are not set, a search by name is tried
@@ -131,30 +132,27 @@ class ModulePyvmomiBase(PyvmomiClient):
                 name_match_param: Set the parameter key that corredsponds to the name_match option
                 use_instance_uuid_param: Set the parameter key that corredsponds use_instance_uuid option
                 fail_on_missing: If true, an error will be thrown if no VMs are found
+                folder_param: Set the parameter key that corresponds to the folder that contains the VM
             Returns:
-                list(vm), or None if no matches were found
+                list(vm). In most cases a list of length 1 but when searching by name, you can get multiple matches.
         """
-        if self.params.get(moid_param):
-            _search_type, _search_id, _search_value = 'moid', moid_param, self.params.get(moid_param)
-        elif self.params.get(uuid_param):
-            _search_type, _search_id, _search_value = 'uuid', uuid_param, self.params.get(uuid_param)
-        elif self.params.get(name_param):
-            _search_type, _search_id, _search_value = 'name', name_param, self.params.get(name_param)
-        else:
-            if fail_on_missing:
-                self.module.fail_json(msg="Could not find any supported VM identifier params (name, uuid, or moid)")
-            else:
-                return None
+        _search_type, _search_id = self.__determine_search_param_type_and_id(
+            name_param=name_param, uuid_param=uuid_param, moid_param=moid_param, fail_on_missing=fail_on_missing
+        )
+        if not _search_type:
+            return []
 
         if _search_type == 'uuid':
-            _vm = self.si.content.searchIndex.FindByUuid(
-                instanceUuid=self.params.get(use_instance_uuid_param, True),
-                uuid=_search_value,
-                vmSearch=True
-            )
-            vms = [_vm] if _vm else None
+            vms = [self.si.content.searchIndex.FindByUuid(
+                instanceUuid=self.params.get(use_instance_uuid_param, True), uuid=self.params.get(_search_id), vmSearch=True
+            )]
+
         else:
-            vms = self.get_objs_by_name_or_moid([vim.VirtualMachine], _search_value, return_all=True)
+            folder = None
+            if self.params.get(folder_param):
+                _fq_path = format_folder_path_as_vm_fq_path(self.params.get(folder_param), self.params.get('datacenter'))
+                folder = self.get_folder_by_absolute_path(_fq_path, fail_on_missing=fail_on_missing)
+            vms = self.get_objs_by_name_or_moid([vim.VirtualMachine], self.params.get(_search_id), return_all=True, search_root_folder=folder)
 
         if vms and _search_type == 'name' and self.params.get(name_match_param):
             if self.params.get(name_match_param) == 'first':
@@ -165,9 +163,25 @@ class ModulePyvmomiBase(PyvmomiClient):
                 self.module.fail_json(msg="Unrecognized name_match option '%s' " % self.params.get(name_match_param))
 
         if not vms and fail_on_missing:
-            self.module.fail_json(msg="Unable to find VM with %s %s" % (_search_id, _search_value))
+            self.module.fail_json(msg="Unable to find VM with %s %s" % (_search_id, self.params.get(_search_id)))
 
         return vms
+
+    def __determine_search_param_type_and_id(self, name_param, uuid_param, moid_param, fail_on_missing):
+        if self.params.get(moid_param):
+            return 'moid', moid_param
+        elif self.params.get(uuid_param):
+            return 'uuid', uuid_param
+        elif self.params.get(name_param):
+            return 'name', name_param
+
+        if fail_on_missing:
+            self.module.fail_json(msg=(
+                "Could not find any supported VM identifier params (%s, %s, or %s)" %
+                (name_param, uuid_param, moid_param)
+            ))
+
+        return None, None
 
     def get_folders_by_name_or_moid(self, identifier, fail_on_missing=False):
         """
