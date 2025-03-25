@@ -86,7 +86,7 @@ def get_folder_path_of_vsphere_object(vsphere_obj):
     folder_path = []
 
     # Start with the immediate parent, accounting for different parent types
-    # - Regular VMs have 'parent'
+    # - The default for most objects is 'parent'
     # - VMs in VApps have 'parentVApp'
     parent = getattr(vsphere_obj, 'parent', None) or getattr(vsphere_obj, 'parentVApp', None)
 
