@@ -229,7 +229,6 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
     base_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import TaskError, RunningTaskMonitor, VmQuestionHandler
 
 
@@ -245,23 +244,13 @@ class VmPowerstateModule(ModulePyvmomiBase):
             )
         )
 
-        vm_list = self.get_vm_using_params(fail_on_missing=True)
+        vm_list = self.get_vms_using_params(fail_on_missing=True)
         self.vm = vm_list[0]
         state = self.module.params['state']
         self.desired_state = state.replace('_', '').replace('-', '').lower()
         self.current_state = self.vm.summary.runtime.powerState.lower()
         self.result["vm"]['moid'] = self.vm._GetMoId()
         self.result["vm"]['name'] = self.vm.name
-
-    def standardize_folder_param(self):
-        """
-        Removes all "/" characters in the folder path if the folder param exists
-        """
-        if self.module.params['folder']:
-            self.module.params['folder'] = format_folder_path_as_vm_fq_path(
-                self.module.params['folder'],
-                self.module.params['datacenter']
-            )
 
     def run_vm_configuration_task(self, task):
         if not task:
@@ -452,7 +441,6 @@ def main():
     )
 
     vm_powerstate = VmPowerstateModule(module)
-    vm_powerstate.standardize_folder_param()
     vm_powerstate.answer_questions()
     if vm_powerstate.current_state == vm_powerstate.desired_state:
         module.exit_json(**vm_powerstate.result)

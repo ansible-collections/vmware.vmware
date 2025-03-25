@@ -38,7 +38,7 @@ class TestVmPowerstate(ModuleTestCase):
                 "content.scheduledTaskManager.CreateScheduledTask.return_value": True
             }
         )
-        mocker.patch.object(VmPowerstateModule, 'get_vm_using_params', return_value=([self.vm_mock]))
+        mocker.patch.object(VmPowerstateModule, 'get_vms_using_params', return_value=([self.vm_mock]))
 
         mocker.patch.object(VmQuestionHandler, 'handle_vm_questions')
 

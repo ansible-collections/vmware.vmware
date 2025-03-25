@@ -5,9 +5,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
     PyvmomiClient
 )
-from ...common.utils import set_module_args
+from ...common.utils import set_module_args, fail_json, AnsibleFailJson
 from ...common.vmware_object_mocks import create_mock_vsphere_object
 from pyVmomi import vim
+import pytest
 
 
 class TestModulePyvmomiBase():
@@ -16,6 +17,7 @@ class TestModulePyvmomiBase():
         mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
         set_module_args()
         module = mocker.Mock()
+        module.fail_json = fail_json
         module.params = {"hostname": "a", "username": "b", "password": "c"}
         self.base = ModulePyvmomiBase(module=module)
 
@@ -221,3 +223,70 @@ class TestModulePyvmomiBase():
 
         mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
         assert self.base.get_datastore_with_max_free_space([ds1, ds2, ds3, ds4, other]) == ds2
+
+    def test_get_vms_using_params(self, mocker):
+        self.__prepare(mocker)
+
+        mock_get_objs = mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        mock_find_uuid = mocker.patch.object(self.base.si.content.searchIndex, 'FindByUuid', return_value=mocker.Mock())
+
+        # test name param
+        self.base.params = {'name': 'foo'}
+        assert len(self.base.get_vms_using_params(name_param='name', fail_on_missing=True)) == 1
+        assert len(self.base.get_vms_using_params(name_param='fake', fail_on_missing=False)) == 0
+        mock_find_uuid.assert_not_called()
+        mock_get_objs.assert_called_once()
+        mock_get_objs.reset_mock()
+        mock_find_uuid.reset_mock()
+
+        self.base.params = {'name': 'foo', 'name_match': 'first'}
+        assert len(self.base.get_vms_using_params(name_param='name', fail_on_missing=True)) == 1
+        assert len(self.base.get_vms_using_params(name_param='fake', fail_on_missing=False)) == 0
+        mock_find_uuid.assert_not_called()
+        mock_get_objs.assert_called_once()
+        mock_get_objs.reset_mock()
+        mock_find_uuid.reset_mock()
+
+        self.base.params = {'name': 'foo', 'name_match': 'last'}
+        assert len(self.base.get_vms_using_params(name_param='name', fail_on_missing=True)) == 1
+        assert len(self.base.get_vms_using_params(name_param='fake', fail_on_missing=False)) == 0
+        mock_find_uuid.assert_not_called()
+        mock_get_objs.assert_called_once()
+        mock_get_objs.reset_mock()
+        mock_find_uuid.reset_mock()
+
+        # test name param
+        self.base.params = {'uuid': 'foo'}
+        assert len(self.base.get_vms_using_params(uuid_param='uuid', fail_on_missing=True)) == 1
+        assert len(self.base.get_vms_using_params(uuid_param='fake', fail_on_missing=False)) == 0
+        mock_get_objs.assert_not_called()
+        mock_find_uuid.assert_called_once()
+        mock_get_objs.reset_mock()
+        mock_find_uuid.reset_mock()
+
+        # test moid param
+        self.base.params = {'moid': 'foo'}
+        assert len(self.base.get_vms_using_params(moid_param='moid', fail_on_missing=True)) == 1
+        assert len(self.base.get_vms_using_params(moid_param='fake', fail_on_missing=False)) == 0
+        mock_find_uuid.assert_not_called()
+        mock_get_objs.assert_called_once()
+        mock_get_objs.reset_mock()
+        mock_find_uuid.reset_mock()
+
+        # test nothing found errors
+        self.base.params = {}
+        with pytest.raises(AnsibleFailJson) as e:
+            self.base.get_vms_using_params(fail_on_missing=True)
+            assert e.msg.startswith("Could not find any supported VM identifier params")
+
+        self.base.params = {'name': 'foo'}
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        with pytest.raises(AnsibleFailJson) as e:
+            self.base.get_vms_using_params(fail_on_missing=True)
+            assert e.msg.startswith("Unable to find VM")
+
+        self.base.params = {'name': 'foo', 'name_match': 'foo'}
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[mocker.Mock()])
+        with pytest.raises(AnsibleFailJson) as e:
+            self.base.get_vms_using_params(fail_on_missing=True)
+            assert e.msg.startswith("Unrecognized name_match option")

@@ -278,7 +278,7 @@ class VmwareGuestInfo(ModulePyvmomiBase):
         multiple matches are found, and the user did not provide a name_match strategy.
         """
         if self.params.get('name') or self.params.get('uuid') or self.params.get('moid'):
-            vm = self.get_vm_using_params(fail_on_missing=False)
+            vm = self.get_vms_using_params(fail_on_missing=False)
         else:
             vm = self.get_all_vms()
 
