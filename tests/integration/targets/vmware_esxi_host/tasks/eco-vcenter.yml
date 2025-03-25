@@ -83,7 +83,7 @@
         name: "{{ test_esxi_hostname }}"
       register: _esxi_info
       until: _esxi_info.guests[0].ipv4 is defined and _esxi_info.guests[0].ipv4
-      retries: 15
+      retries: 60
       delay: 5
 
     - name: Pause for 15 seconds to ensure host is ready
