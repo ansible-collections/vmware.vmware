@@ -168,6 +168,12 @@ class ModulePyvmomiBase(PyvmomiClient):
         return vms
 
     def __determine_search_param_type_and_id(self, name_param, uuid_param, moid_param, fail_on_missing):
+        """
+        Helper function for get_vms_using_params. Tries to determine which of the VM identifying parameters should be
+        used to search for matching VMs. Optionally throws an error if none of the params are valid.
+        Returns:
+          str, str: The type of identifier that was selected, and the parameter name for that identifier
+        """
         if self.params.get(moid_param):
             return 'moid', moid_param
         elif self.params.get(uuid_param):
