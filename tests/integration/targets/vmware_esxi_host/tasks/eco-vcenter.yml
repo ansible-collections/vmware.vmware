@@ -82,7 +82,9 @@
         validate_certs: false
         name: "{{ test_esxi_hostname }}"
       register: _esxi_info
-      until: _esxi_info.guests[0].ipv4 is defined and _esxi_info.guests[0].ipv4
+      until: >-
+        _esxi_info.guests[0].ipv4 is defined and _esxi_info.guests[0].ipv4 and
+        not _esxi_info.guests[0].ipv4.startswith('169.254')
       retries: 60
       delay: 5
 
