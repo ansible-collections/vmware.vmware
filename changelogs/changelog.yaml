@@ -57,6 +57,40 @@ releases:
     fragments:
     - 121-fix-bugs-in-new-modules.yml
     release_date: '2025-02-20'
+  1.11.0:
+    changes:
+      bugfixes:
+      - vms inventory - fix handling of VMs within VApps
+      minor_changes:
+      - _module_pyvmomi_base - Make sure to use the folder param when searching for
+        VMs based on other common params in get_vms_using_params
+      - added vm_resource_info module to collect cpu/memory facts about vms
+      - clients/_pyvmomi - adds explicit init params instead of using dict
+      - clients/_rest - adds explicit init params instead of using dict
+      - esxi_hosts - Add inventory host filtering based on jinja statements
+      - esxi_hosts inventory - include moid property in output always
+      - folder - migrate vmware_guest_powerstate module from community to here
+      - pyvmomi - update object search by name method to use propertycollector, which
+        speeds up results significantly
+      - upload_content_library_ovf - Add module to upload an ovf/ova to a content
+        library
+      - vms - Add inventory host filtering based on jinja statements
+      - vms inventory - include moid property in output always
+    fragments:
+    - 114-migrate-vmware_guest_powerstate.yml
+    - 120-optimize-search.yml
+    - 123-fix-galaxy-import-warnings.yml
+    - 127-add-maintainer-docs.yml
+    - 128-add-resource-info-functionality.yml
+    - 130-add-host-filtering-to-invens.yml
+    - 131-update-query-file.yml
+    - 132-add-explicit-client-params.yml
+    - 135-add-moid-to-inven-out.yml
+    - 138-add-ovf-upload-module.yml
+    - 139-fix-inventory-plugin-vapps.yml
+    - 141-add-folder-param-to-get-vm.yml
+    - 142-add-longer-wait-to-esxi-tests.yml
+    release_date: '2025-03-26'
   1.2.0:
     changes:
       bugfixes:

@@ -1,3 +1,0 @@
----
-minor_changes:
-  - added vm_resource_info module to collect cpu/memory facts about vms

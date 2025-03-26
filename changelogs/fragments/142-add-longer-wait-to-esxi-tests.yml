@@ -1,3 +1,0 @@
----
-trivial:
-  - test - Add a longer wait period to ESXi tests, since DHCP can take awhile
