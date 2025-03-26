@@ -203,24 +203,23 @@ class VmwareRemoteOvf(ModuleRestBase):
         If a library name was supplied, search using that name.
         Otherwise, search with a name of None, which essentially means any name
 
-        Returns: list(str), list of IDs
+        Returns: str
         """
         if self._library_id:
-            return self._library_id
-
-        if self.params['library_id']:
+            pass
+        elif self.params['library_id']:
             self._library_id = self.params['library_id']
+        else:
+            self._library_id = self.get_content_library_ids(name=self.params['library_name'], library_type='LOCAL', fail_on_missing=True)[0]
 
-        self._library_id = self.get_content_library_ids(name=self.params['library_name'], library_type='LOCAL', fail_on_missing=True)[0]
         return self._library_id
 
     @property
     def library_item_id(self):
-        if self._library_item_id:
-            return self._library_item_id
+        if not self._library_item_id:
+            library_item_ids = self.get_library_item_ids(name=self.params['dest'], library_id=self.library_id)
+            self._library_item_id = library_item_ids[0] if library_item_ids else None
 
-        library_item_ids = self.get_library_item_ids(name=self.params['dest'], library_id=self.library_id)
-        self._library_item_id = library_item_ids[0] if library_item_ids else None
         return self._library_item_id
 
     def create_library_item(self):
