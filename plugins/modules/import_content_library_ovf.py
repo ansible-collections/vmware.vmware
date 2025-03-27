@@ -164,7 +164,7 @@ from ansible.module_utils.urls import open_url
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
 
 try:
     from com.vmware.content.library.item_client import UpdateSessionModel

@@ -21,7 +21,7 @@ except ImportError:
     pass
     # handled in base class
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
 
 
 class ModuleRestBase(VmwareRestClient):

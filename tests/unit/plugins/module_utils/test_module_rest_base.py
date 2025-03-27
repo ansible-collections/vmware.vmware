@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import (
     VmwareRestClient
 )
 from ...common.utils import set_module_args

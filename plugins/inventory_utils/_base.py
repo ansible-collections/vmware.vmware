@@ -15,8 +15,8 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import (
     get_folder_path_of_vsphere_object
 )

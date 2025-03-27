@@ -15,7 +15,7 @@ except ImportError:
     pass
     # handled in base class
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
 
 
