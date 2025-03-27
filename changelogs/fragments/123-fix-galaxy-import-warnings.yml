@@ -1,3 +1,0 @@
----
-trivial:
-  - fix various galaxy import warnings related to ansible lint

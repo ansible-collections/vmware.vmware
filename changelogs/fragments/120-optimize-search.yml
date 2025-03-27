@@ -1,3 +1,0 @@
----
-minor_changes:
-  - pyvmomi - update object search by name method to use propertycollector, which speeds up results significantly

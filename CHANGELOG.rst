@@ -4,6 +4,29 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v1.11.0
+=======
+
+Minor Changes
+-------------
+
+- _module_pyvmomi_base - Make sure to use the folder param when searching for VMs based on other common params in get_vms_using_params
+- added vm_resource_info module to collect cpu/memory facts about vms
+- clients/_pyvmomi - adds explicit init params instead of using dict
+- clients/_rest - adds explicit init params instead of using dict
+- esxi_hosts - Add inventory host filtering based on jinja statements
+- esxi_hosts inventory - include moid property in output always
+- vm_powerstate - migrate vmware_guest_powerstate module from community to here
+- pyvmomi - update object search by name method to use propertycollector, which speeds up results significantly
+- upload_content_library_ovf - Add module to upload an ovf/ova to a content library
+- vms - Add inventory host filtering based on jinja statements
+- vms inventory - include moid property in output always
+
+Bugfixes
+--------
+
+- vms inventory - fix handling of VMs within VApps
+
 v1.10.1
 =======
 
