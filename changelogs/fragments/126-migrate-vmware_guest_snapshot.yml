@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - vm_snapshot - migrate vmware_guest_snapshot module from community to here
