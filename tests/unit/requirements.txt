@@ -1,5 +1,5 @@
 requests
 pyVim
-pyvmomi
+pyVmomi>=8.0.3.0.1
 git+https://github.com/vmware/vsphere-automation-sdk-python.git
 aiohttp
