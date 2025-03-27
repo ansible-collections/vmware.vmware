@@ -8,7 +8,7 @@ from ansible_collections.vmware.vmware.plugins.modules.cluster_info import (
     ClusterInfo,
     main as module_main
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
 

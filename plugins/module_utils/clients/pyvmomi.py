@@ -24,7 +24,7 @@ try:
 except ImportError:
     PYVMOMI_IMP_ERR = traceback.format_exc()
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._errors import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors import (
     ApiAccessError,
     MissingLibError
 )

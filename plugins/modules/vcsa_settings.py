@@ -243,7 +243,7 @@ vcsa_settings:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
 
 
 class VmwareVcsaSettings(ModuleRestBase):

@@ -8,7 +8,7 @@ from ansible_collections.vmware.vmware.plugins.modules.esxi_host import (
     VmwareHost,
     main as module_main
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
 from ...common.utils import (

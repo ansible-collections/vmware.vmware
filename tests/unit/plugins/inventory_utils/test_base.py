@@ -4,8 +4,8 @@ __metaclass__ = type
 import sys
 import pytest
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.inventory_utils._base import (
     VmwareInventoryBase,
     VmwareInventoryHost
