@@ -56,9 +56,9 @@ jobs:
           # oldest versions of each that we support
           - { python: 3.13, ansible: stable-2.18 }
           - { python: 3.8, ansible: stable-2.18 }
-          - { python: 3.11, ansible: stable-2.15 }
-          - { python: 3.5, ansible: stable-2.15 }
-          - { python: 2.7, ansible: stable-2.15 }
+          - { python: 3.12, ansible: stable-2.16 }
+          - { python: 3.6, ansible: stable-2.16 }
+          - { python: 2.7, ansible: stable-2.16 }
 
     runs-on: ubuntu-latest
     steps:

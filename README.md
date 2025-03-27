@@ -14,7 +14,7 @@ Once the collection is installed, you can install them into a python environment
 
 ### Ansible version compatibility
 
-This collection has been tested against following Ansible versions: **>=2.15.0**.
+This collection has been tested against following Ansible versions: **>=2.16.0**.
 
 
 ## Installation
