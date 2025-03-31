@@ -3,8 +3,8 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._errors import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors import (
     ApiAccessError
 )
 

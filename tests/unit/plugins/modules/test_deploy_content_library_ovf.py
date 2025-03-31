@@ -8,10 +8,10 @@ from ansible_collections.vmware.vmware.plugins.modules.deploy_content_library_ov
     VmwareContentDeployOvf,
     main as module_main
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import (
     VmwareRestClient
 )
 from ...common.utils import (

@@ -7,7 +7,7 @@ import pytest
 from ansible_collections.vmware.vmware.plugins.modules.deploy_folder_template import (
     VmwareFolderTemplate
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
 
