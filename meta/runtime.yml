@@ -28,3 +28,9 @@ action_groups:
         - vm_list_group_by_clusters_info
         - vm_resource_info
         - vm_portgroup_info
+plugin_routing:
+    modules:
+        vm_list_group_by_clusters:
+            tombstone:
+                removal_version: 3.0.0
+                warning_text: Use M(vmware.vmware.vm_list_group_by_clusters_info) instead.
