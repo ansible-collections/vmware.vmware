@@ -105,6 +105,17 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+vm:
+    description:
+        - Identifying information about the vm
+    returned: always
+    type: dict
+    sample: {
+        "vm": {
+            "moid": "vm-111111",
+            "name": "my-vm"
+        },
+    }
 '''
 
 import traceback

@@ -1,4 +1,8 @@
 ---
+####
+# Do not add _info modules or modules that manage users
+# guest_info is here for testing purposes
+####
 vmware.vmware.guest_info:
   query: >-
     .guests[] | {
@@ -18,20 +22,114 @@ vmware.vmware.guest_info:
       }
     }
 
-vmware.vmware.vm_list_group_by_clusters_info:
+####
+# VMs
+####
+vmware.vmware.vm_powerstate:
   query: >-
-    .vm_list_group_by_clusters_info | values[] | values[] | values[] | {
+    .vm | {
       name: .moid,
       canonical_facts: {
         name: .name,
-        moid: .moid,
-        esxi_host: .hw_esxi_host
+        moid: .moid
       },
       facts: {
         device_type: "VM"
       }
-    }, {
-      name: .hw_esxi_host,
+    }
+
+vmware.vmware.deploy_content_library_ovf:
+  query: >-
+    .vm | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "VM"
+      }
+    }
+
+vmware.vmware.deploy_content_library_template:
+  query: >-
+    .vm | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "VM"
+      }
+    }
+
+vmware.vmware.deploy_folder_template:
+  query: >-
+    .vm | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "VM"
+      }
+    }
+
+####
+# vCenter Appliance
+####
+vmware.vmware.vcsa_settings:
+  query: >-
+    .vcsa | {
+      name: "\(.hostname)\(.port)",
+      canonical_facts: {
+        name: .hostname,
+        port: .port
+      },
+      facts: {
+        device_type: "vCenter Appliance"
+      }
+    }
+
+####
+# ESXi
+####
+vmware.vmware.esxi_maintenance_mode:
+  query: >-
+    .host | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "ESXi"
+      }
+    }
+
+vmware.vmware.esxi_host:
+  query: >-
+    .host | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "ESXi"
+      }
+    }
+
+vmware.vmware.esxi_connection:
+  query: >-
+    .host | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
       facts: {
         device_type: "ESXi"
       }
