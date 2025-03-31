@@ -224,7 +224,7 @@ def main():
 
     result = dict(
         changed=False,
-        result={}
+        result={},
         host=dict(name='', moid='')
     )
 
