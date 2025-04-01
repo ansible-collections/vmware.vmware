@@ -209,7 +209,7 @@ class VmwareContentTemplate(ModuleRestBase):
             name=self.template_name,
             placement=placement_spec,
             library=self.library_id,
-            source_vm=self.vm,
+            source_vm=self.vm._GetMoId(),
         )
         template_id = ''
         try:
