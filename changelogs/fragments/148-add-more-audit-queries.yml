@@ -1,0 +1,4 @@
+---
+trivial:
+  - add more modules/queries to the event_query audit file
+  - vcsa_settings - add vcsa hostname and port to module output
