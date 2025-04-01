@@ -9,6 +9,7 @@ from ...common.utils import set_module_args, fail_json, AnsibleFailJson
 from ...common.vmware_object_mocks import create_mock_vsphere_object
 from pyVmomi import vim
 import pytest
+from unittest.mock import ANY
 
 
 class TestModulePyvmomiBase():
@@ -140,6 +141,13 @@ class TestModulePyvmomiBase():
         mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
         self.base.get_datastore_cluster_by_name_or_moid('foo', fail_on_missing=True)
         mock_fail.assert_called_once()
+
+        # test datacenter param
+        datacenter = mocker.Mock()
+        mocker.patch.object(self.base, 'get_objs_by_name_or_moid', return_value=[])
+        self.base.get_datastore_cluster_by_name_or_moid('foo', datacenter=datacenter)
+        self.base.get_objs_by_name_or_moid.assert_called_once_with(
+            ANY, ANY, return_all=ANY, search_root_folder=datacenter.datastoreFolder)
 
     def test_get_resource_pool_by_name_or_moid(self, mocker):
         self.__prepare(mocker)
