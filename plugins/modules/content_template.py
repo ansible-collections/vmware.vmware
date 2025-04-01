@@ -182,7 +182,7 @@ class VmwareContentTemplate(ModuleRestBase):
         if self.params['state'] == 'present':
             pyvmomi = ModulePyvmomiBase(module)
             self.vm = pyvmomi.get_vms_using_params(
-                vm_param='vm_name', uuid_param='vm_uuid', moid_param='vm_moid',
+                name_param='vm_name', uuid_param='vm_uuid', moid_param='vm_moid',
                 name_match_param='vm_name_match', folder_param='vm_folder', fail_on_missing=True
             )[0]
 
