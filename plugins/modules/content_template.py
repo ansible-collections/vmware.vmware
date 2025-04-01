@@ -179,11 +179,12 @@ class VmwareContentTemplate(ModuleRestBase):
         self.library_id = self.get_content_library_ids(name=self.params.get('library'), fail_on_missing=True)[0]
         self.template_folder = self.params.get('template_folder')
 
-        pyvmomi = ModulePyvmomiBase(module)
-        self.vm = pyvmomi.get_vms_using_params(
-            vm_param='vm_name', uuid_param='vm_uuid', moid_param='vm_moid',
-            name_match_param='vm_name_match', folder_param='vm_folder', fail_on_missing=True
-        )[0]
+        if self.params['state'] == 'present':
+            pyvmomi = ModulePyvmomiBase(module)
+            self.vm = pyvmomi.get_vms_using_params(
+                vm_param='vm_name', uuid_param='vm_uuid', moid_param='vm_moid',
+                name_match_param='vm_name_match', folder_param='vm_folder', fail_on_missing=True
+            )[0]
 
     def create_template_from_vm(self):
         _template = self.get_library_item_ids(name=self.template_name, library_id=self.library_id)
