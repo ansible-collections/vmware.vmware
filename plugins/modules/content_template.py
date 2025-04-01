@@ -39,13 +39,13 @@ options:
     vm_uuid:
         description:
             - UUID of the instance to manage if known, this is VMware's unique identifier.
-            - This is required if O(vm_moid) or O(vm_uuid) is not supplied.
+            - This is required if O(vm_moid) or O(vm_name) is not supplied.
             - A VM identifier is required when O(state) is present.
         type: str
     vm_moid:
         description:
             - Managed Object ID of the instance to manage if known, this is a unique identifier only within a single vCenter instance.
-            - This is required if O(vm_moid) or O(vm_uuid) is not supplied.
+            - This is required if O(vm_name) or O(vm_uuid) is not supplied.
             - A VM identifier is required when O(state) is present.
         type: str
     use_instance_uuid:
@@ -94,12 +94,16 @@ options:
             - If not specified, the system will attempt to choose a suitable resource pool
               for the virtual machine template; if a resource pool cannot be
               chosen, the library item creation operation will fail.
+            - If O(cluster) and O(resource_pool) are both specified, O(resource_pool) must belong
+              to O(cluster).
+            - If O(host) and O(resource_pool) are both specified, O(resource_pool)
+              must belong to O(host).
         type: str
     cluster:
         description:
             - Cluster onto which the virtual machine template should be placed.
-            - If O(cluster) and O(resource_pool) are both specified,
-              O(resource_pool) must belong to O(cluster).
+            - If O(cluster) and O(resource_pool) are both specified, O(resource_pool) must belong
+              to O(cluster).
             - If O(cluster) and O(host) are both specified, O(host) must be a member of O(cluster).
             - This attribute was added in vSphere API 6.8.
         type: str
