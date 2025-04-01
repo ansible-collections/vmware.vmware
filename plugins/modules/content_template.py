@@ -15,70 +15,112 @@ DOCUMENTATION = r'''
 module: content_template
 short_description: Manage template in content library from virtual machine.
 description:
-- Module to manage template in content library from virtual machine.
-- Content Library feature is introduced in vSphere 6.0 version.
-- This module does not work with vSphere version older than 67U2.
+    - Module to manage template in content library from virtual machine.
+    - Content Library feature is introduced in vSphere 6.0 version.
+    - This module does not work with vSphere version older than 67U2.
 author:
-- Ansible Cloud Team (@ansible-collections)
+    - Ansible Cloud Team (@ansible-collections)
 requirements:
-- vSphere Automation SDK
+    - vSphere Automation SDK
 options:
-    template:
-        description:
-        - The name of template to manage.
-        type: str
-        required: true
-    library:
-        description:
-        - The name of the content library where the template will be created.
-        type: str
-        required: true
     vm_name:
         description:
-        - The name of the VM to be used to create template.
-        - This attribute is required only when the state attribute is set to present
+            - The name of the VM to be used to create template.
+            - Virtual machine names in vCenter are not necessarily unique, which may be problematic, see O(vm_name_match).
+            - This is required if O(vm_moid) or O(vm_uuid) is not supplied.
+            - A VM identifier is required when O(state) is present.
         type: str
-    host:
+    vm_name_match:
         description:
-        - Host onto which the virtual machine template should be placed.
-        - If O(host) and O(resource_pool) are both specified, O(resource_pool)
-          must belong to O(host).
-        - If O(host) and O(cluster) are both specified, O(host) must be a member of O(cluster).
-        - This attribute was added in vSphere API 6.8.
+            - If multiple virtual machines matching the name, use the first or last found.
+        default: first
+        choices: [ first, last ]
         type: str
-    resource_pool:
+    vm_uuid:
         description:
-        - Resource pool into which the virtual machine template should be placed.
-        - This attribute was added in vSphere API 6.8.
-        - If not specified, the system will attempt to choose a suitable resource pool
-          for the virtual machine template; if a resource pool cannot be
-          chosen, the library item creation operation will fail.
+            - UUID of the instance to manage if known, this is VMware's unique identifier.
+            - This is required if O(vm_moid) or O(vm_uuid) is not supplied.
+            - A VM identifier is required when O(state) is present.
         type: str
-    cluster:
+    vm_moid:
         description:
-        - Cluster onto which the virtual machine template should be placed.
-        - If O(cluster) and O(resource_pool) are both specified,
-          O(resource_pool) must belong to O(cluster).
-        - If O(cluster) and O(host) are both specified, O(host) must be a member of O(cluster).
-        - This attribute was added in vSphere API 6.8.
+            - Managed Object ID of the instance to manage if known, this is a unique identifier only within a single vCenter instance.
+            - This is required if O(vm_moid) or O(vm_uuid) is not supplied.
+            - A VM identifier is required when O(state) is present.
         type: str
-    folder:
+    use_instance_uuid:
+        description:
+            - Whether to use the VMware instance UUID rather than the BIOS UUID when searching for the VM.
+        default: false
+        type: bool
+    vm_folder:
+        description:
+            - Destination folder, absolute or relative path to find an existing guest.
+            - Should be the full folder path, with or without the 'datacenter/vm/' prefix
+            - For example 'datacenter_name/vm/path/to/folder' or 'path/to/folder'
+        type: str
+        required: false
+    template_folder:
         description:
         - Virtual machine folder into which the virtual machine template should be placed.
         - This attribute was added in vSphere API 6.8.
         - If not specified, the virtual machine template will be placed in the same
           folder as the source virtual machine.
         type: str
+        aliases: [template_folder]
+    template_name:
+        description:
+            - The name of template to manage.
+        type: str
+        required: true
+        aliases: [template]
+    library:
+        description:
+            - The name of the content library where the template will be created.
+        type: str
+        required: true
+    host:
+        description:
+            - Host onto which the virtual machine template should be placed.
+            - If O(host) and O(resource_pool) are both specified, O(resource_pool)
+              must belong to O(host).
+            - If O(host) and O(cluster) are both specified, O(host) must be a member of O(cluster).
+            - This attribute was added in vSphere API 6.8.
+        type: str
+    resource_pool:
+        description:
+            - Resource pool into which the virtual machine template should be placed.
+            - This attribute was added in vSphere API 6.8.
+            - If not specified, the system will attempt to choose a suitable resource pool
+              for the virtual machine template; if a resource pool cannot be
+              chosen, the library item creation operation will fail.
+        type: str
+    cluster:
+        description:
+            - Cluster onto which the virtual machine template should be placed.
+            - If O(cluster) and O(resource_pool) are both specified,
+              O(resource_pool) must belong to O(cluster).
+            - If O(cluster) and O(host) are both specified, O(host) must be a member of O(cluster).
+            - This attribute was added in vSphere API 6.8.
+        type: str
+        aliases: [cluster_name]
+    datacenter:
+        description:
+            - The name of the datacenter to use when searching for the source VM.
+            - This parameter is optional, and only used if you use a relative O(vm_folder) path.
+        type: str
+        required: false
+        aliases: [datacenter_name]
     state:
         description:
-        - State of the template in content library.
-        - If C(present), the template will be created in content library.
-        - If C(absent), the template will be deleted from content library.
+            - State of the template in content library.
+            - If C(present), the template will be created in content library.
+            - If C(absent), the template will be deleted from content library.
         type: str
         default: present
         choices:
-        - present
-        - absent
+            - present
+            - absent
 extends_documentation_fragment:
     - vmware.vmware.base_options
     - vmware.vmware.additional_rest_options
@@ -109,14 +151,13 @@ template_info:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
-HAS_VAUTOMATION_PYTHON_SDK = False
 try:
     from com.vmware.vcenter.vm_template_client import LibraryItems
     from com.vmware.vapi.std.errors_client import Error
-    HAS_VAUTOMATION_PYTHON_SDK = True
 except ImportError:
     pass
 
@@ -127,24 +168,28 @@ class VmwareContentTemplate(ModuleRestBase):
         super(VmwareContentTemplate, self).__init__(module)
 
         # Initialize member variables
-        self.module = module
         self._template_service = self.api_client.vcenter.vm_template.LibraryItems
         self.result = {'changed': False}
 
         # Get parameters
-        self.template = self.params.get('template')
+        self.template_name = self.params.get('template_name')
         self.host = self.params.get('host')
         self.cluster = self.params.get('cluster')
         self.resource_pool = self.params.get('resource_pool')
         self.library_id = self.get_content_library_ids(name=self.params.get('library'), fail_on_missing=True)[0]
-        self.folder = self.params.get('folder')
-        self.vm_name = self.params.get('vm_name')
+        self.template_folder = self.params.get('template_folder')
+
+        pyvmomi = ModulePyvmomiBase(module)
+        self.vm = pyvmomi.get_vms_using_params(
+            vm_param='vm_name', uuid_param='vm_uuid', moid_param='vm_moid',
+            name_match_param='vm_name_match', folder_param='vm_folder', fail_on_missing=True
+        )[0]
 
     def create_template_from_vm(self):
-        _template = self.get_library_item_ids(name=self.template, library_id=self.library_id)
+        _template = self.get_library_item_ids(name=self.template_name, library_id=self.library_id)
         if _template:
             self.result['template_info'] = dict(
-                msg="Template '%s' already exists." % self.template,
+                msg="Template '%s' already exists." % self.template_name,
                 template_id=_template[0],
             )
             return
@@ -154,12 +199,12 @@ class VmwareContentTemplate(ModuleRestBase):
         placement_spec.host = self.get_host_by_name(self.host)
         placement_spec.resource_pool = self.get_resource_pool_by_name(self.resource_pool)
         placement_spec.cluster = self.get_cluster_by_name(self.cluster)
-        placement_spec.folder = self.get_folder_by_name(self.folder)
+        placement_spec.folder = self.get_folder_by_name(self.template_folder)
         create_spec = LibraryItems.CreateSpec(
-            name=self.template,
+            name=self.template_name,
             placement=placement_spec,
             library=self.library_id,
-            source_vm=self.get_vm_obj_by_name(self.vm_name),
+            source_vm=self.vm,
         )
         template_id = ''
         try:
@@ -176,15 +221,15 @@ class VmwareContentTemplate(ModuleRestBase):
             self.module.fail_json(**self.result)
         self.result['changed'] = True
         self.result['template_info'] = dict(
-            msg="Template '%s'." % self.template,
+            msg="Template '%s'." % self.template_name,
             template_id=template_id,
         )
 
     def delete_template(self):
-        _template = self.get_library_item_ids(name=self.template, library_id=self.library_id)
+        _template = self.get_library_item_ids(name=self.template_name, library_id=self.library_id)
         if not _template:
             self.result['template_info'] = dict(
-                msg="Template '%s' doesn't exists." % self.template,
+                msg="Template '%s' doesn't exists." % self.template_name,
             )
             return
         template_id = _template[0]
@@ -196,7 +241,7 @@ class VmwareContentTemplate(ModuleRestBase):
 
         self.result['changed'] = True
         self.result['template_info'] = dict(
-            msg="Template '%s' has been deleted." % self.template,
+            msg="Template '%s' has been deleted." % self.template_name,
             template_id=template_id,
         )
 
@@ -204,20 +249,31 @@ class VmwareContentTemplate(ModuleRestBase):
 def main():
     argument_spec = rest_compatible_argument_spec()
     argument_spec.update(
-        template=dict(type='str', required=True),
-        library=dict(type='str', required=True),
+        template_name=dict(type='str', required=True, aliases=['template']),
         vm_name=dict(type='str'),
+        vm_name_match=dict(type='str', choices=['first', 'last'], default='first'),
+        vm_uuid=dict(type='str'),
+        vm_moid=dict(type='str'),
+        use_instance_uuid=dict(type='bool', default=False),
+        vm_folder=dict(type='str', required=False),
+        library=dict(type='str', required=True),
         host=dict(type='str'),
-        cluster=dict(type='str'),
+        cluster=dict(type='str', aliases=['cluster_name']),
+        datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
         resource_pool=dict(type='str'),
-        folder=dict(type='str'),
+        template_folder=dict(type='str'),
         state=dict(type='str', default='present', choices=['present', 'absent']),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,
         supports_check_mode=True,
-        required_one_of=[('host', 'resource_pool', 'cluster')],
-        required_if=[('state', 'present', ["vm_name"])]
+        required_if=[
+            ('state', 'present', ["vm_name", "vm_uuid", "vm_moid"], True),
+            ('state', 'present', ["host", "resource_pool", "cluster"], True)
+        ],
+        mutually_exclusive=[
+            ("vm_name", "vm_uuid", "vm_moid")
+        ]
     )
 
     result = {'failed': False, 'changed': False}
