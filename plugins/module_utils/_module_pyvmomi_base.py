@@ -16,7 +16,7 @@ except ImportError:
     # handled in base class
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
+from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import format_folder_path_as_vm_fq_path
 
 
 class ModulePyvmomiBase(PyvmomiClient):

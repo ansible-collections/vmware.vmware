@@ -174,11 +174,11 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
     base_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
+from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError,
     RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import (
+from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import (
     format_folder_path_as_host_fq_path
 )
 
