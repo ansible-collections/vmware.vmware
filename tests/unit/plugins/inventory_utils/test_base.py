@@ -8,7 +8,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
 from ansible_collections.vmware.vmware.plugins.inventory_utils._base import (
     VmwareInventoryBase,
-    VmwareInventoryHost
+    VmwareInventoryHost,
+    DISPLAY
 )
 from ansible.errors import AnsibleError
 from ...common.vmware_object_mocks import (
@@ -86,6 +87,59 @@ class TestInventoryUtilsBase():
         ])
         with pytest.raises(AnsibleError):
             self.test_base.host_should_be_filtered_out(test_obj)
+
+    def test_handle_duplicate_host(self, mocker):
+        self.__prepare(mocker)
+        mocker.patch.object(self.test_base, 'get_option', return_value=True)
+        test_obj = mocker.Mock()
+        with pytest.raises(AnsibleError):
+            self.test_base._handle_duplicate_host({'moid': 'foo'}, test_obj)
+
+        mocker.patch.object(self.test_base, 'get_option', return_value=False)
+        mocker.patch.object(DISPLAY, 'warning')
+        self.test_base._handle_duplicate_host({'moid': 'foo'}, test_obj)
+        DISPLAY.warning.assert_called_once()
+
+    def test_add_host_object_from_vcenter_to_inventory(self, mocker):
+        self.__prepare(mocker)
+        mocker.patch.object(self.test_base, 'inventory')
+        mocker.patch.object(self.test_base, 'set_default_ansible_host_var')
+        mocker.patch.object(self.test_base, 'get_option', return_value=True)
+        mocker.patch.object(self.test_base, '_set_composite_vars')
+        mocker.patch.object(self.test_base, '_add_host_to_composed_groups')
+        mocker.patch.object(self.test_base, '_add_host_to_keyed_groups')
+        mocker.patch.object(self.test_base, 'add_host_to_groups_based_on_path')
+        mocker.patch.object(self.test_base, 'set_host_variables_from_host_properties')
+        mocker.patch.object(self.test_base, '_handle_duplicate_host')
+
+        test_host = mocker.Mock()
+        hostvars = {}
+
+        # test host filtered
+        mocker.patch.object(self.test_base, 'host_should_be_filtered_out', return_value=True)
+        self.test_base.add_host_object_from_vcenter_to_inventory(test_host, hostvars)
+        self.test_base.inventory.add_host.assert_not_called()
+        assert hostvars == {}
+
+        test_host.inventory_hostname = 'foo'
+        mocker.patch.object(self.test_base, 'host_should_be_filtered_out', return_value=False)
+
+        # test host added
+        self.test_base.add_host_object_from_vcenter_to_inventory(test_host, hostvars)
+        self.test_base.inventory.add_host.assert_called_once_with(test_host.inventory_hostname)
+        assert hostvars == {'foo': test_host.properties}
+
+        self.test_base.inventory.reset_mock()
+
+        # test duplicate host
+        self.test_base.add_host_object_from_vcenter_to_inventory(test_host, hostvars)
+        self.test_base.inventory.add_host.assert_not_called()
+        self.test_base._handle_duplicate_host.assert_called_once()
+
+    def test_set_default_ansible_host_var(self, mocker):
+        self.__prepare(mocker)
+        with pytest.raises(NotImplementedError):
+            self.test_base.set_default_ansible_host_var(mocker.Mock())
 
 
 class TestVmwareInventoryHost():
