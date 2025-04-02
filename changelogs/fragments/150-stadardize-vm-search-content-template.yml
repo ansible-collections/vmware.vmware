@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - content_template - Added more options to search for the source VM like uuid and moid. Also made argument validation more accurate

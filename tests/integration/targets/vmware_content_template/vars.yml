@@ -1,12 +1,12 @@
 vcenter_hostname: "127.0.0.1"
 vcenter_username: "user"
 vcenter_password: "pass"
-vcenter_port: 1080
+vcenter_port: 9000
 
 mock_file: "vmware_content_template"
 
 run_on_simulator: true
-vm: test
+vm: DC0_H0_VM0
 template_host: 1.2.3.4.
 library: templates
 template_name: mytemplate
