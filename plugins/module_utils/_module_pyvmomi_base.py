@@ -253,7 +253,7 @@ class ModulePyvmomiBase(PyvmomiClient):
         """
         search_folder = None
         if datacenter and hasattr(datacenter, 'datastoreFolder'):
-            search_folder = datacenter.hostFolder
+            search_folder = datacenter.datastoreFolder
 
         data_store_cluster = self.get_objs_by_name_or_moid(
             [vim.StoragePod],
