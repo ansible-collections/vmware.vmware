@@ -17,10 +17,10 @@ from ansible.module_utils.common.dict_transformations import camel_dict_to_snake
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import (
+from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import (
     get_folder_path_of_vsphere_object
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
     vmware_obj_to_json,
     flatten_dict
 )

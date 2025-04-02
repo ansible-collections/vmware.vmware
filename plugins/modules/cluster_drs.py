@@ -141,14 +141,14 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
     base_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
+from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError,
     RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
     ClusterFacts
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_type_utils import (
+from ansible_collections.vmware.vmware.plugins.module_utils._type_utils import (
     diff_dict_and_vmodl_options_set
 )
 from ansible.module_utils._text import to_native
