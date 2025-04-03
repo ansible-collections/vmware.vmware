@@ -80,6 +80,8 @@ search_paths:
 filter_expressions:
   - 'summary.runtime.powerState == "poweredOff"'
 # Set custom inventory hostnames based on attributes
+# If more than one host has the same name, only the first host is shown in the inventory and a warning is thrown.
+# If strict is true, this warning is considered a fatal error.
 hostnames:
   - "'VM - ' + name + ' - ' + guest.ipAddress"
   - "'VM - ' + name + ' - ' + config.instanceUuid"
@@ -272,31 +274,18 @@ class InventoryModule(VmwareInventoryBase):
                 self.add_tags_to_object_properties(vm)
 
             self.set_inventory_hostname(vm)
-            if vm.inventory_hostname not in hostvars:
-                hostvars[vm.inventory_hostname] = vm.properties
-                self.__update_inventory(vm)
+            self.add_host_object_from_vcenter_to_inventory(new_host=vm, hostvars=hostvars)
 
         return hostvars
 
-    def __update_inventory(self, vm):
-        if self.host_should_be_filtered_out(vm):
-            return
-        self.add_host_to_inventory(vm)
-        self.add_host_to_groups_based_on_path(vm)
-        self.set_host_variables_from_host_properties(vm)
-
-    def add_host_to_inventory(self, vm: VmInventoryHost):
+    def set_default_ansible_host_var(self, vmware_host_object):
         """
-        Add the host to the inventory and any groups that the user wants to create based on inventory
-        parameters like groups or keyed groups.
+            Sets the default ansible_host var. This is usually an IP that is dependent on the object type.
+            This is a default because the user can override this via compose
+            Args:
+              vmware_host_object: EsxiInventoryHost, The host object that should be used
         """
-        strict = self.get_option("strict")
-        self.inventory.add_host(vm.inventory_hostname)
-        self.inventory.set_variable(vm.inventory_hostname, "ansible_host", vm.guest_ip)
-
-        self._set_composite_vars(
-            self.get_option("compose"), vm.properties, vm.inventory_hostname, strict=strict)
-        self._add_host_to_composed_groups(
-            self.get_option("groups"), vm.properties, vm.inventory_hostname, strict=strict)
-        self._add_host_to_keyed_groups(
-            self.get_option("keyed_groups"), vm.properties, vm.inventory_hostname, strict=strict)
+        self.inventory.set_variable(
+            vmware_host_object.inventory_hostname, "ansible_host",
+            vmware_host_object.guest_ip
+        )
