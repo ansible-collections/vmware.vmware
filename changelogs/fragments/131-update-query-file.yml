@@ -1,0 +1,3 @@
+---
+trivial:
+  - query file - update parsed output to include esxi hosts and use moid as ID when possible
