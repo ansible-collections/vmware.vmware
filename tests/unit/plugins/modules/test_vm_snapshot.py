@@ -14,7 +14,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi imp
 from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor
+from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import RunningTaskMonitor
 
 pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"
