@@ -8,7 +8,7 @@ from ansible_collections.vmware.vmware.plugins.modules.vm_snapshot import (
     VmSnapshotModule,
     main as module_main
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients.test_pyvmomi import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
 from ...common.utils import (
