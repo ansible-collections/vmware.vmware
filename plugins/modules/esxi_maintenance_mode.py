@@ -102,6 +102,17 @@ result:
             "state": "success"
         }
     }
+host:
+    description:
+        - Identifying information about the host
+    returned: always
+    type: dict
+    sample: {
+        "host": {
+            "moid": "host-111111",
+            "name": "10.10.10.10"
+        },
+    }
 '''
 
 try:
@@ -115,10 +126,10 @@ from ansible.module_utils._text import to_native
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
     ModulePyvmomiBase
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import (
+from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
     base_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import (
+from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError,
     RunningTaskMonitor
 )
@@ -213,10 +224,13 @@ def main():
 
     result = dict(
         changed=False,
-        result={}
+        result={},
+        host=dict(name='', moid='')
     )
 
     esxi_maint_mode = EsxiMaintenanceModeModule(module)
+    result['host']['name'] = module.params['esxi_host_name']
+    result['host']['moid'] = esxi_maint_mode.host._GetMoId()
     if esxi_maint_mode.current_state_matches_desired_state():
         module.exit_json(**result)
 

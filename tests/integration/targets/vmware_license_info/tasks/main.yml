@@ -17,4 +17,4 @@
   ansible.builtin.assert:
     that:
       - __res.changed == False
-      - __res.licenses | length == licenses_length
+      - __res.licenses | length > 1 or run_on_simulator

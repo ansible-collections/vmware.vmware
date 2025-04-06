@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - fix method to lookup datastore clusters by name or moid https://github.com/ansible-collections/vmware.vmware/issues/152

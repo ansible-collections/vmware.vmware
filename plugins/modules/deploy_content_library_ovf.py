@@ -129,20 +129,21 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-vm_name:
-  description: The name of the vm, as specified by the input parameter vm_name
-  returned: always
-  type: str
-  sample: myvm
-vm_moid:
-  description: The MOID of the deployed VM
-  returned: when state is present
-  type: str
-  sample: vm-1000
+vm:
+    description:
+        - Identifying information about the vm
+    returned: always
+    type: dict
+    sample: {
+        "vm": {
+            "moid": "vm-111111",
+            "name": "my-vm"
+        },
+    }
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_argument_spec import rest_compatible_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils._module_deploy_vm_base import (

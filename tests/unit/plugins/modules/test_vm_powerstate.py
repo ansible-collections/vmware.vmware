@@ -8,13 +8,13 @@ from ansible_collections.vmware.vmware.plugins.modules.vm_powerstate import (
     VmPowerstateModule,
     main as module_main
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import (
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
 from ...common.utils import (
     AnsibleExitJson, ModuleTestCase, set_module_args,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_tasks import RunningTaskMonitor, VmQuestionHandler
+from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import RunningTaskMonitor, VmQuestionHandler
 
 pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"

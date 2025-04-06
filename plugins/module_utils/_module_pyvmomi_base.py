@@ -15,8 +15,8 @@ except ImportError:
     pass
     # handled in base class
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._pyvmomi import PyvmomiClient
-from ansible_collections.vmware.vmware.plugins.module_utils._vmware_folder_paths import format_folder_path_as_vm_fq_path
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
+from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import format_folder_path_as_vm_fq_path
 
 
 class ModulePyvmomiBase(PyvmomiClient):
@@ -253,7 +253,7 @@ class ModulePyvmomiBase(PyvmomiClient):
         """
         search_folder = None
         if datacenter and hasattr(datacenter, 'datastoreFolder'):
-            search_folder = datacenter.hostFolder
+            search_folder = datacenter.datastoreFolder
 
         data_store_cluster = self.get_objs_by_name_or_moid(
             [vim.StoragePod],

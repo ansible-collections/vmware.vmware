@@ -1,13 +1,13 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients._rest import VmwareRestClient
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
 
 
 class TestRestClient():
 
     def __prepare(self, mocker):
-        client_mock = mocker.patch('ansible_collections.vmware.vmware.plugins.module_utils.clients._rest.create_vsphere_client')
+        client_mock = mocker.patch('ansible_collections.vmware.vmware.plugins.module_utils.clients.rest.create_vsphere_client')
         client_mock.return_value = mocker.Mock()
         self.client = VmwareRestClient(
             hostname='a',
