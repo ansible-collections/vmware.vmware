@@ -23,7 +23,7 @@ options:
         description:
         - Manage snapshot(s) attached to a specific virtual machine.
         - If set to V(present) and the snapshot absent, a new snapshot will be created with the given name.
-        - If set to V(present), the snapshot is present, and O(new_snapshot_name) or O(description) are set, the snaphot name or description is updated.
+        - If set to V(present), the snapshot is present, and O(new_snapshot_name) or O(description) are set, the snapshot name or description is updated.
         - If set to V(absent) and snapshot present, then the snapshot with the given name is removed.
         choices: ['present', 'absent']
         default: 'present'
