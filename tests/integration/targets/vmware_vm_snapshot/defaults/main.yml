@@ -15,4 +15,3 @@ vm_hardware:
   boot_firmware: efi
 
 datastore: "{{ shared_storage_02 }}"
-test_resource_pool: "{{ tiny_prefix }}_vm_snapshot"
