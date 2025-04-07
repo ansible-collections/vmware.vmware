@@ -64,7 +64,6 @@ options:
         description:
         - Absolute or relative folder path to search for the virtual machine.
         - This parameter is required if O(name) is supplied.
-        - Should be the full folder path, with or without the 'datacenter/vm/' prefix
         - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
         type: str
     datacenter:
