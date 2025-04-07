@@ -93,6 +93,19 @@ vmware.vmware.vcsa_settings:
       }
     }
 
+vmware.vmware.vcsa_backup_schedule:
+  query: >-
+    .vcsa | {
+      name: "\(.hostname)\(.port)",
+      canonical_facts: {
+        name: .hostname,
+        port: .port
+      },
+      facts: {
+        device_type: "vCenter Appliance"
+      }
+    }
+
 ####
 # ESXi
 ####
