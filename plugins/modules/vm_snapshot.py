@@ -46,7 +46,7 @@ options:
         type: str
     moid:
         description:
-        - Managed Object ID of the instance to manage if known, this is a unique identifier only within a single vCenter instance.
+        - Managed Object ID of the virtual machine to manage.
         - This is required if O(name) or O(uuid) is not supplied.
         type: str
     use_instance_uuid:
