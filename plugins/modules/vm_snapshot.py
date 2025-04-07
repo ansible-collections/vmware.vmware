@@ -68,7 +68,7 @@ options:
         type: str
     datacenter:
         description:
-        - Destination datacenter for the deploy operation.
+        - Datacenter to search for the virtual machine.
         type: str
     snapshot_name:
         description:
