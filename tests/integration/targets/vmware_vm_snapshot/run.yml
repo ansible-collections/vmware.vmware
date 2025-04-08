@@ -8,7 +8,7 @@
         file: ../../integration_config.yml
       tags: eco-vcenter-ci
 
-    - name: Import vmware_vm_snapshot role
+    - name: Import vmware_vm_snapshot test
       ansible.builtin.import_role:
         name: vmware_vm_snapshot
       tags:
