@@ -78,7 +78,7 @@ options:
     snapshot_id:
         description:
         - The ID of the snapshot to manage. This option cannot be used when creating a new snapshot.
-        - Either this parameter or O(snapshot_id) is required if O(remove_all) is set to False.
+        - Either this parameter or O(snapshot_name) is required if O(remove_all) is set to False.
         type: int
     description:
         description:
