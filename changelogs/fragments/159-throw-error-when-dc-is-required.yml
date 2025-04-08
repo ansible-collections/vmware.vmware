@@ -1,0 +1,3 @@
+---
+major_changes:
+  - folder_paths - Throw an error when a relative folder path is provided and the datacenter name is not provided
