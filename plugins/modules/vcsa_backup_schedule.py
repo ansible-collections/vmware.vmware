@@ -15,7 +15,7 @@ module: vcsa_backup_schedule
 short_description: Configure the vCenter Server Appliance backup schedule
 description:
     - Configure the vCenter Server Appliance backup schedule.
-    - Only once schedule per vCenter Server Appliance can exist.
+    - Only one schedule per vCenter Server Appliance can exist.
     - Before taking a backup, a backup server must be set up and configured such that the vCenter server has access to it.
       The protocols supported for backup are FTPS, HTTPS, SFTP, FTP, NFS, SMB and HTTP.
 author:
@@ -24,7 +24,7 @@ author:
 options:
     name:
         description:
-            - The name for the backup schedule. This must be unique, and is used as an identifier for the schedule.
+            - The name of the backup schedule. This must be unique, and is used as an identifier for the schedule.
             - Your VCSA may only allow for one schedule. If you create this schedule via the web UI, its name is 'default'.
             - You can change the name by deleting the existing schedule and creating a new one with a new name.
         type: str

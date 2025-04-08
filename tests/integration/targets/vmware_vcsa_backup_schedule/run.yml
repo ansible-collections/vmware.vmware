@@ -5,7 +5,7 @@
         file: ../../integration_config.yml
       tags: eco-vcenter-ci
 
-    - name: Import vmware_vcsa_backup_schedule role
+    - name: Import vmware_vcsa_backup_schedule test
       ansible.builtin.import_role:
         name: vmware_vcsa_backup_schedule
       tags:

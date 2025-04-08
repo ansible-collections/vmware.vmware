@@ -23,15 +23,10 @@ author:
 options:
     name:
         description:
-            - The name for the backup schedule for which to gather info.
+            - The name of the backup schedule for which to gather info.
             - If no name is provided, all backup schedules are returned.
         type: str
         required: false
-
-attributes:
-    check_mode:
-        description: The check_mode support.
-        support: full
 
 extends_documentation_fragment:
     - vmware.vmware.base_options

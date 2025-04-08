@@ -14,7 +14,7 @@
     - name: Recollect Schedule Info After Remove
       vmware.vmware.vcsa_backup_schedule_info: {}
       register: _scheds
-    - name: Assert
+    - name: Check Schedule Was Removed
       ansible.builtin.assert:
         that:
           - _rm is changed
@@ -50,10 +50,11 @@
         retain_count: 3
         enabled: true
       register: _idem
-    - name: Assertions
-      ansible.builtin.that:
-        - _create is changed
-        - _idem is not changed
+    - name: Check Schedule Creation and Idempotence
+      ansible.builtin.assert:
+        that:
+          - _create is changed
+          - _idem is not changed
 
     - name: Update Test Schedule
       vmware.vmware.vcsa_backup_schedule:
@@ -73,13 +74,14 @@
     - name: Recollect Schedule Info
       vmware.vmware.vcsa_backup_schedule_info: {}
       register: _post_update
-    - name: Assertions
-      ansible.builtin.that:
-        - _update is changed
-        - _post_update.schedules[0].schedule.hour == 9
-        - _post_update.schedules[0].schedule.hour == 8
-        - _post_update.schedules[0].schedule.days_of_week == ["MONDAY"]
-        - _post_update.schedules[0].retain_count == 2
+    - name: Check Schedule Was Actually Updated
+      ansible.builtin.assert:
+        that:
+          - _update is changed
+          - _post_update.schedules[0].schedule.hour == 9
+          - _post_update.schedules[0].schedule.hour == 8
+          - _post_update.schedules[0].schedule.days_of_week == ["MONDAY"]
+          - _post_update.schedules[0].retain_count == 2
 
   always:
     - name: Restore Backup Schedule
