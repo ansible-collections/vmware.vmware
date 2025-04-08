@@ -1,6 +1,10 @@
 ---
 - name: Gather Current Backup Schedule Info
   vmware.vmware.vcsa_backup_schedule_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
     name: "{{ schedule_name }}"
   register: _orig_sched
 
@@ -8,6 +12,10 @@
   block:
     - name: Remove Schedule
       vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         name: "{{ schedule_name }}"
         state: absent
       register: _rm
@@ -22,6 +30,10 @@
 
     - name: Create Test Schedule
       vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: 1
@@ -37,6 +49,10 @@
       register: _create
     - name: Create Test Schedule - Idempotence
       vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: 1
@@ -58,6 +74,10 @@
 
     - name: Update Test Schedule
       vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: 9
@@ -86,6 +106,10 @@
   always:
     - name: Restore Backup Schedule
       vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: "{{ _orig_sched.schedules[0].schedule.hour }}"
