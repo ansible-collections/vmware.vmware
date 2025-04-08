@@ -9,7 +9,7 @@ import pytest
 class TestFolderPaths():
 
     def __prepare(self, mocker):
-       pass
+        pass
 
     def test_prepend_datacenter_and_folder_type(self, mocker):
         self.__prepare(mocker)
