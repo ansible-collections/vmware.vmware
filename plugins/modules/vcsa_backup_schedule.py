@@ -339,7 +339,7 @@ def main():
             db_fast_backup=dict(type='bool', default=False),
             include_supervisors_control_plane=dict(type='bool', default=True),
             include_stats_events_and_tasks=dict(type='bool', default=True),
-            always_update_password=dict(type='bool', default=True),
+            always_update_password=dict(type='bool', default=True, no_log=False),
         )
     )
     module = AnsibleModule(

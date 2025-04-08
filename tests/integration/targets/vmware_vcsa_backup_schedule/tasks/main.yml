@@ -46,7 +46,7 @@
             - monday
         name: "{{ schedule_name }}"
         location:
-          url: "nfs://localhost:/nfs/test"
+          url: "{{ _orig_sched.schedules[0].location }}"
           username: root
         retain_count: 3
         enabled: true
@@ -65,7 +65,7 @@
             - monday
         name: "{{ schedule_name }}"
         location:
-          url: "nfs://localhost:/nfs/test"
+          url: "{{ _orig_sched.schedules[0].location }}"
           username: root
         retain_count: 3
         enabled: true
@@ -90,7 +90,7 @@
             - monday
         name: "{{ schedule_name }}"
         location:
-          url: "nfs://localhost:/nfs/test"
+          url: "{{ _orig_sched.schedules[0].location }}"
           username: root
         retain_count: 2
         enabled: true
@@ -107,7 +107,7 @@
         that:
           - _update is changed
           - _post_update.schedules[0].schedule.hour == 9
-          - _post_update.schedules[0].schedule.hour == 8
+          - _post_update.schedules[0].schedule.minute == 8
           - _post_update.schedules[0].schedule.days_of_week == ["MONDAY"]
           - _post_update.schedules[0].retain_count == 2
 
