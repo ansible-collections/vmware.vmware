@@ -20,7 +20,11 @@
         state: absent
       register: _rm
     - name: Recollect Schedule Info After Remove
-      vmware.vmware.vcsa_backup_schedule_info: {}
+      vmware.vmware.vcsa_backup_schedule_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
       register: _scheds
     - name: Check Schedule Was Removed
       ansible.builtin.assert:
@@ -92,7 +96,11 @@
         enabled: true
       register: _update
     - name: Recollect Schedule Info
-      vmware.vmware.vcsa_backup_schedule_info: {}
+      vmware.vmware.vcsa_backup_schedule_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
       register: _post_update
     - name: Check Schedule Was Actually Updated
       ansible.builtin.assert:
