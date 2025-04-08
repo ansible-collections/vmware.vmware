@@ -237,6 +237,11 @@ class InventoryModule(VmwareInventoryBase):
         if "name" not in properties_param:
             properties_param.append("name")
 
+        # needed by keyed_groups default value
+        if "config.guestId" not in properties_param:
+            properties_param.append("config.guestId")
+
+        # needed by keyed_groups default value
         if "summary.runtime.powerState" not in properties_param:
             properties_param.append("summary.runtime.powerState")
 
