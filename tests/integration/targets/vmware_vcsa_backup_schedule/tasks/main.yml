@@ -1,0 +1,131 @@
+---
+- name: Gather Current Backup Schedule Info
+  vmware.vmware.vcsa_backup_schedule_info:
+    validate_certs: false
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    name: "{{ schedule_name }}"
+  register: _orig_sched
+
+- name: Test
+  block:
+    - name: Remove Schedule
+      vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ schedule_name }}"
+        state: absent
+      register: _rm
+    - name: Recollect Schedule Info After Remove
+      vmware.vmware.vcsa_backup_schedule_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+      register: _scheds
+    - name: Check Schedule Was Removed
+      ansible.builtin.assert:
+        that:
+          - _rm is changed
+          - (_scheds.schedules | length) == 0
+
+    - name: Create Test Schedule
+      vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        state: present
+        schedule:
+          hour: 1
+          minute: 2
+          days_of_week:
+            - monday
+        name: "{{ schedule_name }}"
+        location:
+          url: "{{ _orig_sched.schedules[0].location }}"
+          username: root
+        retain_count: 3
+        enabled: true
+      register: _create
+    - name: Create Test Schedule - Idempotence
+      vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        state: present
+        schedule:
+          hour: 1
+          minute: 2
+          days_of_week:
+            - monday
+        name: "{{ schedule_name }}"
+        location:
+          url: "{{ _orig_sched.schedules[0].location }}"
+          username: root
+        retain_count: 3
+        enabled: true
+      register: _idem
+    - name: Check Schedule Creation and Idempotence
+      ansible.builtin.assert:
+        that:
+          - _create is changed
+          - _idem is not changed
+
+    - name: Update Test Schedule
+      vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        state: present
+        schedule:
+          hour: 9
+          minute: 8
+          days_of_week:
+            - monday
+        name: "{{ schedule_name }}"
+        location:
+          url: "{{ _orig_sched.schedules[0].location }}"
+          username: root
+        retain_count: 2
+        enabled: true
+      register: _update
+    - name: Recollect Schedule Info
+      vmware.vmware.vcsa_backup_schedule_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+      register: _post_update
+    - name: Check Schedule Was Actually Updated
+      ansible.builtin.assert:
+        that:
+          - _update is changed
+          - _post_update.schedules[0].schedule.hour == 9
+          - _post_update.schedules[0].schedule.minute == 8
+          - _post_update.schedules[0].schedule.days_of_week == ["MONDAY"]
+          - _post_update.schedules[0].retain_count == 2
+
+  always:
+    - name: Restore Backup Schedule
+      vmware.vmware.vcsa_backup_schedule:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        state: present
+        schedule:
+          hour: "{{ _orig_sched.schedules[0].schedule.hour }}"
+          minute: "{{ _orig_sched.schedules[0].schedule.minute }}"
+          days_of_week: "{{ _orig_sched.schedules[0].schedule.days_of_week }}"
+        name: "{{ _orig_sched.schedules[0].name }}"
+        location:
+          url: "{{ _orig_sched.schedules[0].location }}"
+          username: "{{ _orig_sched.schedules[0].location_user | default(omit) }}"
+        retain_count: "{{ _orig_sched.schedules[0].retain_count | default(omit) }}"
+        enabled: "{{ _orig_sched.schedules[0].enabled }}"

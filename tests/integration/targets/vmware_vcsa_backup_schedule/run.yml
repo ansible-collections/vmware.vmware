@@ -1,0 +1,12 @@
+- hosts: localhost
+  tasks:
+    - name: Import eco-vcenter credentials
+      ansible.builtin.include_vars:
+        file: ../../integration_config.yml
+      tags: eco-vcenter-ci
+
+    - name: Import vmware_vcsa_backup_schedule test
+      ansible.builtin.import_role:
+        name: vmware_vcsa_backup_schedule
+      tags:
+        - eco-vcenter-ci
