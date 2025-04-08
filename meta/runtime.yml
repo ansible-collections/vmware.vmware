@@ -28,6 +28,7 @@ action_groups:
         - vm_list_group_by_clusters_info
         - vm_resource_info
         - vm_portgroup_info
+        - vm_snapshot
 plugin_routing:
     modules:
         vm_list_group_by_clusters:
