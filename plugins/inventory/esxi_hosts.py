@@ -202,8 +202,13 @@ class InventoryModule(VmwareInventoryBase):
         if "name" not in properties_param:
             properties_param.append("name")
 
+        # needed to filter out disconnected or unreachable hosts in self.populate_from_vcenter
         if "summary.runtime.connectionState" not in properties_param:
             properties_param.append("summary.runtime.connectionState")
+
+        # needed by keyed_groups default
+        if "summary.runtime.powerState" not in properties_param:
+            properties_param.append("summary.runtime.powerState")
 
         return properties_param
 
