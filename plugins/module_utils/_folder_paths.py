@@ -10,11 +10,13 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
+from ansible.module_utils.errors import RequiredIfError
+
 
 FOLDER_TYPES = ('vm', 'host', 'network', 'datastore')
 
 
-def prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type=None):
+def prepend_datacenter_and_folder_type(folder_path=None, datacenter_name=None, folder_type=None):
     """
     Formats a folder path so it is absolute, meaning it includes the datacenter name and
     type (vm, host, etc) at the start of the path. If path already starts with
@@ -23,7 +25,19 @@ def prepend_datacenter_and_folder_type(folder_path, datacenter_name, folder_type
     """
     if not folder_path:
         folder_path = ''
+
     folder_path = folder_path.strip('/')
+
+    if not datacenter_name:
+        folder_parts = folder_path.split('/')
+        if len(folder_parts) > 1 and folder_parts[1] in FOLDER_TYPES:
+            # this fits the format of a fully qualified path and even though datacenter name was passed in,
+            # we can attempt to treat it as a fq path and the user will just get an error later on
+            return folder_path
+
+        # the path is too vague to complete without the datacenter name
+        raise RequiredIfError("Datacenter is a required parameter when using a relative folder path, %s" % folder_path)
+
     if folder_path.startswith(datacenter_name):
         return folder_path
 
