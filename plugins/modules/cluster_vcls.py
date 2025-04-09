@@ -92,6 +92,14 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+cluster:
+    description:
+        - Information about the target cluster
+    returned: On success
+    type: dict
+    sample:
+        moid: cluster-79828,
+        name: test-cluster
 added_datastores:
     description: List of datastores that were added by this module. Empty if none had to be added
     returned: always
@@ -270,10 +278,17 @@ def main():
         changed=False,
         added_datastores=[],
         removed_datastores=[],
-        allowed_datastores=[]
+        allowed_datastores=[],
+        cluster=dict(
+            name="",
+            moid=""
+        )
     )
 
     vmware_cluster_vcls = VMwareClusterVcls(module)
+    results['cluster']['name'] = vmware_cluster_vcls.cluster.name
+    results['cluster']['moid'] = vmware_cluster_vcls.cluster._GetMoId()
+
     ds_to_add, ds_to_remove, new_allowed_datastores = vmware_cluster_vcls.resolve_datastores_to_add_and_remove()
     results['allowed_datastores'] = new_allowed_datastores
     if ds_to_add or ds_to_remove:

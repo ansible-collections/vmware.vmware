@@ -38,6 +38,19 @@ vmware.vmware.vm_powerstate:
       }
     }
 
+vmware.vmware.vm_snapshot:
+  query: >-
+    .vm | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "VM"
+      }
+    }
+
 vmware.vmware.deploy_content_library_ovf:
   query: >-
     .vm | {
@@ -145,5 +158,86 @@ vmware.vmware.esxi_connection:
       },
       facts: {
         device_type: "ESXi"
+      }
+    }
+
+####
+# Cluster
+####
+vmware.vmware.cluster_dpm:
+  query: >-
+    .cluster | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "Cluster"
+      }
+    }
+
+vmware.vmware.cluster_drs_recommendations:
+  query: >-
+    .cluster | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "Cluster"
+      }
+    }
+
+vmware.vmware.cluster_drs:
+  query: >-
+    .cluster | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "Cluster"
+      }
+    }
+
+vmware.vmware.cluster_ha:
+  query: >-
+    .cluster | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "Cluster"
+      }
+    }
+
+vmware.vmware.cluster_vcls:
+  query: >-
+    .cluster | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "Cluster"
+      }
+    }
+
+  vmware.vmware.cluster:
+  query: >-
+    .cluster | {
+      name: .moid,
+      canonical_facts: {
+        name: .name,
+        moid: .moid
+      },
+      facts: {
+        device_type: "Cluster"
       }
     }
