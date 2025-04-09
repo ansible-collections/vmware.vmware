@@ -229,7 +229,7 @@ vmware.vmware.cluster_vcls:
       }
     }
 
-  vmware.vmware.cluster:
+vmware.vmware.cluster:
   query: >-
     .cluster | {
       name: .moid,

@@ -51,6 +51,7 @@ options:
         type: list
         elements: str
         required: false
+        default: []
     datastores_to_remove:
         description:
             - List of datastores to remove from the vCLS config
@@ -60,6 +61,7 @@ options:
         type: list
         elements: str
         required: false
+        default: []
 
 
 extends_documentation_fragment:
@@ -260,8 +262,8 @@ def main():
                 cluster=dict(type='str', required=True, aliases=['cluster_name']),
                 datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
                 allowed_datastores=dict(type='list', elements='str'),
-                datastores_to_add=dict(type='list', elements='str'),
-                datastores_to_remove=dict(type='list', elements='str'),
+                datastores_to_add=dict(type='list', elements='str', default=[]),
+                datastores_to_remove=dict(type='list', elements='str', default=[]),
             )
         },
         mutually_exclusive=[
