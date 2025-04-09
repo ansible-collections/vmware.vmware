@@ -57,6 +57,14 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+cluster:
+    description:
+        - Information about the target cluster
+    returned: On success
+    type: dict
+    sample:
+        moid: cluster-79828,
+        name: test-cluster
 applied_recommendations:
     description:
         - List of dictionaries describing the applied recommendations
@@ -189,10 +197,17 @@ def main():
 
     result = dict(
         changed=False,
-        applied_recommendations=[]
+        applied_recommendations=[],
+        cluster=dict(
+            name="",
+            moid=""
+        )
     )
 
     cluster_drs = VMwareCluster(module)
+    result['cluster']['name'] = cluster_drs.cluster.name
+    result['cluster']['moid'] = cluster_drs.cluster._GetMoId()
+
     recommendations = cluster_drs.get_recommendations()
     if recommendations:
         result['changed'] = True
