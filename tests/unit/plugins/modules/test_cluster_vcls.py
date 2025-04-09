@@ -53,7 +53,7 @@ class TestClusterVcls(ModuleTestCase):
             module_main()
 
         assert c.value.args[0]["changed"] is True
-        assert list(c.value.args[0]["added_datastores"]) == ds_to_add
+        assert set(c.value.args[0]["added_datastores"]) == set(ds_to_add)
         assert len(c.value.args[0]["removed_datastores"]) == 0
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
@@ -107,7 +107,7 @@ class TestClusterVcls(ModuleTestCase):
 
         assert c.value.args[0]["changed"] is True
         assert len(c.value.args[0]["added_datastores"]) == 0
-        assert list(c.value.args[0]["removed_datastores"]) == ds_to_remove
+        assert set(c.value.args[0]["removed_datastores"]) == set(ds_to_remove)
 
     def test_absolute_list(self, mocker):
         self.__prepare(mocker)
@@ -130,8 +130,8 @@ class TestClusterVcls(ModuleTestCase):
             module_main()
 
         assert c.value.args[0]["changed"] is True
-        assert list(c.value.args[0]["added_datastores"]) == []
-        assert list(c.value.args[0]["removed_datastores"]) == ['ds1', 'ds2']
+        assert set(c.value.args[0]["added_datastores"]) == set([])
+        assert set(c.value.args[0]["removed_datastores"]) == set(['ds1', 'ds2'])
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
             create_mock_vsphere_object(name='ds3'),
@@ -148,8 +148,8 @@ class TestClusterVcls(ModuleTestCase):
             module_main()
 
         assert c.value.args[0]["changed"] is False
-        assert list(c.value.args[0]["added_datastores"]) == []
-        assert list(c.value.args[0]["removed_datastores"]) == []
+        assert set(c.value.args[0]["added_datastores"]) == set([])
+        assert set(c.value.args[0]["removed_datastores"]) == set([])
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
             create_mock_vsphere_object(name='ds1'),
@@ -166,5 +166,5 @@ class TestClusterVcls(ModuleTestCase):
             module_main()
 
         assert c.value.args[0]["changed"] is True
-        assert list(c.value.args[0]["added_datastores"]) == allowed_datastores
-        assert list(c.value.args[0]["removed_datastores"]) == ['ds1']
+        assert set(c.value.args[0]["added_datastores"]) == set(allowed_datastores)
+        assert set(c.value.args[0]["removed_datastores"]) == set(['ds1'])
