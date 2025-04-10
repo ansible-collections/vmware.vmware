@@ -23,221 +23,26 @@ vmware.vmware.guest_info:
     }
 
 ####
-# VMs
+# Catch all query
 ####
-vmware.vmware.vm_powerstate:
+vmware.vmware.*:
   query: >-
-    .vm | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "VM"
+    (
+      {"vm": "VM", "host": "ESXi", "vcsa": "vCenter Appliance", "cluster": "Cluster"} as $mapping |
+      (if (keys | length) == 1 then .[(keys | first)] else . end) as $data |
+      (
+        ($data | ($mapping | keys) | first)
+      ) as $node_type |
+      select($node_type != null) |
+      {
+        name: $data[$node_type].moid,
+        canonical_facts: {
+          name: $data[$node_type].name,
+          id: $data[$node_type].moid,
+          node_type: $node_type
+        },
+        facts: {
+          device_type: ($mapping[$node_type] // "UNKNOWN")
+        }
       }
-    }
-
-vmware.vmware.vm_snapshot:
-  query: >-
-    .vm | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "VM"
-      }
-    }
-
-vmware.vmware.deploy_content_library_ovf:
-  query: >-
-    .vm | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "VM"
-      }
-    }
-
-vmware.vmware.deploy_content_library_template:
-  query: >-
-    .vm | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "VM"
-      }
-    }
-
-vmware.vmware.deploy_folder_template:
-  query: >-
-    .vm | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "VM"
-      }
-    }
-
-####
-# vCenter Appliance
-####
-vmware.vmware.vcsa_settings:
-  query: >-
-    .vcsa | {
-      name: "\(.hostname)\(.port)",
-      canonical_facts: {
-        name: .hostname,
-        port: .port
-      },
-      facts: {
-        device_type: "vCenter Appliance"
-      }
-    }
-
-vmware.vmware.vcsa_backup_schedule:
-  query: >-
-    .vcsa | {
-      name: "\(.hostname)\(.port)",
-      canonical_facts: {
-        name: .hostname,
-        port: .port
-      },
-      facts: {
-        device_type: "vCenter Appliance"
-      }
-    }
-
-####
-# ESXi
-####
-vmware.vmware.esxi_maintenance_mode:
-  query: >-
-    .host | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "ESXi"
-      }
-    }
-
-vmware.vmware.esxi_host:
-  query: >-
-    .host | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "ESXi"
-      }
-    }
-
-vmware.vmware.esxi_connection:
-  query: >-
-    .host | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "ESXi"
-      }
-    }
-
-####
-# Cluster
-####
-vmware.vmware.cluster_dpm:
-  query: >-
-    .cluster | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "Cluster"
-      }
-    }
-
-vmware.vmware.cluster_drs_recommendations:
-  query: >-
-    .cluster | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "Cluster"
-      }
-    }
-
-vmware.vmware.cluster_drs:
-  query: >-
-    .cluster | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "Cluster"
-      }
-    }
-
-vmware.vmware.cluster_ha:
-  query: >-
-    .cluster | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "Cluster"
-      }
-    }
-
-vmware.vmware.cluster_vcls:
-  query: >-
-    .cluster | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "Cluster"
-      }
-    }
-
-vmware.vmware.cluster:
-  query: >-
-    .cluster | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid
-      },
-      facts: {
-        device_type: "Cluster"
-      }
-    }
+    )
