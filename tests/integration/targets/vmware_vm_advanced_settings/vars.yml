@@ -1,0 +1,12 @@
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_port: 8989
+vcenter_datacenter: DC0
+test_cluster: DC0_C0
+test_resource_pool: "{{ tiny_prefix }}_vm_powerstate"
+
+datastore: "{{ shared_storage_02 }}"
+test_esxi_hostname: DC0_H0_VM0
+run_on_simulator: true
+vm_folder: "/{{ vcenter_datacenter }}/vm"
