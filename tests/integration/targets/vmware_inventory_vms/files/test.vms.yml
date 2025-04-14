@@ -5,4 +5,4 @@ group_by_paths: true
 group_by_paths_prefix: test
 gather_tags: true
 search_paths:
-  - /Eco-Datacenter/vm/ecoqe2
+  - /Eco-Datacenter/vm/ansible_ci_vm_test_resources
