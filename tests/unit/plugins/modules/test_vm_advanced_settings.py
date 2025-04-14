@@ -82,8 +82,10 @@ class TestVmPowerstate(ModuleTestCase):
 
         assert c.value.args[0]["changed"] is True
         self.vm_mock.ReconfigVM_Task.assert_called_once()
-        assert c.value.args[0]["updated_settings"] == dict(two=10, three=3)
-        assert c.value.args[0]["removed_settings"] == dict()
+        assert c.value.args[0]["updated_settings"] == dict(
+            two={'old': 2, 'new': 10},
+            three={'old': None, 'new': 3}
+        )
 
     def test_remove_settings(self, mocker):
         self.__prepare(mocker)
@@ -105,28 +107,6 @@ class TestVmPowerstate(ModuleTestCase):
 
         assert c.value.args[0]["changed"] is True
         self.vm_mock.ReconfigVM_Task.assert_called_once()
-        assert c.value.args[0]["updated_settings"] == dict()
-        assert c.value.args[0]["removed_settings"] == dict(two=2)
-
-    def test_pure_settings(self, mocker):
-        self.__prepare(mocker)
-
-        self.vm_mock.config.extraConfig = self.option_set(dict(one=1, two=2))
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            name="vm1",
-            state="pure",
-            settings=dict(two=2, three=3, one=10),
-            validate_certs=False,
-            add_cluster=False
+        assert c.value.args[0]["updated_settings"] == dict(
+            two={'old': 2, 'new': None},
         )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
-        self.vm_mock.ReconfigVM_Task.assert_called_once()
-        assert c.value.args[0]["updated_settings"] == dict(three=3, one=10)
-        assert c.value.args[0]["removed_settings"] == dict(one=1)

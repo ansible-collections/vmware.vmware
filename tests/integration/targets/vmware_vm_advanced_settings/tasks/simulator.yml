@@ -1,89 +1,39 @@
 ---
-- name: Set the state of a virtual machine to poweredon
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
+# Advanced settings are not applied in the simulator so there is nothing to check on the vm
+- name: Add Advanced Settings
+  vmware.vmware.vm_advanced_settings:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
+    validate_certs: false
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
-    state: powered-on
-  register: deploy
+    name: "{{ vm }}"
+    settings:
+      one: 1
+      two: 2
+      three: 3
+  register: _add
 
-- name: Restart the virtual machine
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
+- name: Remove Advanced Settings
+  vmware.vmware.vm_advanced_settings:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
+    validate_certs: false
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
-    state: restarted
+    name: "{{ vm }}"
+    settings:
+      one: 1
+      two: 2
+      three: 3
+  register: _remove
 
-- name: Power on a virtual machine with the question_answers param
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    validate_certs: false
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
-    question_answers:
-      - question: "msg.uuid.altered"
-        response: "button.uuid.copiedTheVM"
-    state: powered-on
-
-- name: Set the state of a virtual machine to poweroff using MoID
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    moid: "{{ deploy.vm.moid }}"
-    state: powered-off
-
-- name: Set the state of a virtual machine to poweron using MoID
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    moid: "{{ deploy.vm.moid }}"
-    state: powered-on
-
-- name: Suspend the virtual machine
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
-    state: suspended
-
-- name: Power on the virtual machine with force
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
-    state: powered-on
-    force: true
+- name: Check Module Outputs
+  ansible.builtin.assert:
+    that:
+      - "'one' in _add.updated_settings.keys()"
+      - "'two' in _add.updated_settings.keys()"
+      - "'three' in _add.updated_settings.keys()"
+      - "'one' in _remove.updated_settings.keys()"
+      - "'two' in _remove.updated_settings.keys()"
+      - "'three' in _remove.updated_settings.keys()"
