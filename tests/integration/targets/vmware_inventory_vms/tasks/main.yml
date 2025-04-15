@@ -34,6 +34,9 @@
           ansible.builtin.debug:
             var: _inventory_out
 
+    - debug:
+        var: inventory_results
+
     # you can't reference the 'all' property here for some reason. It reverts back to the test playbook inventory
     # instead of the inventory_results
     - name: Check Output
@@ -43,8 +46,8 @@
           - first_host.tags is defined and first_host.tags is mapping
           - first_host.tags_by_category is defined and first_host.tags_by_category is mapping
           - >-
-            (inventory_results.poweredOn.hosts | length) ==
-            (inventory_results._meta.hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOn') | length)
+            ((inventory_results.poweredOff.hosts | default([])) | length) ==
+            (inventory_results._meta.hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOff') | default([]) | length)
           - (inventory_results | length) > 3
           - ('test_' + vcenter_datacenter | replace('-', '_')) in inventory_results.keys()
       vars:
