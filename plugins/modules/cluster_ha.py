@@ -431,7 +431,7 @@ class VmwareCluster(ModulePyvmomiBase):
         if (
             vm_config.vmMonitoring != vm_params["mode"] or
             vm_config.failureInterval != vm_params["failure_interval"] or
-            vm_config.minUpTime != vm_params.get["minimum_uptime"] or
+            vm_config.minUpTime != vm_params["minimum_uptime"] or
             vm_config.maxFailures != vm_params["maximum_resets"] or
             vm_config.maxFailureWindow != vm_params["maximum_resets_window"]
         ):
