@@ -176,7 +176,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
 )
 
 
-class VmModule(ModulePyvmomiBase):
+class VmAdvancedSettingsModule(ModulePyvmomiBase):
     def __init__(self, module):
         super().__init__(module)
         self.vm = self.get_vms_using_params(fail_on_missing=True)[0]
@@ -268,7 +268,7 @@ def main():
         ],
     )
 
-    vm_module = VmModule(module)
+    vm_module = VmAdvancedSettingsModule(module)
 
     result = dict(
         vm=dict(name=vm_module.vm.name, moid=vm_module.vm._GetMoId()),

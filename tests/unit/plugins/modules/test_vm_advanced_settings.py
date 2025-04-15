@@ -5,7 +5,7 @@ import sys
 import pytest
 
 from ansible_collections.vmware.vmware.plugins.modules.vm_advanced_settings import (
-    VmModule,
+    VmAdvancedSettingsModule,
     main as module_main
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
@@ -31,7 +31,7 @@ class TestVmPowerstate(ModuleTestCase):
     def __prepare(self, mocker):
         mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
         self.vm_mock = create_mock_vsphere_object()
-        mocker.patch.object(VmModule, 'get_vms_using_params', return_value=([self.vm_mock]))
+        mocker.patch.object(VmAdvancedSettingsModule, 'get_vms_using_params', return_value=([self.vm_mock]))
         self.vm_mock.config.extraConfig = dict()
         self.vm_mock.ReconfigVM_Task.return_value = MockVsphereTask()
 
