@@ -86,6 +86,14 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+cluster:
+    description:
+        - Information about the target cluster
+    returned: On success
+    type: dict
+    sample:
+        moid: cluster-79828,
+        name: test-cluster
 result:
     description:
         - Information about the DPM config update task, if something changed
@@ -227,10 +235,16 @@ def main():
 
     result = dict(
         changed=False,
-        result={}
+        result={},
+        cluster=dict(
+            name="",
+            moid=""
+        )
     )
 
     cluster_dpm = VMwareCluster(module)
+    result['cluster']['name'] = cluster_dpm.cluster.name
+    result['cluster']['moid'] = cluster_dpm.cluster._GetMoId()
 
     config_is_different = cluster_dpm.check_dpm_config_diff()
     if config_is_different:

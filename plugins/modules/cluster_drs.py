@@ -112,6 +112,14 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+cluster:
+    description:
+        - Information about the target cluster
+    returned: On success
+    type: dict
+    sample:
+        moid: cluster-79828,
+        name: test-cluster
 result:
     description:
         - Information about the DRS config update task, if something changed
@@ -268,10 +276,16 @@ def main():
 
     result = dict(
         changed=False,
-        result={}
+        result={},
+        cluster=dict(
+            name="",
+            moid=""
+        )
     )
 
     cluster_drs = VMwareCluster(module)
+    result['cluster']['name'] = cluster_drs.cluster.name
+    result['cluster']['moid'] = cluster_drs.cluster._GetMoId()
 
     config_is_different = cluster_drs.check_drs_config_diff()
     if config_is_different:

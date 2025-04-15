@@ -51,6 +51,7 @@ options:
         type: list
         elements: str
         required: false
+        default: []
     datastores_to_remove:
         description:
             - List of datastores to remove from the vCLS config
@@ -60,6 +61,7 @@ options:
         type: list
         elements: str
         required: false
+        default: []
 
 
 extends_documentation_fragment:
@@ -92,6 +94,14 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+cluster:
+    description:
+        - Information about the target cluster
+    returned: On success
+    type: dict
+    sample:
+        moid: cluster-79828,
+        name: test-cluster
 added_datastores:
     description: List of datastores that were added by this module. Empty if none had to be added
     returned: always
@@ -252,8 +262,8 @@ def main():
                 cluster=dict(type='str', required=True, aliases=['cluster_name']),
                 datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
                 allowed_datastores=dict(type='list', elements='str'),
-                datastores_to_add=dict(type='list', elements='str'),
-                datastores_to_remove=dict(type='list', elements='str'),
+                datastores_to_add=dict(type='list', elements='str', default=[]),
+                datastores_to_remove=dict(type='list', elements='str', default=[]),
             )
         },
         mutually_exclusive=[
@@ -270,10 +280,17 @@ def main():
         changed=False,
         added_datastores=[],
         removed_datastores=[],
-        allowed_datastores=[]
+        allowed_datastores=[],
+        cluster=dict(
+            name="",
+            moid=""
+        )
     )
 
     vmware_cluster_vcls = VMwareClusterVcls(module)
+    results['cluster']['name'] = vmware_cluster_vcls.cluster.name
+    results['cluster']['moid'] = vmware_cluster_vcls.cluster._GetMoId()
+
     ds_to_add, ds_to_remove, new_allowed_datastores = vmware_cluster_vcls.resolve_datastores_to_add_and_remove()
     results['allowed_datastores'] = new_allowed_datastores
     if ds_to_add or ds_to_remove:
