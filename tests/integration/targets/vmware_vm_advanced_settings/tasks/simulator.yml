@@ -1,0 +1,39 @@
+---
+# Advanced settings are not applied in the simulator so there is nothing to check on the vm
+- name: Add Advanced Settings
+  vmware.vmware.vm_advanced_settings:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: false
+    port: "{{ vcenter_port }}"
+    name: "{{ vm }}"
+    settings:
+      one: 1
+      two: 2
+      three: 3
+  register: _add
+
+- name: Remove Advanced Settings
+  vmware.vmware.vm_advanced_settings:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: false
+    port: "{{ vcenter_port }}"
+    name: "{{ vm }}"
+    settings:
+      one: 1
+      two: 2
+      three: 3
+  register: _remove
+
+- name: Check Module Outputs
+  ansible.builtin.assert:
+    that:
+      - "'one' in _add.updated_settings.keys()"
+      - "'two' in _add.updated_settings.keys()"
+      - "'three' in _add.updated_settings.keys()"
+      - "'one' in _remove.updated_settings.keys()"
+      - "'two' in _remove.updated_settings.keys()"
+      - "'three' in _remove.updated_settings.keys()"

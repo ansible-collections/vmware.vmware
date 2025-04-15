@@ -27,6 +27,7 @@ action_groups:
         - vcsa_backup_schedule
         - vcsa_backup_schedule_info
         - vcsa_settings
+        - vm_advanced_settings
         - vm_list_group_by_clusters_info
         - vm_resource_info
         - vm_portgroup_info

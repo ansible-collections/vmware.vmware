@@ -1,0 +1,151 @@
+---
+- name: Import common vars
+  ansible.builtin.include_vars:
+    file: ../group_vars.yml
+
+- block:
+    - name: Lookup Root Resource Pool ID
+      ansible.builtin.set_fact:
+        vcenter_rp_id: >-
+          {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+          vcenter_hostname=vcenter_hostname,
+          vcenter_username=vcenter_username,
+          vcenter_password=vcenter_password,
+          vcenter_validate_certs=false,
+          ) }}
+
+    - name: Create a test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        name: "{{ test_resource_pool }}"
+        parent: "{{ vcenter_rp_id }}"
+      register: _test_rp
+
+    - name: Create Virtual Machine From OVF Template
+      vmware.vmware.deploy_content_library_ovf:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        library_item_name: "{{ rhel9_content_library_ovf }}"
+        vm_name: "{{ vm }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ shared_storage_02 }}"
+        cluster: "{{ vcenter_cluster_name }}"
+
+    - name: Add Advanced Settings
+      vmware.vmware.vm_advanced_settings:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm }}"
+        settings:
+          one: 1
+          two: 2
+          three: 3
+        state: present
+      register: _add
+
+    - name: Add Advanced Settings - Idempotence
+      vmware.vmware.vm_advanced_settings:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm }}"
+        settings:
+          one: 1
+          two: 2
+          three: 3
+        state: present
+      register: _add_idem
+
+    - name: Get Updated VM Info
+      vmware.vmware.guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        moid: "{{ _add.vm.moid }}"
+      register: _vm_info
+
+    - name: Check Add Outputs
+      ansible.builtin.assert:
+        that:
+          - _add is changed
+          - _add_idem is not changed
+          - _vm_info.guests[0].advanced_settings['one'] == "1"
+          - _vm_info.guests[0].advanced_settings['two'] == "2"
+          - _vm_info.guests[0].advanced_settings['three'] == "3"
+
+    - name: Remove Advanced Settings
+      vmware.vmware.vm_advanced_settings:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm }}"
+        settings:
+          one: 1
+          two: ""
+          three: three
+        state: absent
+      register: _rm
+
+    - name: Remove Advanced Settings - Idempotence
+      vmware.vmware.vm_advanced_settings:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        name: "{{ vm }}"
+        settings:
+          one: 1
+          two: ""
+          three: three
+        state: absent
+      register: _rm_idem
+
+    - name: Get Updated VM Info
+      vmware.vmware.guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: false
+        moid: "{{ _rm.vm.moid }}"
+      register: _vm_info
+
+    - name: Check Remove Outputs
+      ansible.builtin.assert:
+        that:
+          - _rm is changed
+          - _rm_idem is not changed
+          - _vm_info.guests[0].advanced_settings['three'] == "3"
+          - "'two' not in _vm_info.guests[0].advanced_settings.keys()"
+          - "'one' not in _vm_info.guests[0].advanced_settings.keys()"
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      community.vmware.vmware_guest:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: absent
+        force: true
+        name: "{{ vm }}"
+
+    - name: Delete test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        vcenter_hostname: "{{ vcenter_hostname }}"
+        vcenter_username: "{{ vcenter_username }}"
+        vcenter_password: "{{ vcenter_password }}"
+        vcenter_validate_certs: false
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent

@@ -1,0 +1,5 @@
+run_on_simulator: false
+
+vm: "{{ tiny_prefix }}-vm_advanced_settings"
+library: "{{ tiny_prefix }}-content-library"
+test_resource_pool: "{{ tiny_prefix }}-vm_advanced_settings"
