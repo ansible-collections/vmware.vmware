@@ -23,6 +23,7 @@ options:
         description:
             - The datacenter with the VM you would like to query.
             - This is only used if the O(folder) parameter is supplied as a relative path.
+        aliases: [datacenter_name]
         type: str
         required: false
     guest_username:
