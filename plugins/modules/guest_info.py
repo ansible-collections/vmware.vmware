@@ -13,74 +13,87 @@ DOCUMENTATION = r'''
 module: guest_info
 short_description: Gather guest information
 description:
-- This module gathers vm guest information.
+    - This module gathers vm guest information.
 author:
-- Ansible Cloud Team (@ansible-collections)
+    - Ansible Cloud Team (@ansible-collections)
 requirements:
-- vSphere Automation SDK
+    - vSphere Automation SDK
 options:
-  guest_username:
-    description:
-      - The username to be used to connect to guest vm and fetch environment info.
-    type: str
-  guest_password:
-    description:
-      - The password of the user to be used to connect to guest vm and fetch environment info.
-    type: str
-  name:
-    description:
-      - The name of the vm to gather info for
-      - Only one of name, moid, uuid is allowed
-    type: str
-    required: False
-    aliases: [guest_name]
-  uuid:
-    description:
-      - The UUID of the vm to gather info for
-      - Only one of name, moid, uuid is allowed
-    type: str
-    required: False
-  moid:
-    description:
-      - The MOID of the vm to gather info for
-      - Only one of name, moid, uuid is allowed
-    type: str
-    required: False
-  use_instance_uuid:
-    description:
-      - If true, search by instance UUID instead of BIOS UUID.
-      - BIOS UUID may not be unique and may cause errors.
-    type: bool
-    required: False
-    default: True
-  name_match:
-    description:
-      - If using name and multiple VMs have the same name, specify which VM should be selected
-    type: str
-    required: False
-    choices: ['first', 'last']
-  gather_tags:
-    description:
-      - If true, gather any tags attached to the vm(s)
-    type: bool
-    default: false
-    required: false
-  schema:
-    description:
-      - The type of info to gather from the vms
-    choices: [summary, vsphere]
-    default: summary
-    type: str
-  properties:
-    description:
-      - If the schema is 'vsphere', gather these specific properties only
-    type: list
-    elements: str
+    datacenter:
+        description:
+            - The datacenter with the VM you would like to query.
+            - This is only used if the O(folder) parameter is supplied as a relative path.
+        aliases: [datacenter_name]
+        type: str
+        required: false
+    guest_username:
+        description:
+            - The username to be used to connect to guest vm and fetch environment info.
+        type: str
+    guest_password:
+        description:
+            - The password of the user to be used to connect to guest vm and fetch environment info.
+        type: str
+    name:
+        description:
+            - The name of the vm to gather info for
+            - Only one of name, moid, uuid is allowed
+        type: str
+        required: False
+        aliases: [guest_name]
+    uuid:
+        description:
+            - The UUID of the vm to gather info for
+            - Only one of name, moid, uuid is allowed
+        type: str
+        required: False
+    moid:
+        description:
+            - The MOID of the vm to gather info for
+            - Only one of name, moid, uuid is allowed
+        type: str
+        required: False
+    use_instance_uuid:
+        description:
+            - If true, search by instance UUID instead of BIOS UUID.
+            - BIOS UUID may not be unique and may cause errors.
+        type: bool
+        required: False
+        default: True
+    name_match:
+        description:
+            - If using name and multiple VMs have the same name, specify which VM should be selected
+        type: str
+        required: False
+        choices: ['first', 'last']
+    folder:
+        description:
+          - Absolute or relative folder path to search for the virtual machine.
+          - This parameter is only used if O(name) is supplied, and can help identify the machine you want to query.
+          - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
+        type: str
+    gather_tags:
+        description:
+            - If true, gather any tags attached to the vm(s)
+        type: bool
+        default: false
+        required: false
+    schema:
+        description:
+            - The type of info to gather from the vms
+        choices: [summary, vsphere]
+        default: summary
+        type: str
+    properties:
+        description:
+            - If the schema is 'vsphere', gather these specific properties only
+        type: list
+        elements: str
 
 attributes:
-  check_mode:
-    description: The check_mode support.
-    support: full
+    check_mode:
+        description: The check_mode support.
+        support: full
 extends_documentation_fragment:
     - vmware.vmware.base_options
     - vmware.vmware.additional_rest_options
@@ -280,6 +293,8 @@ def main():
             uuid=dict(type='str'),
             use_instance_uuid=dict(type='bool', default=True),
             moid=dict(type='str'),
+            datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
+            folder=dict(type='str', required=False),
 
             gather_tags=dict(type='bool', default=False),
 
