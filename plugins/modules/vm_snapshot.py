@@ -216,14 +216,16 @@ RETURN = r'''
 vm:
     description:
         - Information about the target VM
-    returned: On success
+    returned: Always
     type: dict
     sample:
         moid: vm-79828,
         name: test-d9c1-vm
-snapshot_result:
-    description: metadata about the virtual machine snapshots
-    returned: always
+
+snapshot:
+    description:
+        - Metadata about the affected virtual machine snapshot
+    returned: When state is present
     type: dict
     sample:
         creation_time: "2024-12-24T15:27:37.041577+00:00"
@@ -231,6 +233,18 @@ snapshot_result:
         id: 4
         name: "snapshot4"
         state: "poweredOff"
+
+result:
+    description:
+        - Information about the vCenter task, if one was run
+    returned: On change
+    type: dict
+    sample:
+        completion_time: "2025-04-15T23:29:47.435215+00:00"
+        entity_name: "test-e7e0-vm"
+        error: null
+        state: "success"
+
 '''
 
 try:
@@ -265,7 +279,21 @@ class VmSnapshotModule(ModulePyvmomiBase):
         self.vm = vm_list[0]
         self.result["vm"]['moid'] = self.vm._GetMoId()
         self.result["vm"]['name'] = self.vm.name
-        self.snap_object = None
+        self._snap_object = None
+
+    @property
+    def snap_object(self):
+        if not self._snap_object:
+            if not self.vm.snapshot:
+                self._snap_object = None
+
+            else:
+                self._snap_object = self.get_snapshot_by_identifier_recursively(
+                    self.vm.snapshot.rootSnapshotList,
+                    self.params["snapshot_name"] or self.params["snapshot_id"]
+                )
+
+        return self._snap_object
 
     def serialize_snapshot_obj_to_json(self, obj):
         if not obj:
@@ -282,18 +310,8 @@ class VmSnapshotModule(ModulePyvmomiBase):
             if snapidentifier == snapshot.id or snapidentifier == snapshot.name:
                 return snapshot
             else:
-                self.get_snapshot_by_identifier_recursively(snapshot.childSnapshotList, snapidentifier)
+                return self.get_snapshot_by_identifier_recursively(snapshot.childSnapshotList, snapidentifier)
         return None
-
-    def set_snap_object(self):
-        if not self.vm.snapshot:
-            self.snap_object = None
-        elif self.params["snapshot_name"]:
-            self.snap_object = self.get_snapshot_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
-                                                                           self.params["snapshot_name"])
-        elif self.params["snapshot_id"] and self.params['state'] == 'absent':
-            self.snap_object = self.get_snapshot_by_identifier_recursively(self.vm.snapshot.rootSnapshotList,
-                                                                           self.params["snapshot_id"])
 
     def snapshot_vm(self):
         if self.snap_object:
@@ -338,23 +356,24 @@ class VmSnapshotModule(ModulePyvmomiBase):
                 return self.snap_object.snapshot.RemoveSnapshot_Task(self.params.get('remove_children', False))
 
     def apply_snapshot_op(self):
-        self.set_snap_object()
-
-        task = None
         try:
             if (self.params['state'] == 'present'):
                 task = self.snapshot_vm()
             elif (self.params['state'] == 'absent'):
                 task = self.remove_snapshot()
-            if not task:
-                return
-            success, task_result = RunningTaskMonitor(task).wait_for_completion(vm=self.vm)
+            else:
+                task = None
+
+            if task:
+                success, task_result = RunningTaskMonitor(task).wait_for_completion()
+                del task_result['result']
+                self.result['result'] = task_result
+
         except Exception as e:
             self.module.fail_json(msg=to_text(e))
 
-        if not self.snap_object:
-            self.set_snap_object()
-        self.result['snapshot_result'] = self.serialize_snapshot_obj_to_json(self.snap_object)
+        if self.params['state'] == 'present':
+            self.result['snapshot'] = self.serialize_snapshot_obj_to_json(self.snap_object)
 
     def changed_check_mode_exit(self):
         if self.module.check_mode:
