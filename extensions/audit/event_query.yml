@@ -1,28 +1,5 @@
 ---
 ####
-# Do not add _info modules or modules that manage users
-# guest_info is here for testing purposes
-####
-vmware.vmware.guest_info:
-  query: >-
-    .guests[] | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid,
-        esxi_host: .hw_esxi_host
-      },
-      facts: {
-        device_type: "VM"
-      }
-    }, {
-      name: .hw_esxi_host,
-      facts: {
-        device_type: "ESXi"
-      }
-    }
-
-####
 # Catch all query
 ####
 vmware.vmware.*:
