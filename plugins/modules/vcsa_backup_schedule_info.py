@@ -56,8 +56,8 @@ schedules:
             "location": "nfs://10.10.10.10:/nfs/iso_datastore/vcenterbackup/",
             "location_user": "root",
             "name": "default",
-            "include_stats_events_and_tasks": true,
-            "include_supervisors_control_plane": true,
+            "includes_stats_events_and_tasks": true,
+            "includes_supervisors_control_plane": true,
             "retain_count": 3,
             "schedule": {
                 "days_of_week": [
@@ -109,8 +109,8 @@ class VcsaBackupSchedule(ModuleRestBase):
                 'fast_backup': schedule.fast_backup or False,
                 'schedule': {},
                 'retain_count': 0,
-                'include_stats_events_and_tasks': bool('seat' in schedule.parts),
-                'include_supervisors_control_plane': bool('supervisors' in schedule.parts)
+                'includes_stats_events_and_tasks': bool('seat' in schedule.parts),
+                'includes_supervisors_control_plane': bool('supervisors' in schedule.parts)
             }
             if schedule.recurrence_info:
                 _sched['schedule'] = {
