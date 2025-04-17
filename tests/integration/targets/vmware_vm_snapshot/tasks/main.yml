@@ -7,9 +7,9 @@
 
     - name: Create Virtual Machine From OVF Template
       vmware.vmware.deploy_content_library_ovf:
-        hostname: '{{ vcenter_hostname }}'
-        username: '{{ vcenter_username }}'
-        password: '{{ vcenter_password }}'
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
         validate_certs: false
         library_item_name: "{{ rhel9_content_library_ovf }}"
         vm_name: "{{ vm }}"
@@ -29,50 +29,9 @@
         snapshot_name: snap1
         description: snap1_description
         validate_certs: false
-      register: deploy
-    
-    - name: Gather some info from vm
-      vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        validate_certs: false
-      register: info
+      register: _create
 
-    - name: Verify snapshot taken
-      ansible.builtin.assert:
-        that:
-          - info.guests[0].snapshots[0].name == 'snap1'
-          - info.guests[0].snapshots[0].description == 'snap1_description'
-
-    - name: Remove a snapshot
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: absent
-        snapshot_name: snap1
-        validate_certs: false
-
-    - name: Gather info from vm
-      vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        validate_certs: false
-      register: info
-      
-    - name: Verify snapshot removed
-      ansible.builtin.assert:
-        that:
-          - info.guests[0].snapshots == []
-
-    - name: Create a snapshot
+    - name: Create a snapshot - Idempotence
       vmware.vmware.vm_snapshot:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -84,8 +43,8 @@
         snapshot_name: snap1
         description: snap1_description
         validate_certs: false
-      register: deploy
-    
+      register: _create_idem
+
     - name: Gather some info from vm
       vmware.vmware.guest_info:
         hostname: "{{ vcenter_hostname }}"
@@ -95,11 +54,161 @@
         validate_certs: false
       register: info
 
-    - name: Verify snapshot taken
+    - name: Verify snapshot created
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots[0].name == 'snap1'
-          - info.guests[0].snapshots[0].description == 'snap1_description'
+          - snapshot_info.name == 'snap1'
+          - snapshot_info.name == _create.snapshot.name
+          - snapshot_info.id == _create.snapshot.id
+          - snapshot_info.description == 'snap1_description'
+          - _create_idem is not changed
+      vars:
+        snapshot_info: "{{ info.guests[0].snapshots[0] }}"
+
+    - name: Rename Snapshot
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap1
+        description: snap1_description
+        validate_certs: false
+        new_snapshot_name: new_name1
+      register: _rename
+
+    - name: Gather some info from vm
+      vmware.vmware.guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        validate_certs: false
+      register: info
+
+    - name: Verify snapshot renamed
+      ansible.builtin.assert:
+        that:
+          - snapshot_info.name == 'new_name1'
+      vars:
+        snapshot_info: "{{ info.guests[0].snapshots[0] }}"
+
+    - name: Take a second snap with more options
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap02
+        quiesce: true
+        memory_dump: true
+        validate_certs: false
+
+    - name: Take even more snaps
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap0{{ item }}
+        validate_certs: false
+      loop:
+        - 3
+        - 4
+        - 5
+        - 6
+
+    - name: Gather some info from vm
+      vmware.vmware.guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        validate_certs: false
+      register: info
+
+    - name: Verify snapshot length
+      ansible.builtin.assert:
+        that:
+          - info.guests[0].snapshots | length == 6
+
+    - name: Remove a single snapshot
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: absent
+        snapshot_name: snap06
+        validate_certs: false
+      register: _rm_single
+
+    - name: Remove a snapshot - Idemptoence
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: absent
+        snapshot_name: snap06
+        validate_certs: false
+      register: _rm_single_idem
+
+    - name: Gather some info from vm
+      vmware.vmware.guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        validate_certs: false
+      register: info
+
+    - name: Verify snapshot length
+      ansible.builtin.assert:
+        that:
+          - info.guests[0].snapshots | length == 5
+          - _rm_single_idem is not changed
+
+    - name: Remove a snapshot and snapshot subtree
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: absent
+        remove_children: true
+        snapshot_name: snap04
+        validate_certs: false
+
+    - name: Gather some info from vm
+      vmware.vmware.guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ vm }}"
+        validate_certs: false
+      register: info
+
+    - name: Verify snapshot length
+      ansible.builtin.assert:
+        that:
+          - info.guests[0].snapshots | length == 3
+          - _rm_single_idem is not changed
 
     - name: Remove all snapshots of a VM
       vmware.vmware.vm_snapshot:
@@ -113,34 +222,6 @@
         remove_all: True
         validate_certs: false
 
-    - name: Gather info from vm
-      vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        validate_certs: false
-      register: info
-      
-    - name: Verify snapshot removed
-      ansible.builtin.assert:
-        that:
-          - info.guests[0].snapshots == []
-
-    - name: Create a snapshot
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: present
-        snapshot_name: snap1
-        description: snap1_description
-        validate_certs: false
-      register: deploy
-    
     - name: Gather some info from vm
       vmware.vmware.guest_info:
         hostname: "{{ vcenter_hostname }}"
@@ -150,77 +231,10 @@
         validate_certs: false
       register: info
 
-    - name: Verify snapshot taken
+    - name: Verify all snapshots removed
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots[0].name == 'snap1'
-          - info.guests[0].snapshots[0].description == 'snap1_description'
-
-    - name: Remove all snapshots of a VM using MoID
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        moid: "{{ deploy.vm.moid }}"
-        state: absent
-        remove_all: True
-        validate_certs: false
-
-    - name: Gather info from vm
-      vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        validate_certs: false
-      register: info
-      
-    - name: Verify snapshot removed
-      ansible.builtin.assert:
-        that:
-          - info.guests[0].snapshots == []
-
-    - name: Take snapshot of a VM using quiesce and memory flag on
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: present
-        snapshot_name: dummy_vm_snap_0001
-        quiesce: true
-        memory_dump: true
-        validate_certs: false
-      register: deploy
-
-    - name: Gather info from vm
-      vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        validate_certs: false
-      register: info
-
-    - name: Verify snapshot taken
-      ansible.builtin.assert:
-        that:
-          - info.guests[0].snapshots[0]
-
-    - name: Remove a snapshot and snapshot subtree
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: absent
-        remove_children: true
-        snapshot_name: dummy_vm_snap_0001
-        validate_certs: false
+          - info.guests[0].snapshots | length == 0
 
     - name: Create a snapshot
       vmware.vmware.vm_snapshot:
@@ -234,48 +248,7 @@
         snapshot_name: snap1
         description: snap1_description
         validate_certs: false
-      register: deploy
-
-    - name: Verify snapshot present
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: present
-        snapshot_name: snap1
-        validate_certs: false
-
-    - name: Rename a snapshot
-      vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        datacenter: "{{ vm_datacenter }}"
-        folder: "/{{ vm_datacenter }}/vm/"
-        name: "{{ vm }}"
-        state: present
-        snapshot_name: snap1
-        new_snapshot_name: im_renamed
-        description: im_redescribed
-        validate_certs: false
-
-    - name: Gather info from vm
-      vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        name: "{{ vm }}"
-        validate_certs: false
-      register: info
-
-    - name: Verify snapshot renamed
-      ansible.builtin.assert:
-        that:
-          - info.guests[0].snapshots[0].name == 'im_renamed'
-          - info.guests[0].snapshots[0].description == 'im_redescribed'
+      register: _create
 
     - name: Remove a snapshot with a snapshot id
       vmware.vmware.vm_snapshot:
@@ -285,11 +258,11 @@
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
-        snapshot_id: "{{ deploy.snapshot_result.id }}"
+        snapshot_id: "{{ _create.snapshot.id }}"
         state: absent
         validate_certs: false
 
-    - name: Gather info from vm
+    - name: Gather some info from vm
       vmware.vmware.guest_info:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -298,11 +271,10 @@
         validate_certs: false
       register: info
 
-    - name: Verify snapshot removed
+    - name: Verify all snapshots removed
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots == []
-
+          - info.guests[0].snapshots | length == 0
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
