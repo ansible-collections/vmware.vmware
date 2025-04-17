@@ -4,6 +4,50 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.0.0
+======
+
+Major Changes
+-------------
+
+- cluster modules - Add identifying information about the cluster managed to the output of cluster modules
+- folder_paths - Throw an error when a relative folder path is provided and the datacenter name is not provided
+- module_utils/argument_spec - make argument specs public so other collections can use them https://github.com/ansible-collections/vmware.vmware/issues/144
+- module_utils/clients - make client utils public so other collections can use them https://github.com/ansible-collections/vmware.vmware/issues/144
+- update query file to include cluster module queries
+
+Minor Changes
+-------------
+
+- Warn the user when more than one host has the same name in the inventory plugins. Throw an error if strict is true
+- content_template - Added more options to search for the source VM like uuid and moid. Also made argument validation more accurate
+- guest_info - Allow user to specify folder path to help select the VM to query
+- rename private module_utils to drop the redundant vmware prefix
+- vcsa_backup_schedule - Add module to manage the vCenter backup schedule
+- vcsa_backup_schedule_info - Add module to gather info about the vCenter backup schedules
+- vm_advanced_settings - Add module to manage the advanced settings on a VM
+- vm_powerstate - Add better error message when scheduling a power state task in the past
+- vm_snapshot - migrate vmware_guest_snapshot module from community to here
+- vms inventory - Fixed issue where a user could accidentally not collect a required parameter, config.guestId
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- drop support for ansible 2.15 since it is EOL https://github.com/ansible-collections/vmware.vmware/issues/103
+- updated minimum pyVmomi version to 8.0.3.0.1 https://github.com/ansible-collections/vmware.vmware/issues/56
+
+Removed Features (previously deprecated)
+----------------------------------------
+
+- vm_list_group_by_clusters - Tombstone module in favor of vmware.vmware.vm_list_group_by_clusters_info
+
+Bugfixes
+--------
+
+- cluster_ha - Fix exception when cluster ha module checks for differences with VM monitoring configs
+- fix method to lookup datastore clusters by name or moid https://github.com/ansible-collections/vmware.vmware/issues/152
+- vm_snapshot - Make sure snapshot output is always included if state is present
+
 v1.11.0
 =======
 
@@ -16,9 +60,9 @@ Minor Changes
 - clients/_rest - adds explicit init params instead of using dict
 - esxi_hosts - Add inventory host filtering based on jinja statements
 - esxi_hosts inventory - include moid property in output always
-- vm_powerstate - migrate vmware_guest_powerstate module from community to here
 - pyvmomi - update object search by name method to use propertycollector, which speeds up results significantly
 - upload_content_library_ovf - Add module to upload an ovf/ova to a content library
+- vm_powerstate - migrate vmware_guest_powerstate module from community to here
 - vms - Add inventory host filtering based on jinja statements
 - vms inventory - include moid property in output always
 

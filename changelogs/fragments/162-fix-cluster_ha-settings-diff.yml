@@ -1,3 +1,0 @@
----
-bugfixes:
-  - cluster_ha - Fix exception when cluster ha module checks for differences with VM monitoring configs

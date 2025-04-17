@@ -33,10 +33,10 @@ action_groups:
         - vm_powerstate
         - vm_resource_info
         - vm_snapshot
+
 plugin_routing:
     modules:
         vm_list_group_by_clusters:
-            redirect: vmware.vmware.vm_list_group_by_clusters_info
-            deprecation:
+            tombstone:
                 removal_version: 2.0.0
                 warning_text: Use M(vmware.vmware.vm_list_group_by_clusters_info) instead.

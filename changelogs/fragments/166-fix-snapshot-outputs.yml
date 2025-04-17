@@ -1,3 +1,0 @@
----
-bugfixes:
-  - vm_snapshot - Make sure snapshot output is always included if state is present

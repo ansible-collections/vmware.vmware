@@ -1,3 +1,0 @@
----
-minor_changes:
-  - rename private module_utils to drop the redundant vmware prefix
