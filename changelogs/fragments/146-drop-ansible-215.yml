@@ -1,3 +1,0 @@
----
-breaking_changes:
-  - drop support for ansible 2.15 since it is EOL https://github.com/ansible-collections/vmware.vmware/issues/103

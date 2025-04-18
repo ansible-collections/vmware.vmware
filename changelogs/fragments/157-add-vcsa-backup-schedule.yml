@@ -1,4 +1,0 @@
----
-minor_changes:
-  - vcsa_backup_schedule - Add module to manage the vCenter backup schedule
-  - vcsa_backup_schedule_info - Add module to gather info about the vCenter backup schedules

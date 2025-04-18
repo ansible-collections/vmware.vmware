@@ -1,3 +1,0 @@
----
-minor_changes:
-  - guest_info - Allow user to specify folder path to help select the VM to query
