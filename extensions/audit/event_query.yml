@@ -1,39 +1,14 @@
 ---
 ####
-# Do not add _info modules or modules that manage users
-# guest_info is here for testing purposes
-####
-vmware.vmware.guest_info:
-  query: >-
-    .guests[] | {
-      name: .moid,
-      canonical_facts: {
-        name: .name,
-        moid: .moid,
-        esxi_host: .hw_esxi_host
-      },
-      facts: {
-        device_type: "VM"
-      }
-    }, {
-      name: .hw_esxi_host,
-      facts: {
-        device_type: "ESXi"
-      }
-    }
-
-####
 # Catch all query
 ####
 vmware.vmware.*:
   query: >-
     (
       {"vm": "VM", "host": "ESXi", "vcsa": "vCenter Appliance", "cluster": "Cluster"} as $mapping |
-      (if (keys | length) == 1 then .[(keys | first)] else . end) as $data |
-      (
-        ($data | ($mapping | keys) | first)
-      ) as $node_type |
-      select($node_type != null) |
+      . as $data |
+      ($data | with_entries(select(.key | in($mapping))) | keys | first) as $node_type |
+      select(($node_type != null) and ($data[$node_type].name != null) and ($data[$node_type].moid != null)) |
       {
         name: $data[$node_type].moid,
         canonical_facts: {
