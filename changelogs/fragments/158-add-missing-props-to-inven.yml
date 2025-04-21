@@ -1,3 +1,0 @@
----
-minor_changes:
-  - vms inventory - Fixed issue where a user could accidentally not collect a required parameter, config.guestId
