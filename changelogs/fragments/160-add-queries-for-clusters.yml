@@ -1,4 +1,0 @@
----
-major_changes:
-  - cluster modules - Add identifying information about the cluster managed to the output of cluster modules
-  - update query file to include cluster module queries

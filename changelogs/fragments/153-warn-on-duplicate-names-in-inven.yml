@@ -1,3 +1,0 @@
----
-minor_changes:
-  - Warn the user when more than one host has the same name in the inventory plugins. Throw an error if strict is true

@@ -1,4 +1,0 @@
----
-major_changes:
-  - module_utils/clients - make client utils public so other collections can use them https://github.com/ansible-collections/vmware.vmware/issues/144
-  - module_utils/argument_spec - make argument specs public so other collections can use them https://github.com/ansible-collections/vmware.vmware/issues/144

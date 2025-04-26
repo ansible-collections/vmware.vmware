@@ -1,3 +1,0 @@
----
-minor_changes:
-  - vm_powerstate - Add better error message when scheduling a power state task in the past
