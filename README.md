@@ -1,6 +1,6 @@
 # Ansible Collection: vmware.vmware
 
- This repo hosts the `vmware.vmware` Ansible Collection.
+This repo hosts the `vmware.vmware` Ansible Collection.
 
 The **vmware.vmware** collection is part of the **Red Hat Ansible Certified Content for VMware** offering that brings Ansible automation to VMware. This collection brings forward the possibility to manage vSphere resources and automate operator tasks.
 
