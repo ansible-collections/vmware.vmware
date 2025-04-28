@@ -3,18 +3,23 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import json
+import contextlib
+import mock
 
 from ansible.module_utils import basic
 from ansible.module_utils._text import to_bytes
 
-import mock
 
-
+@contextlib.contextmanager
 def set_module_args(add_cluster=True, **args):
+    """
+    Context manager that sets module arguments for AnsibleModule
+    """
     if '_ansible_remote_tmp' not in args:
         args['_ansible_remote_tmp'] = '/tmp'
     if '_ansible_keep_remote_files' not in args:
         args['_ansible_keep_remote_files'] = False
+
     if add_cluster and 'cluster_name' not in args:
         args["cluster_name"] = "mycluster"
     if 'hostname' not in args:
@@ -24,8 +29,18 @@ def set_module_args(add_cluster=True, **args):
     if 'password' not in args:
         args["password"] = "test"
 
-    args = json.dumps({'ANSIBLE_MODULE_ARGS': args})
-    basic._ANSIBLE_ARGS = to_bytes(args)
+    try:
+        from ansible.module_utils.testing import patch_module_args
+    except ImportError:
+        # Before data tagging support was merged (2.19), this was the way to go:
+        from ansible.module_utils import basic
+        serialized_args = to_bytes(json.dumps({'ANSIBLE_MODULE_ARGS': args}))
+        with mock.patch.object(basic, '_ANSIBLE_ARGS', serialized_args):
+            yield
+    else:
+        # With data tagging support, we have a new helper for this:
+        with patch_module_args(args):
+            yield
 
 
 class DummyDatacenter:
