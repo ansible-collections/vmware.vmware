@@ -13,7 +13,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     create_mock_vsphere_object,
@@ -42,72 +42,45 @@ class TestClusterVcls(ModuleTestCase):
 
         ds_to_add = ['ds1']
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
+            cluster='foo',
             datastores_to_add=ds_to_add
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
-        assert set(c.value.args[0]["added_datastores"]) == set(ds_to_add)
-        assert len(c.value.args[0]["removed_datastores"]) == 0
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
+        assert set(result["added_datastores"]) == set(ds_to_add)
+        assert len(result["removed_datastores"]) == 0
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
             create_mock_vsphere_object(name=ds_to_add[0])
         ]
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            datastores_to_add=ds_to_add
-        )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is False
-        assert len(c.value.args[0]["added_datastores"]) == 0
-        assert len(c.value.args[0]["removed_datastores"]) == 0
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
+        assert len(result["added_datastores"]) == 0
+        assert len(result["removed_datastores"]) == 0
 
     def test_remove(self, mocker):
         self.__prepare(mocker)
 
         ds_to_remove = ['ds1']
-
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
+            cluster='foo',
             datastores_to_remove=ds_to_remove
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is False
-        assert len(c.value.args[0]["added_datastores"]) == 0
-        assert len(c.value.args[0]["removed_datastores"]) == 0
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
+        assert len(result["added_datastores"]) == 0
+        assert len(result["removed_datastores"]) == 0
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
             create_mock_vsphere_object(name=ds_to_remove[0])
         ]
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            datastores_to_remove=ds_to_remove
-        )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
-        assert len(c.value.args[0]["added_datastores"]) == 0
-        assert set(c.value.args[0]["removed_datastores"]) == set(ds_to_remove)
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
+        assert len(result["added_datastores"]) == 0
+        assert set(result["removed_datastores"]) == set(ds_to_remove)
 
     def test_absolute_list(self, mocker):
         self.__prepare(mocker)
@@ -119,52 +92,30 @@ class TestClusterVcls(ModuleTestCase):
             create_mock_vsphere_object(name='ds3'),
         ]
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
+            cluster='foo',
             allowed_datastores=allowed_datastores
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
-        assert set(c.value.args[0]["added_datastores"]) == set([])
-        assert set(c.value.args[0]["removed_datastores"]) == set(['ds1', 'ds2'])
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
+        assert set(result["added_datastores"]) == set([])
+        assert set(result["removed_datastores"]) == set(['ds1', 'ds2'])
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
             create_mock_vsphere_object(name='ds3'),
         ]
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            allowed_datastores=allowed_datastores
-        )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is False
-        assert set(c.value.args[0]["added_datastores"]) == set([])
-        assert set(c.value.args[0]["removed_datastores"]) == set([])
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
+        assert set(result["added_datastores"]) == set([])
+        assert set(result["removed_datastores"]) == set([])
 
         self.test_cluster.configurationEx.systemVMsConfig.allowedDatastores = [
             create_mock_vsphere_object(name='ds1'),
         ]
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            allowed_datastores=allowed_datastores
-        )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
-        assert set(c.value.args[0]["added_datastores"]) == set(allowed_datastores)
-        assert set(c.value.args[0]["removed_datastores"]) == set(['ds1'])
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
+        assert set(result["added_datastores"]) == set(allowed_datastores)
+        assert set(result["removed_datastores"]) == set(['ds1'])

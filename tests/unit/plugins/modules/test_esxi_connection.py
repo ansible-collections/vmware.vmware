@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     create_mock_vsphere_object,
@@ -37,70 +37,50 @@ class TestEsxiConnection(ModuleTestCase):
         self.__prepare(mocker)
         self.test_esxi.runtime.connectionState = 'connected'
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter="",
             esxi_host_name=self.test_esxi.name,
             state="connected"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
 
         self.test_esxi.runtime.connectionState = 'disconnected'
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter="",
             esxi_host_name=self.test_esxi.name,
             state="disconnected"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
 
     def test_state_connected(self, mocker):
         self.__prepare(mocker)
         self.test_esxi.runtime.connectionState = 'disconnected'
         self.test_esxi.ReconnectHost_Task.return_value = MockVsphereTask()
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter="",
             esxi_host_name=self.test_esxi.name,
             state="connected"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
 
     def test_state_disconnected(self, mocker):
         self.__prepare(mocker)
         self.test_esxi.runtime.connectionState = 'connected'
         self.test_esxi.DisconnectHost_Task.return_value = MockVsphereTask()
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter="",
             esxi_host_name=self.test_esxi.name,
             state="disconnected"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True

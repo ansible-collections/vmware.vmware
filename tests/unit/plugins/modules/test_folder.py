@@ -13,7 +13,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     MockVmwareObject,
@@ -35,74 +35,54 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
         self.__prepare(mocker)
         mocker.patch.object(VmwareFolder, 'get_folder_by_absolute_path', return_value=self.mock_folder)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             absolute_path="/DC0/host/test"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        assert c.value.args[0]["folder"]["moid"] is self.mock_folder._moId
+        assert result["changed"] is False
+        assert result["folder"]["moid"] is self.mock_folder._moId
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             relative_path="test",
             datacenter="DC0",
             folder_type="host"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        assert c.value.args[0]["folder"]["moid"] is self.mock_folder._moId
+        assert result["changed"] is False
+        assert result["folder"]["moid"] is self.mock_folder._moId
 
     def test_state_absent_no_change(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(VmwareFolder, 'get_folder_by_absolute_path', return_value=None)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             state="absent",
             relative_path="test",
             datacenter="DC0",
             folder_type="host"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
+        assert result["changed"] is False
 
     def test_state_absent_with_change(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(VmwareFolder, 'get_folder_by_absolute_path', return_value=self.mock_folder)
         self.mock_folder.Destroy = mock.Mock(return_value=MockVsphereTask())
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             absolute_path="/DC0/host/test",
             state="absent"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
         self.mock_folder.Destroy.assert_called_once()
 
     def test_state_present_with_change(self, mocker):
@@ -112,17 +92,12 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
         ])
         self.mock_folder.CreateFolder = mock.Mock(return_value=MockVmwareObject(moid="2"))
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             absolute_path="/DC0/host/test",
             state="present"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
-        assert c.value.args[0]["folder"]["moid"] == "2"
+        assert result["changed"] is True
+        assert result["folder"]["moid"] == "2"

@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 
 pytestmark = pytest.mark.skipif(
@@ -35,43 +35,32 @@ class TestLocalContentLibrary(ModuleTestCase):
     def test_absent(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             name='test',
             state='absent'
         )
         mocker.patch.object(VmwareContentLibrary, 'get_content_library_ids', return_value=[])
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
+        assert result["changed"] is False
 
         mocker.patch.object(VmwareContentLibrary, 'get_content_library_ids', return_value=[self.test_library])
         mocker.patch.object(self.library_service, 'get', return_value=self.test_library)
         mocker.patch.object(self.typed_library_service, 'delete')
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
     def test_present(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             name='test',
             state='present',
             datastore='foo'
         )
         mocker.patch.object(VmwareContentLibrary, 'get_content_library_ids', return_value=[])
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True

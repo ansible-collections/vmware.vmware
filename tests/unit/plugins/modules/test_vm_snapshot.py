@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     MockVsphereTask
@@ -54,70 +54,52 @@ class TestVmSnapshot(ModuleTestCase):
     def test_take_snapshot(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
             datacenter="DC0",
             folder="DC0/vm/e2e-qe",
             name="vm1",
             state="present",
             snapshot_name="snap1",
-            description="snap1_description",
-            validate_certs=False,
-            add_cluster=False
+            description="snap1_description"
         )
 
         self.vm_mock.snapshot = None
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
     def test_rename_snapshot(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
             datacenter="DC0",
             folder="DC0/vm/e2e-qe",
             name="vm1",
             state="present",
             snapshot_name="snap1",
             new_snapshot_name="im_renamed",
-            description="im_redescribed",
-            validate_certs=False,
-            add_cluster=False
+            description="im_redescribed"
         )
 
         self.vm_mock.snapshot = self.snap3_mock
         self.snap3_mock.rootSnapshotList = [self.snap3_mock]
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
     def test_remove_snapshot(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
             datacenter="DC0",
             folder="DC0/vm/e2e-qe",
             name="vm1",
             state="absent",
-            snapshot_name="snap1",
-            validate_certs=False,
-            add_cluster=False
+            snapshot_name="snap1"
         )
 
         self.vm_mock.snapshot = self.snap3_mock
         self.snap3_mock.rootSnapshotList = [self.snap3_mock]
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True

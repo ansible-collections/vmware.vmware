@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     create_mock_vsphere_object,
@@ -43,54 +43,41 @@ class TestEsxiHost(ModuleTestCase):
 
         self.test_esxi.parent = self.mock_cluster
         mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=self.test_esxi)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=True,
+        module_args = dict(
+            cluster='foo',
             datacenter='foo',
             esxi_host_name=self.test_esxi.name,
             esxi_username="foo",
             esxi_password="foo"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
 
         self.test_esxi.parent.parent = self.mock_folder
         mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=self.test_esxi)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter='foo',
             folder='bar',
             esxi_host_name=self.test_esxi.name,
             esxi_username="foo",
             esxi_password="foo"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
 
         mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=None)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=True,
+        module_args = dict(
+            cluster='foo',
             datacenter='foo',
             esxi_host_name=self.test_esxi.name,
             state='absent'
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
 
     def test_state_present(self, mocker):
         self.__prepare(mocker)
@@ -99,11 +86,7 @@ class TestEsxiHost(ModuleTestCase):
         self.mock_folder.AddStandaloneHost.return_value = MockVsphereTask()
         self.mock_folder.AddStandaloneHost.return_value.info.result = self.test_esxi
         mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=None)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter='foo',
             folder="foo/vm/bar",
             esxi_host_name=self.test_esxi.name,
@@ -111,10 +94,9 @@ class TestEsxiHost(ModuleTestCase):
             esxi_username="foo",
             esxi_password="foo"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
 
     def test_state_present_move(self, mocker):
         self.__prepare(mocker)
@@ -122,21 +104,17 @@ class TestEsxiHost(ModuleTestCase):
         self.test_esxi.parent = self.mock_folder
         self.mock_cluster.MoveHostInto_Task.return_value = MockVsphereTask()
         mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=self.test_esxi)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=True,
+        module_args = dict(
+            cluster='foo',
             datacenter='foo',
             esxi_host_name=self.test_esxi.name,
             ssl_thumbprint='fdsfadf',
             esxi_username="foo",
             esxi_password="foo"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
 
     def test_state_absent(self, mocker):
         self.__prepare(mocker)
@@ -144,11 +122,7 @@ class TestEsxiHost(ModuleTestCase):
         self.test_esxi.parent = self.mock_folder
         self.mock_folder.Destroy_Task.return_value = MockVsphereTask()
         mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=self.test_esxi)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter='foo',
             folder="foo/vm/bar",
             esxi_host_name=self.test_esxi.name,
@@ -156,7 +130,6 @@ class TestEsxiHost(ModuleTestCase):
             esxi_username="foo",
             esxi_password="foo"
         )
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
 
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True

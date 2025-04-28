@@ -5,23 +5,40 @@ __metaclass__ = type
 import json
 import contextlib
 import mock
+import pytest
 
 from ansible.module_utils import basic
 from ansible.module_utils._text import to_bytes
 
 
+def run_module(module_entry, module_args=None, expect_success=True):
+    """
+        Run the (mock) module and expect Ansible to exit without an error
+    """
+    raises = AnsibleExitJson if expect_success else AnsibleFailJson
+
+    if module_args is None:
+        module_args = {}
+
+    with pytest.raises(raises) as c, set_module_args(module_args):
+        module_entry()
+
+    return c.value.args[0]
+
+
 @contextlib.contextmanager
-def set_module_args(add_cluster=True, **args):
+def set_module_args(args=None):
     """
     Context manager that sets module arguments for AnsibleModule
     """
+    if args is None:
+        args = {}
+
     if '_ansible_remote_tmp' not in args:
         args['_ansible_remote_tmp'] = '/tmp'
     if '_ansible_keep_remote_files' not in args:
         args['_ansible_keep_remote_files'] = False
 
-    if add_cluster and 'cluster_name' not in args:
-        args["cluster_name"] = "mycluster"
     if 'hostname' not in args:
         args["hostname"] = "127.0.0.1"
     if 'username' not in args:

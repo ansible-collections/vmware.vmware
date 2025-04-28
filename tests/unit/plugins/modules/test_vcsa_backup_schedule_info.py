@@ -11,7 +11,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
     VmwareRestClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 
 pytestmark = pytest.mark.skipif(
@@ -41,45 +41,29 @@ class TestContentTemplate(ModuleTestCase):
             "foo": self.__mock_schedule(mocker), "bar": self.__mock_schedule(mocker)
         }
         # test no name
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
-        )
+        module_args = dict()
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        assert len(c.value.args[0]["schedules"]) == 2
+        assert result["changed"] is False
+        assert len(result["schedules"]) == 2
 
         # test name match
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             name="foo"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        assert len(c.value.args[0]["schedules"]) == 1
+        assert result["changed"] is False
+        assert len(result["schedules"]) == 1
 
         # test no match
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             name="not real"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        assert len(c.value.args[0]["schedules"]) == 0
+        assert result["changed"] is False
+        assert len(result["schedules"]) == 0

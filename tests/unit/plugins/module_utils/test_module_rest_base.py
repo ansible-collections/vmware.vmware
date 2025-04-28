@@ -12,10 +12,10 @@ class TestModuleRestBase():
 
     def __prepare(self, mocker):
         mocker.patch.object(VmwareRestClient, 'connect_to_api', return_value=mocker.Mock())
-        set_module_args()
-        module = mocker.Mock()
-        module.params = {"hostname": "a", "username": "b", "password": "c"}
-        self.base = ModuleRestBase(module=module)
+        with set_module_args():
+            module = mocker.Mock()
+            module.params = {"hostname": "a", "username": "b", "password": "c"}
+            self.base = ModuleRestBase(module=module)
 
     def test_get_vm_by_name(self, mocker):
         self.__prepare(mocker)
