@@ -7,7 +7,7 @@ import pytest
 from ansible_collections.vmware.vmware.plugins.modules import cluster
 
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 
 pytestmark = pytest.mark.skipif(
@@ -33,16 +33,11 @@ class TestCluster(ModuleTestCase):
     def test_cluster(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
+        module_args = dict(
             datacenter="test",
             name="test"
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            cluster.main()
-
-        assert c.value.args[0]["changed"] is True
-        assert c.value.args[0]["cluster"] == {"name": "test", "moid": "11111"}
+        result = run_module(module_entry=cluster.main, module_args=module_args)
+        assert result["changed"] is True
+        assert result["cluster"] == {"name": "test", "moid": "11111"}

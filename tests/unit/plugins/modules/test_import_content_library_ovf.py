@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
     VmwareRestClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from com.vmware.content.library.item.updatesession_client import PreviewInfo
 
@@ -39,11 +39,7 @@ class TestVmwareRemoteOvf(ModuleTestCase):
 
     def test_absent(self, mocker):
         self.__prepare(mocker)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             dest='foo',
             state='absent',
             library_name='foo'
@@ -51,26 +47,20 @@ class TestVmwareRemoteOvf(ModuleTestCase):
 
         # test item exists
         mocker.patch.object(VmwareRemoteOvf, 'get_library_item_ids', return_value=["1"])
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
-        assert c.value.args[0]["library_item"]["id"] == '1'
+        assert result["changed"] is True
+        assert result["library_item"]["id"] == '1'
 
         # test item already absent
         mocker.patch.object(VmwareRemoteOvf, 'get_library_item_ids', return_value=[])
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
+        assert result["changed"] is False
 
     def test_present_url_source(self, mocker):
         self.__prepare(mocker)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             dest='foo',
             src='http://example.com/foo.ova',
             state='present',
@@ -79,30 +69,24 @@ class TestVmwareRemoteOvf(ModuleTestCase):
 
         # test item already present
         mocker.patch.object(VmwareRemoteOvf, 'get_library_item_ids', return_value=["1"])
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        assert c.value.args[0]["library_item"]["id"] == '1'
+        assert result["changed"] is False
+        assert result["library_item"]["id"] == '1'
 
         # test item missing
         mocker.patch.object(VmwareRemoteOvf, 'get_library_item_ids', return_value=[])
         mocker.patch.object(self.mock_rest_client.content.library.Item, 'create', return_value='2')
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
-        assert c.value.args[0]["library_item"]["id"] == '2'
+        assert result["changed"] is True
+        assert result["library_item"]["id"] == '2'
 
     def test_present_file_source(self, mocker):
         self.__prepare(mocker)
 
         # test ovf
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             dest='foo',
             src='/tmp',
             state='present',
@@ -117,8 +101,7 @@ class TestVmwareRemoteOvf(ModuleTestCase):
         mocker.patch("builtins.open", new_callable=mocker.mock_open, read_data="data")
         mocker.patch('ansible_collections.vmware.vmware.plugins.modules.import_content_library_ovf.open_url')
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
-        assert c.value.args[0]["library_item"]["id"] == '2'
+        assert result["changed"] is True
+        assert result["library_item"]["id"] == '2'

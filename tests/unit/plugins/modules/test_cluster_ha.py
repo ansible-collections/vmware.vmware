@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     MockCluster
@@ -36,11 +36,7 @@ class TestClusterHa(ModuleTestCase):
     def test_bare_enable(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter="foo",
             cluster=self.test_cluster.name
         )
@@ -49,25 +45,17 @@ class TestClusterHa(ModuleTestCase):
         ha_config.enabled = True
         ha_config.defaultVmSettings.isolationResponse = 'none'
         ha_config.defaultVmSettings.vmComponentProtectionSettings.vmStorageProtectionForPDL = 'warning'
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
 
         ha_config.enabled = False
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
 
     def test_bare_disable(self, mocker):
         self.__prepare(mocker)
 
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             datacenter="foo",
             cluster=self.test_cluster.name,
             enable=False
@@ -75,13 +63,9 @@ class TestClusterHa(ModuleTestCase):
 
         ha_config = self.test_cluster.configurationEx.dasConfig
         ha_config.enabled = True
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
 
         ha_config.enabled = False
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is False
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False

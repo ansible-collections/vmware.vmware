@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
     PyvmomiClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     create_mock_vsphere_object
@@ -34,19 +34,14 @@ class TestVmwareVmResourceInfo(ModuleTestCase):
 
     def test_get_by_id(self, mocker):
         self.__prepare(mocker)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             name=self.test_vm.name
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        output_vm = c.value.args[0]["vms"][0]
+        assert result["changed"] is False
+        output_vm = result["vms"][0]
         assert output_vm['moid'] == self.test_vm._GetMoId()
         assert output_vm['name'] == self.test_vm.name
         assert output_vm['esxi_host'] != {}
@@ -56,18 +51,12 @@ class TestVmwareVmResourceInfo(ModuleTestCase):
 
     def test_get_all(self, mocker):
         self.__prepare(mocker)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False
-        )
+        module_args = dict()
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        output_vm = c.value.args[0]["vms"][0]
+        assert result["changed"] is False
+        output_vm = result["vms"][0]
         assert output_vm['moid'] == self.test_vm._GetMoId()
         assert output_vm['name'] == self.test_vm.name
         assert output_vm['esxi_host'] != {}
@@ -77,22 +66,17 @@ class TestVmwareVmResourceInfo(ModuleTestCase):
 
     def test_get_minimum(self, mocker):
         self.__prepare(mocker)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             gather_cpu_config=False,
             gather_cpu_stats=False,
             gather_memory_config=False,
             gather_memory_stats=False,
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
-        output_vm = c.value.args[0]["vms"][0]
+        assert result["changed"] is False
+        output_vm = result["vms"][0]
         assert output_vm['moid'] == self.test_vm._GetMoId()
         assert output_vm['name'] == self.test_vm.name
         assert output_vm['esxi_host'] != {}

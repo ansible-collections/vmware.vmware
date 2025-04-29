@@ -12,7 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
     VmwareRestClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 
 pytestmark = pytest.mark.skipif(
@@ -26,10 +26,6 @@ class TestContentTemplate(ModuleTestCase):
         self.mock_rest_client = mocker.Mock()
         mocker.patch.object(VmwareRestClient, 'connect_to_api', return_value=self.mock_rest_client)
         self.default_args = dict(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
             schedule=dict(minute=1, hour=2, days_of_week=['MONDAY']),
             location=dict(url="http://localhost"),
             include_supervisors_control_plane=False,
@@ -64,11 +60,10 @@ class TestContentTemplate(ModuleTestCase):
 
     def test_create_schedule(self, mocker):
         self.__prepare(mocker)
-        set_module_args(**self.default_args)
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        module_args = dict(**self.default_args)
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
     def test_no_change(self, mocker):
         self.__prepare(mocker)
@@ -76,65 +71,51 @@ class TestContentTemplate(ModuleTestCase):
         self.mock_rest_client.appliance.recovery.backup.Schedules.UpdateSpec.return_value = self.mock_schedule
 
         # no change
-        set_module_args(**self.default_args)
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        module_args = dict(**self.default_args)
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
+        assert result["changed"] is False
 
     def test_update_schedule(self, mocker):
         self.__prepare(mocker)
         self.mock_rest_client.appliance.recovery.backup.Schedules.get.return_value = self.mock_schedule
 
         # change time
-        set_module_args(**{**self.default_args, **dict(schedule=dict(minute=9, hour=2, days_of_week=['MONDAY']))})
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        module_args = dict(**{**self.default_args, **dict(schedule=dict(minute=9, hour=2, days_of_week=['MONDAY']))})
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
         # change location
-        set_module_args(**{**self.default_args, **dict(location=dict(url="https://foo"))})
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        module_args = dict(**{**self.default_args, **dict(location=dict(url="https://foo"))})
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
         # change parts
-        set_module_args(**{**self.default_args, **dict(include_supervisors_control_plane=True)})
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        module_args = dict(**{**self.default_args, **dict(include_supervisors_control_plane=True)})
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True
 
     def test_delete_schedule(self, mocker):
         self.__prepare(mocker)
         self.mock_rest_client.appliance.recovery.backup.Schedules.get.return_value = None
         # test no schedule
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             state='absent'
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is False
+        assert result["changed"] is False
 
         # test delete
         self.mock_rest_client.appliance.recovery.backup.Schedules.get.return_value = self.mock_schedule
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             state='absent'
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
+        result = run_module(module_entry=module_main, module_args=module_args)
 
-        assert c.value.args[0]["changed"] is True
+        assert result["changed"] is True

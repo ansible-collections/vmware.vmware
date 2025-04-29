@@ -15,7 +15,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
     VmwareRestClient
 )
 from ...common.utils import (
-    AnsibleExitJson, ModuleTestCase, set_module_args,
+    run_module, ModuleTestCase
 )
 from ...common.vmware_object_mocks import (
     MockVmwareObject
@@ -41,11 +41,7 @@ class TestDeployContentLibraryOvf(ModuleTestCase):
     def test_present(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(VmwareContentDeployOvf, 'get_deployed_vm', return_value=None)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
+        module_args = dict(
             vm_name=self.test_vm.name,
             library_item_id='111',
             datastore='foo',
@@ -53,27 +49,11 @@ class TestDeployContentLibraryOvf(ModuleTestCase):
             resource_pool='foo'
         )
 
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is True
-        assert c.value.args[0]["vm"]["moid"] is self.test_vm._GetMoId()
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is True
+        assert result["vm"]["moid"] is self.test_vm._GetMoId()
 
         mocker.patch.object(VmwareContentDeployOvf, 'get_deployed_vm', return_value=self.test_vm)
-        set_module_args(
-            hostname="127.0.0.1",
-            username="administrator@local",
-            password="123456",
-            add_cluster=False,
-            vm_name=self.test_vm.name,
-            library_item_id='111',
-            datastore='foo',
-            datacenter='foo',
-            resource_pool='foo'
-        )
-
-        with pytest.raises(AnsibleExitJson) as c:
-            module_main()
-
-        assert c.value.args[0]["changed"] is False
-        assert c.value.args[0]["vm"]["moid"] is self.test_vm._GetMoId()
+        result = run_module(module_entry=module_main, module_args=module_args)
+        assert result["changed"] is False
+        assert result["vm"]["moid"] is self.test_vm._GetMoId()
