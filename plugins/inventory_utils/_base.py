@@ -92,13 +92,28 @@ class VmwareInventoryHost(ABC):
 
 class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
-    def initialize_pyvmomi_client(self, config_data):
+    def parse(self, inventory, loader, path, cache=True):
+        """
+        This is the main entrypoint for the inventory. It will read the config file and update
+        an internal dict (_options) with the user input. Then, it will try to load the results
+        from a cache if appropriate. Otherwise, it will load the results from vCenter.
+        """
+        super().parse(inventory, loader, path, cache=cache)
+        self._consume_options(self._read_config_data(path))
+        cache_key = self.get_cache_key(path)
+        result_was_cached, results = self.get_cached_result(cache, cache_key)
+
+        if result_was_cached:
+            self.populate_from_cache(results)
+        else:
+            results = self.populate_from_vcenter()
+
+        self.update_cached_result(cache, cache_key, results)
+
+    def initialize_pyvmomi_client(self):
         """
         Create an instance of the pyvmomi client based on the user's input (auth) parameters
         """
-        # update _options from config data
-        self._consume_options(config_data)
-
         username, password = self.get_credentials_from_options()
 
         try:
@@ -114,13 +129,10 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         except Exception as e:
             raise AnsibleParserError(message=to_native(e))
 
-    def initialize_rest_client(self, config_data):
+    def initialize_rest_client(self):
         """
         Create an instance of the REST client based on the user's input (auth) parameters
         """
-        # update _options from config data
-        self._consume_options(config_data)
-
         username, password = self.get_credentials_from_options()
 
         try:
@@ -173,6 +185,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
             Second value is the cached data. Cached data could be empty, which is why the first value is needed.
         """
         # false when refresh_cache or --flush-cache is used
+
         if not cache:
             return False, None
 
