@@ -1,0 +1,20 @@
+---
+- name: Run REST Container
+  containers.podman.podman_container:
+    name: vmwarerest
+    image: docker.io/mockserver/mockserver:latest
+    state: started
+    recreate: yes
+    network: "{{ prepare_combined_vcenter_simulator_network | default(omit) }}"
+    exposed_ports:
+      - 1080
+    ports:
+      - "{{ prepare_rest_port }}:1080"
+
+- name: Pause
+  ansible.builtin.pause:
+    seconds: 3
+
+- name: Put data to mockserver
+  ansible.builtin.command:
+    cmd: "curl -v -X PUT --data @{{ prepare_rest_mock_file_prefix }}{{ mock_file }} http://localhost:1080/mockserver/expectation"

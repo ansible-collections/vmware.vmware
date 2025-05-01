@@ -1,9 +1,8 @@
 ---
-- block:
-    - name: Import common vars
-      ansible.builtin.include_vars:
-        file: ../group_vars.yml
-
+- name: Test
+  when: not run_on_simulator
+  tags: eco-vcenter-ci
+  block:
     - name: Create a test folders
       vmware.vmware.folder:
         validate_certs: false

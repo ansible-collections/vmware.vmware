@@ -1,6 +1,7 @@
 ---
 - name: Test On Simulator
   when: run_on_simulator
+  tags: integration-ci
   block:
     - name: Set DRS Settings In Cluster
       vmware.vmware.cluster_drs:
@@ -21,19 +22,20 @@
 
 - name: Test On VCenter
   when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
-    - name: Import common vars
+    - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
-        file: ../group_vars.yml
+        file: eco-vcenter.yml
     - name: Create Test Cluster
-      community.vmware.vmware_cluster:
+      vmware.vmware.cluster:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         validate_certs: false
         port: "{{ vcenter_port }}"
-        cluster_name: "{{ test_cluster }}"
+        name: "{{ test_cluster }}"
     - name: Set DRS Settings In Test Cluster
       vmware.vmware.cluster_drs:
         validate_certs: false
@@ -87,12 +89,12 @@
 
   always:
     - name: Destroy Test Cluster
-      community.vmware.vmware_cluster:
+      vmware.vmware.cluster:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         port: "{{ vcenter_port }}"
         validate_certs: false
-        cluster_name: "{{ test_cluster }}"
+        name: "{{ test_cluster }}"
         state: absent

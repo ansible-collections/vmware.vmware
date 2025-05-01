@@ -1,0 +1,8 @@
+---
+dependencies:
+  - role: prepare_simulator
+    vars:
+      prepare_simulator_include_rest: True
+      prepare_simulator_include_vcsim: False
+      mock_file: "vcsa_settings/mock.json"
+    tags: integration-ci

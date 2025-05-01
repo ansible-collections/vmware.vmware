@@ -1,6 +1,5 @@
 ---
-test_cluster: "{{ tiny_prefix }}_cluster_dpm_test"
-run_on_simulator: false
+test_cluster: DC0_C0
 
 dpm_enable: true
 dpm_automation_level: manual

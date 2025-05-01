@@ -1,16 +1,17 @@
 ---
 - name: Test On Simulator
   when: run_on_simulator
+  tags: integration-ci
   block:
     - name: "Test setup: Create Folder"
-      community.vmware.vcenter_folder:
+      vmware.vmware.folder:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder_name: "{{ vm_folder }}"
+        relative_path: "{{ vm_folder }}"
         folder_type: vm
         state: present
 
@@ -41,20 +42,21 @@
 
 - name: Test On VCenter
   when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
-    - name: Import common vars
+    - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
-        file: ../group_vars.yml
+        file: eco-vcenter.yml
 
     - name: "Test setup: Create Folders"
-      community.vmware.vcenter_folder:
+      vmware.vmware.folder:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder_name: "{{ item }}"
+        relative_path: "{{ item }}"
         folder_type: vm
         state: present
       loop: "{{ template_folders }}"
@@ -103,7 +105,10 @@
       register: __res
 
     - name: Verify template creation
-      ansible.builtin.include_tasks: verify_template_creation.yml
+      ansible.builtin.include_tasks:
+        file: verify_template_creation.yml
+        apply:
+          tags: eco-vcenter-ci
       loop: "{{ template_folders }}"
 
     - name: Destroy template
@@ -121,7 +126,10 @@
       loop: "{{ template_folders }}"
 
     - name: Verify template deletion
-      ansible.builtin.include_tasks: verify_template_deletion.yml
+      ansible.builtin.include_tasks:
+        file: verify_template_deletion.yml
+        apply:
+          tags: eco-vcenter-ci
       loop: "{{ template_folders }}"
 
   always:
@@ -155,13 +163,14 @@
       loop: "{{ template_folders }}"
 
     - name: "Test teardown: Delete Folder {{ item }}"
-      community.vmware.vcenter_folder:
+      vmware.vmware.folder:
         validate_certs: false
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
         port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder_name: "{{ item }}"
+        relative_path: "{{ item }}"
+        folder_type: vm
         state: absent
       loop: "{{ template_folders }}"

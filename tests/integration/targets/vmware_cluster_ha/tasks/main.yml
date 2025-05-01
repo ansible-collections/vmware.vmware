@@ -1,6 +1,7 @@
 ---
 - name: Test On Simulator
   when: run_on_simulator
+  tags: integration-ci
   block:
     - name: Set HA Settings In Cluster
       vmware.vmware.cluster_ha:
@@ -30,12 +31,13 @@
 
 - name: Test On VCenter
   when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
-    - name: Import common vars
+    - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
-        file: ../group_vars.yml
+        file: eco-vcenter.yml
     - name: Create Test Cluster
-      community.vmware.vmware_cluster:
+      vmware.vmware.cluster:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
@@ -161,7 +163,7 @@
 
   always:
     - name: Destroy Test Cluster
-      community.vmware.vmware_cluster:
+      vmware.vmware.cluster:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"

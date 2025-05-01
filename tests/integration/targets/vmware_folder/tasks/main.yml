@@ -1,13 +1,17 @@
 ---
-- name: Import common vars
+- name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
+    file: eco-vcenter.yml
+  tags: eco-vcenter-ci
 
 - name: Include Test Tasks
   block:
     - name: Include Test Tasks
-      ansible.builtin.include_tasks: test.yml
+      ansible.builtin.include_tasks:
+        file: test.yml
+        apply:
+          tags: eco-vcenter-ci, integration-ci
+      tags: eco-vcenter-ci, integration-ci
   always:
     - name: Destroy Test Folder
       vmware.vmware.folder:
@@ -21,3 +25,4 @@
         folder_type: "{{ vmware_folder_type }}"
         state: absent
       when: not run_on_simulator
+      tags: eco-vcenter-ci

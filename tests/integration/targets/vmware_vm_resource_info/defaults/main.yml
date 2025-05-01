@@ -1,3 +1,2 @@
 ---
-run_on_simulator: false
-vm_name: eco-vcenter-server
+vm_name: DC0_H0_VM0

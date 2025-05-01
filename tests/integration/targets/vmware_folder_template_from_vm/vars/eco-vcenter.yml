@@ -1,0 +1,3 @@
+---
+vm_folder: "{{ template_folders[0] }}"
+vm_name: "{{ tiny_prefix }}_folder_template_from_vm_test"

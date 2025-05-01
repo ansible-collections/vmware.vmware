@@ -3,10 +3,11 @@
 # module uses, so there's no simulator tests
 - name: Test On VCenter
   when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
-    - name: Import common vars
+    - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
-        file: ../group_vars.yml
+        file: eco-vcenter.yml
     - name: Create Test Cluster
       vmware.vmware.cluster:
         hostname: "{{ vcenter_hostname }}"

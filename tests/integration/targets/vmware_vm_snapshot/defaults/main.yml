@@ -1,4 +1,4 @@
-run_on_simulator: false
+run_on_simulator: True
 
 vm: "{{ tiny_prefix }}-vm"
 vm_cluster: "{{ vcenter_cluster_name }}"

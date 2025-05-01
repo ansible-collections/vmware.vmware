@@ -1,10 +1,5 @@
 ---
 - block:
-    - name: Import common vars
-      ansible.builtin.include_vars:
-        file: ../group_vars.yml
-      when: not run_on_simulator
-
     - name: "Test setup: Create VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
         validate_certs: false
@@ -16,6 +11,7 @@
         folder_type: vm
         state: present
       when: not run_on_simulator
+      tags: eco-vcenter-ci
 
     - name: "Test setup: Create VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
@@ -32,6 +28,7 @@
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
       when: not run_on_simulator
+      tags: eco-vcenter-ci
 
     - name: VM list group by clusters and folders
       vmware.vmware.vm_list_group_by_clusters_info:
@@ -42,6 +39,7 @@
         detailed_vms: false
         port: "{{ vcenter_port }}"
       register: __res
+      tags: eco-vcenter-ci, integration-ci
 
     - name: Assert values
       ansible.builtin.assert:
@@ -51,6 +49,7 @@
           - __res.vm_list_group_by_clusters_info['cluster1'] | length == 1
           - __res.vm_list_group_by_clusters_info['cluster1']['folder1'] | length == 1
       when: run_on_simulator
+      tags: integration-ci
 
     - name: Assert values
       ansible.builtin.assert:
@@ -59,6 +58,7 @@
           - __res.vm_list_group_by_clusters_info[vm_cluster][test_folder] | length == 1
           - __res.vm_list_group_by_clusters_info[vm_cluster][test_folder][0]['name'] == vm_name
       when: not run_on_simulator
+      tags: eco-vcenter-ci
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
@@ -74,6 +74,7 @@
         force: true
         name: "{{ vm_name }}"
       when: not run_on_simulator
+      tags: eco-vcenter-ci
 
     - name: "Test teardown: Remove VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
@@ -86,3 +87,4 @@
         folder_type: vm
         state: absent
       when: not run_on_simulator
+      tags: eco-vcenter-ci

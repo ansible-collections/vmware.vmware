@@ -1,0 +1,17 @@
+---
+- name: Run soap vcSim
+  containers.podman.podman_container:
+    name: vmwaresoap
+    image: docker.io/vmware/vcsim:latest
+    state: started
+    recreate: yes
+    network: "{{ prepare_combined_vcenter_simulator_network | default(omit) }}"
+    expose:
+      - 8989
+    ports:
+      - "{{ prepare_vcsim_port }}:8989"
+    command: "{{ prepare_vcsim_command | default(omit) }}"
+
+- name: Pause
+  ansible.builtin.pause:
+    seconds: 3

@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: prepare_eco_vcenter
+    tags: eco-vcenter-ci

@@ -1,8 +1,16 @@
 ---
 - name: Test On Simulator
-  ansible.builtin.include_tasks: simulator.yml
+  ansible.builtin.include_tasks:
+    file: simulator.yml
+    apply:
+      tags: integration-ci
   when: run_on_simulator
+  tags: integration-ci
 
 - name: Test On VCenter
-  ansible.builtin.include_tasks: eco-vcenter.yml
+  ansible.builtin.include_tasks:
+    file: eco-vcenter.yml
+    apply:
+      tags: eco-vcenter-ci
   when: not run_on_simulator
+  tags: eco-vcenter-ci

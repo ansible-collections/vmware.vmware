@@ -1,9 +1,8 @@
 ---
-- block:
-    - name: Import common vars
-      ansible.builtin.include_vars:
-        file: ../group_vars.yml
-
+- name: Test
+  when: not run_on_simulator
+  tags: eco-vcenter-ci
+  block:
     # the ansible-inventory process does not have access to any of the variables in this playbook,
     # so the auth vars are exposed as env vars
     - name: Run Inventory Plugin

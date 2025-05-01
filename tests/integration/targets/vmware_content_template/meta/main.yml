@@ -1,0 +1,11 @@
+---
+dependencies:
+  - role: prepare_simulator
+    vars:
+      prepare_simulator_include_rest: True
+      prepare_simulator_include_vcsim: True
+      mock_file: "vmware_content_template/mock.json"
+    tags: integration-ci
+
+  - role: prepare_eco_vcenter
+    tags: eco-vcenter-ci

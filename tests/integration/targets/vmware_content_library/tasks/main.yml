@@ -1,12 +1,12 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
-
 - name: Test
   when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
+    - name: Include Eco Vcenter Test Vars
+      ansible.builtin.include_vars:
+        file: eco-vcenter.yml
+
     - name: Create Local Content Library
       vmware.vmware.local_content_library:
         validate_certs: false

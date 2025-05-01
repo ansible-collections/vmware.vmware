@@ -1,7 +1,7 @@
 ---
-- name: Import common vars
+- name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
-    file: ../group_vars.yml
+    file: eco-vcenter.yml
 
 - name: Lookup Root Resource Pool ID
   ansible.builtin.set_fact:

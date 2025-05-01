@@ -1,9 +1,11 @@
 ---
-- block:
-    - name: Import common vars
+- name: Test
+  when: not run_on_simulator
+  tags: eco-vcenter-ci
+  block:
+    - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
-        file: ../group_vars.yml
-      when: not run_on_simulator
+        file: eco-vcenter.yml
 
     - name: "Test setup: Create VM guest {{ vm }}"
       community.vmware.vmware_guest:

@@ -35,6 +35,27 @@ Testing is done as a part of the pull request workflow. There are a few key test
 - integration tests, run against a simulated vCenter (container) and an actual vCenter (Eco-vCenter)
 - sanity tests (includes a variety of linters)
 
+### Run tests locally
+
+These commands will attempt to install python packages. You can create and activate a virtual env beforehand to avoid installing packages to the system python.
+
+To run sanity tests, unit tests, or integration tests locally:
+```bash
+make sanity
+make units
+make integration
+```
+
+To run integration tests against a vCenter lab:
+```bash
+# set env variables for auth
+export VMWARE_HOST='my-vcenter.example.com'
+export VMWARE_USER='someuser@vcenter.local'
+export VMWARE_PASSWORD='password'
+export VMWARE_VALIDATE_CERTS='False'
+make eco-vcenter-ci
+```
+
 ### Pre-Commit
 
 Pre-commit hooks are available using the `pre_commit` python package. Hooks must be enabled by the developer using `pre-commit install` or disabled using `pre-commit uninstall`. Hooks are optional.

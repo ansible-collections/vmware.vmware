@@ -1,9 +1,4 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
-
 - name: Gather appliance info
   vmware.vmware.appliance_info:
     validate_certs: false
@@ -14,9 +9,11 @@
     properties:
       - summary
   register: __res
+  tags: integration-ci, eco-vcenter-ci
 
 - name: Assert values
   ansible.builtin.assert:
     that:
       - __res.changed == False
-      - __res.appliance.summary.hostname == appliance_hostname
+      - __res.appliance.summary.hostname in [vcenter_hostname, "hostname.example.com"]
+  tags: integration-ci, eco-vcenter-ci

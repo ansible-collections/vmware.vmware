@@ -10,6 +10,7 @@
     relative_path: "{{ test_folder }}"
     folder_type: "{{ vmware_folder_type }}"
   register: _rel
+  tags: eco-vcenter-ci, integration-ci
 
 - name: Create With Absolute Path
   vmware.vmware.folder:
@@ -20,6 +21,7 @@
     port: "{{ vcenter_port }}"
     absolute_path: "{{ vmware_folder_absolute_folder_name }}"
   register: _abs
+  tags: eco-vcenter-ci, integration-ci
 
 - name: Gather Info About Folders
   community.vmware.vmware_folder_info:
@@ -30,6 +32,7 @@
     port: "{{ vcenter_port }}"
     datacenter: "{{ vcenter_datacenter }}"
   register: _folder_info
+  tags: eco-vcenter-ci, integration-ci
 
 - name: Check Output
   ansible.builtin.assert:
@@ -38,9 +41,11 @@
       - _rel.folder.moid == _abs.folder.moid
       - _rel is changed
       - _abs is not changed
+  tags: eco-vcenter-ci, integration-ci
 
 - name: Additional Eco Vcenter Tests
   when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
     - name: Delete The Folder
       vmware.vmware.folder:

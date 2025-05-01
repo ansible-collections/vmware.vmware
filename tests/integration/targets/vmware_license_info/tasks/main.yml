@@ -1,9 +1,4 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
-
 - name: Gather license info
   vmware.vmware.license_info:
     validate_certs: false
@@ -12,9 +7,11 @@
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
   register: __res
+  tags: eco-vcenter-ci, integration-ci
 
 - name: Assert values
   ansible.builtin.assert:
     that:
       - __res.changed == False
       - __res.licenses | length > 1 or run_on_simulator
+  tags: eco-vcenter-ci, integration-ci

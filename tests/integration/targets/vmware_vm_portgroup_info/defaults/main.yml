@@ -1,4 +1,4 @@
-run_on_simulator: false
+run_on_simulator: True
 
 test_folder: "{{ tiny_prefix }}-vm_portgroup_info"
 vm_name: "{{ tiny_prefix }}-vm_portgroup_info"

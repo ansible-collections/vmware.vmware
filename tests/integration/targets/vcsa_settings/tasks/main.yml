@@ -11,11 +11,11 @@
     dcui_enabled: true
     firewall_rules_append: false
     firewall_rules:
-      - address: '1.2.3.7'
-        interface_name: '*'
+      - address: "1.2.3.7"
+        interface_name: "*"
         prefix: 24
-        policy: 'ACCEPT'
-    dns_mode: 'dhcp'
+        policy: "ACCEPT"
+    dns_mode: "dhcp"
     dns_append: true
     dns_domains:
       - xyz.com
@@ -26,10 +26,11 @@
       - abc.com
     proxy:
       - enabled: true
-        protocol: 'http'
-        url: 'http://127.0.0.1'
+        protocol: "http"
+        url: "http://127.0.0.1"
         port: 80
   register: __res
+  tags: integration-ci
 
 - name: Assert values
   ansible.builtin.assert:
@@ -40,6 +41,7 @@
       - __res.vcsa_settings.dcui_enabled == True
       - __res.vcsa_settings.noproxy | length == 1
       - __res.vcsa_settings.noproxy[0] == 'abc.com'
+  tags: integration-ci
 
 - name: Set VCSA settings
   vmware.vmware.vcsa_settings:
@@ -52,8 +54,10 @@
     noproxy:
       - abc.com
   register: __res
+  tags: integration-ci
 
 - name: Assert values
   ansible.builtin.assert:
     that:
       - __res.changed == False
+  tags: integration-ci

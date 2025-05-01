@@ -7,8 +7,7 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
+    name: "{{ simulator_vm_name }}"
     state: powered-on
   register: deploy
 
@@ -20,8 +19,7 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
+    name: "{{ simulator_vm_name }}"
     state: restarted
 
 - name: Power on a virtual machine with the question_answers param
@@ -32,8 +30,7 @@
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
     validate_certs: false
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
+    name: "{{ simulator_vm_name }}"
     question_answers:
       - question: "msg.uuid.altered"
         response: "button.uuid.copiedTheVM"
@@ -47,7 +44,6 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
     moid: "{{ deploy.vm.moid }}"
     state: powered-off
 
@@ -59,7 +55,6 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
     moid: "{{ deploy.vm.moid }}"
     state: powered-on
 
@@ -71,8 +66,7 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
+    name: "{{ simulator_vm_name }}"
     state: suspended
 
 - name: Power on the virtual machine with force
@@ -83,7 +77,6 @@
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
-    folder: "{{ vm_folder }}"
-    name: "{{ test_esxi_hostname }}"
+    name: "{{ simulator_vm_name }}"
     state: powered-on
     force: true

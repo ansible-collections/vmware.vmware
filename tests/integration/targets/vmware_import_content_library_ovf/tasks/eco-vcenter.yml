@@ -1,8 +1,4 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-
 - name: Test
   block:
     - name: Upload OVF From URL

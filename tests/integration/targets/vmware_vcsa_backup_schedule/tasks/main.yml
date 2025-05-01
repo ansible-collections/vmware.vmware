@@ -1,15 +1,17 @@
 ---
-- name: Gather Current Backup Schedule Info
-  vmware.vmware.vcsa_backup_schedule_info:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    name: "{{ schedule_name }}"
-  register: _orig_sched
-
 - name: Test
+  when: not run_on_simulator
+  tags: eco-vcenter-ci
   block:
+    - name: Gather Current Backup Schedule Info
+      vmware.vmware.vcsa_backup_schedule_info:
+        validate_certs: false
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        name: "{{ schedule_name }}"
+      register: _orig_sched
+
     - name: Remove Schedule
       vmware.vmware.vcsa_backup_schedule:
         validate_certs: false

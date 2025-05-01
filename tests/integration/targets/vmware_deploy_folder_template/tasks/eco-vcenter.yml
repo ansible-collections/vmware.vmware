@@ -1,8 +1,4 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-
 - name: Lookup Resource IDs
   ansible.builtin.set_fact:
     vcenter_rp_id: >-

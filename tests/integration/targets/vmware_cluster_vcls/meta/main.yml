@@ -1,0 +1,10 @@
+---
+dependencies:
+  - role: prepare_simulator
+    vars:
+      prepare_simulator_include_rest: False
+      prepare_simulator_include_vcsim: True
+    tags: integration-ci
+
+  - role: prepare_eco_vcenter
+    tags: eco-vcenter-ci
