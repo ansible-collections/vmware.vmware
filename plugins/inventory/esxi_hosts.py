@@ -84,6 +84,39 @@ compose:
   datacenter: "(path | split('/'))[1]"
   cluster: "(path | split('/'))[3]"
 ...
+
+# Use Tags and Tag Categories to create groups
+# Given the example tags below:
+#
+#   tags:
+#     urn:vmomi:InventoryServiceTag:70f87e82-6ac6-42bc-878c-817d7b2a4520:GLOBAL: db
+#     urn:vmomi:InventoryServiceTag:bb10e90b-263f-4248-be06-086df1100d6b:GLOBAL: tofu-managed
+#     urn:vmomi:InventoryServiceTag:70f87e82-6ac6-42bc-878c-111111111111:GLOBAL: web
+#   tags_by_category:
+#     app_type:
+#       - urn:vmomi:InventoryServiceTag:70f87e82-6ac6-42bc-878c-817d7b2a4520:GLOBAL: db
+#       - urn:vmomi:InventoryServiceTag:70f87e82-6ac6-42bc-878c-111111111111:GLOBAL: web
+#     tofu:
+#       - urn:vmomi:InventoryServiceTag:bb10e90b-263f-4248-be06-086df1100d6b:GLOBAL: tofu-managed
+---
+plugin: vmware.vmware.esxi_hosts
+gather_tags: true
+keyed_groups:
+  # create groups based on tag names/values, like db, web, and tofu-managed
+  - key: tags.values()
+    prefix: ""
+    separator: ""
+
+  # create groups based on app types, like db and web
+  - key: tags_by_category.app_type | map('dict2items') | flatten | map(attribute='value')
+    prefix: "vmware_tag_app_type_category_"
+    separator: ""
+
+  # create groups based on categories, like app_type or tofu
+  - key: tags_by_category.keys()
+    prefix: "vmware_tag_category_name_"
+    separator: ""
+...
 """
 
 try:
