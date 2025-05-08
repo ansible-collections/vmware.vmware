@@ -1,6 +1,6 @@
 # setup commands
-.PHONY: install-collection
-install-collection:
+.PHONY: upgrade-collections
+upgrade-collections:
 	ansible-galaxy collection install --upgrade -p ~/.ansible/collections .
 
 .PHONY: install-collection-python-reqs
@@ -18,27 +18,27 @@ tests/integration/integration_config.yml:
 
 # test commands
 .PHONY: sanity
-sanity: install-collection
+sanity: upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
 	ansible-test sanity -v --color --coverage --junit --docker default
 
 .PHONY: units
-units: install-collection
+units: upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
 	ansible-test units --docker --python 3.12
 
 .PHONY: integration
-integration: install-integration-reqs install-collection
+integration: install-integration-reqs upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
 	ansible --version; \
 	ansible-test --version; \
 	ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections ansible-galaxy collection list; \
 	ANSIBLE_ROLES_PATH=~/.ansible/collections/ansible_collections/vmware/vmware/tests/integration/targets \
 		ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections \
-		ansible-test integration --tags integration-ci $(CLI_ARGS);
+		ansible-test integration $(CLI_ARGS);
 
 .PHONY: eco-vcenter-ci
-eco-vcenter-ci: tests/integration/integration_config.yml install-integration-reqs install-collection
+eco-vcenter-ci: tests/integration/integration_config.yml install-integration-reqs upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
 	ansible --version; \
 	ansible-test --version; \

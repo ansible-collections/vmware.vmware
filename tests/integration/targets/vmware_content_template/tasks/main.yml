@@ -1,7 +1,13 @@
 ---
 - name: Test
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
@@ -9,10 +15,6 @@
 
     - name: "Test setup: Create VM guest {{ vm }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
@@ -21,27 +23,18 @@
         disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: "Test setup: Create content library {{ library }}"
       community.vmware.vmware_content_library_manager:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datastore_name: "{{ datastore }}"
         library_name: "{{ library }}"
         state: present
         library_type: local
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: Create template from vm in content library
       vmware.vmware.content_template:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         template: "{{ template_name }}"
         library: "{{ library }}"
         vm_name: "{{ vm }}"
@@ -53,66 +46,48 @@
         that:
           - __res.changed == False
           - __res.template_info.msg == "Template '" + template_name + "' already exists."
-      when: run_on_simulator
+      when: not run_on_vcenter
 
     - name: Assert values
       ansible.builtin.assert:
         that:
           - __res.changed == True
           - __res.template_info.msg == "Template '" + template_name + "'."
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: Delete template from content library
       vmware.vmware.content_template:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         template: "{{ template_name }}"
         library: "{{ library }}"
         host: "{{ template_host }}"
         state: absent
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: Check for deleted template
       vmware.vmware.content_library_item_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         library_name: "{{ library }}"
         library_item_name: "{{ template_name }}"
       register: __res
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: Verify Template Was Deleted
       ansible.builtin.assert:
         that: (__res.library_item_info | length) == 0
-      when: not run_on_simulator
+      when: run_on_vcenter
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         state: absent
         force: true
         name: "{{ vm }}"
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: "Test teardown: Remove content library {{ library }}"
       community.vmware.vmware_content_library_manager:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         library_name: "{{ library }}"
         state: absent
-      when: not run_on_simulator
+      when: run_on_vcenter

@@ -2,7 +2,7 @@
 - name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
     file: eco-vcenter.yml
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
 
 - name: Gather guest info
   vmware.vmware.guest_info:
@@ -13,11 +13,9 @@
     port: "{{ vcenter_port }}"
     guest_name: "{{ vm_name }}"
   register: __res
-  tags: eco-vcenter-ci, integration-ci
 
 - name: Assert values
   ansible.builtin.assert:
     that:
       - __res.changed == False
       - __res.guests | length == guests_length
-  tags: eco-vcenter-ci, integration-ci

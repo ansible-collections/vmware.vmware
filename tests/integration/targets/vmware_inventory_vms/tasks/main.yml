@@ -1,19 +1,19 @@
 ---
 - name: Test
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     # the ansible-inventory process does not have access to any of the variables in this playbook,
     # so the auth vars are exposed as env vars
     - name: Run Inventory Plugin
       ansible.builtin.command: ansible-inventory -i "{{ role_path }}/files/test.vms.yml" --list
       register: _inventory_out
-      environment:
-        VMWARE_HOST: "{{ vcenter_hostname }}"
-        VMWARE_USER: "{{ vcenter_username }}"
-        VMWARE_PASSWORD: "{{ vcenter_password }}"
-        VMWARE_PORT: "{{ vcenter_port }}"
-        VMWARE_VALIDATE_CERTS: "false"
 
     - name: Parse Inventory Results as JSON
       ansible.builtin.set_fact:

@@ -1,82 +1,56 @@
 ---
-- name: Set the state of a virtual machine to poweredon
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    name: "{{ simulator_vm_name }}"
-    state: powered-on
-  register: deploy
+- name: Test
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
 
-- name: Restart the virtual machine
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    name: "{{ simulator_vm_name }}"
-    state: restarted
+  block:
+    - name: Set the state of a virtual machine to poweredon
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "{{ simulator_vm_name }}"
+        state: powered-on
+      register: deploy
 
-- name: Power on a virtual machine with the question_answers param
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    validate_certs: false
-    name: "{{ simulator_vm_name }}"
-    question_answers:
-      - question: "msg.uuid.altered"
-        response: "button.uuid.copiedTheVM"
-    state: powered-on
+    - name: Restart the virtual machine
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "{{ simulator_vm_name }}"
+        state: restarted
 
-- name: Set the state of a virtual machine to poweroff using MoID
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    moid: "{{ deploy.vm.moid }}"
-    state: powered-off
+    - name: Power on a virtual machine with the question_answers param
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "{{ simulator_vm_name }}"
+        question_answers:
+          - question: "msg.uuid.altered"
+            response: "button.uuid.copiedTheVM"
+        state: powered-on
 
-- name: Set the state of a virtual machine to poweron using MoID
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    moid: "{{ deploy.vm.moid }}"
-    state: powered-on
+    - name: Set the state of a virtual machine to poweroff using MoID
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        moid: "{{ deploy.vm.moid }}"
+        state: powered-off
 
-- name: Suspend the virtual machine
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    name: "{{ simulator_vm_name }}"
-    state: suspended
+    - name: Set the state of a virtual machine to poweron using MoID
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        moid: "{{ deploy.vm.moid }}"
+        state: powered-on
 
-- name: Power on the virtual machine with force
-  vmware.vmware.vm_powerstate:
-    datacenter: "{{ vcenter_datacenter }}"
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    name: "{{ simulator_vm_name }}"
-    state: powered-on
-    force: true
+    - name: Suspend the virtual machine
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "{{ simulator_vm_name }}"
+        state: suspended
+
+    - name: Power on the virtual machine with force
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "{{ simulator_vm_name }}"
+        state: powered-on
+        force: true

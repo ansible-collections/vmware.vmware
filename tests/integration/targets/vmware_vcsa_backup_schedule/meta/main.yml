@@ -1,4 +1,3 @@
 ---
 dependencies:
-  - role: prepare_eco_vcenter
-    tags: eco-vcenter-ci
+  - role: prepare_test_vars

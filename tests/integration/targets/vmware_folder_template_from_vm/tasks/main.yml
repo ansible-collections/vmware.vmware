@@ -1,15 +1,16 @@
 ---
 - name: Test On Simulator
-  when: run_on_simulator
-  tags: integration-ci
+  when: not run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: "Test setup: Create Folder"
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         relative_path: "{{ vm_folder }}"
         folder_type: vm
@@ -17,32 +18,28 @@
 
     - name: "Test setup: Power Off VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
         state: poweredoff
         name: "{{ vm_name }}"
 
     - name: Create template from vm in vcenter folder
       vmware.vmware.folder_template_from_vm:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
         template_folder: "{{ vm_folder }}"
         vm_name: "{{ vm_name }}"
         template_name: "{{ template_name }}"
       register: __res
 
 - name: Test On VCenter
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
@@ -50,11 +47,6 @@
 
     - name: "Test setup: Create Folders"
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         relative_path: "{{ item }}"
         folder_type: vm
@@ -63,12 +55,7 @@
 
     - name: "Test setup: Create VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ vm_folder }}"
         state: poweredon
@@ -79,12 +66,7 @@
 
     - name: "Test setup: Power off VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ vm_folder }}"
         state: poweredoff
@@ -92,12 +74,7 @@
 
     - name: Create templates from vm in vcenter folders
       vmware.vmware.folder_template_from_vm:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
         template_folder: "{{ item }}"
         vm_name: "{{ vm_name }}"
         template_name: "{{ template_name }}"
@@ -113,12 +90,7 @@
 
     - name: Destroy template
       vmware.vmware.folder_template_from_vm:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
         template_folder: "{{ item }}"
         vm_name: "{{ vm_name }}"
         template_name: "{{ template_name }}"
@@ -135,12 +107,7 @@
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ vm_folder }}"
         state: absent
@@ -149,12 +116,7 @@
 
     - name: "Test teardown: Destroy VM template from folder {{ item }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ item }}"
         state: absent
@@ -164,11 +126,6 @@
 
     - name: "Test teardown: Delete Folder {{ item }}"
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         datacenter: "{{ vcenter_datacenter }}"
         relative_path: "{{ item }}"
         folder_type: vm

@@ -1,28 +1,24 @@
 ---
 - name: Test On Simulator
-  when: run_on_simulator
-  tags: integration-ci
+  when: not run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Create Cluster
       vmware.vmware.cluster:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
         state: present
       register: _create
     - name: Gather Cluster Info
       vmware.vmware.cluster_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
       register: _cluster_info
     - name: Check Cluster Output
       ansible.builtin.assert:
@@ -32,31 +28,27 @@
     # deleting a cluster in the simulator is not supporter
 
 - name: Test On VCenter
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
         file: eco-vcenter.yml
     - name: Create Test Cluster
       vmware.vmware.cluster:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        validate_certs: false
-        port: "{{ vcenter_port }}"
         cluster_name: "{{ test_cluster }}"
       register: _create
     - name: Gather Cluster Info
       vmware.vmware.cluster_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster_name: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
       register: _cluster_info
     - name: Check Cluster Output
       ansible.builtin.assert:
@@ -65,13 +57,8 @@
           - _create.cluster.moid == _cluster_info.clusters[test_cluster].moid
     - name: Gather Missing Cluster Info
       vmware.vmware.cluster_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster_name: foo
-        port: "{{ vcenter_port }}"
       register: _cluster_info
     - name: Check Cluster Output
       ansible.builtin.assert:
@@ -82,11 +69,6 @@
   always:
     - name: Destroy Test Cluster
       vmware.vmware.cluster:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
-        validate_certs: false
         cluster_name: "{{ test_cluster }}"
         state: absent

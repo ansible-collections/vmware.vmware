@@ -1,10 +1,10 @@
 ---
-# vcenter specific vars
-# please edit according to your vcenter configs
+# do not put these in vars/main.yml. They will be included even when this role is skipped
 vcenter_cluster_name: "Eco-Cluster"
 vcenter_datacenter: "Eco-Datacenter"
 vcenter_resource_pool: "Resources"
 vcenter_port: 443
+vcenter_validate_certs: false
 
 shared_storage_01: "eco-iscsi-ds1"
 shared_storage_02: "eco-iscsi-ds2"
@@ -16,5 +16,3 @@ rhel9_content_library_template: rhel9-template
 
 ci_resources_vm_folder: ansible_ci_vm_test_resources
 rhel9_folder_template: rhel9
-
-run_on_simulator: false

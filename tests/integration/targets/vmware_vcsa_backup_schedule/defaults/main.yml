@@ -1,3 +1,3 @@
 ---
-run_on_simulator: true
+run_on_vcenter: false
 schedule_name: "default" # we are only allowed one schedule, so we may as well use this one

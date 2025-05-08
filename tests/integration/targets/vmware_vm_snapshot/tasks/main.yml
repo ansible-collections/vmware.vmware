@@ -1,14 +1,16 @@
 ---
 - name: Test
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Create Virtual Machine From OVF Template
       vmware.vmware.deploy_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         library_item_name: "{{ rhel9_content_library_ovf }}"
         vm_name: "{{ vm }}"
         datacenter: "{{ vm_datacenter }}"
@@ -17,39 +19,27 @@
 
     - name: Create a snapshot
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: present
         snapshot_name: snap1
         description: snap1_description
-        validate_certs: false
       register: _create
 
     - name: Create a snapshot - Idempotence
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: present
         snapshot_name: snap1
         description: snap1_description
-        validate_certs: false
       register: _create_idem
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify snapshot created
@@ -65,26 +55,18 @@
 
     - name: Rename Snapshot
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: present
         snapshot_name: snap1
         description: snap1_description
-        validate_certs: false
         new_snapshot_name: new_name1
       register: _rename
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify snapshot renamed
@@ -96,9 +78,6 @@
 
     - name: Take a second snap with more options
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
@@ -106,19 +85,14 @@
         snapshot_name: snap02
         quiesce: true
         memory_dump: true
-        validate_certs: false
 
     - name: Take even more snaps
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: present
         snapshot_name: snap0{{ item }}
-        validate_certs: false
       loop:
         - 3
         - 4
@@ -127,11 +101,7 @@
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify snapshot length
@@ -141,37 +111,25 @@
 
     - name: Remove a single snapshot
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: absent
         snapshot_name: snap06
-        validate_certs: false
       register: _rm_single
 
     - name: Remove a snapshot - Idemptoence
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: absent
         snapshot_name: snap06
-        validate_certs: false
       register: _rm_single_idem
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify snapshot length
@@ -182,24 +140,16 @@
 
     - name: Remove a snapshot and snapshot subtree
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: absent
         remove_children: true
         snapshot_name: snap04
-        validate_certs: false
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify snapshot length
@@ -210,23 +160,15 @@
 
     - name: Remove all snapshots of a VM
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: absent
         remove_all: True
-        validate_certs: false
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify all snapshots removed
@@ -236,37 +178,25 @@
 
     - name: Create a snapshot
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: present
         snapshot_name: snap1
         description: snap1_description
-        validate_certs: false
       register: _create
 
     - name: Remove a snapshot with a snapshot id
       vmware.vmware.vm_snapshot:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         snapshot_id: "{{ _create.snapshot.id }}"
         state: absent
-        validate_certs: false
 
     - name: Gather some info from vm
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ vm }}"
-        validate_certs: false
       register: info
 
     - name: Verify all snapshots removed
@@ -277,10 +207,6 @@
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         state: absent

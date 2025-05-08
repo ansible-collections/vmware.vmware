@@ -1,19 +1,21 @@
 ---
-- name: Gather appliance info
-  vmware.vmware.appliance_info:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    properties:
-      - summary
-  register: __res
-  tags: integration-ci, eco-vcenter-ci
+- name: Test
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
 
-- name: Assert values
-  ansible.builtin.assert:
-    that:
-      - __res.changed == False
-      - __res.appliance.summary.hostname in [vcenter_hostname, "hostname.example.com"]
-  tags: integration-ci, eco-vcenter-ci
+  block:
+    - name: Gather appliance info
+      vmware.vmware.appliance_info:
+        properties:
+          - summary
+      register: __res
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - __res.appliance.summary.hostname in [vcenter_hostname, "hostname.example.com"]

@@ -1,12 +1,15 @@
 ---
 - name: Test
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Upload OVF From URL
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         src: "{{ test_src_url }}"
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
@@ -15,10 +18,6 @@
 
     - name: Upload OVF From URL - Idempotency
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         src: "{{ test_src_url }}"
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
@@ -33,10 +32,6 @@
 
     - name: Delete OVF
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
         state: absent
@@ -55,10 +50,6 @@
 
     - name: Upload OVF From Local
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         src: /tmp/{{ test_dest }}.ova
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
@@ -73,10 +64,6 @@
   always:
     - name: Delete Library OVF
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
         state: absent

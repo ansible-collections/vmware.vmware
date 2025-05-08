@@ -1,7 +1,13 @@
 ---
 - name: Test On Eco Datacenter
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
@@ -9,11 +15,6 @@
 
     - name: Gather Library Info
       vmware.vmware.content_library_item_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         library_name: "{{ library_name }}"
       register: __res
 
@@ -25,11 +26,6 @@
 
     - name: Gather Fake Library Info
       vmware.vmware.content_library_item_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         library_item_name: should_not_exist
       register: __res
 

@@ -2,7 +2,7 @@
 - name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
     file: eco-vcenter.yml
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
 
 - name: Gather VM Resource Info
   vmware.vmware.vm_resource_info:
@@ -13,7 +13,6 @@
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
   register: _vm_info
-  tags: eco-vcenter-ci, integration-ci
 
 - name: Check Output
   ansible.builtin.assert:
@@ -26,4 +25,3 @@
       - _vm_info.vms[0].resource_pool != {}
       - _vm_info.vms[0].stats.cpu != {}
       - _vm_info.vms[0].stats.memory != {}
-  tags: eco-vcenter-ci, integration-ci

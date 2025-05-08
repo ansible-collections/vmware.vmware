@@ -33,7 +33,7 @@ total=0
 for target in $(ansible-test integration --list-target | grep 'vmware_'); do
     echo "Running integration test for $target"
     total=$((total + 1))
-    if ansible-test integration --tags eco-vcenter-ci $target; then
+    if ansible-test integration $target --skip-tags force-simulator-run; then
         echo -e "Test: $target ${GREEN}Passed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt
     else
         echo -e "Test: $target ${RED}Failed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt

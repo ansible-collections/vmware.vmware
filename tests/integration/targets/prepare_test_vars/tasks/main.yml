@@ -1,0 +1,33 @@
+---
+# AAP CI can set the run_on_vcenter var at runtime but cannot pass in tags.
+# GH CI can pass in tags but cannot set run_on_vcenter
+# We want to run the simulator tests if someone runs ansible-test integration
+# without any command line args just to be safe.
+#
+# 1. Use set fact so vars persist beyond role
+# 2. define run_on_vcenter as True if it is not previously defined.
+# 3. switch it to false, unless you passed in --skip-tags force-simulator-run
+- name: Default the run_on_vcenter variable
+  ansible.builtin.set_fact:
+    run_on_vcenter: true
+  when: run_on_vcenter is not defined
+
+- name: Force a simulator run
+  ansible.builtin.set_fact:
+    run_on_vcenter: false
+  tags: force-simulator-run
+
+- name: Include Test Vars
+  ansible.builtin.include_vars:
+    file: "{{ 'vcenter_vars.yml' if run_on_vcenter else 'simulator_vars.yml' }}"
+
+- name: Vcenter tasks
+  when: run_on_vcenter
+  block:
+    - name: Import integration_config.yml
+      ansible.builtin.include_vars:
+        file: "{{ role_path }}/../../integration_config.yml"
+    - name: Check For Tiny Prefix
+      ansible.builtin.assert:
+        that: tiny_prefix is defined and (tiny_prefix | length) > 0
+        fail_msg: Variable must be set in the integration_config.yml

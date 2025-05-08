@@ -7,11 +7,9 @@
     password: "{{ vcenter_password }}"
     port: "{{ vcenter_port }}"
   register: __res
-  tags: eco-vcenter-ci, integration-ci
 
 - name: Assert values
   ansible.builtin.assert:
     that:
       - __res.changed == False
-      - __res.licenses | length > 1 or run_on_simulator
-  tags: eco-vcenter-ci, integration-ci
+      - __res.licenses | length > 1 or not run_on_vcenter

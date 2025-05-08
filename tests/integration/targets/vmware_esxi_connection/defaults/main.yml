@@ -4,4 +4,4 @@ test_resource_pool: "{{ tiny_prefix }}_esxi_connection_rp"
 test_cluster: Eco-Cluster
 test_esxi_username: root
 test_esxi_password: "!#%135qEt"
-run_on_simulator: true
+run_on_vcenter: false

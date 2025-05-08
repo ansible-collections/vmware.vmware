@@ -1,32 +1,26 @@
 ---
 - name: Test
-  when: not run_on_simulator
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Gather Current Backup Schedule Info
       vmware.vmware.vcsa_backup_schedule_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ schedule_name }}"
       register: _orig_sched
 
     - name: Remove Schedule
       vmware.vmware.vcsa_backup_schedule:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         name: "{{ schedule_name }}"
         state: absent
       register: _rm
     - name: Recollect Schedule Info After Remove
       vmware.vmware.vcsa_backup_schedule_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
       register: _scheds
     - name: Check Schedule Was Removed
       ansible.builtin.assert:
@@ -36,10 +30,6 @@
 
     - name: Create Test Schedule
       vmware.vmware.vcsa_backup_schedule:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: 1
@@ -55,10 +45,6 @@
       register: _create
     - name: Create Test Schedule - Idempotence
       vmware.vmware.vcsa_backup_schedule:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: 1
@@ -80,10 +66,6 @@
 
     - name: Update Test Schedule
       vmware.vmware.vcsa_backup_schedule:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: 9
@@ -99,10 +81,6 @@
       register: _update
     - name: Recollect Schedule Info
       vmware.vmware.vcsa_backup_schedule_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
       register: _post_update
     - name: Check Schedule Was Actually Updated
       ansible.builtin.assert:
@@ -116,10 +94,6 @@
   always:
     - name: Restore Backup Schedule
       vmware.vmware.vcsa_backup_schedule:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         state: present
         schedule:
           hour: "{{ _orig_sched.schedules[0].schedule.hour }}"

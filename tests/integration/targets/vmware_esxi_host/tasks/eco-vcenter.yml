@@ -10,13 +10,16 @@
       ) }}
 
 - name: Test
+  environment:
+    VMWARE_HOST: "{{ vcenter_hostname }}"
+    VMWARE_USER: "{{ vcenter_username }}"
+    VMWARE_PASSWORD: "{{ vcenter_password }}"
+    VMWARE_VALIDATE_CERTS: "False"
+    VMWARE_PORT: "{{ vcenter_port }}"
+
   block:
     - name: Create a test folders
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         relative_path: "{{ item }}"
         folder_type: host
         datacenter: "{{ vcenter_datacenter }}"
@@ -26,30 +29,18 @@
 
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         name: "{{ test_resource_pool }}"
         parent: "{{ vcenter_rp_id }}"
       register: _test_rp
 
     - name: Gather Library Item Info
       vmware.vmware.content_library_item_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         library_item_name: "{{ esxi_content_library_template }}"
         library_name: "{{ ci_resources_content_library }}"
       register: _template
 
     - name: Deploy Virtual ESXi Host
       vmware.vmware_rest.vcenter_ovf_libraryitem:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         ovf_library_item_id: "{{ (_template.library_item_info | first).id }}"
         session_timeout: 10000
         state: deploy
@@ -65,17 +56,9 @@
       vmware.vmware_rest.vcenter_vm_power:
         state: start
         vm: "{{ _deploy.value.resource_id.id }}"
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
 
     - name: Wait For ESXi Host To Have IP
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         name: "{{ test_esxi_hostname }}"
       register: _esxi_info
       until: >-
@@ -90,10 +73,6 @@
 
     - name: Join Hosts To Cluster
       vmware.vmware.esxi_host:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
@@ -103,19 +82,11 @@
 
     - name: Put Host In Maintenance Mode
       vmware.vmware.esxi_maintenance_mode:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         esxi_host_name: "{{ test_esxi_ip | default(_esxi_info.guests[0].ipv4) }}"
         enable_maintenance_mode: true
 
     - name: Move Host To Folder
       vmware.vmware.esxi_host:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ test_folder_1 }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
@@ -125,10 +96,6 @@
 
     - name: Move Host To Another Folder
       vmware.vmware.esxi_host:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ test_folder_2 }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
@@ -138,10 +105,6 @@
 
     - name: Move Host To Cluster
       vmware.vmware.esxi_host:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
@@ -159,20 +122,12 @@
   always:
     - name: Remove Host From vCenter
       vmware.vmware.esxi_host:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
         state: absent
       when: _esxi_info.guests[0] is defined
     - name: "Test cleanup: Delete Virtual ESXi Host"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: ""
@@ -181,10 +136,6 @@
         force: true
     - name: Delete test folders
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         relative_path: "{{ item }}"
         folder_type: host
         datacenter: "{{ vcenter_datacenter }}"
@@ -194,10 +145,6 @@
         - "{{ test_folder_2 }}"
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         resource_pool: "{{ _test_rp.id }}"
         state: absent
       when: _test_rp.id is defined

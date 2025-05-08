@@ -1,2 +1,2 @@
 ---
-run_on_simulator: true
+run_on_vcenter: false
