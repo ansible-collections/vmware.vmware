@@ -15,8 +15,16 @@ prepare_symlinks:
 integration: prepare_symlinks
 	ansible-test integration --no-temp-workdir
 
+.PHONY: install-python-packages
+install-python-packages:
+	pip3 install -r tests/integration/requirements.txt --force
+
+.PHONY: install-ansible-collections
+install-ansible-collections:
+	ansible-galaxy collection install --upgrade -r tests/integration/requirements.yml
+
 .PHONY: eco-vcenter-ci
-eco-vcenter-ci: prepare_symlinks
+eco-vcenter-ci: install-python-packages install-ansible-collections prepare_symlinks
 	@[ -f /tmp/vmware_vmware_tests_report.txt ] && rm /tmp/vmware_vmware_tests_report.txt || true; \
 	@failed=0; \
 	total=0; \

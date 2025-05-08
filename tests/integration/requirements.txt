@@ -1,0 +1,4 @@
+pyVmomi>=8.0.3.0.1
+vmware-vcenter
+vmware-vapi-common-client
+aiohttp
