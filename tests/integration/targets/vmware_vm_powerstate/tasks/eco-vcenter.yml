@@ -12,6 +12,10 @@
       ansible.builtin.set_fact:
         vcenter_rp_id: >-
           {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+          vcenter_hostname=vcenter_hostname,
+          vcenter_username=vcenter_username,
+          vcenter_password=vcenter_password,
+          vcenter_validate_certs=false,
           ) }}
 
     - name: Create a test resource pool

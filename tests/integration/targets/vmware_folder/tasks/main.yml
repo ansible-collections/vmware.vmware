@@ -2,7 +2,7 @@
 - name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
     file: eco-vcenter.yml
-  tags: eco-vcenter-ci
+  when: run_on_vcenter
 
 - name: Include Test Tasks
   environment:

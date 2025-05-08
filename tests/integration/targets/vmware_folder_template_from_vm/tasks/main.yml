@@ -84,8 +84,6 @@
     - name: Verify template creation
       ansible.builtin.include_tasks:
         file: verify_template_creation.yml
-        apply:
-          tags: eco-vcenter-ci
       loop: "{{ template_folders }}"
 
     - name: Destroy template
@@ -100,8 +98,6 @@
     - name: Verify template deletion
       ansible.builtin.include_tasks:
         file: verify_template_deletion.yml
-        apply:
-          tags: eco-vcenter-ci
       loop: "{{ template_folders }}"
 
   always:
