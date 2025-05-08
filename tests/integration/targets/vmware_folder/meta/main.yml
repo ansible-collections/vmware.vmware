@@ -5,3 +5,4 @@ dependencies:
     vars:
       prepare_simulator_include_rest: False
       prepare_simulator_include_vcsim: True
+    when: not run_on_vcenter

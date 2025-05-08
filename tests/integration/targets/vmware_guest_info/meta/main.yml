@@ -6,3 +6,4 @@ dependencies:
       prepare_simulator_include_rest: True
       prepare_simulator_include_vcsim: True
       mock_file: "vmware_guest_info/mock.json"
+    when: not run_on_vcenter
