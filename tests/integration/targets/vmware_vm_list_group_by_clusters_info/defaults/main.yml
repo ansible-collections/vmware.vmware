@@ -1,5 +1,3 @@
-run_on_simulator: false
-
 test_folder: "{{ tiny_prefix }}-folder"
 
 vm_name: "{{ tiny_prefix }}-vm"

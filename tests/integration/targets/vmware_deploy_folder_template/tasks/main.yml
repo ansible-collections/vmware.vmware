@@ -1,4 +1,5 @@
 ---
 - name: Test On VCenter
-  ansible.builtin.include_tasks: eco-vcenter.yml
-  when: not run_on_simulator
+  ansible.builtin.include_tasks:
+    file: eco-vcenter.yml
+  when: run_on_vcenter

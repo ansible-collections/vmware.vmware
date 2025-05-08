@@ -1,0 +1,4 @@
+---
+trivial:
+  - update the integration test structure to better align with the ansible-test command. Also standardize tests and
+    install specific versions of ansible for vCenter integration tests

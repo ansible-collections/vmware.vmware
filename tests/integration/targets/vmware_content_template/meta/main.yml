@@ -1,0 +1,9 @@
+---
+dependencies:
+  - role: prepare_test_vars
+  - role: prepare_simulator
+    vars:
+      prepare_simulator_include_rest: True
+      prepare_simulator_include_vcsim: True
+      mock_file: "vmware_content_template/mock.json"
+    when: not run_on_vcenter

@@ -1,7 +1,3 @@
 ---
-test_cluster: "{{ tiny_prefix }}_cluster_drs_test"
-run_on_simulator: false
-
-allowed_datastores: ["{{ shared_storage_01 }}"]
-datastores_to_add: ["{{ shared_storage_02 }}"]
-datastores_to_remove: ["{{ shared_storage_01 }}"]
+test_cluster: DC0_C0
+allowed_datastores: [LocalDS_0]

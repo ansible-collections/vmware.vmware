@@ -1,0 +1,9 @@
+---
+dependencies:
+  - role: prepare_test_vars
+  - role: prepare_simulator
+    vars:
+      prepare_simulator_include_rest: true
+      prepare_simulator_include_vcsim: false
+      mock_file: vmware_vm_list_group_by_clusters_info/mock.json
+    when: not run_on_vcenter

@@ -1,2 +1,0 @@
-run_on_simulator: false
-appliance_hostname: "{{ vcenter_hostname }}"

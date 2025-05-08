@@ -22,10 +22,9 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          path: ansible_collections/vmware/vmware
 
       - name: Run
         run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
           make integration
-        working-directory: ansible_collections/vmware/vmware

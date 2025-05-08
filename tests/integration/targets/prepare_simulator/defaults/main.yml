@@ -1,0 +1,8 @@
+---
+prepare_simulator_include_rest: False
+prepare_simulator_include_vcsim: True
+
+prepare_rest_port: 1080
+prepare_rest_mock_file_prefix: "{{ role_path }}/../"
+
+prepare_vcsim_port: 8989

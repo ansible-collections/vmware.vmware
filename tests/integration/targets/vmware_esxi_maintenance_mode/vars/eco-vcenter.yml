@@ -1,0 +1,2 @@
+---
+test_esxi_hostname: "{{ tiny_prefix }}_esxi_maintenance_mode"

@@ -1,0 +1,8 @@
+---
+# do not put these in vars/main.yml. They will be included even when this role is skipped
+vcenter_hostname: "127.0.0.1"
+vcenter_username: "user"
+vcenter_password: "pass"
+vcenter_datacenter: DC0
+vcenter_cluster_name: DC0_C0
+vcenter_port: 9000
