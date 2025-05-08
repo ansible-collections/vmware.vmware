@@ -4,3 +4,4 @@ collections:
     version: ">=4.7.0"
   - name: community.vmware
   - name: ansible.posix
+  - name: containers.podman
