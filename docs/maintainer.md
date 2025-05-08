@@ -49,10 +49,9 @@ make integration
 To run integration tests against a vCenter lab:
 ```bash
 # set env variables for auth
-export VMWARE_HOST='my-vcenter.example.com'
-export VMWARE_USER='someuser@vcenter.local'
-export VMWARE_PASSWORD='password'
-export VMWARE_VALIDATE_CERTS='False'
+export VCENTER_HOSTNAME='my-vcenter.example.com'
+export VCENTER_USERNAME='someuser@vcenter.local'
+export VCENTER_PASSWORD='password'
 make eco-vcenter-ci
 ```
 
