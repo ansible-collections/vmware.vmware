@@ -51,9 +51,7 @@ class ModuleVmDeployBase(ModulePyvmomiBase):
                 fail_on_missing=True,
                 datacenter=self.datacenter
             )
-            datastore = self.get_sdrs_recommended_datastore_from_ds_cluster(dsc)
-            if not datastore:
-                datastore = self.get_datastore_with_max_free_space(dsc.childEntity)
+            datastore = self.get_datastore_with_max_free_space(dsc.childEntity)
             self._datastore = datastore
 
         return self._datastore

@@ -209,7 +209,8 @@ class VmwareContentDeployOvf(ModuleVmDeployBase):
 
         if not response.succeeded:
             self.module.fail_json(msg=(
-                "Failed to deploy OVF %s to VM %s" % (self.library_item_id, self.params['vm_name'])
+                "Failed to deploy OVF %s to VM %s. Check vSphere event log for more details" %
+                (self.library_item_id, self.params['vm_name'])
             ))
 
         return response.resource_id.id
