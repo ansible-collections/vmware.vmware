@@ -368,30 +368,6 @@ class ModulePyvmomiBase(PyvmomiClient):
 
         return None
 
-    def get_sdrs_recommended_datastore_from_ds_cluster(self, ds_cluster):
-        """
-            Returns the Storage DRS recommended datastore from a datastore cluster
-            Args:
-                ds_cluster: datastore cluster managed object
-
-            Returns:
-                Datastore object, or none if sdrs is not configured for the cluster
-
-        """
-        # Check if Datastore Cluster provided by user is SDRS ready
-        if not ds_cluster.podStorageDrsEntry.storageDrsConfig.podConfig.enabled:
-            return None
-
-        pod_sel_spec = vim.storageDrs.PodSelectionSpec()
-        pod_sel_spec.storagePod = ds_cluster
-        storage_spec = vim.storageDrs.StoragePlacementSpec()
-        storage_spec.podSelectionSpec = pod_sel_spec
-        storage_spec.type = 'create'
-
-        rec = self.content.storageResourceManager.RecommendDatastores(storageSpec=storage_spec)
-        rec_action = rec.recommendations[0].action[0]
-        return rec_action.destination
-
     def get_datastore_with_max_free_space(self, datastores):
         """
             Returns the datasotre object with the maximum amount of freespace from a list of datastores.
