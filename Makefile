@@ -13,8 +13,8 @@ install-integration-reqs: install-collection-python-reqs
 	ansible-galaxy collection install --upgrade -p ~/.ansible/collections -r tests/integration/requirements.yml
 
 tests/integration/integration_config.yml:
-	chmod +x generate_integration_config.sh; \
-	./tests/integration/generate_integration_config.sh; \
+	chmod +x ./tests/integration/generate_integration_config.sh; \
+	./tests/integration/generate_integration_config.sh
 
 # test commands
 .PHONY: sanity

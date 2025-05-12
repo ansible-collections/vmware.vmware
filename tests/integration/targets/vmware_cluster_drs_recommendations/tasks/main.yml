@@ -3,12 +3,7 @@
 # module uses, so there's no simulator tests
 - name: Test On VCenter
   when: run_on_vcenter
-  environment:
-    VMWARE_HOST: "{{ vcenter_hostname }}"
-    VMWARE_USER: "{{ vcenter_username }}"
-    VMWARE_PASSWORD: "{{ vcenter_password }}"
-    VMWARE_VALIDATE_CERTS: "False"
-    VMWARE_PORT: "{{ vcenter_port }}"
+  environment: "{{ environment_auth_vars }}"
 
   block:
     - name: Include Eco Vcenter Test Vars

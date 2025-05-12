@@ -1,5 +1,4 @@
 ---
-run_on_vcenter: false
 vm: "{{ tiny_prefix }}-vm"
 vm_cluster: "{{ vcenter_cluster_name }}"
 vm_datacenter: "{{ vcenter_datacenter }}"

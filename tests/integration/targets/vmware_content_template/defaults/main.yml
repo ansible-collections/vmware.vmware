@@ -1,5 +1,4 @@
 ---
-run_on_vcenter: false
 vm: DC0_H0_VM0
 template_host: 1.2.3.4.
 library: templates

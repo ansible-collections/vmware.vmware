@@ -1,11 +1,6 @@
 ---
 - name: Test
-  environment:
-    VMWARE_HOST: "{{ vcenter_hostname }}"
-    VMWARE_USER: "{{ vcenter_username }}"
-    VMWARE_PASSWORD: "{{ vcenter_password }}"
-    VMWARE_VALIDATE_CERTS: "False"
-    VMWARE_PORT: "{{ vcenter_port }}"
+  environment: "{{ environment_auth_vars }}"
 
   block:
     - name: Include Eco Vcenter Test Vars
@@ -15,12 +10,9 @@
     - name: Lookup Root Resource Pool ID
       ansible.builtin.set_fact:
         vcenter_rp_id: >-
-          {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-          vcenter_hostname=vcenter_hostname,
-          vcenter_username=vcenter_username,
-          vcenter_password=vcenter_password,
-          vcenter_validate_certs=false,
-          ) }}
+          {{ lookup('vmware.vmware_rest.resource_pool_moid',
+          '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+          **vmware_rest_auth_vars) }}
 
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
