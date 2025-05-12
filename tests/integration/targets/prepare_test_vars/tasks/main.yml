@@ -45,7 +45,7 @@
     # the vmware_rest lookups dont respect the env vars set at block levels, but you can
     # pass in this dict using ** instead
     vmware_rest_auth_vars:
-      vcenter_hostname: vcenter_hostname
-      vcenter_username: vcenter_username
-      vcenter_password: vcenter_password
+      vcenter_hostname: "{{ vcenter_hostname }}"
+      vcenter_username: "{{ vcenter_username }}"
+      vcenter_password: "{{ vcenter_password }}"
       vcenter_validate_certs: false
