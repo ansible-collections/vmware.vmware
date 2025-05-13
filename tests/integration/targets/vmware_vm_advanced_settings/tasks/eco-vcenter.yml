@@ -1,4 +1,11 @@
 ---
+- name: Lookup Root Resource Pool ID
+  ansible.builtin.set_fact:
+    vcenter_rp_id: >-
+      {{ lookup('vmware.vmware_rest.resource_pool_moid',
+      '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      **vmware_rest_auth_vars) }}
+
 - name: Test
   environment: "{{ environment_auth_vars }}"
 
@@ -6,13 +13,6 @@
     - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
         file: eco-vcenter.yml
-
-    - name: Lookup Root Resource Pool ID
-      ansible.builtin.set_fact:
-        vcenter_rp_id: >-
-          {{ lookup('vmware.vmware_rest.resource_pool_moid',
-          '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-          **vmware_rest_auth_vars) }}
 
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
