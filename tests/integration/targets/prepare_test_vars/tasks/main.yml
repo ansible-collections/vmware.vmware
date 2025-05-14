@@ -24,9 +24,13 @@
 - name: Vcenter tasks
   when: run_on_vcenter
   block:
+    # This file does not exist for AAP, its variables come from an inventory file.
+    # It is needed for eco-vcenter-ci tests, and if its missing the tiny prefix
+    # check will fail.
     - name: Import integration_config.yml
       ansible.builtin.include_vars:
         file: "{{ role_path }}/../../integration_config.yml"
+      ignore_errors: true
     - name: Check For Tiny Prefix
       ansible.builtin.assert:
         that: tiny_prefix is defined and (tiny_prefix | length) > 0
