@@ -7,15 +7,15 @@
 # 1. Use set fact so vars persist beyond role
 # 2. define run_on_vcenter as True if it is not previously defined.
 # 3. switch it to false, unless you passed in --skip-tags force-simulator-run
-- name: Default the run_on_vcenter variable
-  ansible.builtin.set_fact:
-    run_on_vcenter: true
-  when: run_on_vcenter is not defined
-
 - name: Force a simulator run
   ansible.builtin.set_fact:
-    run_on_vcenter: false
+    _force_simulator: true
   tags: force-simulator-run
+
+- name: Default the run_on_vcenter variable
+  ansible.builtin.set_fact:
+    run_on_vcenter: "{{ (_force_simulator is defined and _force_simulator == True) | ternary(False, True) }}"
+  when: run_on_vcenter is not defined
 
 - name: Include Test Vars
   ansible.builtin.include_vars:

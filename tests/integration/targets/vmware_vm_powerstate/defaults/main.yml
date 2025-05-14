@@ -17,5 +17,4 @@ datastore: "{{ shared_storage_02 }}"
 library: "{{ tiny_prefix }}-content-library"
 test_resource_pool: "{{ tiny_prefix }}_vm_powerstate"
 
-test_cluster: DC0_C0
 simulator_vm_name: DC0_H0_VM0

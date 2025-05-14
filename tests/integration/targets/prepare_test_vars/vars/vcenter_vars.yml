@@ -16,3 +16,6 @@ rhel9_content_library_template: rhel9-template
 
 ci_resources_vm_folder: ansible_ci_vm_test_resources
 rhel9_folder_template: rhel9
+
+test_esxi_username: root
+test_esxi_password: "!#%135qEt"
