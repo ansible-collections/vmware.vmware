@@ -38,12 +38,12 @@ class TestInventoryUtilsBase():
     def test_initialize_pyvmomi_client(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(self.test_base.templar, 'is_template', return_value=False)
-        self.test_base.initialize_pyvmomi_client({})
+        self.test_base.initialize_pyvmomi_client()
 
     def test_initialize_rest_client(self, mocker):
         self.__prepare(mocker)
         mocker.patch.object(self.test_base.templar, 'is_template', return_value=False)
-        self.test_base.initialize_rest_client({})
+        self.test_base.initialize_rest_client()
 
     def test_get_cached_result(self, mocker):
         self.__prepare(mocker)

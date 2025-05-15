@@ -202,21 +202,6 @@ class InventoryModule(VmwareInventoryBase):
             )
         return False
 
-    def parse(self, inventory, loader, path, cache=True):
-        """
-        Parses the inventory file options and creates an inventory based on those inputs
-        """
-        super(InventoryModule, self).parse(inventory, loader, path, cache=cache)
-        cache_key = self.get_cache_key(path)
-        result_was_cached, results = self.get_cached_result(cache, cache_key)
-
-        if result_was_cached:
-            self.populate_from_cache(results)
-        else:
-            results = self.populate_from_vcenter(self._read_config_data(path))
-
-        self.update_cached_result(cache, cache_key, results)
-
     def parse_properties_param(self):
         """
         The properties option can be a variety of inputs from the user and we need to
@@ -249,22 +234,23 @@ class InventoryModule(VmwareInventoryBase):
         """
         Populate inventory data from cache
         """
+        hostvars = {}
         for inventory_hostname, host_properties in cache_data.items():
             esxi_host = EsxiInventoryHost.create_from_cache(
                 inventory_hostname=inventory_hostname,
                 properties=host_properties
             )
-            self.__update_inventory(esxi_host)
+            self.add_host_object_from_vcenter_to_inventory(esxi_host, hostvars)
 
-    def populate_from_vcenter(self, config_data):
+    def populate_from_vcenter(self):
         """
         Populate inventory data from vCenter
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
-        self.initialize_pyvmomi_client(config_data)
+        self.initialize_pyvmomi_client()
         if self.get_option("gather_tags"):
-            self.initialize_rest_client(config_data)
+            self.initialize_rest_client()
 
         for host_object in self.get_objects_by_type(vim_type=[vim.HostSystem]):
             if host_object.runtime.connectionState in ("disconnected", "notResponding"):
