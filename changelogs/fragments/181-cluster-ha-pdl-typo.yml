@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - cluster_ha - fix typo that causes PDL response mode 'restart' to throw an error

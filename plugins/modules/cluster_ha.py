@@ -321,7 +321,7 @@ class VmwareCluster(ModulePyvmomiBase):
     @property
     def storage_pdl_response_mode(self):
         if self.params['storage_pdl_response_mode'] == 'restart':
-            return 'restartAgressive'
+            return 'restartAggressive'
         return self.params['storage_pdl_response_mode']
 
     @property
