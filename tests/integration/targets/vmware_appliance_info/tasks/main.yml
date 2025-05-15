@@ -1,22 +1,16 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
+- name: Test
+  environment: "{{ environment_auth_vars }}"
 
-- name: Gather appliance info
-  vmware.vmware.appliance_info:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    properties:
-      - summary
-  register: __res
+  block:
+    - name: Gather appliance info
+      vmware.vmware.appliance_info:
+        properties:
+          - summary
+      register: __res
 
-- name: Assert values
-  ansible.builtin.assert:
-    that:
-      - __res.changed == False
-      - __res.appliance.summary.hostname == appliance_hostname
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - __res.appliance.summary.hostname in [vcenter_hostname, "hostname.example.com"]

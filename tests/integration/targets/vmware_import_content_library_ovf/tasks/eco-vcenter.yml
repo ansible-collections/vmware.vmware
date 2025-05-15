@@ -1,16 +1,10 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-
 - name: Test
+  environment: "{{ environment_auth_vars }}"
+
   block:
     - name: Upload OVF From URL
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         src: "{{ test_src_url }}"
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
@@ -19,10 +13,6 @@
 
     - name: Upload OVF From URL - Idempotency
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         src: "{{ test_src_url }}"
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
@@ -37,10 +27,6 @@
 
     - name: Delete OVF
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
         state: absent
@@ -59,10 +45,6 @@
 
     - name: Upload OVF From Local
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         src: /tmp/{{ test_dest }}.ova
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
@@ -77,10 +59,6 @@
   always:
     - name: Delete Library OVF
       vmware.vmware.import_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         dest: "{{ test_dest }}"
         library_name: "{{ ci_resources_content_library }}"
         state: absent

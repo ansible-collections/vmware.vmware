@@ -1,11 +1,6 @@
 ---
 - name: Create Folder With Relative Path
   vmware.vmware.folder:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
     datacenter: "{{ vcenter_datacenter }}"
     relative_path: "{{ test_folder }}"
     folder_type: "{{ vmware_folder_type }}"
@@ -13,21 +8,11 @@
 
 - name: Create With Absolute Path
   vmware.vmware.folder:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
     absolute_path: "{{ vmware_folder_absolute_folder_name }}"
   register: _abs
 
 - name: Gather Info About Folders
   community.vmware.vmware_folder_info:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
     datacenter: "{{ vcenter_datacenter }}"
   register: _folder_info
 
@@ -40,24 +25,14 @@
       - _abs is not changed
 
 - name: Additional Eco Vcenter Tests
-  when: not run_on_simulator
+  when: run_on_vcenter
   block:
     - name: Delete The Folder
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         absolute_path: "{{ vmware_folder_absolute_folder_name }}"
         state: absent
     - name: Create From Scratch Using Absolute Path
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         absolute_path: "{{ vmware_folder_absolute_folder_name }}"
       register: _abs
     - name: Check Output

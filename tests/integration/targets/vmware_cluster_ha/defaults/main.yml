@@ -1,6 +1,5 @@
 ---
-test_cluster: "{{ tiny_prefix }}_vmware_cluster_ha"
-run_on_simulator: false
+test_cluster: DC0_C0
 
 drs_enable: true
 drs_enable_vm_behavior_overrides: true

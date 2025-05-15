@@ -1,6 +1,9 @@
-run_on_simulator: false
+---
+vm: DC0_H0_VM0
+template_host: 1.2.3.4.
+library: templates
+template_name: mytemplate
 
-vm: "{{ tiny_prefix }}-vm"
 vm_cluster: "{{ vcenter_cluster_name }}"
 vm_datacenter: "{{ vcenter_datacenter }}"
 vm_folder: "/{{ vcenter_datacenter }}/vm/e2e-qe"
@@ -14,7 +17,4 @@ vm_hardware:
   num_cpus: 2
   boot_firmware: efi
 
-template_host: 10.46.29.208
 datastore: "{{ shared_storage_01 }}"
-library: "{{ tiny_prefix }}-content-library"
-template_name: "{{ tiny_prefix }}-template"

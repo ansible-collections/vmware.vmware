@@ -1,43 +1,32 @@
 ---
 - name: Test On Simulator
-  when: run_on_simulator
+  when: not run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
   block:
     - name: Set vCLS Settings In Cluster
       vmware.vmware.cluster_vcls:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
         allowed_datastores: "{{ allowed_datastores }}"
     # The simulator never seems to update its vCLS settings, so there's nothing to validate here
 
 - name: Test On VCenter
-  when: not run_on_simulator
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
   block:
-    - name: Import common vars
+    - name: Include Eco Vcenter Test Vars
       ansible.builtin.include_vars:
-        file: ../group_vars.yml
+        file: eco-vcenter.yml
     - name: Create Test Cluster
       vmware.vmware.cluster:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        validate_certs: false
-        port: "{{ vcenter_port }}"
         cluster_name: "{{ test_cluster }}"
     - name: Set vCLS Allowed Datastores
       vmware.vmware.cluster_vcls:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
         allowed_datastores: "{{ allowed_datastores }}"
       register: _out
     - name: Check Output
@@ -49,13 +38,8 @@
           - _out.removed_datastores == []
     - name: Set vCLS Allowed Datastores Again
       vmware.vmware.cluster_vcls:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
         allowed_datastores: "{{ allowed_datastores }}"
       register: _out
     - name: Check Output
@@ -67,13 +51,8 @@
           - _out.removed_datastores == []
     - name: Add and Remove vCLS Datastores
       vmware.vmware.cluster_vcls:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
         datastores_to_add: "{{ datastores_to_add }}"
         datastores_to_remove: "{{ datastores_to_remove }}"
       register: _out
@@ -86,13 +65,8 @@
           - _out.removed_datastores == datastores_to_remove
     - name: Add and Remove vCLS Datastores Again
       vmware.vmware.cluster_vcls:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ test_cluster }}"
-        port: "{{ vcenter_port }}"
         datastores_to_add: "{{ datastores_to_add }}"
         datastores_to_remove: "{{ datastores_to_remove }}"
       register: _out
@@ -107,11 +81,6 @@
   always:
     - name: Destroy Test Cluster
       vmware.vmware.cluster:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
-        validate_certs: false
         cluster_name: "{{ test_cluster }}"
         state: absent

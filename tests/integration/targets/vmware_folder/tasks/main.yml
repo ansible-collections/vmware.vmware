@@ -1,23 +1,21 @@
 ---
-- name: Import common vars
+- name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
+    file: eco-vcenter.yml
+  when: run_on_vcenter
 
 - name: Include Test Tasks
+  environment: "{{ environment_auth_vars }}"
+
   block:
     - name: Include Test Tasks
-      ansible.builtin.include_tasks: test.yml
+      ansible.builtin.include_tasks:
+        file: test.yml
   always:
     - name: Destroy Test Folder
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vcenter_datacenter }}"
-        port: "{{ vcenter_port }}"
         relative_path: "{{ test_folder | split('/') | first }}"
         folder_type: "{{ vmware_folder_type }}"
         state: absent
-      when: not run_on_simulator
+      when: run_on_vcenter

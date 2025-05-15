@@ -1,3 +1,0 @@
----
-test_cluster: "{{ tiny_prefix }}_cluster_drs_recommendations_test"
-run_on_simulator: false

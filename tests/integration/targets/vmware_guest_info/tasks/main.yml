@@ -1,8 +1,8 @@
 ---
-- name: Import common vars
+- name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
-    file: ../group_vars.yml
-  when: not run_on_simulator
+    file: eco-vcenter.yml
+  when: run_on_vcenter
 
 - name: Gather guest info
   vmware.vmware.guest_info:

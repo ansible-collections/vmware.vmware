@@ -1,5 +1,4 @@
 ---
-test_esxi_hostname: "{{ tiny_prefix }}_esxi_maintenance_mode"
-test_resource_pool: "{{ tiny_prefix }}_vmware_esxi_maintenance_mode"
+test_esxi_hostname: DC0_H0
 
-run_on_simulator: false
+test_resource_pool: "{{ tiny_prefix }}_vmware_esxi_maintenance_mode"

@@ -58,6 +58,7 @@ coverage.xml
 # Integration tests
 tests/integration/integration_config.yml
 tests/integration/inventory
+tests/integration/targets/**/runme.sh
 
 # Translations
 *.mo

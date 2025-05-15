@@ -1,0 +1,3 @@
+---
+test_library_name: "{{ tiny_prefix }}-vmware_content_library"
+test_library_password: Mypassword123!

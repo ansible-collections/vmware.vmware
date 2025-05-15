@@ -1,43 +1,27 @@
 ---
-- name: Import common vars
-  ansible.builtin.include_vars:
-    file: ../group_vars.yml
-
 - name: Lookup Resource IDs
   ansible.builtin.set_fact:
     vcenter_rp_id: >-
-      {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-      vcenter_hostname=vcenter_hostname,
-      vcenter_username=vcenter_username,
-      vcenter_password=vcenter_password,
-      vcenter_validate_certs=false,
-      ) }}
+      {{ lookup('vmware.vmware_rest.resource_pool_moid',
+      '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      **vmware_rest_auth_vars) }}
     _template_folder_id: >-
-      {{ lookup('vmware.vmware_rest.folder_moid', vcenter_datacenter + '/vm/' + ci_resources_vm_folder,
-      vcenter_hostname=vcenter_hostname,
-      vcenter_username=vcenter_username,
-      vcenter_password=vcenter_password,
-      vcenter_validate_certs=false,
-      ) }}
+      {{ lookup('vmware.vmware_rest.folder_moid',
+      vcenter_datacenter + '/vm/' + ci_resources_vm_folder,
+      **vmware_rest_auth_vars) }}
 
 - name: Test
+  environment: "{{ environment_auth_vars }}"
+
   block:
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         name: "{{ test_resource_pool }}"
         parent: "{{ vcenter_rp_id }}"
       register: _test_rp
 
     - name: Deploy VM
       vmware.vmware.deploy_folder_template:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         datastore: "{{ shared_storage_02 }}"
         template_name: "{{ rhel9_folder_template }}"
@@ -48,10 +32,6 @@
 
     - name: Deploy VM - Idempotence
       vmware.vmware.deploy_folder_template:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         datastore: "{{ shared_storage_02 }}"
         template_name: "{{ rhel9_folder_template }}"
@@ -71,19 +51,11 @@
   always:
     - name: "Test cleanup: Delete Virtual VM"
       community.vmware.vmware_guest:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         name: "{{ test_vm_name }}"
         state: absent
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         resource_pool: "{{ _test_rp.id }}"
         state: absent
       when: _test_rp.id is defined

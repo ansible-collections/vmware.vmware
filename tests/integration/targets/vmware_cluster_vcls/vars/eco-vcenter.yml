@@ -1,0 +1,5 @@
+---
+test_cluster: "{{ tiny_prefix }}_cluster_vcls_test"
+allowed_datastores: ["{{ shared_storage_01 }}"]
+datastores_to_add: ["{{ shared_storage_02 }}"]
+datastores_to_remove: ["{{ shared_storage_01 }}"]

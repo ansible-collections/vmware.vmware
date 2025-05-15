@@ -1,0 +1,55 @@
+---
+# AAP CI can set the run_on_vcenter var at runtime but cannot pass in tags.
+# GH CI can pass in tags but cannot set run_on_vcenter
+# We want to run the simulator tests if someone runs ansible-test integration
+# without any command line args just to be safe.
+#
+# 1. Use set fact so vars persist beyond role
+# 2. define run_on_vcenter as True if it is not previously defined.
+# 3. switch it to false, unless you passed in --skip-tags force-simulator-run
+- name: Force a simulator run
+  ansible.builtin.set_fact:
+    _force_simulator: true
+  tags: force-simulator-run
+
+- name: Default the run_on_vcenter variable
+  ansible.builtin.set_fact:
+    run_on_vcenter: "{{ (_force_simulator is defined and _force_simulator == True) | ternary(False, True) }}"
+  when: run_on_vcenter is not defined
+
+- name: Include Test Vars
+  ansible.builtin.include_vars:
+    file: "{{ 'vcenter_vars.yml' if run_on_vcenter else 'simulator_vars.yml' }}"
+
+- name: Vcenter tasks
+  when: run_on_vcenter
+  block:
+    # This file does not exist for AAP, its variables come from an inventory file.
+    # It is needed for eco-vcenter-ci tests, and if its missing the tiny prefix
+    # check will fail.
+    - name: Import integration_config.yml
+      ansible.builtin.include_vars:
+        file: "{{ role_path }}/../../integration_config.yml"
+      ignore_errors: true
+    - name: Check For Tiny Prefix
+      ansible.builtin.assert:
+        that: tiny_prefix is defined and (tiny_prefix | length) > 0
+        fail_msg: Variable must be set in the integration_config.yml
+
+- name: Set auth vars for later
+  ansible.builtin.set_fact:
+    # most testing blocks can use these as environment variables, so you dont need to define
+    # them for every task
+    environment_auth_vars:
+      VMWARE_HOST: "{{ vcenter_hostname }}"
+      VMWARE_USER: "{{ vcenter_username }}"
+      VMWARE_PASSWORD: "{{ vcenter_password }}"
+      VMWARE_VALIDATE_CERTS: "False"
+      VMWARE_PORT: "{{ vcenter_port }}"
+    # the vmware_rest lookups dont respect the env vars set at block levels, but you can
+    # pass in this dict using ** instead
+    vmware_rest_auth_vars:
+      vcenter_hostname: "{{ vcenter_hostname }}"
+      vcenter_username: "{{ vcenter_username }}"
+      vcenter_password: "{{ vcenter_password }}"
+      vcenter_validate_certs: false

@@ -1,46 +1,32 @@
 ---
-- name: Import common vars
+- name: Include Eco Vcenter Test Vars
   ansible.builtin.include_vars:
-    file: ../group_vars.yml
+    file: eco-vcenter.yml
 
 - name: Lookup Root Resource Pool ID
   ansible.builtin.set_fact:
     vcenter_rp_id: >-
-      {{ lookup('vmware.vmware_rest.resource_pool_moid', '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-      vcenter_hostname=vcenter_hostname,
-      vcenter_username=vcenter_username,
-      vcenter_password=vcenter_password,
-      vcenter_validate_certs=false,
-      ) }}
+      {{ lookup('vmware.vmware_rest.resource_pool_moid',
+      '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      **vmware_rest_auth_vars) }}
 
 - name: Test
+  environment: "{{ environment_auth_vars }}"
   block:
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         name: "{{ test_resource_pool }}"
         parent: "{{ vcenter_rp_id }}"
       register: _test_rp
 
     - name: Gather Library Item Info
       vmware.vmware.content_library_item_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         library_item_name: "{{ esxi_content_library_template }}"
         library_name: "{{ ci_resources_content_library }}"
       register: _template
 
     - name: Deploy Virtual ESXi Host
       vmware.vmware_rest.vcenter_ovf_libraryitem:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         ovf_library_item_id: "{{ (_template.library_item_info | first).id }}"
         session_timeout: 10000
         state: deploy
@@ -56,17 +42,9 @@
       vmware.vmware_rest.vcenter_vm_power:
         state: start
         vm: "{{ _deploy.value.resource_id.id }}"
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
 
     - name: Wait For ESXi Host To Have IP
       vmware.vmware.guest_info:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         name: "{{ test_esxi_hostname }}"
       register: _esxi_info
       until: >-
@@ -81,10 +59,6 @@
 
     - name: Join Hosts To Cluster
       community.vmware.vmware_host:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ vcenter_cluster_name }}"
         esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
@@ -94,10 +68,6 @@
 
     - name: Disable Maintenance Mode For Host That Is Not In Maintenance Mode
       vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         enable_maintenance_mode: False
         name: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _set
@@ -109,20 +79,12 @@
 
     - name: Enable Maintenance Mode For Host That Is Not In Maintenance Mode
       vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         enable_maintenance_mode: true
         name: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _set
 
     - name: Gather Info about ESXi Host
       community.vmware.vmware_host_facts:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _host_info
 
@@ -135,20 +97,12 @@
 
     - name: Disable Maintenance Mode For Host That Is In Maintenance Mode
       vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         enable_maintenance_mode: false
         name: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _set
 
     - name: Gather Info about ESXi Host
       community.vmware.vmware_host_facts:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _host_info
 
@@ -161,30 +115,18 @@
 
     - name: Enable Maintenance Mode Before Cleanup
       vmware.vmware.esxi_maintenance_mode:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         enable_maintenance_mode: true
         name: "{{ _esxi_info.guests[0].ipv4 }}"
 
   always:
     - name: Disconnect Host From vCenter
       community.vmware.vmware_host:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         esxi_hostname: "{{ _esxi_info.guests[0].ipv4 | default(test_esxi_hostname) }}"
         state: absent
     - name: "Test cleanup: Delete Virtual ESXi Host"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: ""
@@ -193,10 +135,6 @@
         force: true
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
-        vcenter_hostname: "{{ vcenter_hostname }}"
-        vcenter_username: "{{ vcenter_username }}"
-        vcenter_password: "{{ vcenter_password }}"
-        vcenter_validate_certs: false
         resource_pool: "{{ _test_rp.id }}"
         state: absent
       when: _test_rp.id is defined

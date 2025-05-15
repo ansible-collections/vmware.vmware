@@ -1,25 +1,17 @@
 ---
-- block:
-    - name: Import common vars
-      ansible.builtin.include_vars:
-        file: ../group_vars.yml
+- name: Test
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
 
+  block:
     - name: Create a test folders
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         relative_path: "{{ test_folder }}"
         folder_type: vm
         datacenter: "{{ vcenter_datacenter }}"
 
     - name: Create Virtual Machine From OVF Template
       vmware.vmware.deploy_content_library_ovf:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: false
         library_item_name: "{{ rhel9_content_library_ovf }}"
         vm_name: "{{ vm_name }}"
         datacenter: "{{  vcenter_datacenter }}"
@@ -29,11 +21,6 @@
 
     - name: VM portgroup information
       vmware.vmware.vm_portgroup_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        port: "{{ vcenter_port }}"
         vm_names:
           - "{{ vm_name }}"
       register: __res
@@ -54,10 +41,6 @@
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{  vcenter_datacenter }}"
         folder: "{{ test_folder }}"
@@ -67,10 +50,6 @@
 
     - name: Create a test folders
       vmware.vmware.folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         relative_path: "{{ test_folder }}"
         folder_type: vm
         datacenter: "{{ vcenter_datacenter }}"

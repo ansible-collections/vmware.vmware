@@ -1,40 +1,49 @@
-# Define ANSI escape codes for colors
-GREEN=\033[0;32m
-RED=\033[0;31m
-NC=\033[0m  # No Color
+# setup commands
+.PHONY: upgrade-collections
+upgrade-collections:
+	ansible-galaxy collection install --upgrade -p ~/.ansible/collections .
+
+.PHONY: install-collection-python-reqs
+install-collection-python-reqs:
+	pip install -r requirements.txt
+
+.PHONY: install-integration-reqs
+install-integration-reqs: install-collection-python-reqs
+	pip install -r tests/integration/requirements.txt; \
+	ansible-galaxy collection install --upgrade -p ~/.ansible/collections -r tests/integration/requirements.yml
+
+tests/integration/integration_config.yml:
+	chmod +x ./tests/integration/generate_integration_config.sh; \
+	./tests/integration/generate_integration_config.sh
+
+# test commands
+.PHONY: sanity
+sanity: upgrade-collections
+	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
+	ansible-test sanity -v --color --coverage --junit --docker default
 
 .PHONY: units
-units:
+units: upgrade-collections
+	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
 	ansible-test units --docker --python 3.12
 
-.PHONY: prepare_symlinks
-prepare_symlinks:
-	ansible-playbook tools/prepare_symlinks.yml
-
 .PHONY: integration
-integration: prepare_symlinks
-	ansible-test integration --no-temp-workdir
+integration: install-integration-reqs upgrade-collections
+	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
+	ansible --version; \
+	ansible-test --version; \
+	ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections ansible-galaxy collection list; \
+	ANSIBLE_ROLES_PATH=~/.ansible/collections/ansible_collections/vmware/vmware/tests/integration/targets \
+		ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections \
+		ansible-test integration $(CLI_ARGS);
 
 .PHONY: eco-vcenter-ci
-eco-vcenter-ci: prepare_symlinks
-	@[ -f /tmp/vmware_vmware_tests_report.txt ] && rm /tmp/vmware_vmware_tests_report.txt || true; \
-	@failed=0; \
-	total=0; \
-	echo "===============" >> /tmp/vmware_vmware_tests_report.txt; \
-	echo "Tests Summary" >> /tmp/vmware_vmware_tests_report.txt; \
-	echo "===============" >> /tmp/vmware_vmware_tests_report.txt; \
-	for dir in $(shell ansible-test integration --list-target --no-temp-workdir | grep 'vmware_'); do \
-	  echo "Running integration test for $$dir"; \
-	  total=$$((total + 1)); \
-	  if ansible-test integration --no-temp-workdir $$dir; then \
-	    echo -e "Test: $$dir ${GREEN}Passed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt; \
-	  else \
-	    echo -e "Test: $$dir ${RED}Failed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt; \
-	    failed=$$((failed + 1)); \
-	  fi; \
-	done; \
-	echo "$$failed test(s) failed out of $$total." >> /tmp/vmware_vmware_tests_report.txt; \
-	cat /tmp/vmware_vmware_tests_report.txt; \
-	if [ $$failed -gt 0 ]; then \
-	  exit 1; \
-	fi
+eco-vcenter-ci: tests/integration/integration_config.yml install-integration-reqs upgrade-collections
+	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
+	ansible --version; \
+	ansible-test --version; \
+	ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections ansible-galaxy collection list; \
+	chmod +x tests/integration/run_eco_vcenter_ci.sh; \
+	ANSIBLE_ROLES_PATH=~/.ansible/collections/ansible_collections/vmware/vmware/tests/integration/targets \
+		ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections \
+		./tests/integration/run_eco_vcenter_ci.sh

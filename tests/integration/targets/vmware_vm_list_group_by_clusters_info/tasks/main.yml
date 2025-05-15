@@ -1,28 +1,18 @@
 ---
-- block:
-    - name: Import common vars
-      ansible.builtin.include_vars:
-        file: ../group_vars.yml
-      when: not run_on_simulator
+- name: Test
+  environment: "{{ environment_auth_vars }}"
 
+  block:
     - name: "Test setup: Create VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder_name: "{{ test_folder }}"
         folder_type: vm
         state: present
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: "Test setup: Create VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
@@ -31,16 +21,11 @@
         disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: VM list group by clusters and folders
       vmware.vmware.vm_list_group_by_clusters_info:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         detailed_vms: false
-        port: "{{ vcenter_port }}"
       register: __res
 
     - name: Assert values
@@ -50,7 +35,7 @@
           - __res.vm_list_group_by_clusters_info | length == 1
           - __res.vm_list_group_by_clusters_info['cluster1'] | length == 1
           - __res.vm_list_group_by_clusters_info['cluster1']['folder1'] | length == 1
-      when: run_on_simulator
+      when: not run_on_vcenter
 
     - name: Assert values
       ansible.builtin.assert:
@@ -58,31 +43,23 @@
           - __res.changed == False
           - __res.vm_list_group_by_clusters_info[vm_cluster][test_folder] | length == 1
           - __res.vm_list_group_by_clusters_info[vm_cluster][test_folder][0]['name'] == vm_name
-      when: not run_on_simulator
+      when: run_on_vcenter
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
       community.vmware.vmware_guest:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         state: absent
         force: true
         name: "{{ vm_name }}"
-      when: not run_on_simulator
+      when: run_on_vcenter
 
     - name: "Test teardown: Remove VM folder {{ test_folder }}"
       community.vmware.vcenter_folder:
-        validate_certs: false
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
         datacenter: "{{ vm_datacenter }}"
         folder_name: "{{ test_folder }}"
         folder_type: vm
         state: absent
-      when: not run_on_simulator
+      when: run_on_vcenter

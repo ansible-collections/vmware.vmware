@@ -1,5 +1,4 @@
-run_on_simulator: false
-
+---
 vm: "{{ tiny_prefix }}-vm"
 vm_cluster: "{{ vcenter_cluster_name }}"
 vm_datacenter: "{{ vcenter_datacenter }}"
@@ -17,3 +16,5 @@ vm_hardware:
 datastore: "{{ shared_storage_02 }}"
 library: "{{ tiny_prefix }}-content-library"
 test_resource_pool: "{{ tiny_prefix }}_vm_powerstate"
+
+simulator_vm_name: DC0_H0_VM0

@@ -1,20 +1,14 @@
 ---
-- block:
-    - name: Import common vars
-      ansible.builtin.include_vars:
-        file: ../group_vars.yml
+- name: Test
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
 
+  block:
     # the ansible-inventory process does not have access to any of the variables in this playbook,
     # so the auth vars are exposed as env vars
     - name: Run Inventory Plugin
       ansible.builtin.command: ansible-inventory -i "{{ role_path }}/files/test.vms.yml" --list
       register: _inventory_out
-      environment:
-        VMWARE_HOST: "{{ vcenter_hostname }}"
-        VMWARE_USER: "{{ vcenter_username }}"
-        VMWARE_PASSWORD: "{{ vcenter_password }}"
-        VMWARE_PORT: "{{ vcenter_port }}"
-        VMWARE_VALIDATE_CERTS: "false"
 
     - name: Parse Inventory Results as JSON
       ansible.builtin.set_fact:
