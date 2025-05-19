@@ -4,6 +4,16 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.0.1
+======
+
+Bugfixes
+--------
+
+- cluster_ha - fix typo that causes PDL response mode 'restart' to throw an error
+- deploy_content_library_ovf - fix error when deploying from a datastore cluster by simplifying the ds selection process
+- inventory plugins - fix issue where cache did not work (https://github.com/ansible-collections/vmware.vmware/issues/175)
+
 v2.0.0
 ======
 

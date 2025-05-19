@@ -311,3 +311,18 @@ releases:
     - 166-fix-snapshot-outputs.yml
     - 169-tombstone-vm_list_group_by_clusters.yml
     release_date: '2025-04-17'
+  2.0.1:
+    changes:
+      bugfixes:
+      - cluster_ha - fix typo that causes PDL response mode 'restart' to throw an
+        error
+      - deploy_content_library_ovf - fix error when deploying from a datastore cluster
+        by simplifying the ds selection process
+      - inventory plugins - fix issue where cache did not work (https://github.com/ansible-collections/vmware.vmware/issues/175)
+    fragments:
+    - 174-update-test-structs.yml
+    - 176-fix-cache-in-inventories.yml
+    - 177-add-inven-example.yml
+    - 181-cluster-ha-pdl-typo.yml
+    - 183-fix-datastore-cluster-deploy.yml
+    release_date: '2025-05-19'

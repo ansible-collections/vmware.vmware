@@ -1,3 +1,0 @@
----
-bugfixes:
-  - deploy_content_library_ovf - fix error when deploying from a datastore cluster by simplifying the ds selection process
