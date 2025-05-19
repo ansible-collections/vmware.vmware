@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - inventory plugins - fix issue where cache did not work (https://github.com/ansible-collections/vmware.vmware/issues/175)
