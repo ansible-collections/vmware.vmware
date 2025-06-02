@@ -7,10 +7,12 @@ __metaclass__ = type
 
 
 DOCUMENTATION = r"""
-name: cluster_moid
-short_description: Look up MoID for vSphere cluster objects based on the object path
+name: moid_from_path
+short_description: Look up MoID for vSphere objects based on the inventory path
 description:
-    - Returns Managed Object Reference (MoID) of the vSphere cluster object contained in the specified path.
+    - Returns Managed Object Reference (MoID) of the vSphere object contained in the specified path.
+    - Multiple objects can be returned if the path ends in slash, indicating that the path is a
+      container and its contents should be queried.
 author:
     - Ansible Cloud Team (@ansible-collections)
 
@@ -178,7 +180,6 @@ EXAMPLES = r"""
           capacity: 3200
 """
 
-
 RETURN = r"""
 _raw:
     description: MoID of the vSphere cluster object
@@ -201,19 +202,6 @@ except ImportError:
 display = Display()
 
 
-SUPPORTED_TYPES = {
-    "cluster": [vim.ClusterComputeResource],
-    "datacenter": [vim.Datacenter],
-    "datastore": [vim.Datastore],
-    "folder": [vim.Folder],
-    "host": [vim.HostSystem],
-    "network": [vim.Network],
-    "resource_pool": [vim.ResourcePool],
-    "vm": [vim.VirtualMachine],
-    "all": []  # an empty list will cause vsphere to include all object types
-}
-
-
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
 
@@ -227,16 +215,30 @@ class LookupModule(LookupBase):
             self._validate_path(object_path)
             self._get_moids_from_path(object_path=object_path, moids=ret)
 
-        return [r for r in ret]
+        return list(ret)
+
+    @property
+    def supported_types(self):
+        return {
+            "cluster": [vim.ClusterComputeResource],
+            "datacenter": [vim.Datacenter],
+            "datastore": [vim.Datastore],
+            "folder": [vim.Folder],
+            "host": [vim.HostSystem],
+            "network": [vim.Network],
+            "resource_pool": [vim.ResourcePool],
+            "vm": [vim.VirtualMachine],
+            "all": []  # an empty list will cause vsphere to include all object types
+        }
 
     @property
     def lookup_type(self):
         try:
-            return SUPPORTED_TYPES[self.get_option('type')]
+            return self.supported_types[self.get_option('type')]
         except KeyError:
             raise AnsibleError(
                 "Unsupported vSphere type, %s. Must be one of %s" %
-                (self.get_option('type'), SUPPORTED_TYPES.keys())
+                (self.get_option('type'), self.supported_types.keys())
             )
 
     def _validate_path(self, object_path):
@@ -249,10 +251,16 @@ class LookupModule(LookupBase):
 
         _object_path = object_path.strip('/')
         split_path = _object_path.split('/')
-        if len(split_path) <= 1 and self.get_option('type') in ('all', 'datacenter'):
-            return
+        # if path is one level deep (or less), we will only ever find datacenters or folders.
+        if len(split_path) <= 1 and self.get_option('type') not in ('all', 'datacenter', 'folder'):
+            raise AnsibleParserError(
+                "Path is too short to find any objects of type %s. Paths should be '/<datacenter>/<type>/...'"
+                % (self.get_option('type'))
+            )
 
-        if split_path[1] not in vsphere_folder_paths.FOLDER_TYPES:
+        # if path is more than one level deep, the seconds level of the path needs to be
+        # one of the known folder types
+        if len(split_path) > 1 and split_path[1] not in vsphere_folder_paths.FOLDER_TYPES:
             raise AnsibleParserError(
                 "Path %s is not on one of the four folder types, %s. Paths should be '/<datacenter>/<type>/...'"
                 % (object_path, list(vsphere_folder_paths.FOLDER_TYPES))
