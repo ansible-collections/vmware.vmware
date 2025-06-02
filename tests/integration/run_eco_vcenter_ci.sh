@@ -37,9 +37,6 @@ total=0
 
 for target in $(ansible-test integration --list-target | grep 'vmware_'); do
     echo "Running integration test for $target"
-    if [ "$target" != "vmware_cluster_drs" ]; then
-        continue
-    fi
     total=$((total + 1))
     if ansible-test integration $target --skip-tags force-simulator-run --verbose; then
         echo -e "Test: $target ${GREEN}Passed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt
