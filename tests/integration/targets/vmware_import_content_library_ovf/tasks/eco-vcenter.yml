@@ -54,7 +54,7 @@
       ansible.builtin.assert:
         that:
           - _test_local is changed
-          - _test_local.library_item.id
+          - _test_local.library_item.id is truthy
 
   always:
     - name: Delete Library OVF
