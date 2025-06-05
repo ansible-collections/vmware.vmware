@@ -12,7 +12,6 @@ fi
 
 # Generates a string starting with 'test-' followed by 4 random lowercase characters
 tiny_prefix="test-vmware-$(uuidgen | tr -d '-' | cut -c1-4 | tr '[:upper:]' '[:lower:]')"
-tiny_prefix="mmtest"
 if grep -qa 'tiny_prefix' "${BASE_DIR}/integration_config.yml"; then
     sed -i "s|tiny_prefix:.*|tiny_prefix: $tiny_prefix|" "${BASE_DIR}/integration_config.yml"
 else
@@ -38,7 +37,7 @@ total=0
 for target in $(ansible-test integration --list-target | grep 'vmware_'); do
     echo "Running integration test for $target"
     total=$((total + 1))
-    if ansible-test integration $target --skip-tags force-simulator-run --verbose; then
+    if ansible-test integration $target --skip-tags force-simulator-run; then
         echo -e "Test: $target ${GREEN}Passed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt
     else
         echo -e "Test: $target ${RED}Failed${NC}" | tee -a /tmp/vmware_vmware_tests_report.txt
