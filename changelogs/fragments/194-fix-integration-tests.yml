@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - Make integration tests compatible with ansible-core 2.19
+    (https://github.com/ansible-collections/vmware.vmware/issues/194)

@@ -4,7 +4,7 @@
 
 - name: Lookup datastores in datacenter
   ansible.builtin.assert:
-    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/datastore/' + item, **vmware_rest_auth_vars)
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/datastore/' + item, **vmware_rest_auth_vars) | length > 1
   loop:
     - ""
     - "{{ shared_storage_01 }}"
