@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - cluster_ha - Fix error when non-string advanced settings are applied
+    (https://github.com/ansible-collections/vmware.vmware/issues/190)
+  - cluster_drs - Fix error when non-string advanced settings are applied
+    (https://github.com/ansible-collections/vmware.vmware/issues/190)

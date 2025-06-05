@@ -156,8 +156,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
 from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
     ClusterFacts
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._type_utils import (
-    diff_dict_and_vmodl_options_set
+from ansible_collections.vmware.vmware.plugins.module_utils._advanced_settings import (
+    AdvancedSettings
 )
 from ansible.module_utils._text import to_native
 
@@ -174,10 +174,9 @@ class VMwareCluster(ModulePyvmomiBase):
         self.drs_default_vm_behavior = self.params.get('drs_default_vm_behavior')
         self.predictive_drs = self.params.get('predictive_drs')
 
-        self.changed_advanced_settings = diff_dict_and_vmodl_options_set(
-            self.params.get('advanced_settings'),
-            self.cluster.configurationEx.drsConfig.option
-        )
+        _user_settings = AdvancedSettings.from_py_dict(self.params.get('advanced_settings'), cast_all_values_to_str=True)
+        _live_settings = AdvancedSettings.from_vsphere_config(self.cluster.configurationEx.drsConfig.option)
+        self.changed_advanced_settings = _user_settings.difference(_live_settings)
 
     @property
     def drs_vmotion_rate(self):
@@ -211,7 +210,7 @@ class VMwareCluster(ModulePyvmomiBase):
         except AttributeError:
             return True
 
-        if self.changed_advanced_settings:
+        if not self.changed_advanced_settings.is_empty():
             return True
 
         return False
@@ -229,8 +228,8 @@ class VMwareCluster(ModulePyvmomiBase):
         cluster_config_spec.drsConfig.vmotionRate = self.drs_vmotion_rate
         cluster_config_spec.proactiveDrsConfig.enabled = self.predictive_drs
 
-        if self.changed_advanced_settings:
-            cluster_config_spec.drsConfig.option = self.changed_advanced_settings
+        if not self.changed_advanced_settings.is_empty():
+            cluster_config_spec.drsConfig.option = self.changed_advanced_settings.to_vsphere_config()
 
         return cluster_config_spec
 

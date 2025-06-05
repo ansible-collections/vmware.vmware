@@ -27,8 +27,9 @@ except ImportError:
 
 
 class TaskError(Exception):
-    def __init__(self, *args, **kwargs):
-        super(TaskError, self).__init__(*args, **kwargs)
+    def __init__(self, message, **kwargs):
+        self.__dict__.update(kwargs)
+        super(TaskError, self).__init__(message)
 
 
 class RunningTaskMonitor():
@@ -84,7 +85,10 @@ class RunningTaskMonitor():
             except AttributeError:
                 error_msg = self.task.info.error
             finally:
-                raise_from(TaskError(error_msg, host_thumbprint), self.task.info.error)
+                raise_from(
+                    TaskError(error_msg, host_thumbprint=host_thumbprint, parent_error=self.task.info.error),
+                    self.task.info.error
+                )
 
         if self.task.info.state in [vim.TaskInfo.State.running, vim.TaskInfo.State.queued]:
             return False

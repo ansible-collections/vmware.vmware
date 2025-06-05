@@ -69,6 +69,8 @@ options:
     advanced_settings:
         description:
             - A dictionary of advanced HA settings.
+            - Allowed HA settings are more strict than VM allowed settings. If you get an error when managing them, compare
+              your settings against the vSphere HA Advanced Options documentation.
         default: {}
         type: dict
 
@@ -300,8 +302,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
     TaskError,
     RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._type_utils import (
-    diff_dict_and_vmodl_options_set
+from ansible_collections.vmware.vmware.plugins.module_utils._advanced_settings import (
+    AdvancedSettings
 )
 from ansible.module_utils.common.text.converters import to_native
 
@@ -313,10 +315,10 @@ class VmwareCluster(ModulePyvmomiBase):
         datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=True)
         self.cluster = self.get_cluster_by_name_or_moid(self.params.get('cluster'), fail_on_missing=True, datacenter=datacenter)
         self._cached_ac_failover_hosts = list()
-        self.changed_advanced_settings = diff_dict_and_vmodl_options_set(
-            self.params.get('advanced_settings'),
-            self.cluster.configurationEx.dasConfig.option
-        )
+
+        _user_settings = AdvancedSettings.from_py_dict(self.params.get('advanced_settings'), cast_all_values_to_str=True)
+        _live_settings = AdvancedSettings.from_vsphere_config(self.cluster.configurationEx.dasConfig.option)
+        self.changed_advanced_settings = _user_settings.difference(_live_settings)
 
     @property
     def storage_pdl_response_mode(self):
@@ -396,7 +398,7 @@ class VmwareCluster(ModulePyvmomiBase):
         if self.__check_storage_config_diff(ha_config):
             return True
 
-        if self.changed_advanced_settings:
+        if not self.changed_advanced_settings.is_empty():
             return True
 
         return False
@@ -577,8 +579,8 @@ class VmwareCluster(ModulePyvmomiBase):
 
         self.__set_admission_control_config(cluster_config_spec)
 
-        if self.changed_advanced_settings:
-            cluster_config_spec.dasConfig.option = self.changed_advanced_settings
+        if not self.changed_advanced_settings.is_empty():
+            cluster_config_spec.dasConfig.option = self.changed_advanced_settings.to_vsphere_config()
 
         return cluster_config_spec
 
@@ -684,7 +686,15 @@ class VmwareCluster(ModulePyvmomiBase):
         except (vmodl.RuntimeFault, vmodl.MethodFault)as vmodl_fault:
             self.module.fail_json(msg=to_native(vmodl_fault.msg))
         except TaskError as task_e:
-            self.module.fail_json(msg=to_native(task_e))
+            if not self.changed_advanced_settings.is_empty():
+                try:
+                    self.module.fail_json(
+                        msg="One or more advanced settings are invalid. Please refer to the vSphere documentation.",
+                        invalid_settings=[e.value.strip() for e in task_e.parent_error.faultMessage[0].arg]
+                    )
+                except (KeyError, AttributeError):
+                    pass
+            self.module.fail_json(msg=to_native(task_e), task_e=task_e)
         except Exception as generic_exc:
             self.module.fail_json(msg="Failed to update cluster due to exception %s" % to_native(generic_exc))
 

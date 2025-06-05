@@ -29,6 +29,7 @@ class TestClusterHa(ModuleTestCase):
         mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
         self.test_cluster = MockCluster()
         self.test_cluster.configurationEx.dasConfig = mocker.Mock()
+        self.test_cluster.configurationEx.dasConfig.option = []
 
         mocker.patch.object(VmwareCluster, 'get_datacenter_by_name_or_moid', return_value=mocker.Mock())
         mocker.patch.object(VmwareCluster, 'get_cluster_by_name_or_moid', return_value=self.test_cluster)
