@@ -1,3 +1,0 @@
----
-bugfixes:
-  - deploy_* - Fix issue where datastore was expected even though it is optional

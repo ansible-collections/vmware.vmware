@@ -1,0 +1,28 @@
+- name: Verify number of clusters in datacenter
+  ansible.builtin.assert:
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/', type='cluster', wantlist=true, **vmware_rest_auth_vars) | length > 1
+
+- name: Lookup clusters in datacenter
+  ansible.builtin.assert:
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + item, **vmware_rest_auth_vars) | length >= 1
+  loop:
+    - ""
+    - "{{ vcenter_cluster_name }}"
+    - "{{ test_cluster }}"
+
+- name: verify no inner clusters
+  ansible.builtin.assert:
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/', type='cluster', wantlist=true, **vmware_rest_auth_vars) | length == 0
+
+- name: Lookup Cluster MoId
+  ansible.builtin.set_fact:
+    _test_cluster_moid: "{{ lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name, **vmware_rest_auth_vars) }}"
+
+- name: Get specific cluster info
+  vmware.vmware.cluster_info:
+    cluster: "{{ vcenter_cluster_name }}"
+  register: cluster_info
+
+- name: Verify cluster info
+  ansible.builtin.assert:
+    that: cluster_info.clusters[vcenter_cluster_name].moid == _test_cluster_moid

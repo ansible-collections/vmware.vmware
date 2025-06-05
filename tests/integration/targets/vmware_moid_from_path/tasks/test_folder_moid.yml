@@ -1,0 +1,8 @@
+---
+- name: Lookup folders
+  ansible.builtin.assert:
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/vm/e2e-qe', **vmware_rest_auth_vars)
+
+- name: Verify number of folders
+  ansible.builtin.assert:
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/vm/', type='folder', wantlist=true, **vmware_rest_auth_vars) | length > 1
