@@ -2,8 +2,8 @@
 - name: Lookup Root Resource Pool ID
   ansible.builtin.set_fact:
     vcenter_rp_id: >-
-      {{ lookup('vmware.vmware_rest.resource_pool_moid',
-      '/' + vcenter_datacenter + '/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      {{ lookup('vmware.vmware.moid_from_path',
+      '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
       **vmware_rest_auth_vars) }}
 
 - name: Test

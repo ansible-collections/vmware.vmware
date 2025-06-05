@@ -1,0 +1,36 @@
+---
+- name: Test lookup plugin
+  environment: "{{ environment_auth_vars }}"
+  when: run_on_vcenter
+  block:
+    - name: Create test cluster
+      vmware.vmware.cluster:
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        cluster_name: "{{ test_cluster }}"
+
+    - name: Get random host info
+      vmware.vmware_rest.vcenter_host_info:
+        hosts: "{{ lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/', type='host', wantlist=true, **vmware_rest_auth_vars)[0] }}"
+      register: vcenter_host_info
+
+    - name: Set host name for tests
+      ansible.builtin.set_fact:
+        vcenter_host_name: "{{ vcenter_host_info.value[0].name }}"
+
+    - import_tasks: test_datacenter_moid.yml
+    - import_tasks: test_cluster_moid.yml
+    - import_tasks: test_host_moid.yml
+    - import_tasks: test_datastore_moid.yml
+    - import_tasks: test_folder_moid.yml
+    - import_tasks: test_network_moid.yml
+    - import_tasks: test_vm_moid.yml
+    - import_tasks: test_resource_pool_moid.yml
+
+  always:
+    - name: Destroy test cluster
+      vmware.vmware.cluster:
+        datacenter: "{{ vcenter_datacenter }}"
+        port: "{{ vcenter_port }}"
+        cluster_name: "{{ test_cluster }}"
+        state: absent
