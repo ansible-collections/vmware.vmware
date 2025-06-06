@@ -1,4 +1,6 @@
-#!/bin/bash -eu
+#!/usr/bin/env bash
+
+set -eux
 
 teardown() {
     ansible-playbook teardown.yml
