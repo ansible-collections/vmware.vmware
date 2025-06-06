@@ -46,6 +46,10 @@
           restart_vms: true
           default_vm_restart_priority: low
         host_isolation_response: none
+        advanced_settings:
+          das.isolationaddress0: "1.2.3.4"
+          das.usedefaultisolationaddress: true
+          das.isolationshutdowntimeout: 310
       register: _first
     - name: Set HA Settings In Test Cluster Again - Idempotency
       vmware.vmware.cluster_ha:
@@ -55,6 +59,10 @@
           restart_vms: true
           default_vm_restart_priority: low
         host_isolation_response: none
+        advanced_settings:
+          das.isolationaddress0: "1.2.3.4"
+          das.usedefaultisolationaddress: true
+          das.isolationshutdowntimeout: 310
       register: _idem
     - name: Gather Cluster Settings
       vmware.vmware.cluster_info:
