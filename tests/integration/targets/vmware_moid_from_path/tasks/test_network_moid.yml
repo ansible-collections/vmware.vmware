@@ -1,6 +1,6 @@
 - name: Lookup networks
   ansible.builtin.assert:
-    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/network/' + item, type='network', **vmware_rest_auth_vars)
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/network/' + item, type='network', **vmware_rest_auth_vars) | length > 0
   loop:
     - ""
     - "VM Network"

@@ -16,7 +16,7 @@
 
 - name: Lookup resource pools
   ansible.builtin.assert:
-    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + item, type='resource_pool', **vmware_rest_auth_vars)
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + item, type='resource_pool', **vmware_rest_auth_vars) | length > 0
   loop:
     - ""
     - "{{ vcenter_resource_pool }}"
