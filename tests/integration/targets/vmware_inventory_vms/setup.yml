@@ -1,0 +1,22 @@
+---
+- name: Setup Test Session
+  gather_facts: false
+  hosts: localhost
+  roles:
+    - prepare_test_vars
+
+  tasks:
+    - name: Create Test Session Directory
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/test_session"
+        state: directory
+
+    - name: Template session vars
+      ansible.builtin.copy:
+        mode: '0755'
+        dest: "{{ playbook_dir }}/test_session/vars.sh"
+        content: |
+          export VMWARE_HOST='{{ vcenter_hostname }}'
+          export VMWARE_USERNAME='{{ vcenter_username }}'
+          export VMWARE_PASSWORD='{{ vcenter_password }}'
+          export TINY_PREFIX='{{ tiny_prefix }}'
