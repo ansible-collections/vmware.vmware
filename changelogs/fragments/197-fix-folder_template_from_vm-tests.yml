@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - tests/integration/vmware_folder_template_from_vm - Fix tests for 2.19
