@@ -100,7 +100,7 @@
         force: true
         name: "{{ vm_name }}"
 
-    - name: "Test teardown: Destroy VM template from folder {{ item }}"
+    - name: "Test teardown: Destroy VM template from folder"
       community.vmware.vmware_guest:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
@@ -110,7 +110,7 @@
         name: "{{ template_name }}"
       loop: "{{ template_folders }}"
 
-    - name: "Test teardown: Delete Folder {{ item }}"
+    - name: "Test teardown: Delete Folder"
       vmware.vmware.folder:
         datacenter: "{{ vcenter_datacenter }}"
         relative_path: "{{ item }}"
