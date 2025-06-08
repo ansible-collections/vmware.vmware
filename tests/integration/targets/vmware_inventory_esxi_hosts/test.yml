@@ -1,0 +1,30 @@
+---
+- name: Test Inventory Plugin
+  gather_facts: false
+  hosts: localhost
+  roles:
+    - prepare_test_vars
+
+  tasks:
+    - debug:
+        var: groups
+
+    - name: Check groups
+      ansible.builtin.assert:
+        that:
+          - >-
+            ((groups.poweredOn | default([])) | length) ==
+            (hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOn') | default([]) | length)
+          - groups | length == 2
+          - ('test_' + vcenter_datacenter | replace('-', '_')) in groups
+      when: run_on_vcenter
+
+    - name: Check First Host
+      ansible.builtin.assert:
+        that:
+          - first_host.ansible_host is regex('^[\d+\.]+$') or first_host.ansible_host is regex('^[(\w{3}|\w{4}):]+$')
+          - first_host.tags is defined and first_host.tags is mapping
+          - first_host.tags_by_category is defined and first_host.tags_by_category is mapping
+      when: run_on_vcenter
+      vars:
+        first_host: "{{ hostvars.values() | first }}"

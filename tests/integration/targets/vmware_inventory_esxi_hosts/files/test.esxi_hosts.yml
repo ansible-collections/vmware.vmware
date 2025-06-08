@@ -1,5 +1,6 @@
 ---
 plugin: vmware.vmware.esxi_hosts
+validate_certs: false
 cache: false
 group_by_paths: true
 group_by_paths_prefix: test
