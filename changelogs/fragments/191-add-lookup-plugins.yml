@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - moid_from_path - Add lookup plugins to get an objects MOID
+    (https://github.com/ansible-collections/vmware.vmware/issues/191)
