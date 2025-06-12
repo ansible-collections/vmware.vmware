@@ -328,3 +328,18 @@ releases:
     - 183-fix-datastore-cluster-deploy.yml
     - 186-deploy-mods-datastore-optional.yml
     release_date: '2025-05-21'
+  2.1.0:
+    changes:
+      bugfixes:
+      - Make integration tests compatible with ansible-core 2.19 (https://github.com/ansible-collections/vmware.vmware/issues/194)
+      - cluster_drs - Fix error when non-string advanced settings are applied (https://github.com/ansible-collections/vmware.vmware/issues/190)
+      - cluster_ha - Fix error when non-string advanced settings are applied (https://github.com/ansible-collections/vmware.vmware/issues/190)
+      - tests/integration/vmware_folder_template_from_vm - Fix tests for 2.19
+      minor_changes:
+      - moid_from_path - Add lookup plugins to get an objects MOID (https://github.com/ansible-collections/vmware.vmware/issues/191)
+    fragments:
+    - 191-add-lookup-plugins.yml
+    - 192-fix-advanced-settings-cluster-ha.yml
+    - 194-fix-integration-tests.yml
+    - 197-fix-folder_template_from_vm-tests.yml
+    release_date: '2025-06-10'

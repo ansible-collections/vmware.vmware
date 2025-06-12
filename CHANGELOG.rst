@@ -4,6 +4,22 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.1.0
+======
+
+Minor Changes
+-------------
+
+- moid_from_path - Add lookup plugins to get an objects MOID (https://github.com/ansible-collections/vmware.vmware/issues/191)
+
+Bugfixes
+--------
+
+- Make integration tests compatible with ansible-core 2.19 (https://github.com/ansible-collections/vmware.vmware/issues/194)
+- cluster_drs - Fix error when non-string advanced settings are applied (https://github.com/ansible-collections/vmware.vmware/issues/190)
+- cluster_ha - Fix error when non-string advanced settings are applied (https://github.com/ansible-collections/vmware.vmware/issues/190)
+- tests/integration/vmware_folder_template_from_vm - Fix tests for 2.19
+
 v2.0.1
 ======
 
