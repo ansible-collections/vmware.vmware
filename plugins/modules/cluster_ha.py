@@ -752,7 +752,13 @@ def main():
         supports_check_mode=True,
         required_if=[
             ('admission_control_policy', 'dedicated_host', ('admission_control_dedicated_hosts',), False)
-        ]
+        ],
+        required_by={
+            'admission_control_failover_level': 'admission_control_policy',
+            'admission_control_cpu_reserve_percentage': 'admission_control_policy',
+            'admission_control_memory_reserve_percentage': 'admission_control_policy',
+            'admission_control_dedicated_hosts': 'admission_control_policy',
+        }
     )
 
     result = dict(
