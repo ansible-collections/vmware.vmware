@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - cluster_ha - Add module required_by rules for admission control arguments that are mentioned in the docs
+    (https://github.com/ansible-collections/vmware.vmware/issues/201)
