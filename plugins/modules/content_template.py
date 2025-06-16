@@ -239,6 +239,8 @@ class VmwareContentTemplate(ModuleRestBase):
 
         try:
             self.api_client.content.library.Item.delete(template_id)
+        except Error as error:
+            self.module.fail_json(msg=' ,'.join([err.default_message % err.args for err in error.messages]))
         except Exception as err:
             self.module.fail_json(msg="%s" % to_native(err))
 

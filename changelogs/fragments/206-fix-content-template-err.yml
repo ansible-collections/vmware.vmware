@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - content_template - Replace non-existent method used when handling api errors
