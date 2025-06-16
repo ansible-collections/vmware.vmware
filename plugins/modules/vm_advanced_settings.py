@@ -92,9 +92,9 @@ EXAMPLES = r'''
     validate_certs: false
     name: my-test-vm
     settings:
-        one: 1
-        two: 2
-        three: 3
+      one: 1
+      two: 2
+      three: 3
     state: present
 
 - name: Remove The Following Advanced Settings
@@ -105,8 +105,8 @@ EXAMPLES = r'''
     validate_certs: false
     name: "{{ vm }}"
     settings:
-        one: 1    # remove advanced setting if it has both key == 'one' and value == 1
-        two: ""   # remove any advanced setting with the key 'two', regardless of value
+      one: 1    # remove advanced setting if it has both key == 'one' and value == 1
+      two: ""   # remove any advanced setting with the key 'two', regardless of value
     state: absent
 '''
 

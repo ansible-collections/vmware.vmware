@@ -141,13 +141,13 @@ EXAMPLES = r'''
 - name: Configure The Default Schedule
   vmware.vmware.vcsa_backup_schedule:
     schedule:
-        hour: 23
-        minute: 59
-        days_of_week:
+      hour: 23
+      minute: 59
+      days_of_week:
         - saturday
     location:
-        url: nfs://10.10.10.10:/nfs/iso_datastore/vcenterbackup/
-        username: root
+      url: nfs://10.10.10.10:/nfs/iso_datastore/vcenterbackup/
+      username: root
     retain_count: 3
 
 - name: Remove The Default Schedule

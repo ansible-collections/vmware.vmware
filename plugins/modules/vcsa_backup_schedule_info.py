@@ -40,7 +40,6 @@ EXAMPLES = r'''
 - name: Gather The Default Schedule Info
   vmware.vmware.vcsa_backup_schedule_info:
     name: default
-
 '''
 
 RETURN = r'''
