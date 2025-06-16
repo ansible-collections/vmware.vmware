@@ -117,99 +117,99 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-  - name: Create a snapshot
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: present
-      snapshot_name: snap1
-      description: snap1_description
+- name: Create a snapshot
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    state: present
+    snapshot_name: snap1
+    description: snap1_description
 
-  - name: Remove a snapshot
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: absent
-      snapshot_name: snap1
+- name: Remove a snapshot
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    state: absent
+    snapshot_name: snap1
 
-  - name: Remove all snapshots of a VM
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: absent
-      remove_all: True
+- name: Remove all snapshots of a VM
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    state: absent
+    remove_all: true
 
-  - name: Remove all snapshots of a VM using MoID
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      moid: vm-42
-      state: absent
-      remove_all: True
+- name: Remove all snapshots of a VM using MoID
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    moid: vm-42
+    state: absent
+    remove_all: true
 
-  - name: Take snapshot of a VM using quiesce and memory flag on
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: present
-      snapshot_name: dummy_vm_snap_0001
-      quiesce: true
-      memory_dump: true
+- name: Take snapshot of a VM using quiesce and memory flag on
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    state: present
+    snapshot_name: dummy_vm_snap_0001
+    quiesce: true
+    memory_dump: true
 
-  - name: Remove a snapshot and snapshot subtree
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: absent
-      remove_children: true
-      snapshot_name: snap1
+- name: Remove a snapshot and snapshot subtree
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    state: absent
+    remove_children: true
+    snapshot_name: snap1
 
-  - name: Remove a snapshot with a snapshot id
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      snapshot_id: 10
-      state: absent
+- name: Remove a snapshot with a snapshot id
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    snapshot_id: 10
+    state: absent
 
-  - name: Rename a snapshot
-    vmware.vmware.vm_snapshot:
-      hostname: "{{ vcenter_hostname }}"
-      username: "{{ vcenter_username }}"
-      password: "{{ vcenter_password }}"
-      datacenter: "{{ datacenter_name }}"
-      folder: "/{{ datacenter_name }}/vm/"
-      name: "{{ guest_name }}"
-      state: present
-      snapshot_name: current_snap_name
-      new_snapshot_name: im_renamed
-      description: "{{ new_snapshot_description }}"
+- name: Rename a snapshot
+  vmware.vmware.vm_snapshot:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    datacenter: "{{ datacenter_name }}"
+    folder: "/{{ datacenter_name }}/vm/"
+    name: "{{ guest_name }}"
+    state: present
+    snapshot_name: current_snap_name
+    new_snapshot_name: im_renamed
+    description: "{{ new_snapshot_description }}"
 '''
 
 RETURN = r'''
