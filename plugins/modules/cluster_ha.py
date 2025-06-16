@@ -369,7 +369,7 @@ class VmwareCluster(ModulePyvmomiBase):
         Since this param requires admission_control_policy, we cannot have a default set in the module spec.
         But it does have a default value of 1, which is mentioned in the param docs
         """
-        self.params.get('admission_control_failover_level', 1)
+        return self.params.get('admission_control_failover_level', 1)
 
     def check_apd_restart_params(self):
         if self.params['storage_apd_response']['mode'] in ('disabled', 'warning'):
