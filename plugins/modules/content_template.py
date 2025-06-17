@@ -215,7 +215,7 @@ class VmwareContentTemplate(ModuleRestBase):
         try:
             template_id = self._template_service.create(create_spec)
         except Error as error:
-            self.module.fail_json(msg="%s" % self.get_error_message(error))
+            self.module.fail_json(msg=' ,'.join([err.default_message % err.args for err in error.messages]))
         except Exception as err:
             self.module.fail_json(msg="%s" % to_native(err))
 
