@@ -88,8 +88,9 @@ options:
             - The number of host failures that should be tolerated by the cluster.
             - The maximum is one less than the total number of hosts.
             - Only used if O(admission_control_policy) is V(cluster_resource) or V(vm_slots).
+            - If this is unset, a value of 1 is used.
         type: int
-        default: 1
+        required: false
 
     admission_control_cpu_reserve_percentage:
         description:
@@ -362,6 +363,14 @@ class VmwareCluster(ModulePyvmomiBase):
 
         return True
 
+    @property
+    def ac_failover_level(self):
+        """
+        Since this param requires admission_control_policy, we cannot have a default set in the module spec.
+        But it does have a default value of 1, which is mentioned in the param docs
+        """
+        return self.params.get('admission_control_failover_level', 1)
+
     def check_apd_restart_params(self):
         if self.params['storage_apd_response']['mode'] in ('disabled', 'warning'):
             return False
@@ -466,7 +475,7 @@ class VmwareCluster(ModulePyvmomiBase):
         # check failover level, which is used by 2 out of the 3 policy types
         if (
             self.params.get("admission_control_policy") != 'dedicated_host' and
-            ac_config.failoverLevel != self.params.get('admission_control_failover_level')
+            ac_config.failoverLevel != self.ac_failover_level
         ):
             return True
 
@@ -656,12 +665,12 @@ class VmwareCluster(ModulePyvmomiBase):
         cluster_config_spec.dasConfig.admissionControlEnabled = True
         if self.params.get('admission_control_policy') == 'vm_slots':
             ac_policy_spec = vim.cluster.FailoverLevelAdmissionControlPolicy()
-            ac_policy_spec.failoverLevel = self.params.get('admission_control_failover_level')
+            ac_policy_spec.failoverLevel = self.ac_failover_level
 
         elif self.params.get('admission_control_policy') == 'cluster_resource':
             ac_policy_spec = vim.cluster.FailoverResourcesAdmissionControlPolicy()
             ac_policy_spec.autoComputePercentages = self.ac_cluster_resource_auto_compute_percentages
-            ac_policy_spec.failoverLevel = self.params.get('admission_control_failover_level')
+            ac_policy_spec.failoverLevel = self.ac_failover_level
             if not self.ac_cluster_resource_auto_compute_percentages:
                 if self.params.get('admission_control_cpu_reserve_percentage'):
                     ac_policy_spec.cpuFailoverResourcesPercent = self.params.get('admission_control_cpu_reserve_percentage')
@@ -733,7 +742,7 @@ def main():
 
                 # HA Admission Control related parameters
                 admission_control_policy=dict(type='str', required=False, choices=['vm_slots', 'cluster_resource', 'dedicated_host']),
-                admission_control_failover_level=dict(type='int', default=1),
+                admission_control_failover_level=dict(type='int'),
                 admission_control_cpu_reserve_percentage=dict(type='int', required=False),
                 admission_control_memory_reserve_percentage=dict(type='int', required=False),
                 admission_control_dedicated_hosts=dict(type='list', elements='str', required=False),
@@ -752,7 +761,13 @@ def main():
         supports_check_mode=True,
         required_if=[
             ('admission_control_policy', 'dedicated_host', ('admission_control_dedicated_hosts',), False)
-        ]
+        ],
+        required_by={
+            'admission_control_failover_level': 'admission_control_policy',
+            'admission_control_cpu_reserve_percentage': 'admission_control_policy',
+            'admission_control_memory_reserve_percentage': 'admission_control_policy',
+            'admission_control_dedicated_hosts': 'admission_control_policy',
+        }
     )
 
     result = dict(
