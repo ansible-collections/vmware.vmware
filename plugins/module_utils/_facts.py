@@ -15,7 +15,7 @@ import os
 
 PYVMOMI_IMP_ERR = None
 try:
-    from pyVmomi import vim, VmomiSupport, vmodl
+    from pyVmomi import vim, vmodl, VmomiJSONEncoder
 except ImportError:
     pass
 
@@ -92,7 +92,7 @@ class VmFacts():
         return {
             'guest_tools_status': get_vm_prop_or_none(self.vm, ('guest', 'toolsRunningStatus')),
             'guest_tools_version': get_vm_prop_or_none(self.vm, ('guest', 'toolsVersion')),
-            'guest_question': json.loads(json.dumps(self.vm.summary.runtime.question, cls=VmomiSupport.VmomiJSONEncoder,
+            'guest_question': json.loads(json.dumps(self.vm.summary.runtime.question, cls=VmomiJSONEncoder.VmomiJSONEncoder,
                                                     sort_keys=True, strip_dynamic=True)),
             'guest_consolidation_needed': self.vm.summary.runtime.consolidationNeeded,
         }
@@ -603,7 +603,7 @@ def _jsonify_vmware_object(obj):
     Return:
         dict
     """
-    return json.loads(json.dumps(obj, cls=VmomiSupport.VmomiJSONEncoder,
+    return json.loads(json.dumps(obj, cls=VmomiJSONEncoder.VmomiJSONEncoder,
                                  sort_keys=True, strip_dynamic=True))
 
 
