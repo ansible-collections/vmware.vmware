@@ -2,4 +2,4 @@
 vm: "{{ tiny_prefix }}-vm"
 library: "{{ tiny_prefix }}-content-library"
 template_name: "{{ tiny_prefix }}-template"
-template_host: 10.46.29.208
+template_host: 10.46.29.130
