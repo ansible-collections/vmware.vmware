@@ -173,7 +173,7 @@ class VmwareContentTemplate(ModuleRestBase):
 
         # Initialize member variables
         self._template_service = self.api_client.vcenter.vm_template.LibraryItems
-        self.result = {'changed': False}
+        self.result = {'changed': False, 'template_info': {}}
 
         # Get parameters
         self.template_name = self.params.get('template_name')
@@ -201,10 +201,14 @@ class VmwareContentTemplate(ModuleRestBase):
 
         # Create template placement specs
         placement_spec = LibraryItems.CreatePlacementSpec()
-        placement_spec.host = self.get_host_by_name(self.host)
-        placement_spec.resource_pool = self.get_resource_pool_by_name(self.resource_pool)
-        placement_spec.cluster = self.get_cluster_by_name(self.cluster)
-        placement_spec.folder = self.get_folder_by_name(self.template_folder)
+        if self.host:
+            placement_spec.host = self.get_host_by_name(self.host)
+        if self.resource_pool:
+            placement_spec.resource_pool = self.get_resource_pool_by_name(self.resource_pool)
+        if self.cluster:
+            placement_spec.cluster = self.get_cluster_by_name(self.cluster)
+        if self.template_folder:
+            placement_spec.folder = self.get_folder_by_name(self.template_folder)
         create_spec = LibraryItems.CreateSpec(
             name=self.template_name,
             placement=placement_spec,

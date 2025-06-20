@@ -2,3 +2,4 @@
 bugfixes:
   - pyvmomi - Replace deprecated JSON encoder with new one from pyvmomi package
     (https://github.com/vmware/pyvmomi/blob/e6cc09f32593d263b9ea0b611596a2c505786c6b/CHANGELOG.md?plain=1#L72)
+  - content_template: Fix error when creating template from VM and not specifying certain non-critical placement options
