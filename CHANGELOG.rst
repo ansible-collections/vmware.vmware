@@ -4,6 +4,23 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.2.0
+======
+
+Minor Changes
+-------------
+
+- Fixed ansible-lint errors in examples.
+- cluster_ha - Add module required_by rules for admission control arguments that are mentioned in the docs (https://github.com/ansible-collections/vmware.vmware/issues/201)
+- cluster_ha - admission_control_failover_level can now always be managed by the user's inputs, and the default value for dedicated_host policy type is the number of dedicated failover hosts (https://github.com/ansible-collections/vmware.vmware/issues/201)
+
+Bugfixes
+--------
+
+- content_template - Fix error when creating template from VM and not specifying certain non-critical placement options
+- content_template - Replace non-existent method used when handling api errors
+- pyvmomi - Replace deprecated JSON encoder with new one from pyvmomi package (https://github.com/vmware/pyvmomi/blob/e6cc09f32593d263b9ea0b611596a2c505786c6b/CHANGELOG.md?plain=1#L72)
+
 v2.1.0
 ======
 
