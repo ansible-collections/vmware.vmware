@@ -87,8 +87,8 @@ options:
         description:
             - The number of host failures that should be tolerated by the cluster.
             - The maximum is one less than the total number of hosts.
-            - Only used if O(admission_control_policy) is V(cluster_resource) or V(vm_slots).
-            - If this is unset, a value of 1 is used.
+            - If O(admission_control_policy) is V(dedicated_host), the default value is the number of dedicated failover hosts.
+            - For all other O(admission_control_policy) values, the default value is 1.
         type: int
         required: false
 
@@ -367,9 +367,16 @@ class VmwareCluster(ModulePyvmomiBase):
     def ac_failover_level(self):
         """
         Since this param requires admission_control_policy, we cannot have a default set in the module spec.
-        But it does have a default value of 1, which is mentioned in the param docs
+        Instead, the default value is calculated depending on the policy type selected by the user, which
+        is mentioned in the param docs
         """
-        return self.params.get('admission_control_failover_level', 1)
+        if self.params.get('admission_control_failover_level'):
+            return self.params.get('admission_control_failover_level')
+
+        if self.params['admission_control_policy'] != 'dedicated_host':
+            return 1
+
+        return len(self.ac_failover_hosts)
 
     def check_apd_restart_params(self):
         if self.params['storage_apd_response']['mode'] in ('disabled', 'warning'):
@@ -472,11 +479,7 @@ class VmwareCluster(ModulePyvmomiBase):
         except AttributeError:
             return True
 
-        # check failover level, which is used by 2 out of the 3 policy types
-        if (
-            self.params.get("admission_control_policy") != 'dedicated_host' and
-            ac_config.failoverLevel != self.ac_failover_level
-        ):
+        if ac_config.failoverLevel != self.ac_failover_level:
             return True
 
         policy_classes = {
@@ -665,12 +668,10 @@ class VmwareCluster(ModulePyvmomiBase):
         cluster_config_spec.dasConfig.admissionControlEnabled = True
         if self.params.get('admission_control_policy') == 'vm_slots':
             ac_policy_spec = vim.cluster.FailoverLevelAdmissionControlPolicy()
-            ac_policy_spec.failoverLevel = self.ac_failover_level
 
         elif self.params.get('admission_control_policy') == 'cluster_resource':
             ac_policy_spec = vim.cluster.FailoverResourcesAdmissionControlPolicy()
             ac_policy_spec.autoComputePercentages = self.ac_cluster_resource_auto_compute_percentages
-            ac_policy_spec.failoverLevel = self.ac_failover_level
             if not self.ac_cluster_resource_auto_compute_percentages:
                 if self.params.get('admission_control_cpu_reserve_percentage'):
                     ac_policy_spec.cpuFailoverResourcesPercent = self.params.get('admission_control_cpu_reserve_percentage')
@@ -681,6 +682,7 @@ class VmwareCluster(ModulePyvmomiBase):
             ac_policy_spec = vim.cluster.FailoverHostAdmissionControlPolicy()
             ac_policy_spec.failoverHosts = self.ac_failover_hosts
 
+        ac_policy_spec.failoverLevel = self.ac_failover_level
         cluster_config_spec.dasConfig.admissionControlPolicy = ac_policy_spec
 
     def apply_ha_configuration(self):
