@@ -399,7 +399,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError, RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.placement import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._placement import (
     VmPlacement,
     vm_placement_argument_spec
 )
@@ -419,13 +419,37 @@ class VmModule(ModulePyvmomiBase):
         if self.params['state'] == 'present':
             self.configurator = VmConfigurator(self.vm, self.module)
 
-    def create_deploy_spec(self):
+    def create_new_vm(self):
+        self.placement = VmPlacement(self.module)
+        self.configurator.validate_params_for_creation()
+        configspec = self._create_deploy_spec()
+        vm = self._deploy_vm(configspec)
+        self.vm = vm
+
+    def configure_existing_vm(self):
+        self.configurator.validate_params_for_reconfiguration()
+        needs_changes = self.configurator.check_for_required_changes()
+        if needs_changes:
+            needs_power_cycle = self.configurator.check_if_power_cycle_is_required()
+            update_spec = self._create_update_spec()
+            self._apply_update_spec(update_spec, needs_power_cycle)
+
+        return needs_changes
+
+    def delete_vm(self):
+        if not self.vm:
+            return
+
+        self._power_off_vm()
+        self._try_to_run_task(task_func=self.vm.Destroy_Task, error_prefix="Unable to delete VM.")
+
+    def _create_deploy_spec(self):
         configspec = vim.vm.ConfigSpec()
-        self.configurator.update_config_spec(configspec, self.placement.get_datastore())
+        self.configurator.configure_spec_for_creation(configspec, self.placement.get_datastore())
 
         return configspec
 
-    def deploy(self, configspec):
+    def _deploy_vm(self, configspec):
         vm_folder = self.placement.get_folder()
         task_result = self._try_to_run_task(
             task_func=vm_folder.CreateVM_Task,
@@ -435,24 +459,23 @@ class VmModule(ModulePyvmomiBase):
 
         return task_result['result']
 
-    def create_vm(self):
-        self.placement = VmPlacement(self.module)
-        self.configurator.validate_params_for_creation()
-        configspec = self.create_deploy_spec()
-        vm = self.deploy(configspec)
-        self.vm = vm
+    def _create_update_spec(self):
+        update_spec = vim.vm.ConfigSpec()
+        self.configurator.configure_spec_for_reconfiguration(update_spec)
 
-    def configure_vm(self):
-        pass
+        return update_spec
 
-    def delete_vm(self):
-        if not self.vm:
-            return
+    def _apply_update_spec(self, update_spec, needs_power_cycle):
+        if needs_power_cycle:
+            self._power_off_vm()
+        self._try_to_run_task(
+            task_func=self.vm.ReconfigVM_Task,
+            task_kwargs=dict(spec=update_spec),
+            error_prefix="Unable to apply update spec.")
+        if needs_power_cycle:
+            self._power_on_vm()
 
-        self.power_off_vm()
-        self._try_to_run_task(task_func=self.vm.Destroy_Task, error_prefix="Unable to delete VM.")
-
-    def power_off_vm(self):
+    def _power_off_vm(self):
         if not self.vm or self.vm.summary.runtime.powerState.lower() == 'poweredoff':
             return
 
@@ -464,7 +487,7 @@ class VmModule(ModulePyvmomiBase):
 
         self._try_to_run_task(task_func=self.vm.PowerOffVM_Task, error_prefix="Unable to power off VM.")
 
-    def power_on_vm(self):
+    def _power_on_vm(self):
         if not self.vm or self.vm.summary.runtime.powerState.lower() == 'poweredon':
             return
 
@@ -491,6 +514,7 @@ class VmModule(ModulePyvmomiBase):
             self.module.fail_json(msg="%s %s" % (error_prefix, e.msg))
 
         return task_result
+
 
 def main():
     module = AnsibleModule(
@@ -542,14 +566,13 @@ def main():
     vm_module = VmModule(module)
     if module.params['state'] == 'present':
         if vm_module.vm:
-            vm_module.configure_vm()
+            result['changed'] = vm_module.reconfigure_vm()
             result['vm']['moid'] = vm_module.vm._GetMoId()
             result['vm']['name'] = vm_module.vm.name
-            result['changed'] = True
         else:
-            created_vm = vm_module.create_vm()
-            result['vm']['moid'] = created_vm._GetMoId()
-            result['vm']['name'] = created_vm.name
+            vm_module.create_vm()
+            result['vm']['moid'] = vm_module.vm._GetMoId()
+            result['vm']['name'] = vm_module.vm.name
             result['changed'] = True
 
     elif module.params['state'] == 'absent':

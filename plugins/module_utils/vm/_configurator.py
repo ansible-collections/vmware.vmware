@@ -2,35 +2,51 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.cpu_memory._configurator import (
     VmCpuMemoryConfigurator
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.disks._configurator import (
-    VmDiskConfigurator
-)
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._configurator import (
-    DeviceConfigurator
+    VmDeviceConfigurator
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._handler import (
-    VmHandler
+    VmParameterHandler
 )
 
 class VmConfigurator(ConfiguratorBase):
     def __init__(self, vm, module):
         super().__init__(vm, module)
-        self.vm_handler = VmHandler(self.vm, self.module)
-
-        self.cpu_memory_configurator = VmCpuMemoryConfigurator(self.vm, self.module)
-        self.device_configurator = DeviceConfigurator(self.vm, self.module)
-        self.disk_configurator = VmDiskConfigurator(self.vm, self.module, self.controller_configurator.controller_handler)
-
+        self.vm_handler = VmParameterHandler(self.vm, self.module)
+        self.sub_configurators = [
+            VmCpuMemoryConfigurator(self.vm, self.module),
+            VmDeviceConfigurator(self.vm, self.module)
+        ]
 
     def validate_params_for_creation(self):
         self.vm_handler.validate_params_for_creation()
-        self.cpu_memory_configurator.validate_params_for_creation()
-        self.device_configurator.validate_params_for_creation()
-        self.disk_configurator.validate_params_for_creation()
+        for sub_configurator in self.sub_configurators:
+            sub_configurator.validate_params_for_creation()
 
-    def update_config_spec(self, configspec, datastore):
+    def configure_spec_for_creation(self, configspec, datastore):
         self.vm_handler.update_config_spec_with_params(configspec, datastore, self.vm)
-        self.cpu_memory_configurator.update_config_spec(configspec)
-        self.device_configurator.update_config_spec(configspec)
-        self.disk_configurator.update_config_spec(configspec)
+        for sub_configurator in self.sub_configurators:
+            sub_configurator.update_config_spec(configspec)
 
+    def configure_spec_for_reconfiguration(self, configspec):
+        self.vm_handler.update_config_spec_with_params(configspec, self.vm)
+        for sub_configurator in self.sub_configurators:
+            sub_configurator.update_config_spec(configspec)
+
+    def check_if_power_cycle_is_required(self):
+        params_requiring_power_cycle = self.vm_handler.get_params_requiring_power_cycle()
+        for sub_configurator in self.sub_configurators:
+            params_requiring_power_cycle.update(sub_configurator.get_params_requiring_power_cycle())
+
+        for out_of_sync_param in self.required_changes:
+            if out_of_sync_param in params_requiring_power_cycle:
+                return True
+        return False
+
+    def check_for_required_changes(self):
+        self.required_changes = set()
+        self.required_changes.update(self.vm_handler.get_out_of_sync_params())
+        for sub_configurator in self.sub_configurators:
+            self.required_changes.update(sub_configurator.check_for_required_changes())
+
+        return self.required_changes

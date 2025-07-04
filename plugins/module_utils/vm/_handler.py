@@ -17,7 +17,7 @@ class VmParameterHandler(ParameterHandlerBase):
         self.params = module.params
 
     def validate_params_for_creation(self):
-        for param in ['name', 'guest_id', 'datastore', 'folder']:
+        for param in ['name', 'guest_id', 'datastore']:
             if not self.params.get(param):
                 self.module.fail_json(msg="%s is a required parameter for VM creation." % param)
 

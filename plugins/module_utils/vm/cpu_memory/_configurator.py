@@ -27,8 +27,8 @@ class VmCpuMemoryConfigurator(ConfiguratorBase):
     def update_config_spec(self, configspec):
         """Update config spec with all hardware parameters"""
         for handler in self.handlers:
-            handler.update_config_spec(configspec)
+            handler.update_config_spec_with_params(configspec)
 
     def live_config_differs_from_desired_config(self):
         """Check if current VM config differs from desired config"""
-        return any(handler.config_differs() for handler in self.handlers)
+        return any(handler.params_differ_from_actual_config() for handler in self.handlers)

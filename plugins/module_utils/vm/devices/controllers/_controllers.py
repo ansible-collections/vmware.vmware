@@ -78,6 +78,16 @@ class DeviceController(ABC):
                 self._device_category = self.device_type
         return self._device_category
 
+    @property
+    def name_as_str(self):
+        return "%s(%s:)" % (self.device_category.upper(), self.bus_number)
+
+    def add_device(self, device):
+        if device.unit_number in self.controlled_devices:
+            raise ValueError("Cannot add multiple devices with unit number %s on controller %s" % (device.unit_number, self.name_as_str))
+
+        self.controlled_devices[device.unit_number] = device
+
     # @classmethod
     # def create_from_vm_device(cls, vm_device):
     #     device_type = vm_device.__class__.__name__.lower()
