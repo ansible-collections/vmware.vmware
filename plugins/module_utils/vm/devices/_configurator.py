@@ -9,7 +9,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import
 
 
 class VmDeviceConfigurator(ConfiguratorBase):
-    def __init__(self, vm, module, controller_handler):
+    def __init__(self, vm, module):
         super().__init__(vm, module)
 
         # Initialize handlers
@@ -32,7 +32,7 @@ class VmDeviceConfigurator(ConfiguratorBase):
             controller_handler.validate_params_for_reconfiguration()
         self.disk_handler.validate_params_for_reconfiguration()
 
-    def update_config_spec_with_params(self, configspec):
+    def update_config_spec(self, configspec):
         for controller_handler in self.controller_handlers:
             controller_handler.update_config_spec_with_params(configspec)
 

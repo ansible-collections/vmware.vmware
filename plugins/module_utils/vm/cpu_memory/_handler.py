@@ -27,29 +27,6 @@ class CpuParameterHandler(ParameterHandlerBase):
 
     def validate_params_for_reconfiguration(self):
         self._validate_cpu_socket_relationship()
-        if self.vm.runtime.powerState != 'poweredOn':
-            return
-
-        cores = self.cpu_params.get('cores')
-
-        if cores:
-            current_cores = self.vm.config.hardware.numCPU
-            if cores < current_cores and not self.vm.config.cpuHotRemoveEnabled:
-                self.module.fail_json(
-                    msg="CPUs cannot be decreased while the VM is powered on, "
-                        "unless CPU hot remove is already enabled."
-                )
-            if cores > current_cores and not self.vm.config.cpuHotAddEnabled:
-                self.module.fail_json(
-                    msg="CPUs cannot be increased while the VM is powered on, "
-                        "unless CPU hot add is already enabled."
-                )
-
-        for param in ['enable_performance_counters', 'enable_hot_add', 'enable_hot_remove']:
-            if self.cpu_params.get(param) is not None:
-                self.module.fail_json(
-                    msg=f"Configuring cpu.{param} is not supported while the VM is powered on."
-                )
 
     def update_config_spec_with_params(self, configspec):
         """Update config spec with CPU and memory parameters"""
@@ -65,17 +42,61 @@ class CpuParameterHandler(ParameterHandlerBase):
             if value is not None:
                 setattr(configspec, configspec_attr, value)
 
-    def params_differ_from_actual_config(self):
+    def check_for_configuration_changes(self, power_cycle_allowed=False):
         """Check if current VM CPU/memory config differs from desired"""
         if not self.vm:
             return True
 
-        return (
-            self.vm.config.hardware.numCPU != self.cpu_params.get('cores') or
-            self.vm.config.cpuHotAddEnabled != self.cpu_params.get('enable_hot_add') or
-            self.vm.config.cpuHotRemoveEnabled != self.cpu_params.get('enable_hot_remove') or
-            self.vm.config.vPMCEnabled != self.cpu_params.get('enable_performance_counters')
-        )
+        if self._core_reconfiguration_required(power_cycle_allowed=power_cycle_allowed):
+            return True
+
+        if self._check_power_restricted_changes(power_cycle_allowed=power_cycle_allowed):
+            return True
+
+        return False
+
+    def _check_power_restricted_changes(self, power_cycle_allowed=False):
+        power_restricted_config = {
+            "cpuHotAddEnabled": 'enable_hot_add',
+            "cpuHotRemoveEnabled": 'enable_hot_remove',
+            "vPMCEnabled": 'enable_performance_counters'
+        }
+
+        for config_attr, param_name in power_restricted_config.items():
+            param_value = self.cpu_params.get(param_name)
+            if param_value is None:
+                continue
+
+            if param_value == getattr(self.vm.config, config_attr):
+                continue
+
+            if power_cycle_allowed:
+                return True
+            else:
+                self.module.fail_json(
+                    msg=f"Configuring cpu.{param_name} is not supported while the VM is powered on."
+                )
+
+        return False
+
+    def _core_reconfiguration_required(self, power_cycle_allowed=False):
+        cores = self.cpu_params.get('cores')
+        if not cores:
+            return False
+
+        current_cores = self.vm.config.hardware.numCPU
+        if cores < current_cores and not (self.vm.config.cpuHotRemoveEnabled or power_cycle_allowed):
+            self.module.fail_json(
+                msg="CPUs cannot be decreased while the VM is powered on, "
+                    "unless CPU hot remove is already enabled."
+            )
+        if cores > current_cores and not (self.vm.config.cpuHotAddEnabled or power_cycle_allowed):
+            self.module.fail_json(
+                msg="CPUs cannot be increased while the VM is powered on, "
+                    "unless CPU hot add is already enabled."
+            )
+
+        return cores != current_cores
 
 
 class MemoryParameterHandler(ParameterHandlerBase):
@@ -132,6 +153,14 @@ class MemoryParameterHandler(ParameterHandlerBase):
             self.vm.config.memoryHotAddEnabled != self.memory_params.get('enable_hot_add')
         )
 
+    def get_params_requiring_power_cycle(self):
+        _params = set([
+            'enable_hot_add',
+        ])
+        if self.vm and (not self.vm.config.memoryHotAddEnabled):
+            _params.add('size_mb')
+
+        return _params
 
 # class ResourceAllocationHandler(HardwareParameterHandler):
 #     """Handler for resource allocation (shares, limits, reservations)"""
@@ -188,75 +217,5 @@ class MemoryParameterHandler(ParameterHandlerBase):
 #             self.vm.config.memoryAllocation.shares.shares != self.hw_params.get('mem_shares') or
 #             self.vm.config.memoryAllocation.limit != self.hw_params.get('mem_limit') or
 #             self.vm.config.memoryAllocation.reservation != self.hw_params.get('mem_reservation')
-#         )
-
-
-# class AdvancedOptionsHandler(HardwareParameterHandler):
-#     """Handler for advanced hardware options"""
-
-#     def update_config_spec(self, configspec):
-#         # Handle simple mappings
-#         mappings = {
-#             'max_connections': 'maxMksConnections',
-#             'nested_virt': 'nestedHVEnabled',
-#             'boot_firmware': 'firmware',
-#         }
-#         for param_name, configspec_attr in mappings.items():
-#             value = self.hw_params.get(param_name)
-#             if value is not None:
-#                 setattr(configspec, configspec_attr, value)
-
-#         # Handle complex configurations
-#         self._configure_secure_boot(configspec)
-#         self._configure_virtualization_features(configspec)
-
-#     def _configure_secure_boot(self, configspec):
-#         secure_boot = self.hw_params.get('secure_boot')
-#         if secure_boot is not None:
-#             configspec.bootOptions = vim.vm.BootOptions()
-#             configspec.bootOptions.efiSecureBootEnabled = secure_boot
-
-#     def _configure_virtualization_features(self, configspec):
-#         iommu = self.hw_params.get('iommu')
-#         virt_based_security = self.hw_params.get('virt_based_security')
-
-#         if iommu is not None or virt_based_security is not None:
-#             configspec.flags = vim.vm.FlagInfo()
-
-#             if iommu is not None:
-#                 configspec.flags.vvtdEnabled = iommu
-#             if virt_based_security is not None:
-#                 configspec.flags.vbsEnabled = virt_based_security
-
-#     def config_differs(self):
-#         if not self.vm:
-#             return True
-
-#         return (
-#             self.vm.config.maxMksConnections != self.hw_params.get('max_connections') or
-#             self.vm.config.nestedHVEnabled != self.hw_params.get('nested_virt') or
-#             self._secure_boot_differs(self.vm) or
-#             self._virtualization_features_differ(self.vm) or
-#             self.vm.config.firmware != self.hw_params.get('boot_firmware')
-#         )
-
-#     def _secure_boot_differs(self, vm):
-#         secure_boot = self.hw_params.get('secure_boot')
-#         if secure_boot is None:
-#             return False
-
-#         return (vm.config.bootOptions and
-#                 vm.config.bootOptions.efiSecureBootEnabled != secure_boot)
-
-#     def _virtualization_features_differ(self, vm):
-#         iommu = self.hw_params.get('iommu')
-#         virt_based_security = self.hw_params.get('virt_based_security')
-
-#         if not vm.config.flags:
-#             return iommu is not None or virt_based_security is not None
-
-#         return (
-#             (iommu is not None and vm.config.flags.vvtdEnabled != iommu) or
-#             (virt_based_security is not None and vm.config.flags.vbsEnabled != virt_based_security)
 #         )
 

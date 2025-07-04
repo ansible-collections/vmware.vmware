@@ -15,8 +15,9 @@ class Disk:
         self.size = format_size_str_as_kb(size)
         self.backing = backing
         self.mode = mode
-        self.controller = controller
         self.unit_number = unit_number
+        self.controller = controller
+        self.controller.add_device(self)
 
         self._spec = None
         self._device = None

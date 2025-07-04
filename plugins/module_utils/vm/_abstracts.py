@@ -10,14 +10,30 @@ class ConfiguratorBase(ABC):
         self.vm = vm
         self.module = module
         self.params = module.params
+        self.required_changes = None
 
     @abstractmethod
     def validate_params_for_creation(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def update_config_spec(self, configspec):
-        pass
+    def configure_spec_for_creation(self, configspec, datastore):
+        raise NotImplementedError
+
+    @abstractmethod
+    def configure_spec_for_reconfiguration(self, configspec):
+        raise NotImplementedError
+
+    @abstractmethod
+    def check_if_power_cycle_is_required(self):
+        """
+        Check if the VM needs to be powered off to apply the changes.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def check_for_required_changes(self):
+        return False
 
 
 class ParameterHandlerBase(ABC):
