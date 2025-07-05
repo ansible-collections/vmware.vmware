@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase, ParameterChangeSet
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.controllers._controllers import (
     DeviceController,
     ScsiController,
@@ -12,6 +12,23 @@ try:
     from pyVmomi import vim
 except ImportError:
     pass
+
+
+class ControllerParameterChangeSet(ParameterChangeSet):
+    def __init__(self, vm, params):
+        super().__init__(vm, params)
+        self.controllers_to_add = []
+        self.controllers_to_update = []
+        self.controllers_to_remove = []
+        self.controllers_in_sync = []
+
+    @property
+    def changes_required(self):
+        return any([
+            self.controllers_to_add,
+            self.controllers_to_update,
+            self.controllers_to_remove,
+        ])
 
 
 class DiskControllerParameterHandlerBase(ParameterHandlerBase):
@@ -29,13 +46,7 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
         self.max_count = max_count
         self.category = category
 
-    def validate_params_for_creation(self):
-        self._parse_params_and_validate()
-
-    def validate_params_for_reconfiguration(self):
-        self._parse_params_and_validate()
-
-    def _parse_params_and_validate(self):
+    def verify_parameter_constraints(self):
         if len(self.controllers) == 0:
             self._parse_device_controller_params()
         if len(self.controllers) > self.max_count:
@@ -57,7 +68,7 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
     def _parse_device_controller_params(self):
         raise NotImplementedError
 
-    def update_config_spec_with_params(self, configspec):
+    def populate_config_spec_with_parameters(self, configspec):
         for controller in self.pending_changes["controllers_to_add"]:
             configspec.deviceChange.append(controller.create_controller_spec(edit=False))
 
@@ -73,30 +84,19 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
         spec.device = device
         return spec
 
-    def get_params_requiring_power_cycle(self):
-        return set()
+    def get_parameter_change_set(self, ):
+        change_set = ParameterChangeSet(self.vm, self.params)
 
-    def check_for_configuration_changes(self, power_cycle_allowed=False):
-        controllers_to_add = []
-        controllers_to_update = []
-        controllers_in_sync = []
-
-        controllers_to_remove = self._link_controllers_to_vm_devices()
-
+        change_set.controllers_to_remove = self._link_controllers_to_vm_devices()
         for controller in self.controllers.values():
             if controller._device is None:
-                controllers_to_add.append(controller)
+                change_set.controllers_to_add.append(controller)
             elif controller.linked_device_differs_from_config():
-                controllers_to_update.append(controller)
+                change_set.controllers_to_update.append(controller)
             else:
-                controllers_in_sync.append(controller)
+                change_set.controllers_in_sync.append(controller)
 
-        self.pending_changes = {
-            "controllers_to_add": controllers_to_add,
-            "controllers_to_update": controllers_to_update,
-            "controllers_to_remove": controllers_to_remove,
-            "controllers_in_sync": controllers_in_sync
-        }
+        return change_set
 
     def _link_controllers_to_vm_devices(self):
         unlinked_devices = []

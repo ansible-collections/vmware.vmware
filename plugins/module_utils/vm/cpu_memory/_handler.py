@@ -101,7 +101,6 @@ class MemoryParameterHandler(ParameterHandlerBase):
             if self.memory_params.get('size_mb') < self.vm.config.hardware.memoryMB:
                 self.module.fail_json(msg="Memory cannot be decreased once added to a VM.")
 
-
     def populate_config_spec_with_parameters(self, configspec):
         """Update config spec with CPU and memory parameters"""
         param_to_configspec_attr = {
@@ -113,24 +112,28 @@ class MemoryParameterHandler(ParameterHandlerBase):
             if value is not None:
                 setattr(configspec, configspec_attr, value)
 
-    def get_parameter_change_set(self, power_cycle_allowed=False):
+    def get_parameter_change_set(self):
         """
         Check if current VM CPU/memory config differs from desired
         """
-        if not self.vm:
-            return ParameterChangeSet(True, False)
+        change_set = ParameterChangeSet(self.vm, self.params)
+        self._check_memory_changes_with_hot_add(change_set)
+        change_set.check_if_change_is_required('enable_hot_add', 'config.memoryHotAddEnabled', power_sensitive=True)
+        return change_set
 
-        if self.vm.config.memoryHotAddEnabled != self.memory_params.get('enable_hot_add'):
-            return ParameterChangeSet(True, True)
-
-        if self.vm.config.hardware.memoryMB > self.memory_params.get('size_mb'):
-            power_cycle_required = not self.vm.config.memoryHotAddEnabled
-            if power_cycle_required and not power_cycle_allowed:
-                raise PowerCycleRequiredError('memory.size_mb')
-
-            return ParameterChangeSet(True, power_cycle_required)
-
-        return ParameterChangeSet(False, False)
+    def _check_memory_changes_with_hot_add(self, change_set):
+        try:
+            change_set.check_if_change_is_required('size_mb', 'config.hardware.memoryMB', power_sensitive=True)
+        except PowerCycleRequiredError:
+            size_mb = self.memory_params.get('size_mb')
+            current_size_mb = self.vm.config.hardware.memoryMB
+            if size_mb > current_size_mb and not self.vm.config.memoryHotAddEnabled:
+                self.module.fail_json(
+                    msg="Memory cannot be increased while the VM is powered on, "
+                        "unless memory hot add is already enabled."
+                )
+            # hot add is allowed, so we can proceed with the change without power cycling
+            change_set.power_cycle_required = False
 
 # class ResourceAllocationHandler(HardwareParameterHandler):
 #     """Handler for resource allocation (shares, limits, reservations)"""
