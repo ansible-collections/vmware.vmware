@@ -1,11 +1,17 @@
 from abc import abstractmethod
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.controllers._controllers import (
+    DeviceController,
     ScsiController,
     SataController,
     NvmeController,
     IdeController
 )
+
+try:
+    from pyVmomi import vim
+except ImportError:
+    pass
 
 
 class DiskControllerParameterHandlerBase(ParameterHandlerBase):
@@ -52,14 +58,60 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
         raise NotImplementedError
 
     def update_config_spec_with_params(self, configspec):
-        for controller in self.controllers.values():
-            if controller._device is None:
-                configspec.deviceChange.append(controller.create_controller_spec())
-            else:
-                configspec.deviceChange.append(controller.update_controller_spec())
+        for controller in self.pending_changes["controllers_to_add"]:
+            configspec.deviceChange.append(controller.create_controller_spec(edit=False))
+
+        for controller in self.pending_changes["controllers_to_update"]:
+            configspec.deviceChange.append(controller.create_controller_spec(edit=True))
+
+        for device in self.pending_changes["controllers_to_remove"]:
+            configspec.deviceChange.append(self._create_controller_removal_spec(device))
+
+    def _create_controller_removal_spec(self, device):
+        spec = vim.vm.device.VirtualDeviceSpec()
+        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+        spec.device = device
+        return spec
 
     def get_params_requiring_power_cycle(self):
         return set()
+
+    def check_for_configuration_changes(self, power_cycle_allowed=False):
+        controllers_to_add = []
+        controllers_to_update = []
+        controllers_in_sync = []
+
+        controllers_to_remove = self._link_controllers_to_vm_devices()
+
+        for controller in self.controllers.values():
+            if controller._device is None:
+                controllers_to_add.append(controller)
+            elif controller.linked_device_differs_from_config():
+                controllers_to_update.append(controller)
+            else:
+                controllers_in_sync.append(controller)
+
+        self.pending_changes = {
+            "controllers_to_add": controllers_to_add,
+            "controllers_to_update": controllers_to_update,
+            "controllers_to_remove": controllers_to_remove,
+            "controllers_in_sync": controllers_in_sync
+        }
+
+    def _link_controllers_to_vm_devices(self):
+        unlinked_devices = []
+        for device in self.vm.config.hardware.device:
+            if not isinstance(device, DeviceController.get_controller_types()[self.category]):
+                continue
+
+            for controller in self.controllers.values():
+                if isinstance(device, controller.device_class) and device.busNumber == controller.bus_number:
+                    controller._device = device
+                    break
+
+            unlinked_devices.append(device)
+
+        return unlinked_devices
 
 
 class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):

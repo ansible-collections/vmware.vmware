@@ -1,4 +1,8 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import (
+    ParameterHandlerBase,
+    ParameterChangeSet
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.errors import PowerCycleRequiredError
 
 
 class CpuParameterHandler(ParameterHandlerBase):
@@ -7,6 +11,11 @@ class CpuParameterHandler(ParameterHandlerBase):
     def __init__(self, vm, module):
         super().__init__(vm, module)
         self.cpu_params = module.params.get('cpu', {})
+
+    def verify_parameter_constraints(self):
+        self._validate_cpu_socket_relationship()
+        if self.vm is None:
+            self._validate_params_for_creation()
 
     def _validate_cpu_socket_relationship(self):
         cores = self.cpu_params.get('cores', 0)
@@ -18,18 +27,17 @@ class CpuParameterHandler(ParameterHandlerBase):
                 msg="cpu.cores must be a multiple of cpu.cores_per_socket"
             )
 
-    def validate_params_for_creation(self):
+    def _validate_params_for_creation(self):
         self._validate_cpu_socket_relationship()
         if not self.cpu_params.get('cores'):
             self.module.fail_json(
                 msg="cpu.cores attribute is mandatory for VM creation"
             )
 
-    def validate_params_for_reconfiguration(self):
-        self._validate_cpu_socket_relationship()
-
-    def update_config_spec_with_params(self, configspec):
-        """Update config spec with CPU and memory parameters"""
+    def populate_config_spec_with_parameters(self, configspec):
+        """
+        Update config spec with CPU and memory parameters
+        """
         param_to_configspec_attr = {
             'enable_performance_counters': 'vPMCEnabled',
             'cores': 'numCPUs',
@@ -42,61 +50,38 @@ class CpuParameterHandler(ParameterHandlerBase):
             if value is not None:
                 setattr(configspec, configspec_attr, value)
 
-    def check_for_configuration_changes(self, power_cycle_allowed=False):
-        """Check if current VM CPU/memory config differs from desired"""
-        if not self.vm:
-            return True
+    def get_parameter_change_set(self):
+        """
+        Check if current VM CPU/memory config differs from desired
+        """
+        change_set = ParameterChangeSet(self.vm, self.params)
+        self._check_cpu_changes_with_hot_add_remove(change_set)
 
-        if self._core_reconfiguration_required(power_cycle_allowed=power_cycle_allowed):
-            return True
+        change_set.check_if_change_is_required('cores_per_socket', 'config.numCoresPerSocket', power_sensitive=True)
+        change_set.check_if_change_is_required('enable_hot_add', 'config.cpuHotAddEnabled', power_sensitive=True)
+        change_set.check_if_change_is_required('enable_hot_remove', 'config.cpuHotRemoveEnabled', power_sensitive=True)
+        change_set.check_if_change_is_required('enable_performance_counters', 'config.vPMCEnabled', power_sensitive=True)
 
-        if self._check_power_restricted_changes(power_cycle_allowed=power_cycle_allowed):
-            return True
+        return change_set
 
-        return False
-
-    def _check_power_restricted_changes(self, power_cycle_allowed=False):
-        power_restricted_config = {
-            "cpuHotAddEnabled": 'enable_hot_add',
-            "cpuHotRemoveEnabled": 'enable_hot_remove',
-            "vPMCEnabled": 'enable_performance_counters'
-        }
-
-        for config_attr, param_name in power_restricted_config.items():
-            param_value = self.cpu_params.get(param_name)
-            if param_value is None:
-                continue
-
-            if param_value == getattr(self.vm.config, config_attr):
-                continue
-
-            if power_cycle_allowed:
-                return True
-            else:
+    def _check_cpu_changes_with_hot_add_remove(self, change_set):
+        try:
+            change_set.check_if_change_is_required('cores', 'config.hardware.numCPUs', power_sensitive=True)
+        except PowerCycleRequiredError:
+            cores = self.cpu_params.get('cores')
+            current_cores = self.vm.config.hardware.numCPU
+            if cores < current_cores and not self.vm.config.cpuHotRemoveEnabled:
                 self.module.fail_json(
-                    msg=f"Configuring cpu.{param_name} is not supported while the VM is powered on."
+                    msg="CPUs cannot be decreased while the VM is powered on, "
+                        "unless CPU hot remove is already enabled."
                 )
-
-        return False
-
-    def _core_reconfiguration_required(self, power_cycle_allowed=False):
-        cores = self.cpu_params.get('cores')
-        if not cores:
-            return False
-
-        current_cores = self.vm.config.hardware.numCPU
-        if cores < current_cores and not (self.vm.config.cpuHotRemoveEnabled or power_cycle_allowed):
-            self.module.fail_json(
-                msg="CPUs cannot be decreased while the VM is powered on, "
-                    "unless CPU hot remove is already enabled."
-            )
-        if cores > current_cores and not (self.vm.config.cpuHotAddEnabled or power_cycle_allowed):
-            self.module.fail_json(
-                msg="CPUs cannot be increased while the VM is powered on, "
-                    "unless CPU hot add is already enabled."
-            )
-
-        return cores != current_cores
+            if cores > current_cores and not self.vm.config.cpuHotAddEnabled:
+                self.module.fail_json(
+                    msg="CPUs cannot be increased while the VM is powered on, "
+                        "unless CPU hot add is already enabled."
+                )
+            # hot add/remove is allowed, so we can proceed with the change without power cycling
+            change_set.power_cycle_required = False
 
 
 class MemoryParameterHandler(ParameterHandlerBase):
@@ -106,33 +91,18 @@ class MemoryParameterHandler(ParameterHandlerBase):
         super().__init__(vm, module)
         self.memory_params = module.params.get('memory', {})
 
-    def validate_params_for_creation(self):
-        if not self.memory_params.get('size_mb'):
-            self.module.fail_json(
-                msg="memory.size_mb attribute is mandatory for VM creation"
-            )
-
-    def validate_params_for_reconfiguration(self):
-        if self.vm.runtime.powerState != 'poweredOn':
-            return
-
-        size_mb = self.memory_params.get('size_mb')
-        if size_mb:
-            current_memory = self.vm.config.hardware.memoryMB
-            if size_mb < current_memory:
-                self.module.fail_json(msg="Memory cannot be decreased once added to a VM.")
-            if size_mb > current_memory and not self.vm.config.memoryHotAddEnabled:
+    def verify_parameter_constraints(self):
+        if self.vm is None:
+            if not self.memory_params.get('size_mb'):
                 self.module.fail_json(
-                    msg="Memory cannot be increased while the VM is powered on, "
-                        "unless memory hot add is already enabled."
+                    msg="memory.size_mb attribute is mandatory for VM creation"
                 )
+        else:
+            if self.memory_params.get('size_mb') < self.vm.config.hardware.memoryMB:
+                self.module.fail_json(msg="Memory cannot be decreased once added to a VM.")
 
-        if self.memory_params.get('enable_hot_add') is not None:
-            self.module.fail_json(
-                msg="Configuring memory.enable_hot_add is not supported while the VM is powered on."
-            )
 
-    def update_config_spec_with_params(self, configspec):
+    def populate_config_spec_with_parameters(self, configspec):
         """Update config spec with CPU and memory parameters"""
         param_to_configspec_attr = {
             'enable_hot_add': 'memoryHotAddEnabled',
@@ -143,24 +113,24 @@ class MemoryParameterHandler(ParameterHandlerBase):
             if value is not None:
                 setattr(configspec, configspec_attr, value)
 
-    def params_differ_from_actual_config(self):
-        """Check if current VM CPU/memory config differs from desired"""
+    def get_parameter_change_set(self, power_cycle_allowed=False):
+        """
+        Check if current VM CPU/memory config differs from desired
+        """
         if not self.vm:
-            return True
+            return ParameterChangeSet(True, False)
 
-        return (
-            self.vm.config.hardware.memoryMB != self.memory_params.get('size_mb') or
-            self.vm.config.memoryHotAddEnabled != self.memory_params.get('enable_hot_add')
-        )
+        if self.vm.config.memoryHotAddEnabled != self.memory_params.get('enable_hot_add'):
+            return ParameterChangeSet(True, True)
 
-    def get_params_requiring_power_cycle(self):
-        _params = set([
-            'enable_hot_add',
-        ])
-        if self.vm and (not self.vm.config.memoryHotAddEnabled):
-            _params.add('size_mb')
+        if self.vm.config.hardware.memoryMB > self.memory_params.get('size_mb'):
+            power_cycle_required = not self.vm.config.memoryHotAddEnabled
+            if power_cycle_required and not power_cycle_allowed:
+                raise PowerCycleRequiredError('memory.size_mb')
 
-        return _params
+            return ParameterChangeSet(True, power_cycle_required)
+
+        return ParameterChangeSet(False, False)
 
 # class ResourceAllocationHandler(HardwareParameterHandler):
 #     """Handler for resource allocation (shares, limits, reservations)"""
