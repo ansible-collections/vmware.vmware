@@ -24,11 +24,16 @@ class VmCpuMemoryConfigurator(ConfiguratorBase):
         for handler in self.handlers:
             handler.validate_params_for_reconfiguration()
 
-    def update_config_spec(self, configspec):
+    def configure_spec_for_creation(self, configspec):
         """Update config spec with all hardware parameters"""
         for handler in self.handlers:
             handler.update_config_spec_with_params(configspec)
 
-    def live_config_differs_from_desired_config(self):
+    def configure_spec_for_reconfiguration(self, configspec):
+        """Update config spec with all hardware parameters"""
+        for handler in self.handlers:
+            handler.update_config_spec_with_params(configspec)
+
+    def check_for_required_changes(self):
         """Check if current VM config differs from desired config"""
         return any(handler.params_differ_from_actual_config() for handler in self.handlers)
