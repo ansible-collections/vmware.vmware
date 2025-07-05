@@ -104,7 +104,7 @@ class DeviceController(ABC):
     #     controller._device = vm_device
     #     return controller
 
-    def create_controller_spec(self, additional_config=None):
+    def create_controller_spec(self, edit=False, additional_config=None):
         """
         Create a base controller spec with common configuration. This can be used to
         add a new controller to a VM.
@@ -112,19 +112,24 @@ class DeviceController(ABC):
         key_start, key_end = DeviceController.NEW_CONTROLLER_KEYS[self.device_category]
 
         spec = vim.vm.device.VirtualDeviceSpec()
-        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+        if edit:
+            spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
+        else:
+            spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+
         spec.device = self.device_class()
         spec.device.deviceInfo = vim.Description()
         spec.device.busNumber = self.bus_number
-        spec.device.key = -randint(key_start, key_end)
+        if not edit:
+            spec.device.key = -randint(key_start, key_end)
 
         if additional_config:
-            additional_config(spec)
+            additional_config(spec, edit)
 
         self._spec = spec
         return spec
 
-    def config_differs(self, additional_comparisons=None):
+    def linked_device_differs_from_config(self, additional_comparisons=None):
         if self._device is None:
             return True
 
@@ -148,13 +153,13 @@ class ScsiController(DeviceController):
         except KeyError:
             raise ValueError("Invalid SCSI controller device type: %s" % device_type)
 
-    def create_controller_spec(self):
-        def configure_scsi(spec):
+    def create_controller_spec(self, edit=False):
+        def configure_scsi(spec, edit=False):
             spec.device.hotAddRemove = True
             spec.device.sharedBus = self.bus_sharing
             spec.device.scsiCtlrUnitNumber = 7
 
-        return super().create_controller_spec(configure_scsi)
+        return super().create_controller_spec(edit=edit, additional_config=configure_scsi)
 
 
 class SataController(DeviceController):
