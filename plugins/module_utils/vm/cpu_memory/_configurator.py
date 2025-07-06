@@ -1,4 +1,4 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ConfiguratorBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ConfiguratorBase, ParameterChangeSet
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.cpu_memory._handler import CpuParameterHandler, MemoryParameterHandler
 
 
@@ -14,26 +14,19 @@ class VmCpuMemoryConfigurator(ConfiguratorBase):
             MemoryParameterHandler(self.vm, self.module),
         ]
 
-    def validate_params_for_creation(self):
+    def prepare_paramter_handlers(self):
         """Validate all hardware parameters for VM creation"""
         for handler in self.handlers:
-            handler.validate_params_for_creation()
+            handler.verify_parameter_constraints()
 
-    def validate_params_for_reconfiguration(self):
-        """Validate all hardware parameters for VM reconfiguration"""
-        for handler in self.handlers:
-            handler.validate_params_for_reconfiguration()
-
-    def configure_spec_for_creation(self, configspec):
-        """Update config spec with all hardware parameters"""
-        for handler in self.handlers:
-            handler.update_config_spec_with_params(configspec)
-
-    def configure_spec_for_reconfiguration(self, configspec):
-        """Update config spec with all hardware parameters"""
-        for handler in self.handlers:
-            handler.update_config_spec_with_params(configspec)
-
-    def check_for_required_changes(self):
+    def stage_configuration_changes(self):
         """Check if current VM config differs from desired config"""
-        return any(handler.params_differ_from_actual_config() for handler in self.handlers)
+        change_set = ParameterChangeSet(self.vm, self.params)
+        for handler in self.handlers:
+            change_set.combine(handler.get_parameter_change_set())
+        return change_set
+
+    def apply_staged_changes_to_config_spec(self, configspec):
+        """Update config spec with all hardware parameters"""
+        for handler in self.handlers:
+            handler.populate_config_spec_with_parameters(configspec)

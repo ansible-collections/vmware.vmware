@@ -406,6 +406,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._placement import
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator import (
     VmConfigurator
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.errors import (
+    PowerCycleRequiredError
+)
 
 
 class VmModule(ModulePyvmomiBase):
@@ -421,33 +424,38 @@ class VmModule(ModulePyvmomiBase):
 
     def create_new_vm(self):
         self.placement = VmPlacement(self.module)
-        self.configurator.validate_params_for_creation()
-        configspec = self._create_deploy_spec()
-        vm = self._deploy_vm(configspec)
+        self.configurator.prepare_paramter_handlers()
+        self.configurator.stage_configuration_changes()
+
+        create_spec = vim.vm.ConfigSpec()
+        self.configurator.apply_staged_changes_to_config_spec(create_spec, self.placement.get_datastore())
+        vm = self._deploy_vm(create_spec)
         self.vm = vm
 
     def configure_existing_vm(self):
-        self.configurator.validate_params_for_reconfiguration()
-        needs_changes = self.configurator.check_for_required_changes()
-        if needs_changes:
-            needs_power_cycle = self.configurator.check_if_power_cycle_is_required()
-            update_spec = self._create_update_spec()
-            self._apply_update_spec(update_spec, needs_power_cycle)
+        self.configurator.prepare_paramter_handlers()
+        try:
+            change_set = self.configurator.stage_configuration_changes()
+        except PowerCycleRequiredError as e:
+            self.module.fail_json(msg=str(e))
 
-        return needs_changes
+        if change_set.changes_required:
+            update_spec = vim.vm.ConfigSpec()
+            self.configurator.apply_staged_changes_to_config_spec(update_spec, None)
+            self._apply_update_spec(update_spec, change_set.power_cycle_required)
+
+        return change_set.changes_required
 
     def delete_vm(self):
         if not self.vm:
             return
 
         self._power_off_vm()
-        self._try_to_run_task(task_func=self.vm.Destroy_Task, error_prefix="Unable to delete VM.")
 
-    def _create_deploy_spec(self):
-        configspec = vim.vm.ConfigSpec()
-        self.configurator.configure_spec_for_creation(configspec, self.placement.get_datastore())
-
-        return configspec
+        try:
+            self._try_to_run_task(task_func=self.vm.Destroy_Task, error_prefix="Unable to delete VM.")
+        except Exception as e:
+            self.module.fail_json(msg="%s." % to_native(type(e)))
 
     def _deploy_vm(self, configspec):
         vm_folder = self.placement.get_folder()
@@ -459,19 +467,14 @@ class VmModule(ModulePyvmomiBase):
 
         return task_result['result']
 
-    def _create_update_spec(self):
-        update_spec = vim.vm.ConfigSpec()
-        self.configurator.configure_spec_for_reconfiguration(update_spec)
-
-        return update_spec
-
     def _apply_update_spec(self, update_spec, needs_power_cycle):
         if needs_power_cycle:
             self._power_off_vm()
         self._try_to_run_task(
             task_func=self.vm.ReconfigVM_Task,
             task_kwargs=dict(spec=update_spec),
-            error_prefix="Unable to apply update spec.")
+            error_prefix="Unable to apply update spec."
+        )
         if needs_power_cycle:
             self._power_on_vm()
 
@@ -566,21 +569,21 @@ def main():
     vm_module = VmModule(module)
     if module.params['state'] == 'present':
         if vm_module.vm:
-            result['changed'] = vm_module.reconfigure_vm()
+            result['changed'] = vm_module.configure_existing_vm()
             result['vm']['moid'] = vm_module.vm._GetMoId()
             result['vm']['name'] = vm_module.vm.name
         else:
-            vm_module.create_vm()
+            vm_module.create_new_vm()
             result['vm']['moid'] = vm_module.vm._GetMoId()
             result['vm']['name'] = vm_module.vm.name
             result['changed'] = True
 
     elif module.params['state'] == 'absent':
         if vm_module.vm:
-            vm_module.delete_vm()
             result['vm']['moid'] = vm_module.vm._GetMoId()
             result['vm']['name'] = vm_module.vm.name
             result['changed'] = True
+            vm_module.delete_vm()
 
     module.exit_json(**result)
 

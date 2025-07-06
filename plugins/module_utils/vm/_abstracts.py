@@ -8,13 +8,21 @@ class ParameterChangeSet():
     def __init__(self, vm, params):
         self.vm = vm
         self.params = params
-        if vm is None:
-            raise ValueError("VM object is None, but it is required to check if a change is required.")
-
-        self.changes_required = False
+        self._changes_required = True if vm is None else False
         self.power_cycle_required = False
 
+    @property
+    def changes_required(self):
+        return self._changes_required
+
+    @changes_required.setter
+    def changes_required(self, value):
+        self._changes_required = value
+
     def check_if_change_is_required(self, parameter_name, vm_attribute, power_sensitive=False):
+        if self.vm is None:
+            return
+
         self._check_if_param_differs_from_vm(parameter_name, vm_attribute)
         if power_sensitive:
             self._check_if_change_violates_power_state(parameter_name)
@@ -54,30 +62,18 @@ class ConfiguratorBase(ABC):
         self.vm = vm
         self.module = module
         self.params = module.params
-        self.pending_changes = None
 
     @abstractmethod
-    def validate_params_for_creation(self):
+    def prepare_paramter_handlers(self):
         raise NotImplementedError
 
     @abstractmethod
-    def configure_spec_for_creation(self, configspec, datastore):
+    def stage_configuration_changes(self):
         raise NotImplementedError
 
     @abstractmethod
-    def configure_spec_for_reconfiguration(self, configspec):
+    def apply_staged_changes_to_config_spec(self, configspec):
         raise NotImplementedError
-
-    @abstractmethod
-    def check_if_power_cycle_is_required(self):
-        """
-        Check if the VM needs to be powered off to apply the changes.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def check_for_required_changes(self):
-        return False
 
 
 class ParameterHandlerBase(ABC):
