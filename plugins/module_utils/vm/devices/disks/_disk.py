@@ -63,3 +63,14 @@ class Disk:
         disk_spec.device.controllerKey = self.controller.key
         disk_spec.device.unitNumber = self.unit_number
         disk_spec.device.capacityInKB = self.size
+
+    def linked_device_differs_from_config(self):
+        if not self._device:
+            return True
+
+        return (
+            self._device.capacityInKB != self.size or
+            self._device.backing.diskMode != self.mode or
+            self._device.backing.thinProvisioned != (self.backing == 'thin') or
+            self._device.backing.eagerlyScrub != (self.backing == 'eagerzeroedthick')
+        )

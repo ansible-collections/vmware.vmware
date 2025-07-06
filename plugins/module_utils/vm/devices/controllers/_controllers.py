@@ -88,22 +88,6 @@ class DeviceController(ABC):
 
         self.controlled_devices[device.unit_number] = device
 
-    # @classmethod
-    # def create_from_vm_device(cls, vm_device):
-    #     device_type = vm_device.__class__.__name__.lower()
-    #     for key, value in DeviceController.get_controller_types().items():
-    #         if isinstance(vm_device, value):
-    #             device_type = key
-    #             break
-
-    #     controller = DeviceController.create_from_params(
-    #         device_type,
-    #         vm_device.busNumber,
-    #         getattr(vm_device, 'sharedBus', None)
-    #     )
-    #     controller._device = vm_device
-    #     return controller
-
     def create_controller_spec(self, edit=False, additional_config=None):
         """
         Create a base controller spec with common configuration. This can be used to
