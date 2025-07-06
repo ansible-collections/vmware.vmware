@@ -1,7 +1,29 @@
-from abc import abstractmethod
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase, ParameterChangeSet
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.disks._disk import Disk
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import parse_device_node
+
+try:
+    from pyVmomi import vim
+except ImportError:
+    pass
+
+
+class DiskParameterChangeSet(ParameterChangeSet):
+    def __init__(self, vm, params):
+        super().__init__(vm, params)
+        self.disks = []
+        self.disks_to_add = []
+        self.disks_to_update = []
+        self.disks_to_remove = []
+        self.disks_in_sync = []
+
+    @property
+    def changes_required(self):
+        return any([
+            self.disks_to_add,
+            self.disks_to_update,
+            self.disks_to_remove,
+        ]) or self._changes_required
 
 
 class DiskParameterHandler(ParameterHandlerBase):
@@ -11,7 +33,7 @@ class DiskParameterHandler(ParameterHandlerBase):
         self.disks = []
         self.controller_handlers = controller_handlers
 
-    def validate_params_for_creation(self):
+    def verify_parameter_constraints(self):
         if len(self.disks) == 0:
             self._parse_disk_params()
 
@@ -19,22 +41,6 @@ class DiskParameterHandler(ParameterHandlerBase):
             raise ValueError(
                 "At least one disk is required."
             )
-
-    def validate_params_for_reconfiguration(self):
-        if len(self.disks) == 0:
-            self._parse_disk_params()
-
-        raise NotImplementedError("Reconfiguration of disks is not implemented yet")
-
-    def params_differ_from_actual_config(self):
-        """
-        Check if current VM config differs from desired config. This should not validate params
-        or communicate what values are different. It should only check if the configspec needs to
-        be updated and return.
-        Returns:
-            bool: True if the configspec needs to be updated, False otherwise.
-        """
-        raise NotImplementedError
 
     def _parse_disk_params(self):
         for disk_param in self.module.params.get("disks", []):
@@ -48,7 +54,7 @@ class DiskParameterHandler(ParameterHandlerBase):
                 raise self.module.fail_json(
                     msg="No controller has been configured for device %s." % disk_param['device_node'],
                     device_node=disk_param['device_node'],
-                    available_controllers=[c.name_as_str for c in controller_handler.controllers.values()]
+                    available_disks=[c.name_as_str for c in controller_handler.disks.values()]
                 )
 
             disk = Disk(
@@ -60,12 +66,50 @@ class DiskParameterHandler(ParameterHandlerBase):
             )
             self.disks.append(disk)
 
-    def update_config_spec_with_params(self, configspec):
+    def populate_config_spec_with_parameters(self, configspec, change_set):
+        for disk in change_set.disks_to_add:
+            configspec.deviceChange.append(disk.create_disk_spec())
+        for disk in change_set.disks_to_update:
+            configspec.deviceChange.append(disk.update_disk_spec())
+        for disk in change_set.disks_to_remove:
+            configspec.deviceChange.append(self._create_disk_removal_spec(disk))
+
+    def _create_disk_removal_spec(self, device):
+        spec = vim.vm.device.VirtualDeviceSpec()
+        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+        spec.device = device
+        return spec
+
+    def get_parameter_change_set(self):
+        change_set = DiskParameterChangeSet(self.vm, self.params)
+        change_set.disks_to_remove = self._link_disks_to_vm_devices()
         for disk in self.disks:
             if disk._device is None:
-                configspec.deviceChange.append(disk.create_disk_spec())
+                change_set.disks_to_add.append(disk)
+            elif disk.linked_device_differs_from_config():
+                change_set.disks_to_update.append(disk)
             else:
-                configspec.deviceChange.append(disk.update_disk_spec())
+                change_set.disks_in_sync.append(disk)
 
-    def get_params_requiring_power_cycle(self):
-        return set()
+        return change_set
+
+    def _link_disks_to_vm_devices(self):
+        if self.vm is None:
+            return []
+
+        unlinked_devices = []
+        for device in self.vm.config.hardware.device:
+            if not isinstance(device, vim.vm.device.VirtualDisk):
+                continue
+
+            for disk in self.disks:
+                if (
+                    device.unitNumber == disk.unit_number and
+                    device.controllerKey == disk.controller.key
+                ):
+                    disk._device = device
+                    break
+            else:
+                unlinked_devices.append(device)
+
+        return unlinked_devices

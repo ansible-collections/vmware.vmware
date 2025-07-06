@@ -1,11 +1,15 @@
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.controllers._handler import (
+    ControllerParameterChangeSet,
     ScsiControllerParameterHandler,
     SataControllerParameterHandler,
     NvmeControllerParameterHandler,
     IdeControllerParameterHandler
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.disks._handler import DiskParameterHandler
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ConfiguratorBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.disks._handler import (
+    DiskParameterChangeSet,
+    DiskParameterHandler
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ConfiguratorBase, ParameterChangeSet
 
 
 class VmDeviceConfigurator(ConfiguratorBase):
@@ -22,30 +26,34 @@ class VmDeviceConfigurator(ConfiguratorBase):
 
         self.disk_handler = DiskParameterHandler(vm, module, self.controller_handlers)
 
-    def validate_params_for_creation(self):
+        self.controller_change_sets = {c.category: ControllerParameterChangeSet(vm, self.params) for c in self.controller_handlers}
+        self.disk_change_set = DiskParameterChangeSet(vm, self.params)
+
+    def prepare_paramter_handlers(self):
         for controller_handler in self.controller_handlers:
-            controller_handler.validate_params_for_creation()
-        self.disk_handler.validate_params_for_creation()
+            controller_handler.verify_parameter_constraints()
+        self.disk_handler.verify_parameter_constraints()
 
-    def validate_params_for_reconfiguration(self):
+    def stage_configuration_changes(self):
+        overall_change_set = ParameterChangeSet(self.vm, self.params)
+
         for controller_handler in self.controller_handlers:
-            controller_handler.validate_params_for_reconfiguration()
-        self.disk_handler.validate_params_for_reconfiguration()
+            self.controller_change_sets[controller_handler.category] = controller_handler.get_parameter_change_set()
+            overall_change_set.combine(self.controller_change_sets[controller_handler.category])
 
-    def update_config_spec(self, configspec):
+        disk_change_set = self.disk_handler.get_parameter_change_set()
+        overall_change_set.combine(disk_change_set)
+
+        return overall_change_set
+
+    def apply_staged_changes_to_config_spec(self, configspec):
         for controller_handler in self.controller_handlers:
-            controller_handler.update_config_spec_with_params(configspec)
+            controller_handler.populate_config_spec_with_parameters(
+                configspec,
+                change_set=self.controller_change_sets[controller_handler.category]
+            )
 
-        self.disk_handler.update_config_spec_with_params(configspec)
-
-    def params_differ_from_actual_config(self, vm):
-        for controller_handler in self.controller_handlers:
-            controllers_to_add, controllers_to_remove, controllers_to_update, _ = controller_handler.params_differ_from_actual_config(vm)
-            if any([controllers_to_add, controllers_to_remove, controllers_to_update]):
-                return True
-
-        disks_to_add, disks_to_remove, disks_to_update, _ = self.disk_handler.params_differ_from_actual_config(vm)
-        if any([disks_to_add, disks_to_remove, disks_to_update]):
-            return True
-
-        return False
+        self.disk_handler.populate_config_spec_with_parameters(
+            configspec,
+            change_set=self.disk_change_set
+        )
