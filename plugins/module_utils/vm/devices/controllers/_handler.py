@@ -8,6 +8,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.controlle
     NvmeController,
     IdeController
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import track_device_id_from_spec
 
 try:
     from pyVmomi import vim
@@ -22,7 +23,6 @@ class ControllerParameterChangeSet(ParameterChangeSet):
         self.controllers_to_update = []
         self.controllers_to_remove = []
         self.controllers_in_sync = []
-        self._changes_required = False
 
     @property
     def changes_required(self):
@@ -31,10 +31,6 @@ class ControllerParameterChangeSet(ParameterChangeSet):
             self.controllers_to_update,
             self.controllers_to_remove,
         ]) or self._changes_required
-
-    @changes_required.setter
-    def changes_required(self, value):
-        self._changes_required = value
 
 
 class DiskControllerParameterHandlerBase(ParameterHandlerBase):
@@ -53,8 +49,7 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
         self.category = category
 
     def verify_parameter_constraints(self):
-        if len(self.controllers) == 0:
-            self._parse_device_controller_params()
+        self._parse_device_controller_params()
         if len(self.controllers) > self.max_count:
             raise self.module.fail_json(
                 "Only a maximum of %s %s controllers are allowed, but trying to manage %s controllers." %
@@ -76,12 +71,15 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
 
     def populate_config_spec_with_parameters(self, configspec, change_set):
         for controller in change_set.controllers_to_add:
+            track_device_id_from_spec(controller)
             configspec.deviceChange.append(controller.create_controller_spec(edit=False))
 
         for controller in change_set.controllers_to_update:
+            track_device_id_from_spec(controller)
             configspec.deviceChange.append(controller.create_controller_spec(edit=True))
 
         for device in change_set.controllers_to_remove:
+            track_device_id_from_spec(device)
             configspec.deviceChange.append(self._create_controller_removal_spec(device))
 
     def _create_controller_removal_spec(self, device):
@@ -115,11 +113,16 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
             if not isinstance(device, tuple(DeviceController.get_controller_types().values())):
                 continue
 
+            checked = []
             for controller in self.controllers.values():
+                checked.append(controller.bus_number)
                 if isinstance(device, controller.device_class) and device.busNumber == controller.bus_number:
                     controller._device = device
                     break
+
             else:
+                if isinstance(device, vim.vm.device.VirtualIDEController):
+                    raise Exception(f"{self.controllers[0].device_class.__name__}, {checked=}")
                 unlinked_devices.append(device)
 
         return unlinked_devices

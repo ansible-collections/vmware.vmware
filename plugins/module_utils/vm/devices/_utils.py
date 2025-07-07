@@ -1,6 +1,17 @@
 import re
 
 
+DEVICE_ID_TRACKER = list()
+
+
+def track_device_id_from_spec(device):
+    DEVICE_ID_TRACKER.append(device)
+
+
+def translate_device_id_to_device(device_id):
+    return DEVICE_ID_TRACKER[device_id-1]
+
+
 def parse_device_node(device_node):
     """
     Parse a device node and return the controller type, bus number, and unit number.
