@@ -8,6 +8,7 @@ except ImportError:
 
 
 class DeviceController(ABC):
+    _device_type_to_class = {}
     # Controller configurations: (key_range_start, key_range_end)
     NEW_CONTROLLER_KEYS = {
         'scsi': (1000, 9999),
@@ -18,9 +19,12 @@ class DeviceController(ABC):
     }
 
     def __init__(self, device_type, bus_number):
+        if not self._device_type_to_class:
+            raise NotImplementedError("Controller classes must define the _device_type_to_class attribute")
+
         try:
-            self.device_class = DeviceController.get_controller_types()[device_type]
-        except KeyError:
+            self.device_class = self._device_type_to_class[device_type]
+        except (AttributeError, KeyError):
             raise ValueError("Invalid controller device type: %s" % device_type)
 
         self.device_type = device_type
@@ -127,15 +131,15 @@ class DeviceController(ABC):
 
 
 class ScsiController(DeviceController):
+    _device_type_to_class = {
+        'lsilogic': vim.vm.device.VirtualLsiLogicController,
+        'paravirtual': vim.vm.device.ParaVirtualSCSIController,
+        'buslogic': vim.vm.device.VirtualBusLogicController,
+        'lsilogicsas': vim.vm.device.VirtualLsiLogicSASController
+    }
     def __init__(self, bus_number, device_type='paravirtual', bus_sharing='noSharing'):
         super().__init__(device_type, bus_number)
         self.bus_sharing = bus_sharing
-
-        try:
-            # Validate SCSI-specific device type
-            self.device_class = DeviceController.get_scsi_device_types()[device_type]
-        except KeyError:
-            raise ValueError("Invalid SCSI controller device type: %s" % device_type)
 
     def create_controller_spec(self, edit=False):
         def configure_scsi(spec, edit=False):
@@ -147,16 +151,25 @@ class ScsiController(DeviceController):
 
 
 class SataController(DeviceController):
+    _device_type_to_class = {
+        'sata': vim.vm.device.VirtualAHCIController,
+    }
     def __init__(self, bus_number):
         super().__init__("sata", bus_number)
 
 
 class IdeController(DeviceController):
+    _device_type_to_class = {
+        'ide': vim.vm.device.VirtualIDEController
+    }
     def __init__(self, bus_number):
         super().__init__("ide", bus_number)
 
 
 class NvmeController(DeviceController):
+    _device_type_to_class = {
+        'nvme': vim.vm.device.VirtualNVMEController
+    }
     def __init__(self, bus_number, bus_sharing='noSharing'):
         super().__init__("nvme", bus_number)
         self.bus_sharing = bus_sharing

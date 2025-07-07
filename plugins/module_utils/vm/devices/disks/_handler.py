@@ -1,6 +1,6 @@
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase, ParameterChangeSet
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.disks._disk import Disk
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import parse_device_node
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import parse_device_node, track_device_id_from_spec
 
 try:
     from pyVmomi import vim
@@ -68,10 +68,13 @@ class DiskParameterHandler(ParameterHandlerBase):
 
     def populate_config_spec_with_parameters(self, configspec, change_set):
         for disk in change_set.disks_to_add:
+            track_device_id_from_spec(disk)
             configspec.deviceChange.append(disk.create_disk_spec())
         for disk in change_set.disks_to_update:
+            track_device_id_from_spec(disk)
             configspec.deviceChange.append(disk.update_disk_spec())
         for disk in change_set.disks_to_remove:
+            track_device_id_from_spec(disk)
             configspec.deviceChange.append(self._create_disk_removal_spec(disk))
 
     def _create_disk_removal_spec(self, device):
