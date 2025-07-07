@@ -30,6 +30,10 @@ class Disk:
             return self._spec.device.key
         return None
 
+    @property
+    def name_as_str(self):
+        return "Disk - %s Unit %s" % (self.controller.name_as_str, self.unit_number)
+
     def update_disk_spec(self):
         disk_spec = vim.vm.device.VirtualDeviceSpec()
         disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit

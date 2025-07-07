@@ -409,6 +409,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator imp
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.errors import (
     PowerCycleRequiredError
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import (
+    translate_device_id_to_device
+)
 
 
 class VmModule(ModulePyvmomiBase):
@@ -512,11 +515,32 @@ class VmModule(ModulePyvmomiBase):
                 timeout=self.params['timeout']
             )
         except TaskError as e:
-            self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))
+            if str(e).startswith('Invalid configuration for device'):
+                self._handle_device_config_error(e)
+            else:
+                self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:
             self.module.fail_json(msg="%s %s" % (error_prefix, e.msg))
 
         return task_result
+
+    def _handle_device_config_error(self, error):
+        device_id = str(error).split("'")[1]
+        device = translate_device_id_to_device(int(device_id))
+        try:
+            device_name = device.name_as_str
+        except AttributeError:
+            device_name = "%s (bus %s)" % (type(device).__name__, device.busNumber)
+
+        self.module.fail_json(
+            msg=(
+                "Device %s (device %s in the VM spec) has an invalid configuration. Please check the device configuration and try again." %
+                (device_name, device_id)
+            ),
+            device_is_being_added=bool(getattr(device, "_device", False) is None),
+            device_is_being_removed=bool(getattr(device, "_device", False) is False),
+            device_is_in_sync=bool(getattr(device, "_spec", False) is None)
+        )
 
 
 def main():

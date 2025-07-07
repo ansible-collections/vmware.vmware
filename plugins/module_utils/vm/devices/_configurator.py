@@ -41,8 +41,8 @@ class VmDeviceConfigurator(ConfiguratorBase):
             self.controller_change_sets[controller_handler.category] = controller_handler.get_parameter_change_set()
             overall_change_set.combine(self.controller_change_sets[controller_handler.category])
 
-        disk_change_set = self.disk_handler.get_parameter_change_set()
-        overall_change_set.combine(disk_change_set)
+        self.disk_change_set = self.disk_handler.get_parameter_change_set()
+        overall_change_set.combine(self.disk_change_set)
 
         return overall_change_set
 
@@ -57,3 +57,15 @@ class VmDeviceConfigurator(ConfiguratorBase):
             configspec,
             change_set=self.disk_change_set
         )
+
+    def _link_devices_to_parameter_handlers(self):
+        for device in self.vm.config.hardware.device:
+            if isinstance(device, tuple(DeviceController.get_scsi_device_types().values())):
+
+                pass
+
+            elif isinstance(device, tuple(DeviceController.get_controller_types().values())):
+                pass
+
+            elif isinstance(device, vim.vm.device.VirtualDisk):
+                self.disk_handler.link_disk_to_vm_device(device)
