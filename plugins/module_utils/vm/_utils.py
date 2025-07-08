@@ -1,8 +1,22 @@
 import re
+try:
+    from pyVmomi import vim
+except ImportError:
+    pass
 
 
 DEVICE_ID_TRACKER = list()
 
+
+def get_managed_device_classes():
+    return (
+        vim.vm.device.VirtualSCSIController,
+        vim.vm.device.VirtualSATAController,
+        vim.vm.device.VirtualIDEController,
+        vim.vm.device.VirtualNVMEController,
+        vim.vm.device.VirtualUSBController,
+        vim.vm.device.VirtualDisk
+    )
 
 def track_device_id_from_spec(device):
     DEVICE_ID_TRACKER.append(device)

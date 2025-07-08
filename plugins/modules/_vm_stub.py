@@ -403,13 +403,13 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._placement import
     VmPlacement,
     vm_placement_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.configurators._vm import (
     VmConfigurator
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.errors import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._errors import (
     PowerCycleRequiredError
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
     translate_device_id_to_device
 )
 
@@ -427,7 +427,7 @@ class VmModule(ModulePyvmomiBase):
 
     def create_new_vm(self):
         self.placement = VmPlacement(self.module)
-        self.configurator.prepare_paramter_handlers()
+        self.configurator.prepare_parameter_handlers()
         self.configurator.stage_configuration_changes()
 
         create_spec = vim.vm.ConfigSpec()
@@ -436,7 +436,7 @@ class VmModule(ModulePyvmomiBase):
         self.vm = vm
 
     def configure_existing_vm(self):
-        self.configurator.prepare_paramter_handlers()
+        self.configurator.prepare_parameter_handlers()
         try:
             change_set = self.configurator.stage_configuration_changes()
         except PowerCycleRequiredError as e:

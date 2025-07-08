@@ -1,8 +1,8 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     ParameterHandlerBase,
-    ParameterChangeSet
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.errors import PowerCycleRequiredError
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._errors import PowerCycleRequiredError
 
 
 class CpuParameterHandler(ParameterHandlerBase):
@@ -54,7 +54,7 @@ class CpuParameterHandler(ParameterHandlerBase):
         """
         Check if current VM CPU/memory config differs from desired
         """
-        change_set = ParameterChangeSet(self.vm, self.params)
+        change_set = ParameterChangeSet(self.vm, self.cpu_params)
         self._check_cpu_changes_with_hot_add_remove(change_set)
 
         change_set.check_if_change_is_required('cores_per_socket', 'config.numCoresPerSocket', power_sensitive=True)
@@ -66,7 +66,7 @@ class CpuParameterHandler(ParameterHandlerBase):
 
     def _check_cpu_changes_with_hot_add_remove(self, change_set):
         try:
-            change_set.check_if_change_is_required('cores', 'config.hardware.numCPUs', power_sensitive=True)
+            change_set.check_if_change_is_required('cores', 'config.hardware.numCPU', power_sensitive=True)
         except PowerCycleRequiredError:
             cores = self.cpu_params.get('cores')
             current_cores = self.vm.config.hardware.numCPU
@@ -116,7 +116,7 @@ class MemoryParameterHandler(ParameterHandlerBase):
         """
         Check if current VM CPU/memory config differs from desired
         """
-        change_set = ParameterChangeSet(self.vm, self.params)
+        change_set = ParameterChangeSet(self.vm, self.memory_params)
         self._check_memory_changes_with_hot_add(change_set)
         change_set.check_if_change_is_required('enable_hot_add', 'config.memoryHotAddEnabled', power_sensitive=True)
         return change_set
