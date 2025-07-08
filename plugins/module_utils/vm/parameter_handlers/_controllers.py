@@ -1,36 +1,18 @@
 from abc import abstractmethod
-from sys import settrace
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase, ParameterChangeSet
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.controllers._controllers import (
-    DeviceController,
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import ParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ControllerParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers import (
     ScsiController,
     SataController,
     NvmeController,
     IdeController
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import track_device_id_from_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import track_device_id_from_spec
 
 try:
     from pyVmomi import vim
 except ImportError:
     pass
-
-
-class ControllerParameterChangeSet(ParameterChangeSet):
-    def __init__(self, vm, params):
-        super().__init__(vm, params)
-        self.controllers_to_add = []
-        self.controllers_to_update = []
-        self.controllers_to_remove = []
-        self.controllers_in_sync = []
-
-    @property
-    def changes_required(self):
-        return any([
-            self.controllers_to_add,
-            self.controllers_to_update,
-            self.controllers_to_remove,
-        ]) or self._changes_required
 
 
 class DiskControllerParameterHandlerBase(ParameterHandlerBase):
@@ -42,7 +24,11 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
     There is a maximum number of controllers of category X that can be added to a VM. For example,
     you can only have 4 SCSI controllers on a VM.
     """
+    _device_type_to_class = {}
     def __init__(self, vm, module, category, max_count=4):
+        if not self._device_type_to_class:
+            raise NotImplementedError("Controller parameter handlers must define the _device_type_to_class attribute")
+
         super().__init__(vm, module)
         self.controllers = {} # {bus_number: controller}
         self.max_count = max_count
@@ -51,8 +37,8 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
     def verify_parameter_constraints(self):
         self._parse_device_controller_params()
         if len(self.controllers) > self.max_count:
-            raise self.module.fail_json(
-                "Only a maximum of %s %s controllers are allowed, but trying to manage %s controllers." %
+            self.module.fail_json(
+                msg="Only a maximum of %s %s controllers are allowed, but trying to manage %s controllers." %
                 (self.max_count, self.category.upper(), len(self.controllers)))
 
     def params_differ_from_actual_config(self):
@@ -78,20 +64,8 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
             track_device_id_from_spec(controller)
             configspec.deviceChange.append(controller.create_controller_spec(edit=True))
 
-        for device in change_set.controllers_to_remove:
-            track_device_id_from_spec(device)
-            configspec.deviceChange.append(self._create_controller_removal_spec(device))
-
-    def _create_controller_removal_spec(self, device):
-        spec = vim.vm.device.VirtualDeviceSpec()
-        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
-        spec.device = device
-        return spec
-
-    def get_parameter_change_set(self, ):
+    def get_parameter_change_set(self):
         change_set = ControllerParameterChangeSet(self.vm, self.params)
-
-        change_set.controllers_to_remove = self._link_controllers_to_vm_devices()
 
         for controller in self.controllers.values():
             if controller._device is None:
@@ -103,29 +77,13 @@ class DiskControllerParameterHandlerBase(ParameterHandlerBase):
 
         return change_set
 
-    def _link_controllers_to_vm_devices(self):
-        if self.vm is None:
-            return []
-
-        unlinked_devices = []
-        for device in self.vm.config.hardware.device:
-
-            if not isinstance(device, tuple(DeviceController.get_controller_types().values())):
-                continue
-
-            checked = []
-            for controller in self.controllers.values():
-                checked.append(controller.bus_number)
-                if isinstance(device, controller.device_class) and device.busNumber == controller.bus_number:
-                    controller._device = device
-                    break
-
-            else:
-                if isinstance(device, vim.vm.device.VirtualIDEController):
-                    raise Exception(f"{self.controllers[0].device_class.__name__}, {checked=}")
-                unlinked_devices.append(device)
-
-        return unlinked_devices
+    def link_controller_to_vm_device(self, device):
+        for controller in self.controllers.values():
+            if device.busNumber == controller.bus_number:
+                controller._device = device
+                return
+        else:
+            raise Exception(f"Controller {self.controllers[0].device_class.__name__} not found for device {device.busNumber}")
 
 
 class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -139,6 +97,12 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
     - paravirtual: This type is used for VMs that are running on a paravirtualized hypervisor.
     - virtio: This type is used for VMs that are running on a virtio hypervisor.
     """
+    _device_type_to_class = {
+        'lsilogic': vim.vm.device.VirtualLsiLogicController,
+        'paravirtual': vim.vm.device.ParaVirtualSCSIController,
+        'buslogic': vim.vm.device.VirtualBusLogicController,
+        'lsilogicsas': vim.vm.device.VirtualLsiLogicSASController
+    }
     def __init__(self, vm, module):
         super().__init__(vm, module, "scsi")
 
@@ -158,6 +122,9 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
     SATA controllers have no configurable options, so we only need to know
     the total number of controllers to manage.
     """
+    _device_type_to_class = {
+        'sata': vim.vm.device.VirtualAHCIController,
+    }
     def __init__(self, vm, module):
         super().__init__(vm, module, "sata")
 
@@ -171,6 +138,9 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
     Represents the NVME controllers on a VM. NVME controllers can be used to
     attach disks to the VM.
     """
+    _device_type_to_class = {
+        'nvme': vim.vm.device.VirtualNVMEController
+    }
     def __init__(self, vm, module):
         super().__init__(vm, module, "nvme")
 
@@ -188,6 +158,9 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
     but the VM comes with 2 by default. The user can reference those controllers in other
     parameters so we need to create handlers for them.
     """
+    _device_type_to_class = {
+        'ide': vim.vm.device.VirtualIDEController
+    }
     def __init__(self, vm, module):
         super().__init__(vm, module, "ide", max_count=2)
 

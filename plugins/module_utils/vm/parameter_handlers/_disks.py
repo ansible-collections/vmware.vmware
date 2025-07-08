@@ -1,29 +1,12 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase, ParameterChangeSet
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices.disks._disk import Disk
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import parse_device_node, track_device_id_from_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import ParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import DiskParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import parse_device_node, track_device_id_from_spec
 
 try:
     from pyVmomi import vim
 except ImportError:
     pass
-
-
-class DiskParameterChangeSet(ParameterChangeSet):
-    def __init__(self, vm, params):
-        super().__init__(vm, params)
-        self.disks = []
-        self.disks_to_add = []
-        self.disks_to_update = []
-        self.disks_to_remove = []
-        self.disks_in_sync = []
-
-    @property
-    def changes_required(self):
-        return any([
-            self.disks_to_add,
-            self.disks_to_update,
-            self.disks_to_remove,
-        ]) or self._changes_required
 
 
 class DiskParameterHandler(ParameterHandlerBase):
@@ -51,7 +34,7 @@ class DiskParameterHandler(ParameterHandlerBase):
                     break
 
             if controller is None:
-                raise self.module.fail_json(
+                self.module.fail_json(
                     msg="No controller has been configured for device %s." % disk_param['device_node'],
                     device_node=disk_param['device_node'],
                     available_disks=[c.name_as_str for c in controller_handler.disks.values()]
@@ -73,19 +56,9 @@ class DiskParameterHandler(ParameterHandlerBase):
         for disk in change_set.disks_to_update:
             track_device_id_from_spec(disk)
             configspec.deviceChange.append(disk.update_disk_spec())
-        for disk in change_set.disks_to_remove:
-            track_device_id_from_spec(disk)
-            configspec.deviceChange.append(self._create_disk_removal_spec(disk))
-
-    def _create_disk_removal_spec(self, device):
-        spec = vim.vm.device.VirtualDeviceSpec()
-        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
-        spec.device = device
-        return spec
 
     def get_parameter_change_set(self):
         change_set = DiskParameterChangeSet(self.vm, self.params)
-        change_set.disks_to_remove = self._link_disks_to_vm_devices()
         for disk in self.disks:
             if disk._device is None:
                 change_set.disks_to_add.append(disk)
@@ -96,23 +69,11 @@ class DiskParameterHandler(ParameterHandlerBase):
 
         return change_set
 
-    def _link_disks_to_vm_devices(self):
-        if self.vm is None:
-            return []
+    def link_disk_to_vm_device(self, device):
+        for disk in self.disks:
+            if device.unitNumber == disk.unit_number and device.controllerKey == disk.controller.key:
+                disk._device = device
+                return
+        else:
+            raise Exception("Disk not found for device %s on controller %s" % (device.unitNumber, device.controllerKey))
 
-        unlinked_devices = []
-        for device in self.vm.config.hardware.device:
-            if not isinstance(device, vim.vm.device.VirtualDisk):
-                continue
-
-            for disk in self.disks:
-                if (
-                    device.unitNumber == disk.unit_number and
-                    device.controllerKey == disk.controller.key
-                ):
-                    disk._device = device
-                    break
-            else:
-                unlinked_devices.append(device)
-
-        return unlinked_devices

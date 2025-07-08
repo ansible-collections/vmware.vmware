@@ -5,7 +5,7 @@ try:
 except ImportError:
     pass
 
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.devices._utils import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
     format_size_str_as_kb
 )
 

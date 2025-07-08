@@ -1,4 +1,5 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._abstracts import ParameterHandlerBase, ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import ParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ParameterChangeSet
 
 try:
     from pyVmomi import vim
