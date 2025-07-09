@@ -20,12 +20,16 @@ def parse_device_node(device_node):
         controller_category = device_node.split("(")[0].lower()
         _device_numbers = device_node.split("(")[1].strip(")")
         controller_bus_number, controller_unit_number = _device_numbers.split(":")
-        return controller_category, int(controller_bus_number), int(controller_unit_number)
+        return (
+            controller_category,
+            int(controller_bus_number),
+            int(controller_unit_number),
+        )
     except (ValueError, IndexError, AttributeError):
         raise ValueError(
             "Unable to parse device node: %s. "
-            "Expected format is <controller_type>(<bus_number>:<unit_number>)" %
-            device_node
+            "Expected format is <controller_type>(<bus_number>:<unit_number>)"
+            % device_node
         )
 
 
@@ -44,19 +48,24 @@ def format_size_str_as_kb(size_str):
     Raises:
         ValueError: If the size string is empty or invalid.
     """
-    unit_converters = {'tb': 3, 'gb': 2, 'mb': 1, 'kb': 0}
+    unit_converters = {"tb": 3, "gb": 2, "mb": 1, "kb": 0}
     if not size_str:
         raise ValueError("Size string cannot be empty")
 
-    match = re.search(r'^(\d+)([a-zA-Z]+)$', size_str)
+    match = re.search(r"^(\d+)([a-zA-Z]+)$", size_str)
     if not match:
-        raise ValueError("Invalid disk size format: '%s'. Format should be like '100gb'." % size_str)
+        raise ValueError(
+            "Invalid disk size format: '%s'. Format should be like '100gb'." % size_str
+        )
 
     disk_size_str, disk_units = match.groups()
     disk_units = disk_units.lower()
 
     if disk_units not in unit_converters:
-        raise ValueError("Unsupported size unit: '%s'. Supported units: %s" % (disk_units, list(unit_converters.keys())))
+        raise ValueError(
+            "Unsupported size unit: '%s'. Supported units: %s"
+            % (disk_units, list(unit_converters.keys()))
+        )
 
     try:
         disk_size = float(disk_size_str)

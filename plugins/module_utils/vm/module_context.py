@@ -9,24 +9,25 @@ class ModuleContext:
         self.spec_id_to_device.append(device)
 
     def translate_device_id_to_device(self, device_id):
-        return self.spec_id_to_device[device_id-1]
+        return self.spec_id_to_device[device_id - 1]
 
-    def _generic_fail_json(self, parameter_name,message, error_code, details = None):
+    def _generic_fail_json(self, parameter_name, message, error_code, details=None):
         if details is None:
             details = dict()
         details["parameter_name"] = parameter_name
-        self.module.fail_json(
-            msg=message,
-            error_code=error_code,
-            details=details
+        self.module.fail_json(msg=message, error_code=error_code, details=details)
+
+    def fail_with_power_cycle_error(self, parameter_name, message=None, details=None):
+        if message is None:
+            message = (
+                "Configuring %s is not supported while the VM is powered on."
+                % parameter_name
+            )
+        self._generic_fail_json(
+            parameter_name, message, "POWER_CYCLE_REQUIRED", details
         )
 
-    def fail_with_power_cycle_error(self, parameter_name, message = None, details = None):
-        if message is None:
-            message = "Configuring %s is not supported while the VM is powered on." % parameter_name
-        self._generic_fail_json(parameter_name, message, "POWER_CYCLE_REQUIRED", details)
-
-    def fail_with_parameter_error(self, parameter_name, message, details = None):
+    def fail_with_parameter_error(self, parameter_name, message, details=None):
         self._generic_fail_json(parameter_name, message, "PARAMETER_ERROR", details)
 
     def fail_with_device_configuration_error(self, error):
@@ -39,10 +40,10 @@ class ModuleContext:
 
         self.module.fail_json(
             msg=(
-                "Device %s (device %s in the VM spec) has an invalid configuration. Please check the device configuration and try again." %
-                (device_name, device_id)
+                "Device %s (device %s in the VM spec) has an invalid configuration. Please check the device configuration and try again."
+                % (device_name, device_id)
             ),
             device_is_being_added=bool(getattr(device, "_device", False) is None),
             device_is_being_removed=bool(getattr(device, "_device", False) is False),
-            device_is_in_sync=bool(getattr(device, "_spec", False) is None)
+            device_is_in_sync=bool(getattr(device, "_spec", False) is None),
         )
