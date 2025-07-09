@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
 
 
 class ParameterHandlerBase(ABC):
@@ -9,10 +10,9 @@ class ParameterHandlerBase(ABC):
     config specs.
     """
 
-    def __init__(self, vm, module):
-        self.module = module
-        self.params = module.params
-        self.vm = vm
+    def __init__(self, module_context, change_set_class = ParameterChangeSet):
+        self.module_context = module_context
+        self.change_set = change_set_class(module_context)
 
     @abstractmethod
     def verify_parameter_constraints(self):
@@ -37,7 +37,7 @@ class ParameterHandlerBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_parameter_change_set(self):
+    def compare_live_config_with_desired_config(self):
         """
         Check if current VM config differs from desired config. This should not validate params
         or communicate what values are different. It should only check if there are any differences; it
@@ -49,3 +49,19 @@ class ParameterHandlerBase(ABC):
             bool: True if the configspec needs to be updated, False otherwise.
         """
         raise NotImplementedError
+
+
+class DeviceLinkedParameterHandlerBase(ParameterHandlerBase):
+    @abstractmethod
+    def link_vm_device(self, device):
+        """
+        Link a vSphere device to the handler. If a device already exists on the VM, this method should validate
+        that it matches an object managed by the handler and attach it as an attribute. If the device does not
+        match any objects, it should raise an error.
+        Parameters:
+            device: The vSphere device to link to the handler.
+        Returns:
+            None, the device is linked to the handler.
+        """
+        raise NotImplementedError
+
