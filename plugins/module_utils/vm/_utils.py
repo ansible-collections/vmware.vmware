@@ -1,20 +1,39 @@
+"""
+Utility functions for VM configuration management.
+
+This module provides common utility functions used across the VM configuration
+system, including device node parsing and disk size conversions.
+"""
+
 import re
 
 
 def parse_device_node(device_node):
     """
-    Parse a device node and return the controller type, bus number, and unit number.
-    Example:
+    Parse a device node string and return controller information.
+
+    Device nodes specify the controller type, bus number, and unit number
+    for VM devices in a standardized format. This function extracts these
+    components for use in device configuration.
+
+    Args:
+        device_node (str): Device node in format "TYPE(bus:unit)"
+                          Examples: "SCSI(0:0)", "SATA(1:2)", "IDE(0:1)", "NVME(0:0)"
+
+    Returns:
+        tuple: A tuple containing (controller_category, bus_number, unit_number)
+               - controller_category (str): Lowercase controller category (e.g., 'scsi', 'sata')
+               - bus_number (int): Controller bus number
+               - unit_number (int): Device unit number on the controller
+
+    Raises:
+        ValueError: If the device node is not in the expected format
+
+    Examples:
         SCSI(0:0) -> ('scsi', 0, 0)
         SATA(0:0) -> ('sata', 0, 0)
         IDE(0:0) -> ('ide', 0, 0)
         NVME(0:0) -> ('nvme', 0, 0)
-    Parameters:
-        device_node (str): The device node to parse.
-    Returns:
-        tuple: A tuple containing the controller type, bus number, and unit number.
-    Raises:
-        ValueError: If the device node is not in the expected format.
     """
     try:
         controller_category = device_node.split("(")[0].lower()
@@ -35,18 +54,27 @@ def parse_device_node(device_node):
 
 def format_size_str_as_kb(size_str):
     """
-    Convert size string like '100gb' to kilobytes
-    Example:
+    Convert a human-readable size string to kilobytes.
+
+    This function parses size strings with units (kb, mb, gb, tb) and
+    converts them to kilobytes for use in VMware API calls. The conversion
+    uses binary units (1024-based) rather than decimal units.
+
+    Args:
+        size_str (str): Size string with unit suffix
+                       Examples: "100gb", "1tb", "512mb", "1024kb"
+
+    Returns:
+        int: Size in kilobytes using binary conversion (1024-based)
+
+    Raises:
+        ValueError: If size_str is empty, has invalid format, or unsupported unit
+
+    Examples:
         '100gb' -> 104857600
         '1tb' -> 1073741824
         '1mb' -> 1024
         '1kb' -> 1
-    Parameters:
-        size_str (str): The size string to convert.
-    Returns:
-        int: The size in kilobytes.
-    Raises:
-        ValueError: If the size string is empty or invalid.
     """
     unit_converters = {"tb": 3, "gb": 2, "mb": 1, "kb": 0}
     if not size_str:

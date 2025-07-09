@@ -1,68 +1,216 @@
+"""
+Abstract base classes for VM parameter handlers.
+
+This module defines the base classes that establish the parameter handler
+architecture. All parameter handlers follow a consistent three-phase pattern
+for processing VM configuration parameters: validation, change detection,
+and configuration specification population.
+
+The architecture supports two main handler types:
+- VM-aware handlers: Process VM-level settings (CPU, memory, metadata)
+- Device-linked handlers: Manage parameters tied to specific devices (controllers, disks)
+"""
+
 from abc import ABC, abstractmethod
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
-    ParameterChangeSet,
-)
 
 
-class ParameterHandlerBase(ABC):
+class AbstractParameterHandler(ABC):
     """
-    Base class for handling parameter categories. The implementation of this class may look different depending
-    on the parameter category and how vSphere handles the matching configuration. However, the class should
-    provide a consistent interface for validating parameters, comparing parameters to live config, and updating
-    config specs.
+    Base class for all VM parameter handlers.
+
+    This abstract class establishes the fundamental interface that all
+    parameter handlers must implement. It defines the three-phase pattern
+    for parameter processing and provides common initialization for error
+    handling, parameter access, and change tracking.
+
+    The three phases are:
+    1. Parameter validation (verify_parameter_constraints)
+    2. Change detection (compare_live_config_with_desired_config)
+    3. Specification population (populate_config_spec_with_parameters)
+
+    This pattern ensures consistent behavior across all parameter types
+    while allowing specialized implementations for different VM components.
+
+    Attributes:
+        error_handler: Service for handling parameter validation errors
+        params (dict): Module parameters containing desired configuration
+        change_set: Service for tracking configuration changes
     """
 
-    def __init__(self, module_context, change_set_class=ParameterChangeSet):
-        self.module_context = module_context
-        self.change_set = change_set_class(module_context)
+    def __init__(self, error_handler, params, change_set):
+        """
+        Initialize the parameter handler with common dependencies.
+
+        Args:
+            error_handler: Service for parameter validation error handling
+            params (dict): Module parameters containing desired VM configuration
+            change_set: Service for tracking configuration changes and requirements
+        """
+        self.error_handler = error_handler
+        self.params = params
+        self.change_set = change_set
 
     @abstractmethod
     def verify_parameter_constraints(self):
         """
-        Validate parameters for creation.
-        Returns:
-            None, the module will fail with an error if the parameters are invalid.
+        Validate parameters for creation and modification operations.
+
+        This method should check parameter values, combinations, and constraints
+        specific to the handler's domain. It should validate both individual
+        parameter values and cross-parameter relationships.
+
+        Raises:
+            Should call error_handler methods to report validation failures.
+            The module will terminate if parameters are invalid.
+
+        Note:
+            This method should try to not perform vSphere API calls or access live VM state.
+            It should only validate the input parameters themselves.
+            This will allow the user to be alerted to invalid parameters more quickly, since
+            configuration can take a non-trivial amount of time.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def populate_config_spec_with_parameters(self, configspec):
         """
-        Update a config spec with parameters for this handler. This should map module params to
-        configspec only if they are specified by the user. For example, if the user does not specify
-        the VM name, the configspec should omit that parameter or use the existing name.
-        Parameters:
-            configspec: The vSphere object configspec to update.
-        Returns:
-            None, the configspec is updated in place.
+        Update a configuration specification with parameters for this handler.
+
+        This method should map module parameters to the appropriate VMware
+        configuration specification fields. It should only set parameters
+        that are explicitly provided by the user, allowing other handlers
+        to manage their own configuration domains.
+
+        Args:
+            configspec: VMware configuration specification object to update
+
+        Side Effects:
+            Modifies the configspec object with parameter values.
+            Should not modify parameters managed by other handlers.
+
+        Note:
+            For parameters not specified by the user, the handler should either
+            omit them (preserving existing values) or use appropriate defaults.
         """
         raise NotImplementedError
 
     @abstractmethod
     def compare_live_config_with_desired_config(self):
         """
-        Check if current VM config differs from desired config. This should not validate params
-        or communicate what values are different. It should only check if there are any differences; it
-        does not need to return what parameters are different.
-        Parameters:
-            vsphere_obj: The vsphere object to compare the config to. This could be the VM, or a device on the VM for example.
-                         It is up to the subclass to enforce the type of the object.
-        Returns:
-            bool: True if the configspec needs to be updated, False otherwise.
+        Check if current VM configuration differs from desired configuration.
+
+        This method should compare the current VM state with the desired
+        state specified in the module parameters. It should identify what
+        changes are needed without performing the actual changes.
+
+        The method should use the change_set service to record detected
+        differences. It should not validate parameters (that's done separately)
+        or return information about what specific values differ.
+
+        Side Effects:
+            Updates change_set with detected configuration differences.
+            May set flags for operations requiring VM power cycles.
+
+        Note:
+            This method should focus on detection, not validation or modification.
+            It should work with live VM objects and vSphere API data.
         """
         raise NotImplementedError
 
 
-class DeviceLinkedParameterHandlerBase(ParameterHandlerBase):
+class AbstractVmAwareParameterHandler(AbstractParameterHandler):
+    """
+    Base class for parameter handlers that work with VM-level configuration.
+
+    This class extends AbstractParameterHandler for handlers that need access
+    to the VM object itself, such as CPU, memory, and metadata handlers.
+    These handlers typically work with VM-wide settings rather than individual
+    devices.
+
+    Attributes:
+        vm: The VM object being configured (None for new VM creation)
+    """
+
+    def __init__(self, error_handler, params, change_set, vm):
+        """
+        Initialize a VM-aware parameter handler.
+
+        Args:
+            error_handler: Service for parameter validation error handling
+            params (dict): Module parameters containing desired VM configuration
+            change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
+        """
+        super().__init__(error_handler, params, change_set)
+        self.vm = vm
+
+
+class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
+    """
+    Base class for parameter handlers that manage VM hardware devices.
+
+    This class extends AbstractParameterHandler for handlers that work with
+    specific hardware devices like controllers and disks. It provides device
+    linking capabilities and enforces that subclasses specify their VMware
+    device class.
+
+    Device-linked handlers must:
+    1. Define VIM_DEVICE_CLASS to specify the VMware device type
+    2. Implement link_vm_device() to associate existing devices with handler objects
+    3. Use device_tracker for device identification and error reporting
+
+    Attributes:
+        VIM_DEVICE_CLASS: VMware device class this handler manages (must be overridden)
+        DEVICE_TYPES_TO_SUB_CLASSES (dict): Registry of device types to handler classes
+        device_tracker: Service for device identification and error reporting
+    """
+
+    VIM_DEVICE_CLASS = None
+    DEVICE_TYPES_TO_SUB_CLASSES = dict()
+
+    def __init__(self, error_handler, params, change_set, device_tracker):
+        """
+        Initialize a device-linked parameter handler.
+
+        Args:
+            error_handler: Service for parameter validation error handling
+            params (dict): Module parameters containing desired device configuration
+            change_set: Service for tracking configuration changes and requirements
+            device_tracker: Service for device identification and error reporting
+
+        Raises:
+            NotImplementedError: If VIM_DEVICE_CLASS is not defined by subclass
+        """
+        super().__init__(error_handler, params, change_set)
+        self.device_tracker = device_tracker
+
+        if self.VIM_DEVICE_CLASS is None:
+            raise NotImplementedError(
+                "DeviceLinkedParameterHandler subclasses must define the VIM_DEVICE_CLASS attribute"
+            )
+
     @abstractmethod
     def link_vm_device(self, device):
         """
-        Link a vSphere device to the handler. If a device already exists on the VM, this method should validate
-        that it matches an object managed by the handler and attach it as an attribute. If the device does not
-        match any objects, it should raise an error.
-        Parameters:
-            device: The vSphere device to link to the handler.
-        Returns:
-            None, the device is linked to the handler.
+        Link a vSphere device to the handler's managed objects.
+
+        This method should validate that the provided device matches an object
+        managed by this handler and establish the connection between the VMware
+        device and the handler's internal representation.
+
+        For example, a disk handler should verify that the device is a disk
+        it recognizes and link it to the appropriate disk object for change
+        detection and configuration management.
+
+        Args:
+            device: VMware device object to link to the handler
+
+        Raises:
+            Should raise appropriate errors if the device doesn't match any
+            managed objects or if linking fails for other reasons.
+
+        Side Effects:
+            Establishes connection between VMware device and handler objects.
+            May update internal state to track device relationships.
         """
         raise NotImplementedError
