@@ -1,5 +1,9 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import DeviceLinkedParameterHandlerBase
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
+    DeviceLinkedParameterHandlerBase,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import (
+    ParameterChangeSet,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
 
 
@@ -26,28 +30,35 @@ class DiskParameterHandler(DeviceLinkedParameterHandlerBase):
                 self.module_context.fail_with_parameter_error(
                     parameter_name="disks",
                     message="Error parsing disk parameters: %s" % str(e),
-                    details={"error": str(e)}
+                    details={"error": str(e)},
                 )
 
         if len(self.disks) == 0:
             self.module_context.fail_with_parameter_error(
                 parameter_name="disks",
-                message="At least one disk must be defined when creating or updating a VM."
+                message="At least one disk must be defined when creating or updating a VM.",
             )
 
     def _parse_disk_params(self):
         for disk_param in self.module_context.params.get("disks", []):
-            controller_type, controller_bus_number, unit_number = parse_device_node(disk_param['device_node'])
+            controller_type, controller_bus_number, unit_number = parse_device_node(
+                disk_param["device_node"]
+            )
             for controller_handler in self.controller_handlers:
                 if controller_type == controller_handler.category:
-                    controller = controller_handler.controllers.get(controller_bus_number)
+                    controller = controller_handler.controllers.get(
+                        controller_bus_number
+                    )
                     break
 
             if controller is None:
                 self.module.fail_json(
-                    msg="No controller has been configured for device %s." % disk_param['device_node'],
-                    device_node=disk_param['device_node'],
-                    available_disks=[c.name_as_str for c in controller_handler.disks.values()]
+                    msg="No controller has been configured for device %s."
+                    % disk_param["device_node"],
+                    device_node=disk_param["device_node"],
+                    available_disks=[
+                        c.name_as_str for c in controller_handler.disks.values()
+                    ],
                 )
 
             disk = Disk(
@@ -55,7 +66,7 @@ class DiskParameterHandler(DeviceLinkedParameterHandlerBase):
                 backing=disk_param.get("backing"),
                 mode=disk_param.get("mode"),
                 controller=controller,
-                unit_number=unit_number
+                unit_number=unit_number,
             )
             self.disks.append(disk)
 
@@ -76,20 +87,27 @@ class DiskParameterHandler(DeviceLinkedParameterHandlerBase):
             else:
                 self.change_set.disks_in_sync.append(disk)
 
-        if any([
-            self.change_set.disks_to_add,
-            self.change_set.disks_to_update,
-            self.change_set.disks_in_sync
-        ]):
+        if any(
+            [
+                self.change_set.disks_to_add,
+                self.change_set.disks_to_update,
+                self.change_set.disks_in_sync,
+            ]
+        ):
             self.change_set.changes_required = True
 
         return self.change_set
 
     def link_vm_device(self, device):
         for disk in self.disks:
-            if device.unitNumber == disk.unit_number and device.controllerKey == disk.controller.key:
+            if (
+                device.unitNumber == disk.unit_number
+                and device.controllerKey == disk.controller.key
+            ):
                 disk._device = device
                 return
         else:
-            raise Exception("Disk not found for device %s on controller %s" % (device.unitNumber, device.controllerKey))
-
+            raise Exception(
+                "Disk not found for device %s on controller %s"
+                % (device.unitNumber, device.controllerKey)
+            )

@@ -6,7 +6,7 @@ except ImportError:
     pass
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
-    format_size_str_as_kb
+    format_size_str_as_kb,
 )
 
 
@@ -59,9 +59,9 @@ class Disk:
         if self.mode:
             disk_spec.device.backing.diskMode = self.mode
 
-        if self.backing == 'thin':
+        if self.backing == "thin":
             disk_spec.device.backing.thinProvisioned = True
-        elif self.backing == 'eagerzeroedthick':
+        elif self.backing == "eagerzeroedthick":
             disk_spec.device.backing.eagerlyScrub = True
 
         disk_spec.device.controllerKey = self.controller.key
@@ -73,8 +73,8 @@ class Disk:
             return True
 
         return (
-            self._device.capacityInKB != self.size or
-            self._device.backing.diskMode != self.mode or
-            self._device.backing.thinProvisioned != (self.backing == 'thin') or
-            self._device.backing.eagerlyScrub != (self.backing == 'eagerzeroedthick')
+            self._device.capacityInKB != self.size
+            or self._device.backing.diskMode != self.mode
+            or self._device.backing.thinProvisioned != (self.backing == "thin")
+            or self._device.backing.eagerlyScrub != (self.backing == "eagerzeroedthick")
         )

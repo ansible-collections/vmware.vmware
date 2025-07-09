@@ -13,7 +13,9 @@ class DeviceController(ABC):
 
     def __init__(self, device_type, device_class, bus_number):
         if not self.NEW_CONTROLLER_KEYS:
-            raise NotImplementedError("Controller classes must define the NEW_CONTROLLER_KEYS attribute")
+            raise NotImplementedError(
+                "Controller classes must define the NEW_CONTROLLER_KEYS attribute"
+            )
 
         self.device_class = device_class
         self.device_type = device_type
@@ -36,7 +38,10 @@ class DeviceController(ABC):
 
     def add_device(self, device):
         if device.unit_number in self.controlled_devices:
-            raise ValueError("Cannot add multiple devices with unit number %s on controller %s" % (device.unit_number, self.name_as_str))
+            raise ValueError(
+                "Cannot add multiple devices with unit number %s on controller %s"
+                % (device.unit_number, self.name_as_str)
+            )
 
         self.controlled_devices[device.unit_number] = device
 
@@ -81,7 +86,13 @@ class DeviceController(ABC):
 class ScsiController(DeviceController):
     NEW_CONTROLLER_KEYS = (1000, 9999)
 
-    def __init__(self, bus_number, device_type='paravirtual', device_class=vim.vm.device.ParaVirtualSCSIController, bus_sharing='noSharing'):
+    def __init__(
+        self,
+        bus_number,
+        device_type="paravirtual",
+        device_class=vim.vm.device.ParaVirtualSCSIController,
+        bus_sharing="noSharing",
+    ):
         super().__init__(device_type, device_class, bus_number)
         self.bus_sharing = bus_sharing
 
@@ -91,7 +102,9 @@ class ScsiController(DeviceController):
             spec.device.sharedBus = self.bus_sharing
             spec.device.scsiCtlrUnitNumber = 7
 
-        return super().create_controller_spec(edit=edit, additional_config=configure_scsi)
+        return super().create_controller_spec(
+            edit=edit, additional_config=configure_scsi
+        )
 
 
 class SataController(DeviceController):
@@ -111,6 +124,11 @@ class IdeController(DeviceController):
 class NvmeController(DeviceController):
     NEW_CONTROLLER_KEYS = (31000, 39999)
 
-    def __init__(self, bus_number, device_class=vim.vm.device.VirtualNVMEController, bus_sharing='noSharing'):
+    def __init__(
+        self,
+        bus_number,
+        device_class=vim.vm.device.VirtualNVMEController,
+        bus_sharing="noSharing",
+    ):
         super().__init__("nvme", device_class, bus_number)
         self.bus_sharing = bus_sharing

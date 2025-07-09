@@ -1,6 +1,12 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.configurators._abstract import ConfiguratorBase
-from ansible_collections.vmware.vmware.plugins.module_utils.vm import parameter_handlers as handlers
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.configurators._abstract import (
+    ConfiguratorBase,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm import (
+    parameter_handlers as handlers,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import (
+    ParameterChangeSet,
+)
 
 try:
     from pyVmomi import vim
@@ -19,7 +25,7 @@ class Configurator(ConfiguratorBase):
             vim.vm.device.VirtualSCSIController: handlers._controllers.ScsiControllerParameterHandler,
             vim.vm.device.VirtualSATAController: handlers._controllers.SataControllerParameterHandler,
             vim.vm.device.VirtualNVMEController: handlers._controllers.NvmeControllerParameterHandler,
-            vim.vm.device.VirtualIDEController: handlers._controllers.IdeControllerParameterHandler
+            vim.vm.device.VirtualIDEController: handlers._controllers.IdeControllerParameterHandler,
         }
         # controller handlers are separate from the other handlers because they need to
         # processed and initiated before the disk params are parsed.
@@ -27,14 +33,16 @@ class Configurator(ConfiguratorBase):
             handlers._controllers.ScsiControllerParameterHandler(self.module_context),
             handlers._controllers.SataControllerParameterHandler(self.module_context),
             handlers._controllers.NvmeControllerParameterHandler(self.module_context),
-            handlers._controllers.IdeControllerParameterHandler(self.module_context)
+            handlers._controllers.IdeControllerParameterHandler(self.module_context),
         ]
 
         self.handlers = [
             handlers._vm.VmParameterHandler(self.module_context),
             handlers._cpu_memory.CpuParameterHandler(self.module_context),
             handlers._cpu_memory.MemoryParameterHandler(self.module_context),
-            handlers._disks.DiskParameterHandler(self.module_context, self.controller_handlers)
+            handlers._disks.DiskParameterHandler(
+                self.module_context, self.controller_handlers
+            ),
         ]
 
         self.change_set = ParameterChangeSet(self.module_context)

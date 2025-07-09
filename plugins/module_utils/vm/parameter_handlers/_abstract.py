@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
+    ParameterChangeSet,
+)
 
 
 class ParameterHandlerBase(ABC):
@@ -10,7 +12,7 @@ class ParameterHandlerBase(ABC):
     config specs.
     """
 
-    def __init__(self, module_context, change_set_class = ParameterChangeSet):
+    def __init__(self, module_context, change_set_class=ParameterChangeSet):
         self.module_context = module_context
         self.change_set = change_set_class(module_context)
 
@@ -64,4 +66,3 @@ class DeviceLinkedParameterHandlerBase(ParameterHandlerBase):
             None, the device is linked to the handler.
         """
         raise NotImplementedError
-
