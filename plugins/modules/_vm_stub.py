@@ -399,17 +399,12 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError, RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._placement import (
-    VmPlacement,
-    vm_placement_argument_spec
+import ansible_collections.vmware.vmware.plugins.module_utils.vm.services as services
+import ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers as parameter_handlers
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
+    ConfigurationRegistry,
+    ConfigurationBuilder
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.configurator import (
-    Configurator
-)
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.module_context import (
-    ModuleContext
-)
-
 
 class VmModule(ModulePyvmomiBase):
     def __init__(self, module):
@@ -420,16 +415,32 @@ class VmModule(ModulePyvmomiBase):
             self.vm = None
 
         if self.params['state'] == 'present':
-            self.module_context = ModuleContext(self.vm, self.module)
-            self.configurator = Configurator(self.module_context)
+            self._init_configuration_registry()
+            self._init_configuration_builder()
+
+    def _init_configuration_registry(self):
+        self.configuration_registry = ConfigurationRegistry()
+        self.configuration_registry.register_handler("cpu_memory", parameter_handlers.CpuParameterHandler)
+        self.configuration_registry.register_handler("metadata", parameter_handlers.MetadataParameterHandler)
+        self.configuration_registry.register_handler("disks", parameter_handlers.DiskParameterHandler)
+
+        self.configuration_registry.register_controller_handler("scsi_controllers", parameter_handlers.ScsiControllerParameterHandler)
+        self.configuration_registry.register_controller_handler("nvme_controllers", parameter_handlers.NvmeControllerParameterHandler)
+        self.configuration_registry.register_controller_handler("sata_controllers", parameter_handlers.SataControllerParameterHandler)
+        self.configuration_registry.register_controller_handler("ide_controllers", parameter_handlers.IdeControllerParameterHandler)
+
+    def _init_configuration_builder(self):
+        self.configuration_builder = ConfigurationBuilder(self.vm, self.module, self.configuration_registry)
+        self.configurator = self.configuration_builder.create_configurator()
+        self.placement = self.configuration_builder.placement
+        self.error_handler = self.configuration_builder.error_handler
 
     def create_new_vm(self):
-        self.placement = VmPlacement(self.module)
         self.configurator.prepare_parameter_handlers()
         self.configurator.stage_configuration_changes()
 
         create_spec = vim.vm.ConfigSpec()
-        self.configurator.apply_staged_changes_to_config_spec(create_spec, self.placement.get_datastore())
+        self.configurator.apply_staged_changes_to_config_spec(create_spec)
         vm = self._deploy_vm(create_spec)
         self.vm = vm
 
@@ -439,7 +450,7 @@ class VmModule(ModulePyvmomiBase):
 
         if change_set.changes_required:
             update_spec = vim.vm.ConfigSpec()
-            self.configurator.apply_staged_changes_to_config_spec(update_spec, None)
+            self.configurator.apply_staged_changes_to_config_spec(update_spec)
             self._apply_update_spec(update_spec, change_set.power_cycle_required)
 
         return change_set.changes_required
@@ -481,7 +492,7 @@ class VmModule(ModulePyvmomiBase):
             return
 
         if not self.params['allow_power_cycling']:
-            self.module_context.fail_with_power_cycle_error(
+            self.error_handler.fail_with_power_cycle_error(
                 parameter_name="allow_power_cycling",
                 message="VM needs to be powered off to make changes. You can allow this module to "
                 "automatically power cycle the VM with the allow_power_cycling parameter."
@@ -494,7 +505,7 @@ class VmModule(ModulePyvmomiBase):
             return
 
         if not self.params['allow_power_cycling']:
-            self.module_context.fail_with_power_cycle_error(
+            self.error_handler.fail_with_power_cycle_error(
                 parameter_name="allow_power_cycling",
                 message="VM needs to be powered on to make changes. You can allow this module to "
                 "automatically power cycle the VM with the allow_power_cycling parameter."
@@ -513,7 +524,7 @@ class VmModule(ModulePyvmomiBase):
             )
         except TaskError as e:
             if str(e).startswith('Invalid configuration for device'):
-                self.module_context.fail_with_device_configuration_error(error=e)
+                self.error_handler.fail_with_device_configuration_error(error=e)
             else:
                 self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:
@@ -526,7 +537,7 @@ def main():
     module = AnsibleModule(
         argument_spec={
             **base_argument_spec(),
-            **vm_placement_argument_spec(omit_params=[]),
+            **services.vm_placement_argument_spec(omit_params=[]),
             **dict(
                 state=dict(type='str', default='present', choices=['present', 'absent']),
                 name=dict(type='str', required=True),
