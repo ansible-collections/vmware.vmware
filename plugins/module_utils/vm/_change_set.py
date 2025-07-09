@@ -2,13 +2,15 @@ import functools
 import operator
 
 
-class ParameterChangeSet():
+class ParameterChangeSet:
     def __init__(self, module_context):
         self.module_context = module_context
         self.changes_required = True if module_context.vm is None else False
         self.power_cycle_required = False
 
-    def check_if_change_is_required(self, parameter_name, vm_attribute, power_sensitive=False):
+    def check_if_change_is_required(
+        self, parameter_name, vm_attribute, power_sensitive=False
+    ):
         if self.module_context.vm is None:
             return
 
@@ -21,21 +23,25 @@ class ParameterChangeSet():
             return
 
         try:
-            param_value = functools.reduce(operator.getitem, parameter_name.split('.'), self.module_context.params)
+            param_value = functools.reduce(
+                operator.getitem, parameter_name.split("."), self.module_context.params
+            )
         except KeyError:
             return
 
-        if param_value == functools.reduce(getattr, vm_attribute.split('.'), self.module_context.vm):
+        if param_value == functools.reduce(
+            getattr, vm_attribute.split("."), self.module_context.vm
+        ):
             return
 
         self.changes_required = True
 
     def _check_if_change_violates_power_state(self, parameter_name):
         power_state = self.module_context.vm.runtime.powerState
-        if power_state != 'poweredOn' or not self.changes_required:
+        if power_state != "poweredOn" or not self.changes_required:
             return
 
-        if self.module_context.params.get('power_cycle_allowed'):
+        if self.module_context.params.get("power_cycle_allowed"):
             self.power_cycle_required = True
         else:
             self.module_context.fail_with_power_cycle_error(parameter_name)
@@ -45,4 +51,6 @@ class ParameterChangeSet():
             raise ValueError("change_set must be an instance of ParameterChangeSet")
 
         self.changes_required = self.changes_required or other.changes_required
-        self.power_cycle_required = self.power_cycle_required or other.power_cycle_required
+        self.power_cycle_required = (
+            self.power_cycle_required or other.power_cycle_required
+        )
