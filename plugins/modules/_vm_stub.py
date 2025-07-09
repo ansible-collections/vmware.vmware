@@ -403,14 +403,11 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._placement import
     VmPlacement,
     vm_placement_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.configurators._vm import (
-    VmConfigurator
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.configurator import (
+    Configurator
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._errors import (
-    PowerCycleRequiredError
-)
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
-    translate_device_id_to_device
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.module_context import (
+    ModuleContext
 )
 
 
@@ -423,7 +420,8 @@ class VmModule(ModulePyvmomiBase):
             self.vm = None
 
         if self.params['state'] == 'present':
-            self.configurator = VmConfigurator(self.vm, self.module)
+            self.module_context = ModuleContext(self.vm, self.module)
+            self.configurator = Configurator(self.module_context)
 
     def create_new_vm(self):
         self.placement = VmPlacement(self.module)
@@ -437,10 +435,7 @@ class VmModule(ModulePyvmomiBase):
 
     def configure_existing_vm(self):
         self.configurator.prepare_parameter_handlers()
-        try:
-            change_set = self.configurator.stage_configuration_changes()
-        except PowerCycleRequiredError as e:
-            self.module.fail_json(msg=str(e))
+        change_set = self.configurator.stage_configuration_changes()
 
         if change_set.changes_required:
             update_spec = vim.vm.ConfigSpec()
@@ -486,10 +481,11 @@ class VmModule(ModulePyvmomiBase):
             return
 
         if not self.params['allow_power_cycling']:
-            self.module.fail_json(msg=(
-                "VM needs to be powered off to make changes. You can allow this module to "
+            self.module_context.fail_with_power_cycle_error(
+                parameter_name="allow_power_cycling",
+                message="VM needs to be powered off to make changes. You can allow this module to "
                 "automatically power cycle the VM with the allow_power_cycling parameter."
-            ))
+            )
 
         self._try_to_run_task(task_func=self.vm.PowerOffVM_Task, error_prefix="Unable to power off VM.")
 
@@ -498,10 +494,11 @@ class VmModule(ModulePyvmomiBase):
             return
 
         if not self.params['allow_power_cycling']:
-            self.module.fail_json(msg=(
-                "VM needs to be powered on to make changes. You can allow this module to "
+            self.module_context.fail_with_power_cycle_error(
+                parameter_name="allow_power_cycling",
+                message="VM needs to be powered on to make changes. You can allow this module to "
                 "automatically power cycle the VM with the allow_power_cycling parameter."
-            ))
+            )
 
         self._try_to_run_task(task_func=self.vm.PowerOnVM_Task, error_prefix="Unable to power on VM.")
 
@@ -516,31 +513,13 @@ class VmModule(ModulePyvmomiBase):
             )
         except TaskError as e:
             if str(e).startswith('Invalid configuration for device'):
-                self._handle_device_config_error(e)
+                self.module_context.fail_with_device_configuration_error(error=e)
             else:
                 self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:
             self.module.fail_json(msg="%s %s" % (error_prefix, e.msg))
 
         return task_result
-
-    def _handle_device_config_error(self, error):
-        device_id = str(error).split("'")[1]
-        device = translate_device_id_to_device(int(device_id))
-        try:
-            device_name = device.name_as_str
-        except AttributeError:
-            device_name = "%s (bus %s)" % (type(device).__name__, device.busNumber)
-
-        self.module.fail_json(
-            msg=(
-                "Device %s (device %s in the VM spec) has an invalid configuration. Please check the device configuration and try again." %
-                (device_name, device_id)
-            ),
-            device_is_being_added=bool(getattr(device, "_device", False) is None),
-            device_is_being_removed=bool(getattr(device, "_device", False) is False),
-            device_is_in_sync=bool(getattr(device, "_spec", False) is None)
-        )
 
 
 def main():

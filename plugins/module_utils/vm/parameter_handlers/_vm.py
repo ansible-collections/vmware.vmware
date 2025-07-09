@@ -1,5 +1,4 @@
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import ParameterHandlerBase
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ParameterChangeSet
 
 try:
     from pyVmomi import vim
@@ -12,27 +11,25 @@ class VmParameterHandler(ParameterHandlerBase):
     Basic parameter handler for the VM. This class handles high level parameters for the VM, such as the name,
     guest ID, and basic file store structure.
     """
-    def __init__(self, vm, module):
-        self.vm = vm
-        self.module = module
-        self.params = module.params
+    def __init__(self, module_context):
+        super().__init__(module_context)
 
     def verify_parameter_constraints(self):
         if not self.vm:
             for param in ['name', 'guest_id', 'datastore']:
-                if not self.params.get(param):
-                    self.module.fail_json(msg="%s is a required parameter for VM creation." % param)
+                if not self.module_context.params.get(param):
+                    self.module_context.fail_with_parameter_error(
+                        parameter_name=param,
+                        message="%s is a required parameter for VM creation." % param
+                    )
 
-    def get_parameter_change_set(self):
-        change_set = ParameterChangeSet(self.vm, self.params)
-        change_set.check_if_change_is_required('name', 'name')
-        change_set.check_if_change_is_required('guest_id', 'config.guestId')
-
-        return change_set
+    def compare_live_config_with_desired_config(self):
+        self.change_set.check_if_change_is_required('name', 'name')
+        self.change_set.check_if_change_is_required('guest_id', 'config.guestId')
 
     def populate_config_spec_with_parameters(self, configspec, datastore):
-        if self.module.params.get('name'):
-            configspec.name = self.module.params['name']
+        if self.module_context.params.get('name'):
+            configspec.name = self.module_context.params['name']
         elif self.vm:
             configspec.name = self.vm.name
 
@@ -44,8 +41,8 @@ class VmParameterHandler(ParameterHandlerBase):
                 vmPathName="[" + datastore.name + "]"
             )
 
-        if self.module.params.get('guest_id'):
-            configspec.guestId = self.module.params['guest_id']
+        if self.module_context.params.get('guest_id'):
+            configspec.guestId = self.module_context.params['guest_id']
 
 
 

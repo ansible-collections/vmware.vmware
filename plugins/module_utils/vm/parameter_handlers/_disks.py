@@ -1,32 +1,42 @@
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import ParameterHandlerBase
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import DiskParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import DeviceLinkedParameterHandlerBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_sets import ParameterChangeSet
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import parse_device_node, track_device_id_from_spec
-
-try:
-    from pyVmomi import vim
-except ImportError:
-    pass
 
 
-class DiskParameterHandler(ParameterHandlerBase):
-    def __init__(self, vm, module, controller_handlers):
-        super().__init__(vm, module)
+class DiskParameterChangeSet(ParameterChangeSet):
+    def __init__(self, module_context):
+        super().__init__(module_context)
+        self.disks_to_add = []
+        self.disks_to_update = []
+        self.disks_in_sync = []
+
+
+class DiskParameterHandler(DeviceLinkedParameterHandlerBase):
+    def __init__(self, module_context, controller_handlers):
+        super().__init__(module_context, change_set_class=DiskParameterChangeSet)
 
         self.disks = []
         self.controller_handlers = controller_handlers
 
     def verify_parameter_constraints(self):
         if len(self.disks) == 0:
-            self._parse_disk_params()
+            try:
+                self._parse_disk_params()
+            except ValueError as e:
+                self.module_context.fail_with_parameter_error(
+                    parameter_name="disks",
+                    message="Error parsing disk parameters: %s" % str(e),
+                    details={"error": str(e)}
+                )
 
         if len(self.disks) == 0:
-            raise ValueError(
-                "At least one disk is required."
+            self.module_context.fail_with_parameter_error(
+                parameter_name="disks",
+                message="At least one disk must be defined when creating or updating a VM."
             )
 
     def _parse_disk_params(self):
-        for disk_param in self.module.params.get("disks", []):
+        for disk_param in self.module_context.params.get("disks", []):
             controller_type, controller_bus_number, unit_number = parse_device_node(disk_param['device_node'])
             for controller_handler in self.controller_handlers:
                 if controller_type == controller_handler.category:
@@ -51,25 +61,31 @@ class DiskParameterHandler(ParameterHandlerBase):
 
     def populate_config_spec_with_parameters(self, configspec, change_set):
         for disk in change_set.disks_to_add:
-            track_device_id_from_spec(disk)
+            self.module_context.track_device_id_from_spec(disk)
             configspec.deviceChange.append(disk.create_disk_spec())
         for disk in change_set.disks_to_update:
-            track_device_id_from_spec(disk)
+            self.module_context.track_device_id_from_spec(disk)
             configspec.deviceChange.append(disk.update_disk_spec())
 
-    def get_parameter_change_set(self):
-        change_set = DiskParameterChangeSet(self.vm, self.params)
+    def compare_live_config_with_desired_config(self):
         for disk in self.disks:
             if disk._device is None:
-                change_set.disks_to_add.append(disk)
+                self.change_set.disks_to_add.append(disk)
             elif disk.linked_device_differs_from_config():
-                change_set.disks_to_update.append(disk)
+                self.change_set.disks_to_update.append(disk)
             else:
-                change_set.disks_in_sync.append(disk)
+                self.change_set.disks_in_sync.append(disk)
 
-        return change_set
+        if any([
+            self.change_set.disks_to_add,
+            self.change_set.disks_to_update,
+            self.change_set.disks_in_sync
+        ]):
+            self.change_set.changes_required = True
 
-    def link_disk_to_vm_device(self, device):
+        return self.change_set
+
+    def link_vm_device(self, device):
         for disk in self.disks:
             if device.unitNumber == disk.unit_number and device.controllerKey == disk.controller.key:
                 disk._device = device
