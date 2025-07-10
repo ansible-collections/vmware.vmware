@@ -133,3 +133,57 @@ class TestEsxiHost(ModuleTestCase):
 
         result = run_module(module_entry=module_main, module_args=module_args)
         assert result["changed"] is True
+
+    def test_folder_paths_are_absolute_true(self, mocker):
+        self.__prepare(mocker)
+        get_folder_mock = mocker.patch.object(VmwareHost, 'get_folder_by_absolute_path', return_value=self.mock_folder)
+        self.test_esxi.parent = self.mock_folder
+        self.mock_folder.AddStandaloneHost.return_value = MockVsphereTask()
+        self.mock_folder.AddStandaloneHost.return_value.info.result = self.test_esxi
+        mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=None)
+
+        module_args = dict(
+            datacenter='datacenter',
+            folder="/other/dc/folder/datacenter/host/my",
+            esxi_host_name="esxi-host",
+            ssl_thumbprint='fdsfadf',
+            esxi_username="foo",
+            esxi_password="foo",
+            folder_paths_are_absolute=True,
+        )
+
+        run_module(module_entry=module_main, module_args=module_args)
+        get_folder_mock.assert_called_with(folder_path="/other/dc/folder/datacenter/host/my", fail_on_missing=True)
+
+    def test_folder_paths_are_absolute_false(self, mocker):
+        self.__prepare(mocker)
+        get_folder_mock = mocker.patch.object(VmwareHost, 'get_folder_by_absolute_path', return_value=self.mock_folder)
+        self.mock_folder.AddStandaloneHost.return_value = MockVsphereTask()
+        self.mock_folder.AddStandaloneHost.return_value.info.result = self.test_esxi
+        mocker.patch.object(VmwareHost, 'get_esxi_host_by_name_or_moid', return_value=None)
+
+        module_args = dict(
+            datacenter='datacenter',
+            folder="my/relative/path",
+            esxi_host_name="esxi-host",
+            ssl_thumbprint='fdsfadf',
+            esxi_username="foo",
+            esxi_password="foo",
+            folder_paths_are_absolute=False,
+        )
+
+        run_module(module_entry=module_main, module_args=module_args)
+        get_folder_mock.assert_called_with(folder_path="datacenter/host/my/relative/path", fail_on_missing=True)
+
+        get_folder_mock.reset_mock()
+        module_args = dict(
+            datacenter='datacenter',
+            folder="my/relative/path",
+            esxi_host_name="esxi-host",
+            ssl_thumbprint='fdsfadf',
+            esxi_username="foo",
+            esxi_password="foo",
+        )
+
+        run_module(module_entry=module_main, module_args=module_args)
+        get_folder_mock.assert_called_with(folder_path="datacenter/host/my/relative/path", fail_on_missing=True)

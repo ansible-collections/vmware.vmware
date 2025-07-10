@@ -150,7 +150,10 @@ class ModulePyvmomiBase(PyvmomiClient):
         else:
             folder = None
             if self.params.get(folder_param):
-                _fq_path = format_folder_path_as_vm_fq_path(self.params.get(folder_param), self.params.get('datacenter'))
+                if self.params.get('folder_paths_are_absolute'):
+                    _fq_path = self.params.get(folder_param)
+                else:
+                    _fq_path = format_folder_path_as_vm_fq_path(self.params.get(folder_param), self.params.get('datacenter'))
                 folder = self.get_folder_by_absolute_path(_fq_path, fail_on_missing=fail_on_missing)
             vms = self.get_objs_by_name_or_moid([vim.VirtualMachine], self.params.get(_search_id), return_all=True, search_root_folder=folder)
 

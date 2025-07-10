@@ -63,6 +63,18 @@ options:
             - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
         type: str
         required: True
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
     template_name:
         description:
             - The name to give to the new template.
@@ -169,10 +181,13 @@ class VmwareFolderTemplate(ModulePyvmomiBase):
 
         self.template_name = self.params.get("template_name")
 
-        fq_folder_path = format_folder_path_as_vm_fq_path(
-            self.params.get("template_folder"),
-            self.params.get("datacenter")
-        )
+        if self.params.get("folder_paths_are_absolute"):
+            fq_folder_path = self.params.get("template_folder")
+        else:
+            fq_folder_path = format_folder_path_as_vm_fq_path(
+                self.params.get("template_folder"),
+                self.params.get("datacenter")
+            )
         self.template_folder = self.get_folder_by_absolute_path(fq_folder_path, fail_on_missing=True)
 
     def check_if_template_exists(self):
@@ -276,6 +291,7 @@ def main():
                 state=dict(type='str', required=False, default='present', choices=['present', 'absent']),
                 template_name=dict(type='str', required=True),
                 template_folder=dict(type='str', required=True),
+                folder_paths_are_absolute=dict(type='bool', required=False, default=False),
                 datacenter=dict(type='str', aliases=['datacenter_name'], required=True),
                 datastore=dict(type='str', required=False),
                 resource_pool=dict(type='str', required=False),

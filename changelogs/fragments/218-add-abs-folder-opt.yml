@@ -1,0 +1,6 @@
+---
+minor_changes:
+  - add folder_paths_are_absolute option to all modules that support folder paths, allowing
+    users to specify if folder paths are absolute and override the default behavior of
+    intelligently determining if the path is absolute or relative.
+    (https://github.com/ansible-collections/vmware.vmware/issues/202)

@@ -48,6 +48,18 @@ options:
             - One of O(cluster) or O(folder) is required when O(state) is V(present)
             - Since ESXi names are unique in a datacenter, this option is not used when O(state) is V(absent).
         type: str
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
     esxi_host_name:
         description:
             - ESXi hostname to manage.
@@ -192,7 +204,11 @@ class VmwareHost(ModulePyvmomiBase):
         if self.params['cluster']:
             self.cluster = self.get_cluster_by_name_or_moid(self.params.get('cluster'), fail_on_missing=True, datacenter=self.datacenter)
         elif self.params['folder']:
-            if self.params['folder'].startswith(self.params['datacenter']) or self.params['folder'].startswith('/' + self.params['datacenter']):
+            if (
+                self.params.get('folder_paths_are_absolute') or
+                self.params['folder'].startswith(self.params['datacenter']) or
+                self.params['folder'].startswith('/' + self.params['datacenter'])
+            ):
                 path = self.params['folder']
             else:
                 path = format_folder_path_as_host_fq_path(self.params['folder'], self.params['datacenter'])
@@ -369,6 +385,7 @@ def main():
                 cluster=dict(type='str', required=False, aliases=['cluster_name']),
                 datacenter=dict(type='str', required=True, aliases=['datacenter_name']),
                 folder=dict(type='str', required=False),
+                folder_paths_are_absolute=dict(type='bool', required=False, default=False),
                 state=dict(type='str', default='present', choices=['absent', 'present']),
 
                 esxi_host_name=dict(type='str', required=True),
