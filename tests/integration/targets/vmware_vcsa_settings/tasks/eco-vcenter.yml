@@ -1,0 +1,83 @@
+---
+# Note: running on vCenter can be very disruptive, so the tests here are limited
+- name: Test on vCenter
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Set VCSA proxy
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: true
+            protocol: ftp
+            url: "http://localhost"
+            port: 21
+      register: _set_proxy
+    - name: Set VCSA proxy - idem
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: true
+            protocol: ftp
+            url: "http://localhost"
+            port: 21
+      register: _set_proxy_idem
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - _set_proxy.changed == True
+          - _set_proxy_idem.changed == False
+
+    - name: Update VCSA proxy
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: true
+            protocol: ftp
+            url: "http://localhost"
+            port: 22
+      register: _update_proxy
+    - name: Update VCSA proxy - idem
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: true
+            protocol: ftp
+            url: "http://localhost"
+            port: 22
+      register: _update_proxy_idem
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - _update_proxy.changed == True
+          - _update_proxy_idem.changed == False
+
+    - name: Disable VCSA proxy
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: false
+            protocol: ftp
+            url: "http://localhost"
+            port: 21
+      register: _disable_proxy
+    - name: Disable VCSA proxy - idem
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: false
+            protocol: ftp
+            url: "http://localhost"
+            port: 21
+      register: _disable_proxy_idem
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - _disable_proxy.changed == True
+          - _disable_proxy_idem.changed == False
+
+  always:
+    - name: Reset VCSA proxy
+      vmware.vmware.vcsa_settings:
+        proxy:
+          - enabled: false
+            protocol: ftp
+            url: "http://localhost"
+            port: 21

@@ -1,6 +1,5 @@
 ---
 - name: Test on simulator
-  when: not run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:

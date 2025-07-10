@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - vcsa_settings - Fix bug where proxy settings cannot be disabled, even if enabled is set to false.
+    (https://github.com/ansible-collections/vmware.vmware/issues/207)
