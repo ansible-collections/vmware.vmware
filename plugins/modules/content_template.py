@@ -68,6 +68,18 @@ options:
           folder as the source virtual machine.
         type: str
         aliases: [template_folder]
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
     template_name:
         description:
             - The name of template to manage.
@@ -265,6 +277,7 @@ def main():
         vm_moid=dict(type='str'),
         use_instance_uuid=dict(type='bool', default=False),
         vm_folder=dict(type='str', required=False),
+        folder_paths_are_absolute=dict(type='bool', required=False, default=False),
         library=dict(type='str', required=True),
         host=dict(type='str'),
         cluster=dict(type='str', aliases=['cluster_name']),

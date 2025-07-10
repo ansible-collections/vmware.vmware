@@ -64,6 +64,18 @@ options:
             - For example 'datacenter_name/vm/path/to/folder' or 'path/to/folder'
         type: str
         required: false
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
     scheduled_at:
         description:
             - Date and time in string format at which specified task needs to be performed.
@@ -418,6 +430,7 @@ def main():
                 moid=dict(type='str'),
                 use_instance_uuid=dict(type='bool', default=False),
                 folder=dict(type='str', required=False),
+                folder_paths_are_absolute=dict(type='bool', required=False, default=False),
                 force=dict(type='bool', default=False),
                 scheduled_at=dict(type='str', required=False),
                 scheduled_task_name=dict(type='str', required=False),
