@@ -1,4 +1,21 @@
 ---
+vmware.vmware.guest_info:
+  query: >-
+    .guests[] | {
+      name: .moid,
+      canonical_facts: {
+        instance_uuid: .instance_uuid,
+        bios_uuid: .hw_product_uuid,
+        moid: .moid,
+        esxi: .hw_esxi_host
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+
 ####
 # Catch all query
 ####
@@ -17,6 +34,8 @@ vmware.vmware.*:
           node_type: $node_type
         },
         facts: {
+          infra_type: "PrivateCloud",
+          infra_bucket: "Compute",
           device_type: ($mapping[$node_type] // "UNKNOWN")
         }
       }
