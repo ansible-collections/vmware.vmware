@@ -424,11 +424,18 @@ class VmwareVcsaSettings(ModuleRestBase):
 
         current = self.api_networking.Proxy.list()
         for p in proxy:
-            if not p['enabled']:
-                continue
-
             c = current[p['protocol']]
-            if c.server != p['url'] or c.port != p['port'] or c.username != p['username'] or p['password'] is not None or c.enabled != p['enabled']:
+            if p['enabled']:
+                change_required = any([
+                    c.enabled != p['enabled'],
+                    c.server != p['url'],
+                    c.port != p['port'],
+                    getattr(c, 'username', None) != p.get('username', None),
+                    p.get('password', None) is not None
+                ])
+            else:
+                change_required = bool(c.enabled != p['enabled'])
+            if change_required:
                 self.changed = True
                 if not self.module.check_mode:
                     current = self.api_networking.Proxy.set(
@@ -436,8 +443,8 @@ class VmwareVcsaSettings(ModuleRestBase):
                         config=self.api_networking.Proxy.Config(
                             server=p['url'],
                             port=p['port'],
-                            username=p['username'],
-                            password=p['password'],
+                            username=p.get('username', None),
+                            password=p.get('password', None),
                             enabled=p['enabled']
                         )
                     )

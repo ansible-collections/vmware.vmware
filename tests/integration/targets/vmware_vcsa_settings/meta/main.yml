@@ -5,5 +5,5 @@ dependencies:
     vars:
       prepare_simulator_include_rest: True
       prepare_simulator_include_vcsim: False
-      mock_file: "vcsa_settings/mock.json"
+      mock_file: "vmware_vcsa_settings/mock.json"
     when: not run_on_vcenter
