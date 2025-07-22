@@ -72,6 +72,18 @@ options:
           - This parameter is only used if O(name) is supplied, and can help identify the machine you want to query.
           - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
         type: str
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
     gather_tags:
         description:
             - If true, gather any tags attached to the vm(s)
@@ -295,6 +307,7 @@ def main():
             moid=dict(type='str'),
             datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
             folder=dict(type='str', required=False),
+            folder_paths_are_absolute=dict(type='bool', required=False, default=False),
 
             gather_tags=dict(type='bool', default=False),
 

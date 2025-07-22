@@ -24,6 +24,7 @@ def vm_deploy_module_argument_spec():
         datacenter=dict(type='str', required=True, aliases=['datacenter_name']),
         datastore=dict(type='str', required=False),
         datastore_cluster=dict(type='str', required=False),
+        folder_paths_are_absolute=dict(type='bool', required=False, default=False),
     )
 
 
@@ -82,6 +83,8 @@ class ModuleVmDeployBase(ModulePyvmomiBase):
             return self._vm_folder
         if not self.params.get('vm_folder'):
             fq_folder = format_folder_path_as_vm_fq_path('', self.params['datacenter'])
+        elif self.params.get('folder_paths_are_absolute'):
+            fq_folder = self.params.get('vm_folder')
         else:
             fq_folder = format_folder_path_as_vm_fq_path(self.params.get('vm_folder'), self.params['datacenter'])
 

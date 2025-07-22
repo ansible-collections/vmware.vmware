@@ -66,6 +66,18 @@ options:
         - This parameter is required if O(name) is supplied.
         - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
         type: str
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
     datacenter:
         description:
         - Datacenter to search for the virtual machine.
@@ -393,6 +405,7 @@ def main():
                 use_instance_uuid=dict(type='bool', default=False),
                 remove_all=dict(type='bool', default=False),
                 folder=dict(type='str'),
+                folder_paths_are_absolute=dict(type='bool', required=False, default=False),
                 datacenter=dict(type='str'),
                 snapshot_name=dict(type='str'),
                 snapshot_id=dict(type='int'),

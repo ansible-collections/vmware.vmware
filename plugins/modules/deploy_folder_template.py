@@ -149,9 +149,12 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
         if self.params['template_folder_id']:
             folder = self.get_folders_by_name_or_moid(self.params['template_folder_id'], fail_on_missing=True)[0]
         else:
-            fq_folder_path = format_folder_path_as_vm_fq_path(
-                self.params.get("template_folder"), self.params.get("datacenter")
-            )
+            if self.params.get("folder_paths_are_absolute"):
+                fq_folder_path = self.params.get("template_folder")
+            else:
+                fq_folder_path = format_folder_path_as_vm_fq_path(
+                    self.params.get("template_folder"), self.params.get("datacenter")
+                )
             folder = self.get_folder_by_absolute_path(fq_folder_path, fail_on_missing=True)
         return folder
 

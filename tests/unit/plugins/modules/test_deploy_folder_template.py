@@ -86,3 +86,46 @@ class TestVmwareFolderTemplate(ModuleTestCase):
         result = run_module(module_entry=module_main, module_args=module_args, expect_success=False)
         assert result["msg"].startswith('Unable to find template with ID')
         assert result["failed"] is True
+
+    def test_folder_paths_are_absolute_true(self, mocker):
+        self.__prepare(mocker)
+        get_folder_mock = mocker.patch.object(VmwareFolderTemplate, 'get_folder_by_absolute_path', return_value=MockVmwareObject())
+        mocker.patch.object(VmwareFolderTemplate, 'get_deployed_vm', return_value=None)
+
+        module_args = dict(
+            vm_name=self.test_vm.name,
+            template_name="foo",
+            template_folder="/other/dc/folder/datacenter/vm/my",
+            datacenter='datacenter',
+            folder_paths_are_absolute=True,
+        )
+
+        run_module(module_entry=module_main, module_args=module_args)
+        get_folder_mock.assert_called_with("/other/dc/folder/datacenter/vm/my", fail_on_missing=True)
+
+    def test_folder_paths_are_absolute_false(self, mocker):
+        self.__prepare(mocker)
+        get_folder_mock = mocker.patch.object(VmwareFolderTemplate, 'get_folder_by_absolute_path', return_value=MockVmwareObject())
+        mocker.patch.object(VmwareFolderTemplate, 'get_deployed_vm', return_value=None)
+
+        module_args = dict(
+            vm_name=self.test_vm.name,
+            template_name="foo",
+            template_folder="my/relative/path",
+            datacenter='datacenter',
+            folder_paths_are_absolute=False,
+        )
+
+        run_module(module_entry=module_main, module_args=module_args)
+        get_folder_mock.assert_called_with("datacenter/vm/my/relative/path", fail_on_missing=True)
+
+        get_folder_mock.reset_mock()
+        module_args = dict(
+            vm_name=self.test_vm.name,
+            template_name="foo",
+            template_folder="my/relative/path",
+            datacenter='datacenter',
+        )
+
+        run_module(module_entry=module_main, module_args=module_args)
+        get_folder_mock.assert_called_with("datacenter/vm/my/relative/path", fail_on_missing=True)
