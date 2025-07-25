@@ -15,7 +15,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator imp
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
     ParameterChangeSet,
 )
-import ansible_collections.vmware.vmware.plugins.module_utils.vm.services as services
+from ansible_collections.vmware.vmware.plugins.module_utils.vm import services, parameter_handlers
 
 
 class ConfigurationRegistry:
@@ -37,7 +37,7 @@ class ConfigurationRegistry:
         self.controller_handler_classes = {}
         self.change_set_classes = {}
 
-    def register_handler(self, handler_name, handler_class):
+    def register_handler(self, handler_class):
         """
         Register a parameter handler class.
 
@@ -45,7 +45,7 @@ class ConfigurationRegistry:
             handler_name (str): Unique name for the handler
             handler_class (type): Handler class to register
         """
-        self.handler_classes[handler_name] = handler_class
+        self.handler_classes[handler_class.HANDLER_NAME] = handler_class
 
     def get_handler_class(self, handler_name):
         """
@@ -180,7 +180,9 @@ class ConfigurationBuilder:
         handlers = []
 
         # Disk handler - manages VM disk configuration
-        disk_handler_class = self.configuration_registry.get_handler_class("disks")
+        disk_handler_class = self.configuration_registry.get_handler_class(
+            parameter_handlers.DiskParameterHandler.HANDLER_NAME
+        )
         handlers.append(
             disk_handler_class(
                 error_handler=self.error_handler,
@@ -193,7 +195,7 @@ class ConfigurationBuilder:
 
         # CPU/Memory handler - manages VM resource allocation
         cpu_memory_handler_class = self.configuration_registry.get_handler_class(
-            "cpu_memory"
+            parameter_handlers.CpuMemoryParameterHandler.HANDLER_NAME
         )
         handlers.append(
             cpu_memory_handler_class(
@@ -206,7 +208,7 @@ class ConfigurationBuilder:
 
         # Metadata handler - manages VM metadata and basic settings
         metadata_handler_class = self.configuration_registry.get_handler_class(
-            "metadata"
+            parameter_handlers.MetadataParameterHandler.HANDLER_NAME
         )
         handlers.append(
             metadata_handler_class(

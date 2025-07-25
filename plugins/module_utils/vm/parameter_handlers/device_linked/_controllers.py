@@ -49,8 +49,6 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
         category (str): Controller category identifier (scsi, sata, nvme, ide)
     """
 
-    VIM_DEVICE_CLASS = None
-
     def __init__(
         self, error_handler, params, change_set, device_tracker, category, max_count=4
     ):
@@ -191,10 +189,10 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
             if device.busNumber == controller.bus_number:
                 controller._device = device
                 return
-        else:
-            raise Exception(
-                f"Controller {self.controllers[0].device_class.__name__} not found for device {device.busNumber}"
-            )
+
+        raise Exception(
+            f"Controller {self.controllers[0].device_class.__name__} not found for device {device.busNumber}"
+        )
 
 
 class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -222,13 +220,7 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
     - bus_sharing: Bus sharing mode ('noSharing' or 'exclusive')
     """
 
-    VIM_DEVICE_CLASS = vim.vm.device.VirtualSCSIController
-    DEVICE_TYPES_TO_SUB_CLASSES = {
-        "lsilogic": vim.vm.device.VirtualLsiLogicController,
-        "paravirtual": vim.vm.device.ParaVirtualSCSIController,
-        "buslogic": vim.vm.device.VirtualBusLogicController,
-        "lsilogicsas": vim.vm.device.VirtualLsiLogicSASController,
-    }
+    HANDLER_NAME = "scsi_controller"
 
     def __init__(self, error_handler, params, change_set, device_tracker):
         """
@@ -241,6 +233,25 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
             device_tracker: Service for device identification and error reporting
         """
         super().__init__(error_handler, params, change_set, device_tracker, "scsi")
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class for this controller type.
+        """
+        return vim.vm.device.VirtualSCSIController
+
+    @property
+    def device_type_to_sub_class_map(self):
+        """
+        Get a map of device types to their corresponding sub-classes.
+        """
+        return {
+            "lsilogic": vim.vm.device.VirtualLsiLogicController,
+            "paravirtual": vim.vm.device.ParaVirtualSCSIController,
+            "buslogic": vim.vm.device.VirtualBusLogicController,
+            "lsilogicsas": vim.vm.device.VirtualLsiLogicSASController,
+        }
 
     def _parse_device_controller_params(self):
         """
@@ -260,7 +271,7 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
             self.controllers[index] = ScsiController(
                 bus_number=index,
                 device_type=controller_param_def.get("controller_type"),
-                device_class=self.DEVICE_TYPES_TO_SUB_CLASSES[
+                device_class=self.device_type_to_sub_class_map[
                     controller_param_def.get("controller_type")
                 ],
                 bus_sharing=controller_param_def.get("bus_sharing"),
@@ -282,7 +293,7 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
     - sata_controller_count: Number of SATA controllers to create
     """
 
-    VIM_DEVICE_CLASS = vim.vm.device.VirtualAHCIController
+    HANDLER_NAME = "sata_controller"
 
     def __init__(self, error_handler, params, change_set, device_tracker):
         """
@@ -295,6 +306,13 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
             device_tracker: Service for device identification and error reporting
         """
         super().__init__(error_handler, params, change_set, device_tracker, "sata")
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class for this controller type.
+        """
+        return vim.vm.device.VirtualAHCIController
 
     def _parse_device_controller_params(self):
         """
@@ -330,7 +348,7 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
     - bus_sharing: Bus sharing mode ('noSharing' or 'exclusive')
     """
 
-    VIM_DEVICE_CLASS = vim.vm.device.VirtualNVMEController
+    HANDLER_NAME = "nvme_controller"
 
     def __init__(self, error_handler, params, change_set, device_tracker):
         """
@@ -343,6 +361,13 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
             device_tracker: Service for device identification and error reporting
         """
         super().__init__(error_handler, params, change_set, device_tracker, "nvme")
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class for this controller type.
+        """
+        return vim.vm.device.VirtualNVMEController
 
     def _parse_device_controller_params(self):
         """
@@ -380,7 +405,7 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
     - None (IDE controllers are automatically created)
     """
 
-    VIM_DEVICE_CLASS = vim.vm.device.VirtualIDEController
+    HANDLER_NAME = "ide_controller"
 
     def __init__(self, error_handler, params, change_set, device_tracker):
         """
@@ -395,6 +420,13 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
         super().__init__(
             error_handler, params, change_set, device_tracker, "ide", max_count=2
         )
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class for this controller type.
+        """
+        return vim.vm.device.VirtualIDEController
 
     def _parse_device_controller_params(self):
         """

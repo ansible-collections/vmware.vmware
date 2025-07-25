@@ -37,6 +37,8 @@ class AbstractParameterHandler(ABC):
         change_set: Service for tracking configuration changes
     """
 
+    HANDLER_NAME = None
+
     def __init__(self, error_handler, params, change_set):
         """
         Initialize the parameter handler with common dependencies.
@@ -46,6 +48,11 @@ class AbstractParameterHandler(ABC):
             params (dict): Module parameters containing desired VM configuration
             change_set: Service for tracking configuration changes and requirements
         """
+        if self.HANDLER_NAME is None or not self.HANDLER_NAME:
+            raise NotImplementedError(
+                "ParameterHandler subclasses must define the HANDLER_NAME attribute"
+            )
+
         self.error_handler = error_handler
         self.params = params
         self.change_set = change_set
@@ -155,18 +162,15 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
     device class.
 
     Device-linked handlers must:
-    1. Define VIM_DEVICE_CLASS to specify the VMware device type
+    1. Define vim_device_class to specify the VMware device type
     2. Implement link_vm_device() to associate existing devices with handler objects
     3. Use device_tracker for device identification and error reporting
 
     Attributes:
-        VIM_DEVICE_CLASS: VMware device class this handler manages (must be overridden)
-        DEVICE_TYPES_TO_SUB_CLASSES (dict): Registry of device types to handler classes
+        vim_device_class: VMware device class this handler manages (must be overridden)
+        device_type_to_sub_class_map (dict): Registry of device types to handler classes
         device_tracker: Service for device identification and error reporting
     """
-
-    VIM_DEVICE_CLASS = None
-    DEVICE_TYPES_TO_SUB_CLASSES = dict()
 
     def __init__(self, error_handler, params, change_set, device_tracker):
         """
@@ -179,15 +183,34 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
             device_tracker: Service for device identification and error reporting
 
         Raises:
-            NotImplementedError: If VIM_DEVICE_CLASS is not defined by subclass
+            NotImplementedError: If vim_device_class is not defined by subclass
         """
         super().__init__(error_handler, params, change_set)
         self.device_tracker = device_tracker
 
-        if self.VIM_DEVICE_CLASS is None:
+        if self.vim_device_class is None:
             raise NotImplementedError(
-                "DeviceLinkedParameterHandler subclasses must define the VIM_DEVICE_CLASS attribute"
+                "DeviceLinkedParameterHandler subclasses must define the vim_device_class property"
             )
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class this handler manages. This is a property so vim imports can
+        be done lazily, and not cause sanity checks to fail.
+        """
+        raise NotImplementedError
+
+    @property
+    def device_type_to_sub_class_map(self):
+        """
+        Get a map of device types to their corresponding sub-classes. This is a property so vim imports can
+        be done lazily, and not cause sanity checks to fail.
+
+        Returns:
+            dict: A dictionary mapping device types to their corresponding sub-classes.
+        """
+        return dict()
 
     @abstractmethod
     def link_vm_device(self, device):
