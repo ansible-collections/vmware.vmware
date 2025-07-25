@@ -42,6 +42,8 @@ class CpuParameterHandler(AbstractVmAwareParameterHandler):
         cpu_params (dict): CPU-specific parameters from module input
     """
 
+    HANDLER_NAME = "cpu"
+
     def __init__(self, error_handler, params, change_set, vm):
         """
         Initialize the CPU parameter handler.
@@ -236,6 +238,8 @@ class MemoryParameterHandler(AbstractVmAwareParameterHandler):
     Attributes:
         memory_params (dict): Memory-specific parameters from module input
     """
+
+    HANDLER_NAME = "memory"
 
     def __init__(self, error_handler, params, change_set, vm):
         """

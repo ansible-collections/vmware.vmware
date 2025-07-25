@@ -116,7 +116,8 @@ options:
     guest_id:
         description:
             - The guest ID of the VM.
-            - Guest IDs are pre-defined by VMware. For example see https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.vm.GuestOsDescriptor.GuestOsIdentifier.html
+            - Guest IDs are pre-defined by VMware. For example see
+              https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.vm.GuestOsDescriptor.GuestOsIdentifier.html
             - This is required when creating a new VM.
         type: str
         required: false
@@ -128,7 +129,7 @@ options:
               parameter to allow the VM to be powered off, updated, and then powered on automatically.
             - If this is set to false, a failure will occur if the VM needs to be powered off before changes can be applied.
             - A "hard" power off is performed when the VM is powered off. If you do not want this, you could use this module in check mode,
-              M(vm_powerstate) module to power off the VM if needed, and then this module again to apply the changes .
+              M(vmware.vmware.vm_powerstate) module to power off the VM if needed, and then this module again to apply the changes .
         type: bool
         required: false
         default: false
@@ -149,7 +150,7 @@ options:
             cores_per_socket:
                 description:
                     - The number of cores per socket to use for the VM.
-                    - If this is defined, O(cpus) must be a multiple of O(cpu_cores_per_socket).
+                    - If this is defined, O(cpu.cores) must be a multiple of O(cpu.cores_per_socket).
                 type: int
                 required: true
             enable_hot_add:
@@ -177,14 +178,14 @@ options:
             shares:
                 description:
                     - The custom number of shares of CPU allocated to this virtual machine.
-                    - You can set O(shares_level) and omit this parameter to use a pre-defined value.
-                    - If this is defined, O(shares_level) will be ignored.
+                    - You can set O(cpu.shares_level) and omit this parameter to use a pre-defined value.
+                    - If this is defined, O(cpu.shares_level) will be ignored.
                 type: int
                 required: false
             shares_level:
                 description:
                     - The allocation level of CPU resources for the virtual machine.
-                    - If O(shares) is defined, O(shares_level) will automatically be set to 'custom' and this parameter will be ignored.
+                    - If O(cpu.shares) is defined, O(cpu.shares_level) will automatically be set to 'custom' and this parameter will be ignored.
                 type: str
                 required: false
                 choices: [ low, normal, high ]
@@ -224,14 +225,14 @@ options:
             shares:
                 description:
                     - The custom number of shares of memory allocated to this virtual machine.
-                    - You can set O(shares_level) and omit this parameter to use a pre-defined value.
-                    - If this is defined, O(shares_level) will be ignored.
+                    - You can set O(memory.shares_level) and omit this parameter to use a pre-defined value.
+                    - If this is defined, O(memory.shares_level) will be ignored.
                 type: int
                 required: false
             shares_level:
                 description:
                     - The allocation level of memory resources for the virtual machine.
-                    - If O(shares) is defined, O(shares_level) will automatically be set to 'custom' and this parameter will be ignored.
+                    - If O(memory.shares) is defined, O(memory.shares_level) will automatically be set to 'custom' and this parameter will be ignored.
                 type: str
                 required: false
                 choices: [ low, normal, high ]
@@ -399,12 +400,12 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError, RunningTaskMonitor
 )
-import ansible_collections.vmware.vmware.plugins.module_utils.vm.services as services
-import ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers as parameter_handlers
+from ansible_collections.vmware.vmware.plugins.module_utils.vm import services, parameter_handlers
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
     ConfigurationRegistry,
     ConfigurationBuilder
 )
+
 
 class VmModule(ModulePyvmomiBase):
     def __init__(self, module):
@@ -420,14 +421,14 @@ class VmModule(ModulePyvmomiBase):
 
     def _init_configuration_registry(self):
         self.configuration_registry = ConfigurationRegistry()
-        self.configuration_registry.register_handler("cpu_memory", parameter_handlers.CpuParameterHandler)
-        self.configuration_registry.register_handler("metadata", parameter_handlers.MetadataParameterHandler)
-        self.configuration_registry.register_handler("disks", parameter_handlers.DiskParameterHandler)
+        self.configuration_registry.register_handler(parameter_handlers.CpuParameterHandler)
+        self.configuration_registry.register_handler(parameter_handlers.MetadataParameterHandler)
+        self.configuration_registry.register_handler(parameter_handlers.DiskParameterHandler)
 
-        self.configuration_registry.register_controller_handler("scsi_controllers", parameter_handlers.ScsiControllerParameterHandler)
-        self.configuration_registry.register_controller_handler("nvme_controllers", parameter_handlers.NvmeControllerParameterHandler)
-        self.configuration_registry.register_controller_handler("sata_controllers", parameter_handlers.SataControllerParameterHandler)
-        self.configuration_registry.register_controller_handler("ide_controllers", parameter_handlers.IdeControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(parameter_handlers.ScsiControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(parameter_handlers.NvmeControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(parameter_handlers.SataControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(parameter_handlers.IdeControllerParameterHandler)
 
     def _init_configuration_builder(self):
         self.configuration_builder = ConfigurationBuilder(self.vm, self.module, self.configuration_registry)
@@ -492,11 +493,7 @@ class VmModule(ModulePyvmomiBase):
             return
 
         if not self.params['allow_power_cycling']:
-            self.error_handler.fail_with_power_cycle_error(
-                parameter_name="allow_power_cycling",
-                message="VM needs to be powered off to make changes. You can allow this module to "
-                "automatically power cycle the VM with the allow_power_cycling parameter."
-            )
+            self.error_handler.fail_with_generic_power_cycle_error(desired_power_state="powered off")
 
         self._try_to_run_task(task_func=self.vm.PowerOffVM_Task, error_prefix="Unable to power off VM.")
 
@@ -505,11 +502,7 @@ class VmModule(ModulePyvmomiBase):
             return
 
         if not self.params['allow_power_cycling']:
-            self.error_handler.fail_with_power_cycle_error(
-                parameter_name="allow_power_cycling",
-                message="VM needs to be powered on to make changes. You can allow this module to "
-                "automatically power cycle the VM with the allow_power_cycling parameter."
-            )
+            self.error_handler.fail_with_generic_power_cycle_error(desired_power_state="powered on")
 
         self._try_to_run_task(task_func=self.vm.PowerOnVM_Task, error_prefix="Unable to power on VM.")
 
@@ -519,7 +512,7 @@ class VmModule(ModulePyvmomiBase):
 
         try:
             task = task_func(**task_kwargs)
-            _, task_result = RunningTaskMonitor(task).wait_for_completion(
+            _, task_result = RunningTaskMonitor(task).wait_for_completion(  # pylint: disable=disallowed-name
                 timeout=self.params['timeout']
             )
         except TaskError as e:

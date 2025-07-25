@@ -141,7 +141,7 @@ class Configurator:
         are considered unmanaged and will be removed from the VM.
 
         Device linking rules:
-        - If a device type matches a handler's VIM_DEVICE_CLASS, try to link it
+        - If a device type matches a handler's vim_device_class, try to link it
         - If linking fails, (for example, the unit number of the device does not match a known device) the device is unmanaged and should be removed
         - If no handler matches the device type, it's out of scope (ignored)
 
@@ -154,17 +154,19 @@ class Configurator:
         unlinked_devices = []
         for device in self.vm.config.hardware.device:
             for handler in self.handlers:
-                if not hasattr(handler, "VIM_DEVICE_CLASS"):
+                if not hasattr(handler, "vim_device_class"):
                     continue
 
-                if not isinstance(device, handler.VIM_DEVICE_CLASS):
+                if not isinstance(device, handler.vim_device_class):
                     continue
 
                 try:
                     handler.link_vm_device(device)
-                except Exception:
-                    unlinked_devices.append(device)
-                finally:
                     break
+                except Exception:
+                    pass
+
+                unlinked_devices.append(device)
+                break
 
         return unlinked_devices

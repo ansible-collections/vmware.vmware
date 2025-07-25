@@ -81,6 +81,27 @@ class ErrorHandler(AbstractService):
             parameter_name, message, "POWER_CYCLE_REQUIRED", details
         )
 
+    def fail_with_generic_power_cycle_error(self, desired_power_state):
+        """
+        Fail with a more generic message related to power cycling. This error is not tied to a
+        specific parameter and should only be used as a fallback/safety net.
+        The use case would be that the module knows the VM needs to be powered off in the main module flow,
+        but for whatever reason the parameter handlers did not verify that the power cycle is allowed.
+
+        Args:
+            desired_power_state (str): The desired power state of the VM. "powered off" or "powered on", usually
+
+        """
+        message = (
+            "VM needs to be %s to make changes. You can allow this module to "
+            "automatically power cycle the VM with the allow_power_cycling parameter." %
+            desired_power_state
+        )
+        self.module.fail_json(
+            msg=message,
+            error_code="POWER_CYCLE_REQUIRED"
+        )
+
     def fail_with_parameter_error(self, parameter_name, message, details=None):
         """
         Fail due to invalid or problematic parameter values.
@@ -118,7 +139,7 @@ class ErrorHandler(AbstractService):
         try:
             device_id = str(error).split("'")[1]
             device = self.device_tracker.translate_device_id_to_device(int(device_id))
-        except:
+        except (KeyError, IndexError):
             self.module.fail_json(
                 msg="A device has an invalid configuration, so the VM cannot be configured.",
                 original_error=error,

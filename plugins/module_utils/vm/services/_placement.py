@@ -17,7 +17,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._abstrac
 )
 
 
-def vm_placement_argument_spec(omit_params=[]):
+def vm_placement_argument_spec(omit_params=None):
     """
     Generate argument specification for VM placement parameters.
 
@@ -38,6 +38,9 @@ def vm_placement_argument_spec(omit_params=[]):
         Omitting specific parameters:
         vm_placement_argument_spec(['folder', 'cluster']) -> excludes folder and cluster
     """
+    if omit_params is None:
+        omit_params = []
+
     arg_spec = dict(
         folder=dict(type="str", required=False, aliases=["vm_folder"]),
         cluster=dict(type="str", required=False, aliases=["cluster_name"]),

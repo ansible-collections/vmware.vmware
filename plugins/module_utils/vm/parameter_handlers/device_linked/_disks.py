@@ -50,7 +50,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
         controller_handlers (list): List of controller handlers for disk assignment
     """
 
-    VIM_DEVICE_CLASS = vim.vm.device.VirtualDisk
+    HANDLER_NAME = "disk"
 
     def __init__(
         self, error_handler, params, change_set, device_tracker, controller_handlers
@@ -69,6 +69,13 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
 
         self.disks = []
         self.controller_handlers = controller_handlers
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class for this controller type.
+        """
+        return vim.vm.device.VirtualDisk
 
     def verify_parameter_constraints(self):
         """
@@ -227,8 +234,8 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             ):
                 disk._device = device
                 return
-        else:
-            raise Exception(
-                "Disk not found for device %s on controller %s"
-                % (device.unitNumber, device.controllerKey)
-            )
+
+        raise Exception(
+            "Disk not found for device %s on controller %s"
+            % (device.unitNumber, device.controllerKey)
+        )

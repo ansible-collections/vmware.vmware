@@ -214,7 +214,7 @@ class ScsiController(AbstractDeviceController):
         self,
         bus_number,
         device_type="paravirtual",
-        device_class=vim.vm.device.ParaVirtualSCSIController,
+        device_class=None,
         bus_sharing="noSharing",
     ):
         """
@@ -226,6 +226,9 @@ class ScsiController(AbstractDeviceController):
             device_class: VMware SCSI controller class
             bus_sharing (str): Bus sharing mode ('noSharing' or 'exclusive')
         """
+        if device_class is None:
+            device_class = vim.vm.device.ParaVirtualSCSIController
+
         super().__init__(device_type, device_class, bus_number)
         self.bus_sharing = bus_sharing
 
@@ -264,7 +267,7 @@ class SataController(AbstractDeviceController):
 
     NEW_CONTROLLER_KEYS = (15000, 19999)
 
-    def __init__(self, bus_number, device_class=vim.vm.device.VirtualAHCIController):
+    def __init__(self, bus_number, device_class=None):
         """
         Initialize a SATA controller.
 
@@ -272,6 +275,9 @@ class SataController(AbstractDeviceController):
             bus_number (int): SATA bus number
             device_class: VMware SATA controller class (defaults to AHCI)
         """
+        if device_class is None:
+            device_class = vim.vm.device.VirtualAHCIController
+
         super().__init__("sata", device_class, bus_number)
 
 
@@ -289,7 +295,7 @@ class IdeController(AbstractDeviceController):
 
     NEW_CONTROLLER_KEYS = (200, 299)
 
-    def __init__(self, bus_number, device_class=vim.vm.device.VirtualIDEController):
+    def __init__(self, bus_number, device_class=None):
         """
         Initialize an IDE controller.
 
@@ -297,6 +303,9 @@ class IdeController(AbstractDeviceController):
             bus_number (int): IDE bus number (typically 0-1)
             device_class: VMware IDE controller class
         """
+        if device_class is None:
+            device_class = vim.vm.device.VirtualIDEController
+
         super().__init__("ide", device_class, bus_number)
 
 
@@ -317,7 +326,7 @@ class NvmeController(AbstractDeviceController):
     def __init__(
         self,
         bus_number,
-        device_class=vim.vm.device.VirtualNVMEController,
+        device_class=None,
         bus_sharing="noSharing",
     ):
         """
@@ -328,5 +337,8 @@ class NvmeController(AbstractDeviceController):
             device_class: VMware NVMe controller class
             bus_sharing (str): Bus sharing mode ('noSharing' or 'exclusive')
         """
+        if device_class is None:
+            device_class = vim.vm.device.VirtualNVMEController
+
         super().__init__("nvme", device_class, bus_number)
         self.bus_sharing = bus_sharing
