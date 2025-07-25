@@ -34,6 +34,8 @@ class MetadataParameterHandler(AbstractVmAwareParameterHandler):
         placement: Placement service for datastore resolution
     """
 
+    HANDLER_NAME = "metadata"
+
     def __init__(self, error_handler, params, change_set, vm, placement):
         """
         Initialize the metadata parameter handler.
