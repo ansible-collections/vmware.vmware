@@ -15,7 +15,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator imp
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
     ParameterChangeSet,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm import services, parameter_handlers
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._device_tracker import DeviceTracker
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._error_handler import ErrorHandler
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import VmPlacement
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._metadata import MetadataParameterHandler
 
 
 class ConfigurationRegistry:
@@ -31,21 +34,14 @@ class ConfigurationRegistry:
         """
         Initialize the configuration registry.
 
-        Sets up empty dictionaries for storing handler classes and change set classes.
+        Sets up empty dictionaries for storing handler classes and change set classes. These groupings
+        are created based on the underlying handler interfaces, so each set of handlers can be easily
+        created using a loop.
         """
-        self.handler_classes = {}
         self.controller_handler_classes = {}
+        self.vm_aware_handler_classes = {}
+        self.device_linked_handler_classes = {}
         self.change_set_classes = {}
-
-    def register_handler(self, handler_class):
-        """
-        Register a parameter handler class.
-
-        Args:
-            handler_name (str): Unique name for the handler
-            handler_class (type): Handler class to register
-        """
-        self.handler_classes[handler_class.HANDLER_NAME] = handler_class
 
     def get_handler_class(self, handler_name):
         """
@@ -80,23 +76,33 @@ class ConfigurationRegistry:
         """
         self.controller_handler_classes[handler_name] = handler_class
 
-    def get_controller_handlers(self):
+    def register_vm_aware_handler(self, handler_name, handler_class):
         """
-        Get all registered controller handler classes.
+        Register a VM aware parameter handler class.
 
-        Returns:
-            dict_values: Collection of controller handler classes
-        """
-        return self.controller_handler_classes.values()
+        VM aware handlers are processed after controller handlers because
+        some parameter groups (like disks) depend on controllers being available,
+        or at least parsed and validated.
 
-    def get_handlers(self):
+        Args:
+            handler_name (str): Unique name for the controller handler
+            handler_class (type): Controller handler class to register
         """
-        Get all registered parameter handler classes.
+        self.controller_handler_classes[handler_name] = handler_class
 
-        Returns:
-            dict_values: Collection of parameter handler classes
+    def register_device_linked_handler(self, handler_name, handler_class):
         """
-        return self.handler_classes.values()
+        Register a device linked parameter handler class.
+
+        Device linked handlers are processed after controller handlers because
+        some parameter groups (like disks) depend on controllers being available,
+        or at least parsed and validated.
+
+        Args:
+            handler_name (str): Unique name for the device linked handler
+            handler_class (type): Device linked handler class to register
+        """
+        self.device_linked_handler_classes[handler_name] = handler_class
 
 
 class ConfigurationBuilder:
@@ -126,9 +132,9 @@ class ConfigurationBuilder:
         self._controller_handlers = []
 
         # Create services with focused dependencies
-        self.device_tracker = services.DeviceTracker()
-        self.error_handler = services.ErrorHandler(self.module, self.device_tracker)
-        self.placement = services.VmPlacement(self.module)
+        self.device_tracker = DeviceTracker()
+        self.error_handler = ErrorHandler(self.module, self.device_tracker)
+        self.placement = VmPlacement(self.module)
 
     def create_configurator(self):
         """
@@ -179,46 +185,29 @@ class ConfigurationBuilder:
         """
         handlers = []
 
-        # Disk handler - manages VM disk configuration
-        disk_handler_class = self.configuration_registry.get_handler_class(
-            parameter_handlers.DiskParameterHandler.HANDLER_NAME
-        )
-        handlers.append(
-            disk_handler_class(
-                error_handler=self.error_handler,
-                params=self.module.params,
-                change_set=self._create_change_set(),
-                device_tracker=self.device_tracker,
-                controller_handlers=self._create_controller_handlers(),
+        # Device linked handlers - manages VM device configurations that need to be linked to a controller
+        for handler_class in self.configuration_registry.device_linked_handler_classes.values():
+            handlers.append(
+                handler_class(
+                    error_handler=self.error_handler,
+                    params=self.module.params,
+                    change_set=self._create_change_set(),
+                    device_tracker=self.device_tracker,
+                    controller_handlers=self._create_controller_handlers(),
+                )
             )
-        )
 
-        # CPU/Memory handler - manages VM resource allocation
-        cpu_memory_handler_class = self.configuration_registry.get_handler_class(
-            parameter_handlers.CpuMemoryParameterHandler.HANDLER_NAME
-        )
-        handlers.append(
-            cpu_memory_handler_class(
+        # VM aware handlers - manages VM parameters that are not device linked like resources, metadata, etc.
+        for handler_class in self.configuration_registry.vm_aware_handler_classes.values():
+            handler = handler_class(
                 error_handler=self.error_handler,
                 params=self.module.params,
                 change_set=self._create_change_set(),
                 vm=self.vm,
             )
-        )
-
-        # Metadata handler - manages VM metadata and basic settings
-        metadata_handler_class = self.configuration_registry.get_handler_class(
-            parameter_handlers.MetadataParameterHandler.HANDLER_NAME
-        )
-        handlers.append(
-            metadata_handler_class(
-                error_handler=self.error_handler,
-                params=self.module.params,
-                change_set=self._create_change_set(),
-                vm=self.vm,
-                placement=self.placement,
-            )
-        )
+            if isinstance(handler, MetadataParameterHandler):
+                handler.placement = self.placement
+            handlers.append(handler)
 
         return handlers
 

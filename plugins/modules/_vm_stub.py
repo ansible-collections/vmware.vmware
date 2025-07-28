@@ -408,7 +408,15 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     TaskError, RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm import services, parameter_handlers
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import vm_placement_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers import (
+    _metadata,
+    _cpu_memory,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked import (
+    _disks,
+    _controllers,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
     ConfigurationRegistry,
     ConfigurationBuilder
@@ -429,14 +437,16 @@ class VmModule(ModulePyvmomiBase):
 
     def _init_configuration_registry(self):
         self.configuration_registry = ConfigurationRegistry()
-        self.configuration_registry.register_handler(parameter_handlers.CpuParameterHandler)
-        self.configuration_registry.register_handler(parameter_handlers.MetadataParameterHandler)
-        self.configuration_registry.register_handler(parameter_handlers.DiskParameterHandler)
+        self.configuration_registry.register_vm_aware_handler(_metadata.MetadataParameterHandler)
+        self.configuration_registry.register_vm_aware_handler(_cpu_memory.CpuParameterHandler)
+        self.configuration_registry.register_vm_aware_handler(_cpu_memory.MemoryParameterHandler)
 
-        self.configuration_registry.register_controller_handler(parameter_handlers.ScsiControllerParameterHandler)
-        self.configuration_registry.register_controller_handler(parameter_handlers.NvmeControllerParameterHandler)
-        self.configuration_registry.register_controller_handler(parameter_handlers.SataControllerParameterHandler)
-        self.configuration_registry.register_controller_handler(parameter_handlers.IdeControllerParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
+
+        self.configuration_registry.register_controller_handler(_controllers.ScsiControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(_controllers.NvmeControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(_controllers.SataControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(_controllers.IdeControllerParameterHandler)
 
     def _init_configuration_builder(self):
         self.configuration_builder = ConfigurationBuilder(self.vm, self.module, self.configuration_registry)
@@ -538,7 +548,7 @@ def main():
     module = AnsibleModule(
         argument_spec={
             **base_argument_spec(),
-            **services.vm_placement_argument_spec(omit_params=[]),
+            **vm_placement_argument_spec(omit_params=[]),
             **dict(
                 state=dict(type='str', default='present', choices=['present', 'absent']),
                 name=dict(type='str', required=False),
