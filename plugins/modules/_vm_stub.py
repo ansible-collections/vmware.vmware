@@ -66,6 +66,7 @@ options:
             - You cannot use this module to modify the placement of a VM once it has been created.
         type: str
         required: false
+        aliases: [ vm_folder ]
 
     # placement:
     datacenter:
@@ -75,6 +76,7 @@ options:
             - You cannot use this module to modify the placement of a VM once it has been created. This parameter is ignored if the VM already exists.
         type: str
         required: false
+        aliases: [ datacenter_name ]
     cluster:
         description:
             - The cluster in which to place the VM.
@@ -82,6 +84,7 @@ options:
             - You cannot use this module to modify the placement of a VM once it has been created. This parameter is ignored if the VM already exists.
         type: str
         required: false
+        aliases: [ cluster_name ]
     resource_pool:
         description:
             - The resource pool in which to place the VM.
@@ -89,14 +92,13 @@ options:
             - You cannot use this module to modify the placement of a VM once it has been created. This parameter is ignored if the VM already exists.
         type: str
         required: false
-    host:
+    esxi_host:
         description:
             - The ESXi host on which to place the VM.
             - This is required when creating a new VM.
             - You cannot use this module to modify the placement of a VM once it has been created. This parameter is ignored if the VM already exists.
         type: str
         required: false
-        aliases: [ esxi_host ]
     datastore:
         description:
             - The datastore on which to place the VM.
@@ -133,6 +135,12 @@ options:
         type: bool
         required: false
         default: false
+    timeout:
+        description:
+            - The timeout in seconds for the module to wait for the VM to be created or updated.
+        type: int
+        required: false
+        default: 600
 
     # resources
     cpu:
@@ -140,7 +148,7 @@ options:
             - Options related to CPU resource allocation.
             - This is required when creating a new VM.
         type: dict
-        required: true
+        required: false
         suboptions:
             cores:
                 description:
@@ -214,7 +222,7 @@ options:
             - Options related to memory resource allocation.
             - This is required when creating a new VM.
         type: dict
-        required: true
+        required: false
         suboptions:
             size_mb:
                 description:
@@ -533,7 +541,7 @@ def main():
             **services.vm_placement_argument_spec(omit_params=[]),
             **dict(
                 state=dict(type='str', default='present', choices=['present', 'absent']),
-                name=dict(type='str', required=True),
+                name=dict(type='str', required=False),
                 name_match=dict(type='str', choices=['first', 'last'], default='first'),
                 uuid=dict(type='str'),
                 moid=dict(type='str'),
@@ -545,10 +553,10 @@ def main():
                 cpu=dict(type='dict', required=False),
                 memory=dict(type='dict', required=False),
                 disks=dict(type='list', elements='dict', required=False),
-                scsi_controllers=dict(type='list', elements='dict', required=False, default=[]),
-                nvme_controllers=dict(type='list', elements='dict', required=False, default=[]),
+                scsi_controllers=dict(type='list', elements='dict', required=False),
+                nvme_controllers=dict(type='list', elements='dict', required=False),
                 sata_controller_count=dict(type='int', required=False, default=0),
-                usb_controllers=dict(type='list', elements='dict', required=False, default=[]),
+                usb_controllers=dict(type='list', elements='dict', required=False),
 
                 timeout=dict(type='int', default=600),
             )
