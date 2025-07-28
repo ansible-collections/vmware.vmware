@@ -31,12 +31,12 @@ class MetadataParameterHandler(AbstractVmAwareParameterHandler):
     - datastore: Storage location for VM files
 
     Attributes:
-        placement: Placement service for datastore resolution
+        placement: Placement service for VM placement resolution
     """
 
     HANDLER_NAME = "metadata"
 
-    def __init__(self, error_handler, params, change_set, vm, placement):
+    def __init__(self, error_handler, params, change_set, vm):
         """
         Initialize the metadata parameter handler.
 
@@ -45,10 +45,9 @@ class MetadataParameterHandler(AbstractVmAwareParameterHandler):
             params (dict): Module parameters containing VM configuration
             change_set: Change tracking service for detecting configuration differences
             vm: Existing VM object (None for new VM creation)
-            placement: Placement service for datastore and resource resolution
         """
         super().__init__(error_handler, params, change_set, vm)
-        self.placement = placement
+        self.placement = None
 
     def verify_parameter_constraints(self):
         """
@@ -100,6 +99,8 @@ class MetadataParameterHandler(AbstractVmAwareParameterHandler):
         Side Effects:
             Modifies configspec with VM name, guest ID, and file location.
             For new VMs, sets up initial datastore placement structure.
+            If placement service is not set, raises an exception. This is not a user facing error,
+            but a developer facing error.
         """
         if self.params.get("name"):
             configspec.name = self.params["name"]
@@ -107,6 +108,9 @@ class MetadataParameterHandler(AbstractVmAwareParameterHandler):
             configspec.name = self.vm.name
 
         if self.vm is None:
+            if self.placement is None:
+                raise Exception("Placement service is not set for VM metadata handler")
+
             configspec.files = vim.vm.FileInfo(
                 logDirectory=None,
                 snapshotDirectory=None,
