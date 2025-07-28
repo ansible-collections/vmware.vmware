@@ -117,11 +117,11 @@ options:
           type: str
         always_update_password:
             description:
-                - If true and O(proxy.password) is set, this module will always report a change and
-                  set the password value to O(proxy.password) .
+                - If true and O(proxy[].password) is set, this module will always report a change and
+                  set the password value to O(proxy[].password) .
                 - If false, other properties are still checked for differences. If a difference is found,
-                  the value of O(proxy.password) is still used.
-                - If O(proxy.password) is unset, this parameter is ignored.
+                  the value of O(proxy[].password) is still used.
+                - If O(proxy[].password) is unset, this parameter is ignored.
                 - This option is needed because there is no way to check the current password value and
                   compare it against the desired password value.
             default: true
