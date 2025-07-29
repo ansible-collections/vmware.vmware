@@ -18,7 +18,6 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set impor
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._device_tracker import DeviceTracker
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._error_handler import ErrorHandler
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import VmPlacement
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._metadata import MetadataParameterHandler
 
 
 class ConfigurationRegistry:
@@ -199,15 +198,13 @@ class ConfigurationBuilder:
 
         # VM aware handlers - manages VM parameters that are not device linked like resources, metadata, etc.
         for handler_class in self.configuration_registry.vm_aware_handler_classes.values():
-            handler = handler_class(
+            handlers.append(handler_class(
                 error_handler=self.error_handler,
                 params=self.module.params,
                 change_set=self._create_change_set(),
                 vm=self.vm,
-            )
-            if isinstance(handler, MetadataParameterHandler):
-                handler.placement = self.placement
-            handlers.append(handler)
+                placement=self.placement,
+            ))
 
         return handlers
 
