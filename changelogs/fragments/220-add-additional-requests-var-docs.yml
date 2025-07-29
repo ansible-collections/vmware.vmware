@@ -1,0 +1,4 @@
+---
+trivial:
+  - Add documentation for the REQUESTS_CA_BUNDLE environment variable and its impact to validate_certs
+    (https://github.com/ansible-collections/vmware.vmware/issues/214)
