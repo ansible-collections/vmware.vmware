@@ -44,7 +44,7 @@ class CpuParameterHandler(AbstractVmAwareParameterHandler):
 
     HANDLER_NAME = "cpu"
 
-    def __init__(self, error_handler, params, change_set, vm):
+    def __init__(self, error_handler, params, change_set, vm, **kwargs):
         """
         Initialize the CPU parameter handler.
 
@@ -53,6 +53,8 @@ class CpuParameterHandler(AbstractVmAwareParameterHandler):
             params (dict): Module parameters containing VM configuration
             change_set: Service for tracking configuration changes and requirements
             vm: VM object being configured (None for new VM creation)
+            **kwargs: Additional keyword arguments. Other handlers may require specific
+                      services and allowing kwargs makes initialization more flexible.
         """
         super().__init__(error_handler, params, change_set, vm)
         self.cpu_params = self.params.get("cpu", {})
@@ -241,7 +243,7 @@ class MemoryParameterHandler(AbstractVmAwareParameterHandler):
 
     HANDLER_NAME = "memory"
 
-    def __init__(self, error_handler, params, change_set, vm):
+    def __init__(self, error_handler, params, change_set, vm, **kwargs):
         """
         Initialize the memory parameter handler.
 
@@ -250,8 +252,10 @@ class MemoryParameterHandler(AbstractVmAwareParameterHandler):
             params (dict): Module parameters containing VM configuration
             change_set: Service for tracking configuration changes and requirements
             vm: VM object being configured (None for new VM creation)
+            **kwargs: Additional keyword arguments. Other handlers may require specific
+                      services and allowing kwargs makes initialization more flexible.
         """
-        super().__init__(error_handler, params, change_set, vm)
+        super().__init__(error_handler, params, change_set, vm, **kwargs)
         self.memory_params = self.params.get("memory", {})
 
     def verify_parameter_constraints(self):
