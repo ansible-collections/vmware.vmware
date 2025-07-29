@@ -21,7 +21,8 @@ notes:
   - All variables and VMware object names are case sensitive.
   - >-
       Modules may rely on the 'requests' python library, which does not use the system certificate store by default. You can
-      specify the certificate store by setting the REQUESTS_CA_BUNDLE environment variable.
+      specify the certificate store by setting the REQUESTS_CA_BUNDLE environment variable. Note having this variable set may
+      cause a 'false' value for the 'validate_certs' option to be ignored in some cases.
       Example: 'export REQUESTS_CA_BUNDLE=/path/to/your/ca_bundle.pem'
 options:
   hostname:
