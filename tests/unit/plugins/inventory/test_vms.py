@@ -13,12 +13,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def get_option(value):
-    if value in ('hostname', 'username', 'password', 'port', 'validate_certs', 'http_proxy_port', 'http_proxy_host'):
-        return 'foo'
-    return None
-
-
 class TestVmInventoryHost():
     def test_guest_ip(self):
         vm = VmInventoryHost()
@@ -82,7 +76,9 @@ class TestInventoryModule():
 
     def test_populate_from_vcenter(self, mocker):
         inventory_module = InventoryModule()
-        mocker.patch.object(inventory_module, 'parse_properties_param', return_value=['name', 'config', 'guest', 'config.guestId', 'summary.runtime.powerState'])
+        mocker.patch.object(inventory_module, 'parse_properties_param', return_value=[
+            'name', 'config', 'guest', 'config.guestId', 'summary.runtime.powerState'
+        ])
         mocker.patch.object(inventory_module, 'initialize_pyvmomi_client', side_effect=setattr(inventory_module, 'pyvmomi_client', mocker.Mock()))
         mocker.patch.object(inventory_module, 'initialize_rest_client', side_effect=setattr(inventory_module, 'rest_client', mocker.Mock()))
         mocker.patch.object(inventory_module, 'get_objects_by_type', return_value=[mocker.Mock()])
