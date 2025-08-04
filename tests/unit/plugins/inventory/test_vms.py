@@ -27,29 +27,35 @@ class TestVmInventoryHost():
         vm.properties['guest'] = {'ipAddress': '10.10.10.10'}
         assert vm.guest_ip == '10.10.10.10'
 
-    def test_cluster_name(self, mocker):
+    def test_cluster(self, mocker):
         vm = VmInventoryHost()
-        assert vm.cluster_name == ""
+        assert vm.cluster == dict(name='', moid='')
 
         vm.object = mocker.Mock()
-        vm._cluster_name = None
+        vm._cluster = None
         vm.object.summary.runtime.host.parent.name = 'Cluster1'
-        assert vm.cluster_name == 'Cluster1'
+        vm.object.summary.runtime.host.parent._GetMoId.return_value = '1'
+        assert vm.cluster['name'] == 'Cluster1'
+        assert vm.cluster['moid'] == '1'
         # check again to make sure the value is cached
         vm.object = None
-        assert vm.cluster_name == 'Cluster1'
+        assert vm.cluster['name'] == 'Cluster1'
+        assert vm.cluster['moid'] == '1'
 
-    def test_esxi_host_name(self, mocker):
+    def test_esxi_host(self, mocker):
         vm = VmInventoryHost()
-        assert vm.esxi_host_name == ""
+        assert vm.esxi_host == dict(name='', moid='')
 
         vm.object = mocker.Mock()
-        vm._esxi_host_name = None
+        vm._esxi_host = None
         vm.object.summary.runtime.host.name = 'esxi-host-1'
-        assert vm.esxi_host_name == 'esxi-host-1'
+        vm.object.summary.runtime.host._GetMoId.return_value = '1'
+        assert vm.esxi_host['name'] == 'esxi-host-1'
+        assert vm.esxi_host['moid'] == '1'
         # check again to make sure the value is cached
         vm.object = None
-        assert vm.esxi_host_name == 'esxi-host-1'
+        assert vm.esxi_host['name'] == 'esxi-host-1'
+        assert vm.esxi_host['moid'] == '1'
 
     def test_get_tags(self, mocker):
         vm = VmInventoryHost()

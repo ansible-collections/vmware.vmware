@@ -39,10 +39,10 @@ options:
             {key: 'config.guestId', separator: ''},
             {key: 'summary.runtime.powerState', separator: ''},
         ]
-    gather_compute_object_names:
+    gather_compute_objects:
         description:
-            - If true, gather the cluster and ESXi host name for this VM. This will add the cluster_name
-              and esxi_host_name properties to the VM object.
+            - If true, gather the cluster and ESXi host identifiers for this VM. This will add the cluster
+              and esxi_host properties to the VM object.
             - If these properties are not available for some reason, the values will be empty strings.
             - If false, these properties will not be added to the VM object.
             - Looking up these values can add time to the inventory process.
@@ -139,20 +139,24 @@ keyed_groups:
 # gather and group hosts by compute resource information.
 ---
 plugin: vmware.vmware.vms
-gather_compute_object_names: true
+
+# creates properties for cluster and ESXi host identifiers on the VM object, like
+# cluster: {name: "Cluster1", moid: "1234567890"}
+# esxi_host: {name: "esxi-host-1", moid: "1234567890"}
+gather_compute_objects: true
 
 # create groups based on cluster and ESXi host name.
 keyed_groups:
-  - key: cluster_name
+  - key: 'cluster["name"]'
     prefix: "cluster"
     separator: "_"
-  - key: esxi_host_name
+  - key: 'esxi_host["name"]'
     prefix: "esxi_host"
     separator: "_"
 
 # filter out VMs that are not running in one or more of clusters.
 filter_expressions:
-  - 'cluster_name in ["Cluster1", "Cluster2"]'
+  - 'cluster["name"] in ["Cluster1", "Cluster2"]'
 ...
 
 
@@ -215,8 +219,8 @@ class VmInventoryHost(VmwareInventoryHost):
     def __init__(self):
         super().__init__()
         self._guest_ip = None
-        self._cluster_name = None
-        self._esxi_host_name = None
+        self._cluster = None
+        self._esxi_host = None
 
     @property
     def guest_ip(self):
@@ -231,24 +235,32 @@ class VmInventoryHost(VmwareInventoryHost):
         return self._guest_ip
 
     @property
-    def cluster_name(self):
-        if self._cluster_name is None:
+    def cluster(self):
+        if self._cluster is None:
             try:
-                self._cluster_name = self.object.summary.runtime.host.parent.name
+                _cluster = self.object.summary.runtime.host.parent
+                self._cluster = dict(
+                    name=_cluster.name,
+                    moid=_cluster._GetMoId()
+                )
             except AttributeError:
-                self._cluster_name = ""
+                self._cluster = dict(name='', moid='')
 
-        return self._cluster_name
+        return self._cluster
 
     @property
-    def esxi_host_name(self):
-        if self._esxi_host_name is None:
+    def esxi_host(self):
+        if self._esxi_host is None:
             try:
-                self._esxi_host_name = self.object.summary.runtime.host.name
+                _esxi_host = self.object.summary.runtime.host
+                self._esxi_host = dict(
+                    name=_esxi_host.name,
+                    moid=_esxi_host._GetMoId()
+                )
             except AttributeError:
-                self._esxi_host_name = ""
+                self._esxi_host = dict(name='', moid='')
 
-        return self._esxi_host_name
+        return self._esxi_host
 
     def get_tags(self, rest_client):
         return rest_client.get_tags_by_vm_moid(self.object._GetMoId())
@@ -305,7 +317,7 @@ class InventoryModule(VmwareInventoryBase):
             properties_param.append("summary.runtime.powerState")
 
         # needed by esxi_host and cluster properties value
-        if self.get_option("gather_compute_object_names"):
+        if self.get_option("gather_compute_objects"):
             properties_param.append("summary.runtime.host")
 
         return properties_param
@@ -342,9 +354,9 @@ class InventoryModule(VmwareInventoryBase):
             if self.get_option("gather_tags"):
                 self.add_tags_to_object_properties(vm)
 
-            if self.get_option("gather_compute_object_names"):
-                vm.properties['cluster_name'] = vm.cluster_name
-                vm.properties['esxi_host_name'] = vm.esxi_host_name
+            if self.get_option("gather_compute_objects"):
+                vm.properties['cluster'] = vm.cluster
+                vm.properties['esxi_host'] = vm.esxi_host
 
             self.set_inventory_hostname(vm)
             self.add_host_object_from_vcenter_to_inventory(new_host=vm, hostvars=hostvars)
