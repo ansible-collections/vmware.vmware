@@ -1,3 +1,0 @@
-trivial:
-  - Re-Enable pyvmomi for testes
-    (https://github.com/ansible-collections/vmware.vmware/pull/213).

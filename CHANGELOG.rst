@@ -4,6 +4,20 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.3.0
+======
+
+Minor Changes
+-------------
+
+- add folder_paths_are_absolute option to all modules that support folder paths, allowing users to specify if folder paths are absolute and override the default behavior of intelligently determining if the path is absolute or relative. (https://github.com/ansible-collections/vmware.vmware/issues/202)
+- vcsa_settings - Add always_update_password parameter to proxy settings, which can be used to control if the password should be updated.
+
+Bugfixes
+--------
+
+- vcsa_settings - Fix bug where proxy settings cannot be disabled, even if enabled is set to false. (https://github.com/ansible-collections/vmware.vmware/issues/207)
+
 v2.2.0
 ======
 
