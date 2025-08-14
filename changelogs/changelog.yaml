@@ -365,3 +365,21 @@ releases:
     - 210-replace-deprecated-json-encoder.yml
     - linting.yml
     release_date: '2025-06-22'
+  2.3.0:
+    changes:
+      bugfixes:
+      - vcsa_settings - Fix bug where proxy settings cannot be disabled, even if enabled
+        is set to false. (https://github.com/ansible-collections/vmware.vmware/issues/207)
+      minor_changes:
+      - add folder_paths_are_absolute option to all modules that support folder paths,
+        allowing users to specify if folder paths are absolute and override the default
+        behavior of intelligently determining if the path is absolute or relative.
+        (https://github.com/ansible-collections/vmware.vmware/issues/202)
+      - vcsa_settings - Add always_update_password parameter to proxy settings, which
+        can be used to control if the password should be updated.
+    fragments:
+    - 213_re-enable_pyvmomi-for-tests.yml
+    - 218-add-abs-folder-opt.yml
+    - 219-fix-proxy-disable-vcsa.yml
+    - 220-add-additional-requests-var-docs.yml
+    release_date: '2025-08-12'
