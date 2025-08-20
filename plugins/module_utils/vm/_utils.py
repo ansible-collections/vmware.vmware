@@ -80,10 +80,11 @@ def format_size_str_as_kb(size_str):
     if not size_str:
         raise ValueError("Size string cannot be empty")
 
-    match = re.search(r"^(\d+)([a-zA-Z]+)$", size_str)
+    match = re.search(r"^(\d+\.?\d*)([a-zA-Z]+)$", size_str)
     if not match:
         raise ValueError(
-            "Invalid disk size format: '%s'. Format should be like '100gb'." % size_str
+            "Invalid disk size format: '%s'. Format should a positive number followed by a unit abbreviation, like '100gb'."
+            % size_str
         )
 
     disk_size_str, disk_units = match.groups()
@@ -95,9 +96,5 @@ def format_size_str_as_kb(size_str):
             % (disk_units, list(unit_converters.keys()))
         )
 
-    try:
-        disk_size = float(disk_size_str)
-    except ValueError:
-        raise ValueError("Invalid disk size number: '%s'" % disk_size_str)
-
+    disk_size = float(disk_size_str)
     return int(disk_size * (1024 ** unit_converters[disk_units]))

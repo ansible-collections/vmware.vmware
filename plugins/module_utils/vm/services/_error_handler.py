@@ -94,13 +94,10 @@ class ErrorHandler(AbstractService):
         """
         message = (
             "VM needs to be %s to make changes. You can allow this module to "
-            "automatically power cycle the VM with the allow_power_cycling parameter." %
-            desired_power_state
+            "automatically power cycle the VM with the allow_power_cycling parameter."
+            % desired_power_state
         )
-        self.module.fail_json(
-            msg=message,
-            error_code="POWER_CYCLE_REQUIRED"
-        )
+        self.module.fail_json(msg=message, error_code="POWER_CYCLE_REQUIRED")
 
     def fail_with_parameter_error(self, parameter_name, message, details=None):
         """

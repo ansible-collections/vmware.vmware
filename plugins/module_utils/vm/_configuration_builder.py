@@ -15,9 +15,15 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator imp
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
     ParameterChangeSet,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._device_tracker import DeviceTracker
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._error_handler import ErrorHandler
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import VmPlacement
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._device_tracker import (
+    DeviceTracker,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._error_handler import (
+    ErrorHandler,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import (
+    VmPlacement,
+)
 
 
 class ConfigurationRegistry:
@@ -56,9 +62,13 @@ class ConfigurationRegistry:
             ValueError: If handler_name is not registered. This is not a user
             facing error, but a developer facing error.
         """
-        try:
-            return self.handler_classes[handler_name]
-        except KeyError:
+        if handler_name in self.controller_handler_classes:
+            return self.controller_handler_classes[handler_name]
+        elif handler_name in self.vm_aware_handler_classes:
+            return self.vm_aware_handler_classes[handler_name]
+        elif handler_name in self.device_linked_handler_classes:
+            return self.device_linked_handler_classes[handler_name]
+        else:
             raise ValueError(f"Invalid handler type: {handler_name}")
 
     def register_controller_handler(self, handler_name, handler_class):
@@ -87,7 +97,7 @@ class ConfigurationRegistry:
             handler_name (str): Unique name for the controller handler
             handler_class (type): Controller handler class to register
         """
-        self.controller_handler_classes[handler_name] = handler_class
+        self.vm_aware_handler_classes[handler_name] = handler_class
 
     def register_device_linked_handler(self, handler_name, handler_class):
         """
@@ -185,7 +195,9 @@ class ConfigurationBuilder:
         handlers = []
 
         # Device linked handlers - manages VM device configurations that need to be linked to a controller
-        for handler_class in self.configuration_registry.device_linked_handler_classes.values():
+        for (
+            handler_class
+        ) in self.configuration_registry.device_linked_handler_classes.values():
             handlers.append(
                 handler_class(
                     error_handler=self.error_handler,
@@ -197,14 +209,18 @@ class ConfigurationBuilder:
             )
 
         # VM aware handlers - manages VM parameters that are not device linked like resources, metadata, etc.
-        for handler_class in self.configuration_registry.vm_aware_handler_classes.values():
-            handlers.append(handler_class(
-                error_handler=self.error_handler,
-                params=self.module.params,
-                change_set=self._create_change_set(),
-                vm=self.vm,
-                placement=self.placement,
-            ))
+        for (
+            handler_class
+        ) in self.configuration_registry.vm_aware_handler_classes.values():
+            handlers.append(
+                handler_class(
+                    error_handler=self.error_handler,
+                    params=self.module.params,
+                    change_set=self._create_change_set(),
+                    vm=self.vm,
+                    placement=self.placement,
+                )
+            )
 
         return handlers
 

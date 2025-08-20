@@ -118,7 +118,12 @@ class ParameterChangeSet:
         except KeyError:
             return
 
-        if param_value == functools.reduce(getattr, vm_attribute.split("."), self.vm):
+        try:
+            vm_value = functools.reduce(getattr, vm_attribute.split("."), self.vm)
+        except AttributeError:
+            vm_value = None
+
+        if param_value == vm_value:
             return
 
         self.changes_required = True
