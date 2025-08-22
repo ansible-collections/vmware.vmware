@@ -113,7 +113,7 @@ class MetadataParameterHandler(AbstractVmAwareParameterHandler):
                 logDirectory=None,
                 snapshotDirectory=None,
                 suspendDirectory=None,
-                vmPathName="[" + self.placement.get_datastore().name + "]",
+                vmPathName="[%s]" % self.placement.get_datastore().name,
             )
 
         if self.params.get("guest_id"):

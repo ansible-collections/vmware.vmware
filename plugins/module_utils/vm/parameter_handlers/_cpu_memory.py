@@ -157,18 +157,18 @@ class CpuParameterHandler(AbstractVmAwareParameterHandler):
         """
         self._check_cpu_changes_with_hot_add_remove()
 
-        self.change_set.check_if_change_is_required(
-            "cores_per_socket", "config.numCoresPerSocket", power_sensitive=True
-        )
-        self.change_set.check_if_change_is_required(
-            "enable_hot_add", "config.cpuHotAddEnabled", power_sensitive=True
-        )
-        self.change_set.check_if_change_is_required(
-            "enable_hot_remove", "config.cpuHotRemoveEnabled", power_sensitive=True
-        )
-        self.change_set.check_if_change_is_required(
-            "enable_performance_counters", "config.vPMCEnabled", power_sensitive=True
-        )
+        # Define parameter mappings for change detection
+        param_mappings = [
+            ("cores_per_socket", "config.numCoresPerSocket"),
+            ("enable_hot_add", "config.cpuHotAddEnabled"),
+            ("enable_hot_remove", "config.cpuHotRemoveEnabled"),
+            ("enable_performance_counters", "config.vPMCEnabled"),
+        ]
+
+        for param_name, attribute_path in param_mappings:
+            self.change_set.check_if_change_is_required(
+                param_name, attribute_path, power_sensitive=True
+            )
 
     def _check_cpu_changes_with_hot_add_remove(self):
         """
@@ -270,22 +270,29 @@ class MemoryParameterHandler(AbstractVmAwareParameterHandler):
             Calls error_handler.fail_with_parameter_error() for missing
             required parameters or invalid memory decrease attempts.
         """
+        memory_size_mb = self.memory_params.get("size_mb")
+
         if self.vm is None:
-            if not self.memory_params.get("size_mb"):
+            if memory_size_mb is None:
                 self.error_handler.fail_with_parameter_error(
                     parameter_name="memory.size_mb",
                     message="memory.size_mb attribute is mandatory for VM creation",
                 )
-        else:
-            if self.memory_params.get("size_mb") < self.vm.config.hardware.memoryMB:
-                self.error_handler.fail_with_parameter_error(
-                    parameter_name="memory.size_mb",
-                    message="Memory cannot be decreased once added to a VM.",
-                    details={
-                        "size_mb": self.memory_params.get("size_mb"),
-                        "current_size_mb": self.vm.config.hardware.memoryMB,
-                    },
-                )
+
+            return
+
+        if (
+            memory_size_mb is not None
+            and memory_size_mb < self.vm.config.hardware.memoryMB
+        ):
+            self.error_handler.fail_with_parameter_error(
+                parameter_name="memory.size_mb",
+                message="Memory cannot be decreased once added to a VM.",
+                details={
+                    "size_mb": memory_size_mb,
+                    "current_size_mb": self.vm.config.hardware.memoryMB,
+                },
+            )
 
     def populate_config_spec_with_parameters(self, configspec):
         """

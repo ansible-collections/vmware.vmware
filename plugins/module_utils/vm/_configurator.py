@@ -153,20 +153,23 @@ class Configurator:
 
         unlinked_devices = []
         for device in self.vm.config.hardware.device:
-            for handler in self.handlers:
-                if not hasattr(handler, "vim_device_class"):
-                    continue
+            failed_to_link = False
 
-                if not isinstance(device, handler.vim_device_class):
+            for handler in self.handlers:
+                if not hasattr(handler, "vim_device_class") or not isinstance(
+                    device, handler.vim_device_class
+                ):
                     continue
 
                 try:
                     handler.link_vm_device(device)
+                    failed_to_link = False
                     break
                 except Exception:
-                    pass
+                    failed_to_link = True
+                    continue
 
+            if failed_to_link:
                 unlinked_devices.append(device)
-                break
 
         return unlinked_devices
