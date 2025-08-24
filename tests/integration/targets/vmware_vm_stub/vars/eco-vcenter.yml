@@ -1,0 +1,2 @@
+---
+test_vm_name: "{{ tiny_prefix }}-vm-stub"

@@ -44,12 +44,13 @@ class TestConfigurationRegistry:
     def test_multiple_handler_registrations(self, registry):
         """Test registering multiple handlers of different types."""
         controller_handler = Mock()
+        controller_handler.HANDLER_NAME = "controller1"
         vm_aware_handler = Mock()
         device_linked_handler = Mock()
 
-        registry.register_controller_handler("controller1", controller_handler)
-        registry.register_vm_aware_handler("vm_aware1", vm_aware_handler)
-        registry.register_device_linked_handler("device_linked1", device_linked_handler)
+        registry.register_controller_handler(controller_handler)
+        registry.register_vm_aware_handler(vm_aware_handler, "vm_aware1")
+        registry.register_device_linked_handler(device_linked_handler, "device_linked1")
 
         assert len(registry.controller_handler_classes) == 1
         assert len(registry.vm_aware_handler_classes) == 1

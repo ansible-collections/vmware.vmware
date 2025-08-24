@@ -71,7 +71,7 @@ class ConfigurationRegistry:
         else:
             raise ValueError(f"Invalid handler type: {handler_name}")
 
-    def register_controller_handler(self, handler_name, handler_class):
+    def register_controller_handler(self, handler_class, handler_name=None):
         """
         Register a controller parameter handler class.
 
@@ -83,9 +83,11 @@ class ConfigurationRegistry:
             handler_name (str): Unique name for the controller handler
             handler_class (type): Controller handler class to register
         """
+        if handler_name is None:
+            handler_name = handler_class.HANDLER_NAME
         self.controller_handler_classes[handler_name] = handler_class
 
-    def register_vm_aware_handler(self, handler_name, handler_class):
+    def register_vm_aware_handler(self, handler_class, handler_name=None):
         """
         Register a VM aware parameter handler class.
 
@@ -97,9 +99,11 @@ class ConfigurationRegistry:
             handler_name (str): Unique name for the controller handler
             handler_class (type): Controller handler class to register
         """
+        if handler_name is None:
+            handler_name = handler_class.HANDLER_NAME
         self.vm_aware_handler_classes[handler_name] = handler_class
 
-    def register_device_linked_handler(self, handler_name, handler_class):
+    def register_device_linked_handler(self, handler_class, handler_name=None):
         """
         Register a device linked parameter handler class.
 
@@ -111,6 +115,8 @@ class ConfigurationRegistry:
             handler_name (str): Unique name for the device linked handler
             handler_class (type): Device linked handler class to register
         """
+        if handler_name is None:
+            handler_name = handler_class.HANDLER_NAME
         self.device_linked_handler_classes[handler_name] = handler_class
 
 

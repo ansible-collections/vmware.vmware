@@ -1,0 +1,48 @@
+---
+- name: Create VM
+  vmware.vmware._vm_stub: &create-vm
+    name: "{{ test_vm_name }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster_name }}"
+    datastore: "{{ shared_storage_01 }}"
+    guest_id: amazonlinux3_64Guest
+    cpu:
+      cores: 2
+    memory:
+      size_mb: 1024
+    disks:
+      - location: "{{ shared_storage_01 }}"
+        size: 10gb
+        provisioning: thin
+        sharing: no_sharing
+        mode: persistent
+        device_node: SCSI(0:0)
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+  register: _create_vm
+
+- name: Create VM - Idempotent
+  vmware.vmware._vm_stub: *create-vm
+  register: _create_vm_idempotent
+
+- name: Lookup VM Info
+  vmware.vmware.guest_info:
+    moid: "{{ _create_vm.vm.moid }}"
+  register: _lookup_vm_info
+
+- name: Check create tasks
+  ansible.builtin.assert:
+    that:
+      - _create_vm is ansible.builtin.changed
+      - _create_vm_idempotent is not ansible.builtin.changed
+      - vm_info != {}
+      - vm_info.hw_cluster == vcenter_cluster_name
+      - vm_info.hw_datastores[0] == shared_storage_01
+      - vm_info.hw_cores_per_socket == 1
+      - vm_info.hw_processor_count == 2
+      - vm_info.hw_memtotal_mb == 1024
+      - vm_info.moid == _create_vm.vm.moid
+      - vm_info.hw_name == _create_vm.vm.name
+  vars:
+    vm_info: "{{ _lookup_vm_info.guests[0] }}"

@@ -255,7 +255,7 @@ class MemoryParameterHandler(AbstractVmAwareParameterHandler):
             **kwargs: Additional keyword arguments. Other handlers may require specific
                       services and allowing kwargs makes initialization more flexible.
         """
-        super().__init__(error_handler, params, change_set, vm, **kwargs)
+        super().__init__(error_handler, params, change_set, vm)
         self.memory_params = self.params.get("memory", {})
 
     def verify_parameter_constraints(self):

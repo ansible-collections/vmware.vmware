@@ -391,6 +391,8 @@ vm:
         name: test-d9c1-vm
 '''
 
+import re
+
 try:
     from pyVmomi import vim, vmodl
 except ImportError:
@@ -534,7 +536,7 @@ class VmModule(ModulePyvmomiBase):
                 timeout=self.params['timeout']
             )
         except TaskError as e:
-            if str(e).startswith('Invalid configuration for device'):
+            if re.search(r'Invalid [\w]+ for device', str(e)):
                 self.error_handler.fail_with_device_configuration_error(error=e)
             else:
                 self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))

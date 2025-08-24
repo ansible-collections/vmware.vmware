@@ -160,8 +160,7 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
         if any(
             [
                 self.change_set.objects_to_add,
-                self.change_set.objects_to_update,
-                self.change_set.objects_in_sync,
+                self.change_set.objects_to_update
             ]
         ):
             self.change_set.changes_required = True
@@ -265,9 +264,9 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with ScsiController objects representing
             the desired SCSI controller configuration.
         """
-        for index, controller_param_def in enumerate(
-            self.params.get("scsi_controllers", [])
-        ):
+        # for some reason, ansible sets this param to None if its undefined
+        scsi_controllers = self.params.get("scsi_controllers") or []
+        for index, controller_param_def in enumerate(scsi_controllers):
             self.controllers[index] = ScsiController(
                 bus_number=index,
                 device_type=controller_param_def.get("controller_type"),
@@ -381,9 +380,9 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with NvmeController objects representing
             the desired NVMe controller configuration.
         """
-        for index, controller_param_def in enumerate(
-            self.params.get("nvme_controllers", [])
-        ):
+        # for some reason, ansible sets this param to None if it undefined
+        nvme_controllers = self.params.get("nvme_controllers") or []
+        for index, controller_param_def in enumerate(nvme_controllers):
             self.controllers[index] = NvmeController(
                 bus_number=index, bus_sharing=controller_param_def.get("bus_sharing")
             )

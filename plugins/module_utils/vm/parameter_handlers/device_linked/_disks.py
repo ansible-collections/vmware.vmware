@@ -202,8 +202,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
         if any(
             [
                 self.change_set.objects_to_add,
-                self.change_set.objects_to_update,
-                self.change_set.objects_in_sync,
+                self.change_set.objects_to_update
             ]
         ):
             self.change_set.changes_required = True

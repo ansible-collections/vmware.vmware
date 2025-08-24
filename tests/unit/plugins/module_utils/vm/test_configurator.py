@@ -193,7 +193,7 @@ class TestConfigurator:
         handler = Mock()
         handler.vim_device_class = type(device)
         handler.link_vm_device = Mock()
-        configurator.handlers = [handler]
+        configurator.all_handlers = [handler]
 
         result = configurator._link_vm_devices_to_handlers()
 
@@ -208,7 +208,7 @@ class TestConfigurator:
         handler = Mock()
         handler.vim_device_class = type(device)
         handler.link_vm_device = Mock(side_effect=Exception("Link failed"))
-        configurator.handlers = [handler]
+        configurator.all_handlers = [handler]
 
         result = configurator._link_vm_devices_to_handlers()
 
@@ -221,7 +221,7 @@ class TestConfigurator:
 
         handler = Mock()
         handler.vim_device_class = type(Mock())  # Different type
-        configurator.handlers = [handler]
+        configurator.all_handlers = [handler]
 
         result = configurator._link_vm_devices_to_handlers()
 
@@ -236,7 +236,7 @@ class TestConfigurator:
 
         handler = Mock()
         del handler.vim_device_class  # Remove the attribute
-        configurator.handlers = [handler]
+        configurator.all_handlers = [handler]
 
         result = configurator._link_vm_devices_to_handlers()
 
@@ -256,7 +256,7 @@ class TestConfigurator:
         handler2.vim_device_class = type(device2)
         handler2.link_vm_device = Mock(side_effect=Exception("Link failed"))
 
-        configurator.handlers = [handler1, handler2]
+        configurator.all_handlers = [handler1, handler2]
 
         result = configurator._link_vm_devices_to_handlers()
 

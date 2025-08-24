@@ -152,13 +152,17 @@ class Configurator:
             return []
 
         unlinked_devices = []
+        device_linked_handlers = [handler for handler in self.all_handlers if hasattr(handler, "vim_device_class")]
+        managed_device_types = tuple(handler.vim_device_class for handler in device_linked_handlers)
         for device in self.vm.config.hardware.device:
-            failed_to_link = False
+            # some devices are not managed by this module (like VMCI),
+            # so we should skip them instead of failing to link and removing them
+            if not isinstance(device, managed_device_types):
+                continue
 
-            for handler in self.handlers:
-                if not hasattr(handler, "vim_device_class") or not isinstance(
-                    device, handler.vim_device_class
-                ):
+            failed_to_link = True
+            for handler in device_linked_handlers:
+                if not isinstance(device, handler.vim_device_class):
                     continue
 
                 try:
@@ -166,7 +170,6 @@ class Configurator:
                     failed_to_link = False
                     break
                 except Exception:
-                    failed_to_link = True
                     continue
 
             if failed_to_link:
