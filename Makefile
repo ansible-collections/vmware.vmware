@@ -25,7 +25,10 @@ sanity: upgrade-collections
 .PHONY: units
 units: upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
-	ansible-test units --docker --python 3.12
+	ansible-test units --docker --python 3.12 --coverage; \
+	ansible-test coverage combine --export tests/output/coverage/; \
+	ansible-test coverage report --docker --omit 'tests/*' --show-missing
+
 
 .PHONY: integration
 integration: install-integration-reqs upgrade-collections

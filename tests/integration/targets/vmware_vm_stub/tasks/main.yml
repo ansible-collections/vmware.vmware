@@ -1,0 +1,15 @@
+---
+- name: Test On VCenter
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Test vm create
+      ansible.builtin.include_tasks: create_vm_tests.yml
+
+  always:
+    - name: Delete VM
+      vmware.vmware._vm_stub:
+        name: "{{ test_vm_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: absent
