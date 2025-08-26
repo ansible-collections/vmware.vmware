@@ -465,16 +465,18 @@ class VmModule(ModulePyvmomiBase):
         vm = self._deploy_vm(create_spec)
         self.vm = vm
 
+        return self.configurator.change_set
+
     def configure_existing_vm(self):
         self.configurator.prepare_parameter_handlers()
         change_set = self.configurator.stage_configuration_changes()
 
-        if change_set.changes_required:
+        if change_set.are_changes_required():
             update_spec = vim.vm.ConfigSpec()
             self.configurator.apply_staged_changes_to_config_spec(update_spec)
             self._apply_update_spec(update_spec, change_set.power_cycle_required)
 
-        return change_set.changes_required
+        return change_set
 
     def delete_vm(self):
         if not self.vm:
@@ -587,6 +589,7 @@ def main():
 
     result = dict(
         changed=False,
+        changes=dict(),
         vm=dict(
             moid=None,
             name=None
@@ -596,14 +599,14 @@ def main():
     vm_module = VmModule(module)
     if module.params['state'] == 'present':
         if vm_module.vm:
-            result['changed'] = vm_module.configure_existing_vm()
-            result['vm']['moid'] = vm_module.vm._GetMoId()
-            result['vm']['name'] = vm_module.vm.name
+            change_set = vm_module.configure_existing_vm()
         else:
-            vm_module.create_new_vm()
-            result['vm']['moid'] = vm_module.vm._GetMoId()
-            result['vm']['name'] = vm_module.vm.name
-            result['changed'] = True
+            change_set = vm_module.create_new_vm()
+
+        result['vm']['moid'] = vm_module.vm._GetMoId()
+        result['vm']['name'] = vm_module.vm.name
+        result['changed'] = change_set.are_changes_required()
+        result['changes'] = change_set.changes
 
     elif module.params['state'] == 'absent':
         if vm_module.vm:

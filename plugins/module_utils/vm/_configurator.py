@@ -55,7 +55,7 @@ class Configurator:
         Side Effects:
             - Calls verify_parameter_constraints() on all handlers
             - Links VM devices to their appropriate handlers
-            - Sets change_set.unlinked_devices with devices that couldn't be linked
+            - Sets change_set.objects_to_remove with devices that couldn't be linked
         """
         # Controller handlers need to be processed and initiated before the disk params are parsed
         for handler in self.controller_handlers:
@@ -64,7 +64,7 @@ class Configurator:
         for handler in self.handlers:
             handler.verify_parameter_constraints()
 
-        self.change_set.unlinked_devices = self._link_vm_devices_to_handlers()
+        self.change_set.objects_to_remove = self._link_vm_devices_to_handlers()
 
     def stage_configuration_changes(self):
         """
@@ -78,12 +78,8 @@ class Configurator:
             ParameterChangeSet: The master change set containing aggregated changes
 
         Side Effects:
-            - Updates change_set.changes_required based on handler states
             - Updates change_set.power_cycle_required based on handler states
         """
-        if self.change_set.unlinked_devices:
-            self.change_set.changes_required = True
-
         for handler in self.all_handlers:
             handler.compare_live_config_with_desired_config()
             self.change_set.propagate_required_changes_from(handler.change_set)
@@ -107,12 +103,12 @@ class Configurator:
             - Allows handlers to modify configspec for their changes
             - Tracks device IDs for error reporting
         """
-        for device in self.change_set.unlinked_devices:
+        for device in self.change_set.objects_to_remove:
             self.device_tracker.track_device_id_from_spec(device)
             configspec.deviceChange.append(self._create_device_removal_spec(device))
 
         for handler in self.all_handlers:
-            if handler.change_set.changes_required:
+            if handler.change_set.are_changes_required():
                 handler.populate_config_spec_with_parameters(configspec)
 
     def _create_device_removal_spec(self, device):
@@ -151,7 +147,7 @@ class Configurator:
         if self.vm is None:
             return []
 
-        unlinked_devices = []
+        objects_to_remove = []
         device_linked_handlers = [handler for handler in self.all_handlers if hasattr(handler, "vim_device_class")]
         managed_device_types = tuple(handler.vim_device_class for handler in device_linked_handlers)
         for device in self.vm.config.hardware.device:
@@ -173,6 +169,6 @@ class Configurator:
                     continue
 
             if failed_to_link:
-                unlinked_devices.append(device)
+                objects_to_remove.append(device)
 
-        return unlinked_devices
+        return objects_to_remove

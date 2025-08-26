@@ -189,7 +189,6 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
 
         Side Effects:
             Updates change_set with disk objects categorized by required actions.
-            Sets changes_required flag if any disk changes are needed.
         """
         for disk in self.disks:
             if disk._device is None:
@@ -198,14 +197,6 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                 self.change_set.objects_to_update.append(disk)
             else:
                 self.change_set.objects_in_sync.append(disk)
-
-        if any(
-            [
-                self.change_set.objects_to_add,
-                self.change_set.objects_to_update
-            ]
-        ):
-            self.change_set.changes_required = True
 
         return self.change_set
 

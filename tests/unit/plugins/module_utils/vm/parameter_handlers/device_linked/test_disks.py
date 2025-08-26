@@ -9,6 +9,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     DiskParameterHandler,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
 
 
 class TestDiskParameterHandler:
@@ -227,14 +228,11 @@ class TestDiskParameterHandler:
             disk_parameter_handler.link_vm_device(device)
 
     def test_compare_live_config_with_desired_config(self, disk_parameter_handler):
-        disk_parameter_handler.change_set.objects_to_add = []
-        disk_parameter_handler.change_set.objects_to_update = []
-        disk_parameter_handler.change_set.objects_in_sync = []
-        disk_parameter_handler.change_set.changes_required = False
+        disk_parameter_handler.change_set = ParameterChangeSet(Mock(), Mock(), Mock())
 
         disk_parameter_handler.disks = []
         disk_parameter_handler.compare_live_config_with_desired_config()
-        assert disk_parameter_handler.change_set.changes_required is False
+        assert disk_parameter_handler.change_set.are_changes_required() is False
 
         disk_parameter_handler.disks = [
             Mock(_device=None),
@@ -248,7 +246,7 @@ class TestDiskParameterHandler:
             ),
         ]
         disk_parameter_handler.compare_live_config_with_desired_config()
-        assert disk_parameter_handler.change_set.changes_required is True
+        assert disk_parameter_handler.change_set.are_changes_required() is True
         assert (
             disk_parameter_handler.change_set.objects_to_add[0]
             is disk_parameter_handler.disks[0]

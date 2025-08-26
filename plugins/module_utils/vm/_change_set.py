@@ -35,11 +35,14 @@ class ParameterChangeSet:
         params (dict): Module parameters containing desired configuration
         vm: vSphere VM object (None for new VMs)
         error_handler: Service for handling validation errors
-        changes_required (bool): Whether any configuration changes are needed
         power_cycle_required (bool): Whether changes require VM power cycling
         objects_to_add (list): Objects that need to be added to the VM. May not be used, depending on the handler.
         objects_to_update (list): Objects that need to be updated on the VM. May not be used, depending on the handler.
         objects_in_sync (list): Objects that are already in desired state. May not be used, depending on the handler.
+        objects_to_remove (list): Objects that need to be removed from the VM. May not be used, depending on the handler.
+        _changed_parameters (dict): Dictionary of changed parameters with old and new values
+    Read-only Properties:
+        changes (dict): Dictionary of all changes to the VM that would be done, including parameters with old and new values
     """
 
     def __init__(self, params, vm, error_handler):
@@ -54,11 +57,35 @@ class ParameterChangeSet:
         self.params = params
         self.vm = vm
         self.error_handler = error_handler
-        self.changes_required = False if vm is not None else True
         self.power_cycle_required = False
+        self._changed_parameters = dict()
         self.objects_to_add = []
         self.objects_to_update = []
         self.objects_in_sync = []
+        self.objects_to_remove = []
+
+    @property
+    def changes(self):
+        # TODO I think we should return a list of devices changed too,
+        # but I'm not sure how to represent them via json yet
+        return {
+            "changed_parameters": self._changed_parameters,
+            # "objects_to_add": self.objects_to_add,
+            # "objects_to_update": self.objects_to_update,
+            # "objects_in_sync": self.objects_in_sync,
+            # "objects_to_remove": self.objects_to_remove,
+        }
+
+    def are_changes_required(self):
+        if self.vm is None:
+            return True
+
+        return any([
+            len(self._changed_parameters) > 0,
+            len(self.objects_to_add) > 0,
+            len(self.objects_to_update) > 0,
+            len(self.objects_to_remove) > 0
+        ])
 
     def check_if_change_is_required(
         self, parameter_name, vm_attribute, power_sensitive=False, errors_fatal=True
@@ -79,7 +106,7 @@ class ParameterChangeSet:
                                  that is appropriate; a module failure is fatal.
 
         Side Effects:
-            Sets changes_required to True if parameter differs from VM state.
+            Sets changed_parameters if parameter differs from VM state.
             Sets power_cycle_required to True if change needs power cycling.
             May call error_handler.fail_with_power_cycle_error() if errors_fatal=True.
             May raise PowerCycleRequiredError if errors_fatal=False.
@@ -98,19 +125,16 @@ class ParameterChangeSet:
         Compare a parameter value with the corresponding VM attribute.
 
         Uses dot notation to navigate nested parameter and VM object structures.
-        Sets changes_required to True if values differ.
+        Sets _changed_parameters if values differ.
 
         Args:
             parameter_name (str): Dot-notation path to parameter (e.g., "cpu.cores")
             vm_attribute (str): Dot-notation path to VM attribute (e.g., "config.hardware.numCPU")
 
         Side Effects:
-            Sets changes_required to True if values differ.
+            Sets _changed_parameters if values differ.
             No action if parameter is not specified or values match.
         """
-        if self.changes_required:
-            return
-
         try:
             param_value = functools.reduce(
                 operator.getitem, parameter_name.split("."), self.params
@@ -126,7 +150,10 @@ class ParameterChangeSet:
         if param_value == vm_value:
             return
 
-        self.changes_required = True
+        self._changed_parameters[parameter_name] = {
+            "old_value": vm_value,
+            "new_value": param_value,
+        }
 
     def _check_if_change_violates_power_state(self, parameter_name, errors_fatal=True):
         """
@@ -146,7 +173,7 @@ class ParameterChangeSet:
             Raises PowerCycleRequiredError if errors_fatal=False.
         """
         power_state = self.vm.runtime.powerState
-        if power_state != "poweredOn" or not self.changes_required:
+        if power_state != "poweredOn" or not self.are_changes_required():
             return
 
         if self.params.get("allow_power_cycling"):
@@ -171,13 +198,13 @@ class ParameterChangeSet:
             ValueError: If other is not a ParameterChangeSet instance
 
         Side Effects:
-            Updates changes_required using logical OR with other.changes_required.
+            Merges self._changed_parameters using other._changed_parameters.
             Updates power_cycle_required using logical OR with other.power_cycle_required.
         """
-        if not isinstance(other, ParameterChangeSet):
+        if not hasattr(other, "_changed_parameters") and not hasattr(other, "power_cycle_required"):
             raise ValueError("change_set must be an instance of ParameterChangeSet")
 
-        self.changes_required = self.changes_required or other.changes_required
+        self._changed_parameters.update(other._changed_parameters)
         self.power_cycle_required = (
             self.power_cycle_required or other.power_cycle_required
         )

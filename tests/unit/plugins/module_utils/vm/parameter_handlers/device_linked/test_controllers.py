@@ -12,6 +12,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     NvmeControllerParameterHandler,
     IdeControllerParameterHandler,
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
 
 
 class MockDiskControllerParameterHandlerBase(DiskControllerParameterHandlerBase):
@@ -106,13 +107,9 @@ class TestDiskControllerParameterHandlerBase:
         assert mock_handler.device_tracker.track_device_id_from_spec.call_count == 2
 
     def test_compare_live_config_with_desired_config(self, mock_handler):
-        mock_handler.change_set.objects_to_add = []
-        mock_handler.change_set.objects_to_update = []
-        mock_handler.change_set.objects_in_sync = []
-        mock_handler.change_set.changes_required = False
-
+        mock_handler.change_set = ParameterChangeSet(mock_handler.params, Mock(), Mock())
         mock_handler.compare_live_config_with_desired_config()
-        assert mock_handler.change_set.changes_required is False
+        assert mock_handler.change_set.are_changes_required() is False
 
         mock_handler.controllers = {
             0: Mock(_device=None),
@@ -127,7 +124,7 @@ class TestDiskControllerParameterHandlerBase:
         }
 
         mock_handler.compare_live_config_with_desired_config()
-        assert mock_handler.change_set.changes_required is True
+        assert mock_handler.change_set.are_changes_required() is True
         assert mock_handler.change_set.objects_to_add[0] is mock_handler.controllers[0]
         assert (
             mock_handler.change_set.objects_to_update[0] is mock_handler.controllers[1]

@@ -31,11 +31,11 @@ class TestParameterChangeSet:
     def test_init(self):
         """Test initialization."""
         change_set = ParameterChangeSet({}, Mock(), Mock())
-        assert change_set.changes_required is False
+        assert change_set.are_changes_required() is False
         assert change_set.power_cycle_required is False
 
         change_set = ParameterChangeSet({}, None, Mock())
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
         assert change_set.power_cycle_required is False
 
     def test_check_if_change_is_required(self, change_set):
@@ -74,7 +74,7 @@ class TestParameterChangeSet:
         change_set = ParameterChangeSet(params, vm, error_handler)
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
 
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
         assert change_set.power_cycle_required is False
 
     def test_check_if_change_is_required_parameter_not_specified(self):
@@ -87,7 +87,7 @@ class TestParameterChangeSet:
         change_set = ParameterChangeSet(params, vm, error_handler)
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
 
-        assert change_set.changes_required is False
+        assert change_set.are_changes_required() is False
 
     def test_check_if_change_is_required_new_vm(self):
         """Test change detection for new VM (vm is None)."""
@@ -97,8 +97,7 @@ class TestParameterChangeSet:
         change_set = ParameterChangeSet(params, None, error_handler)
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
 
-        # Should not change anything since vm is None
-        assert change_set.changes_required is True  # Already set in init
+        assert change_set.are_changes_required() is True
 
     def test_check_if_change_is_required_power_sensitive_powered_off(self):
         """Test power-sensitive change when VM is powered off."""
@@ -113,7 +112,7 @@ class TestParameterChangeSet:
             "cpu.cores", "config.hardware.numCPU", power_sensitive=True
         )
 
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
         assert change_set.power_cycle_required is False
 
     def test_check_if_change_is_required_power_sensitive_powered_on_no_cycling(self):
@@ -144,7 +143,7 @@ class TestParameterChangeSet:
             "cpu.cores", "config.hardware.numCPU", power_sensitive=True
         )
 
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
         assert change_set.power_cycle_required is True
 
     def test_check_if_change_is_required_power_sensitive_no_change(self):
@@ -160,7 +159,7 @@ class TestParameterChangeSet:
             "cpu.cores", "config.hardware.numCPU", power_sensitive=True
         )
 
-        assert change_set.changes_required is False
+        assert change_set.are_changes_required() is False
         assert change_set.power_cycle_required is False
 
     def test_check_if_change_is_required_power_sensitive_errors_not_fatal(self):
@@ -193,7 +192,7 @@ class TestParameterChangeSet:
             "hardware.memory.size", "config.hardware.memoryMB"
         )
 
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
 
     def test_check_if_param_differs_from_vm_already_changed(self):
         """Test that subsequent checks don't override changes_required."""
@@ -207,13 +206,13 @@ class TestParameterChangeSet:
 
         # First change sets changes_required to True
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
 
         # Second check (no change) should not set it back to False
         change_set.check_if_change_is_required(
             "memory.size", "config.hardware.memoryMB"
         )
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
 
     def test_propagate_required_changes_from_valid(self):
         """Test propagating changes from another change set."""
@@ -226,14 +225,16 @@ class TestParameterChangeSet:
         change_set2 = ParameterChangeSet(params2, vm, error_handler)
 
         # Set up change sets with different states
-        change_set1.changes_required = True
+        change_set1._changed_parameters = {'1': {'old': 1, 'new': 2}, '2': {'old': 2, 'new': 3}}
         change_set1.power_cycle_required = False
-        change_set2.changes_required = False
+        change_set2._changed_parameters = {'1': {'old': 1, 'new': 3}}
         change_set2.power_cycle_required = True
 
         change_set1.propagate_required_changes_from(change_set2)
 
-        assert change_set1.changes_required is True
+        assert change_set1.are_changes_required() is True
+        assert change_set1._changed_parameters == {'1': {'old': 1, 'new': 3}, '2': {'old': 2, 'new': 3}}
+        assert change_set2._changed_parameters == {'1': {'old': 1, 'new': 3}}
         assert change_set1.power_cycle_required is True
 
     def test_propagate_required_changes_from_invalid_type(self):
@@ -249,46 +250,6 @@ class TestParameterChangeSet:
         ):
             change_set.propagate_required_changes_from("invalid")
 
-    def test_propagate_required_changes_from_logical_or_behavior(self):
-        """Test logical OR behavior in change propagation."""
-        params = {"cpu": {"cores": 4}}
-        vm = Mock()
-        error_handler = Mock()
-
-        change_set1 = ParameterChangeSet(params, vm, error_handler)
-        change_set2 = ParameterChangeSet(params, vm, error_handler)
-
-        # Test all combinations of boolean values
-        test_cases = [
-            (False, False, False, False, False, False),
-            (False, False, False, True, False, True),
-            (False, False, True, False, True, False),
-            (False, False, True, True, True, True),
-            (False, True, False, False, False, True),
-            (False, True, False, True, False, True),
-            (False, True, True, False, True, True),
-            (False, True, True, True, True, True),
-            (True, False, False, False, True, False),
-            (True, False, False, True, True, True),
-            (True, False, True, False, True, False),
-            (True, False, True, True, True, True),
-            (True, True, False, False, True, True),
-            (True, True, False, True, True, True),
-            (True, True, True, False, True, True),
-            (True, True, True, True, True, True),
-        ]
-
-        for cr1, pcr1, cr2, pcr2, expected_cr, expected_pcr in test_cases:
-            change_set1.changes_required = cr1
-            change_set1.power_cycle_required = pcr1
-            change_set2.changes_required = cr2
-            change_set2.power_cycle_required = pcr2
-
-            change_set1.propagate_required_changes_from(change_set2)
-
-            assert change_set1.changes_required == expected_cr
-            assert change_set1.power_cycle_required == expected_pcr
-
     def test_vm_attribute_access_error_handling(self):
         """Test handling of VM attribute access errors."""
         params = {"cpu": {"cores": 4}}
@@ -303,10 +264,10 @@ class TestParameterChangeSet:
         change_set.check_if_change_is_required(
             "cpu.fdsafdafa", "config.hardware.numCPU"
         )
-        assert change_set.changes_required is False
+        assert change_set.are_changes_required() is False
 
         # Should not raise an exception, and return with change
         change_set.check_if_change_is_required(
             "cpu.cores", "config.hardware.fdsafdasfdsa"
         )
-        assert change_set.changes_required is True
+        assert change_set.are_changes_required() is True
