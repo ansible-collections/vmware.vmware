@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vms - Add option to inventory plugin to gather cluster and ESXi host name for VMs.
+    (Fixes https://github.com/ansible-collections/vmware.vmware/issues/215)
