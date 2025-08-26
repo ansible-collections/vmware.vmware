@@ -142,6 +142,11 @@ class ParameterChangeSet:
         except KeyError:
             return
 
+        if param_value is None:
+            # user did not specify this parameter, but ansible "set" it to None so
+            # we missed the KeyError that would have been raised above.
+            return
+
         try:
             vm_value = functools.reduce(getattr, vm_attribute.split("."), self.vm)
         except AttributeError:
