@@ -7,6 +7,9 @@
     - name: Test vm create
       ansible.builtin.include_tasks: create_vm_tests.yml
 
+    - name: Test vm update
+      ansible.builtin.include_tasks: update_vm_tests.yml
+
   always:
     - name: Delete VM
       vmware.vmware._vm_stub:

@@ -147,7 +147,6 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
 
         Side Effects:
             Updates change_set with controller objects categorized by required actions.
-            Sets changes_required flag if any controller changes are needed.
         """
         for controller in self.controllers.values():
             if controller._device is None:
@@ -156,14 +155,6 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
                 self.change_set.objects_to_update.append(controller)
             else:
                 self.change_set.objects_in_sync.append(controller)
-
-        if any(
-            [
-                self.change_set.objects_to_add,
-                self.change_set.objects_to_update
-            ]
-        ):
-            self.change_set.changes_required = True
 
         return self.change_set
 

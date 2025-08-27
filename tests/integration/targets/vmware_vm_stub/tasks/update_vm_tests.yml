@@ -1,0 +1,35 @@
+---
+- name: Update VM CPU
+  vmware.vmware._vm_stub: &update-vm
+    name: "{{ test_vm_name }}"
+    guest_id: centos7_64Guest
+    # TODO probably should make these optional
+    cpu:
+      cores: 4
+    memory:
+      size_mb: 1024
+    disks:
+      - location: "{{ shared_storage_01 }}"
+        size: 10gb
+        provisioning: thin
+        sharing: no_sharing
+        mode: persistent
+        device_node: SCSI(0:0)
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+  register: _update_vm
+
+- name: Update VM CPU - Idempotent
+  vmware.vmware._vm_stub: *update-vm
+  register: _update_vm_idempotent
+
+- name: Check update tasks
+  ansible.builtin.assert:
+    that:
+      - _update_vm is ansible.builtin.changed
+      - _update_vm_idempotent is not ansible.builtin.changed
+
+      - _update_vm.changes.changed_parameters['guest_id'] is defined
+      - _update_vm.changes.changed_parameters['guest_id'].old_value == 'amazonlinux3_64Guest'
+      - _update_vm.changes.changed_parameters['guest_id'].new_value == 'centos7_64Guest'
