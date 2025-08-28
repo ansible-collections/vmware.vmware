@@ -413,7 +413,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import vm_placement_argument_spec
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers import (
     _metadata,
-    _cpu_memory,
+    _cpu,
+    _memory,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked import (
     _disks,
@@ -440,8 +441,8 @@ class VmModule(ModulePyvmomiBase):
     def _init_configuration_registry(self):
         self.configuration_registry = ConfigurationRegistry()
         self.configuration_registry.register_vm_aware_handler(_metadata.MetadataParameterHandler)
-        self.configuration_registry.register_vm_aware_handler(_cpu_memory.CpuParameterHandler)
-        self.configuration_registry.register_vm_aware_handler(_cpu_memory.MemoryParameterHandler)
+        self.configuration_registry.register_vm_aware_handler(_cpu.CpuParameterHandler)
+        self.configuration_registry.register_vm_aware_handler(_memory.MemoryParameterHandler)
 
         self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
 
