@@ -40,32 +40,20 @@ class TestMemoryParameterHandler:
         """Test parameter constraints validation for existing VM."""
         memory_parameter_handler.vm = Mock()
         memory_parameter_handler.vm.config.hardware.memoryMB = 2048
+        memory_parameter_handler.error_handler.fail_with_parameter_error.side_effect = Exception("test")
 
         # Test memory decrease (should fail)
         memory_parameter_handler.memory_params = {"size_mb": 1024}
-        memory_parameter_handler.verify_parameter_constraints()
-        assert (
-            memory_parameter_handler.error_handler.fail_with_parameter_error.call_count
-            == 1
-        )
+        with pytest.raises(Exception, match="test"):
+            memory_parameter_handler.verify_parameter_constraints()
 
         # Test memory increase (should pass)
         memory_parameter_handler.memory_params = {"size_mb": 4096}
         memory_parameter_handler.verify_parameter_constraints()
-        # check it was not called again
-        assert (
-            memory_parameter_handler.error_handler.fail_with_parameter_error.call_count
-            == 1
-        )
 
         # Test same memory size (should pass)
         memory_parameter_handler.memory_params = {"size_mb": 2048}
         memory_parameter_handler.verify_parameter_constraints()
-        # check it was not called again
-        assert (
-            memory_parameter_handler.error_handler.fail_with_parameter_error.call_count
-            == 1
-        )
 
     def test_populate_config_spec_with_parameters(self, memory_parameter_handler):
         """Test populating config spec with memory parameters."""

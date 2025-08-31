@@ -7,7 +7,7 @@ for processing VM configuration parameters: validation, change detection,
 and configuration specification population.
 
 The architecture supports two main handler types:
-- VM-aware handlers: Process VM-level settings (CPU, memory, metadata)
+- AbstractParameterHandler handlers: Process VM-level settings (CPU, memory, metadata)
 - Device-linked handlers: Manage parameters tied to specific devices (controllers, disks)
 """
 
@@ -38,8 +38,9 @@ class AbstractParameterHandler(ABC):
     """
 
     HANDLER_NAME = None
+    PARAMS_DEFINED_BY_USER = True
 
-    def __init__(self, error_handler, params, change_set):
+    def __init__(self, error_handler, params, change_set, vm):
         """
         Initialize the parameter handler with common dependencies.
 
@@ -47,15 +48,34 @@ class AbstractParameterHandler(ABC):
             error_handler: Service for parameter validation error handling
             params (dict): Module parameters containing desired VM configuration
             change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
         """
         if self.HANDLER_NAME is None or not self.HANDLER_NAME:
             raise NotImplementedError(
                 "ParameterHandler subclasses must define the HANDLER_NAME attribute"
             )
 
+        self.vm = vm
         self.error_handler = error_handler
         self.params = params
         self.change_set = change_set
+
+    def _check_if_params_are_defined_by_user(self, parameter_name, required_for_vm_creation=False):
+        """
+        Check if the relevant parameters are defined by the user, and update internal
+        flag appropriately.
+        Optionally fail if the parameters are not defined by the user, and if the vm is None,
+        meaning the parameters are required for VM creation.
+
+        """
+        if self.params.get(parameter_name) is None:
+            self.PARAMS_DEFINED_BY_USER = False
+            if self.vm is None and required_for_vm_creation:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name=parameter_name,
+                    message="The %s parameter is mandatory for VM creation" % parameter_name,
+                )
+            return
 
     @abstractmethod
     def verify_parameter_constraints(self):
@@ -125,33 +145,6 @@ class AbstractParameterHandler(ABC):
         raise NotImplementedError
 
 
-class AbstractVmAwareParameterHandler(AbstractParameterHandler):
-    """
-    Base class for parameter handlers that work with VM-level configuration.
-
-    This class extends AbstractParameterHandler for handlers that need access
-    to the VM object itself, such as CPU, memory, and metadata handlers.
-    These handlers typically work with VM-wide settings rather than individual
-    devices.
-
-    Attributes:
-        vm: The VM object being configured (None for new VM creation)
-    """
-
-    def __init__(self, error_handler, params, change_set, vm):
-        """
-        Initialize a VM-aware parameter handler.
-
-        Args:
-            error_handler: Service for parameter validation error handling
-            params (dict): Module parameters containing desired VM configuration
-            change_set: Service for tracking configuration changes and requirements
-            vm: VM object being configured (None for new VM creation)
-        """
-        super().__init__(error_handler, params, change_set)
-        self.vm = vm
-
-
 class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
     """
     Base class for parameter handlers that manage VM hardware devices.
@@ -172,7 +165,7 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
         device_tracker: Service for device identification and error reporting
     """
 
-    def __init__(self, error_handler, params, change_set, device_tracker):
+    def __init__(self, error_handler, params, change_set, vm, device_tracker):
         """
         Initialize a device-linked parameter handler.
 
@@ -185,21 +178,17 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
         Raises:
             NotImplementedError: If vim_device_class is not defined by subclass
         """
-        super().__init__(error_handler, params, change_set)
+        super().__init__(error_handler, params, change_set, vm)
         self.device_tracker = device_tracker
 
-        if self.vim_device_class is None:
-            raise NotImplementedError(
-                "DeviceLinkedParameterHandler subclasses must define the vim_device_class property"
-            )
-
     @property
+    @abstractmethod
     def vim_device_class(self):
         """
         Get the VMware device class this handler manages. This is a property so vim imports can
         be done lazily, and not cause sanity checks to fail.
         """
-        raise NotImplementedError
+        return NotImplementedError
 
     @property
     def device_type_to_sub_class_map(self):

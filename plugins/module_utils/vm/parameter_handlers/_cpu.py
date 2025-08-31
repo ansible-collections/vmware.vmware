@@ -11,14 +11,14 @@ with appropriate validation and error handling for unsupported operations.
 """
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    AbstractVmAwareParameterHandler,
+    AbstractParameterHandler,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
     PowerCycleRequiredError,
 )
 
 
-class CpuParameterHandler(AbstractVmAwareParameterHandler):
+class CpuParameterHandler(AbstractParameterHandler):
     """
     Handler for CPU configuration parameters.
 
@@ -57,7 +57,8 @@ class CpuParameterHandler(AbstractVmAwareParameterHandler):
                       services and allowing kwargs makes initialization more flexible.
         """
         super().__init__(error_handler, params, change_set, vm)
-        self.cpu_params = self.params.get("cpu", {})
+        self._check_if_params_are_defined_by_user("cpu", required_for_vm_creation=True)
+        self.cpu_params = self.params.get("cpu") or {}
 
     def verify_parameter_constraints(self):
         """

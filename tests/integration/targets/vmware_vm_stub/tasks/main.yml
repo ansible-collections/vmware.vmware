@@ -4,11 +4,32 @@
   environment: "{{ environment_auth_vars }}"
 
   block:
-    - name: Test vm create
-      ansible.builtin.include_tasks: create_vm_tests.yml
+    - name: Create basic VM for other tests
+      vmware.vmware._vm_stub:
+        name: "{{ test_vm_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        datastore: "{{ shared_storage_01 }}"
+        guest_id: amazonlinux3_64Guest
+        cpu:
+          cores: 2
+        memory:
+          size_mb: 1024
+        disks:
+          - location: "{{ shared_storage_01 }}"
+            size: 10gb
+            provisioning: thin
+            sharing: no_sharing
+            mode: persistent
+            device_node: SCSI(0:0)
+        scsi_controllers:
+          - controller_type: buslogic
+            bus_sharing: noSharing
 
+    # from this point on, the vm definition above is not reliable. Tests
+    # should establish relevant vm options as a first task.
     - name: Test vm update
-      ansible.builtin.include_tasks: update_vm_tests.yml
+      ansible.builtin.include_tasks: basic_vm_update_tests.yml
 
   always:
     - name: Delete VM

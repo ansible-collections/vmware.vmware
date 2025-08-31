@@ -158,6 +158,9 @@ class Configurator:
 
             failed_to_link = True
             for handler in device_linked_handlers:
+                if not handler.PARAMS_DEFINED_BY_USER:
+                    continue
+
                 if not isinstance(device, handler.vim_device_class):
                     continue
 

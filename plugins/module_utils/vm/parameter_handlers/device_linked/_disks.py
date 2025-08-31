@@ -53,7 +53,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
     HANDLER_NAME = "disk"
 
     def __init__(
-        self, error_handler, params, change_set, device_tracker, controller_handlers
+        self, error_handler, params, change_set, vm, device_tracker, controller_handlers
     ):
         """
         Initialize the disk parameter handler.
@@ -62,10 +62,12 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             error_handler: Service for parameter validation error handling
             params (dict): Module parameters containing disk configuration
             change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
             controller_handlers (list): List of controller handlers for disk assignment
         """
-        super().__init__(error_handler, params, change_set, device_tracker)
+        super().__init__(error_handler, params, change_set, vm, device_tracker)
+        self._check_if_params_are_defined_by_user("disks", required_for_vm_creation=True)
 
         self.disks = []
         self.controller_handlers = controller_handlers
@@ -99,10 +101,10 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                     details={"error": str(e)},
                 )
 
-        if len(self.disks) == 0:
+        if len(self.disks) == 0 and self.vm is None:
             self.error_handler.fail_with_parameter_error(
                 parameter_name="disks",
-                message="At least one disk must be defined when creating or updating a VM.",
+                message="At least one disk must be defined when creating a VM.",
             )
 
     def _parse_disk_params(self):
@@ -120,7 +122,8 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
         Side Effects:
             Populates self.disks with Disk objects representing desired configuration.
         """
-        for disk_param in self.params.get("disks", []):
+        disk_params = self.params.get("disks") or []
+        for disk_param in disk_params:
             controller_type, controller_bus_number, unit_number = parse_device_node(
                 disk_param["device_node"]
             )

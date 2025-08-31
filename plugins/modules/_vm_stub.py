@@ -580,9 +580,6 @@ def main():
         mutually_exclusive=[
             ['name', 'uuid', 'moid']
         ],
-        required_if=[
-            ['state', 'present', ['cpu', 'memory', 'disks']]
-        ],
         required_one_of=[
             ['name', 'uuid', 'moid']
         ],

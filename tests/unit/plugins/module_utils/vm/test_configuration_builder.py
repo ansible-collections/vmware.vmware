@@ -62,6 +62,54 @@ class TestConfigurationRegistry:
             == device_linked_handler
         )
 
+    def test_register_controller_handler_without_name(self, registry):
+        """Test registering a controller handler without specifying a name."""
+        controller_handler = Mock()
+        controller_handler.HANDLER_NAME = "auto_name"
+
+        registry.register_controller_handler(controller_handler)
+
+        assert registry.controller_handler_classes["auto_name"] == controller_handler
+
+    def test_register_vm_aware_handler_without_name(self, registry):
+        """Test registering a VM aware handler without specifying a name."""
+        vm_aware_handler = Mock()
+        vm_aware_handler.HANDLER_NAME = "auto_vm_name"
+
+        registry.register_vm_aware_handler(vm_aware_handler)
+
+        assert registry.vm_aware_handler_classes["auto_vm_name"] == vm_aware_handler
+
+    def test_register_device_linked_handler_without_name(self, registry):
+        """Test registering a device linked handler without specifying a name."""
+        device_linked_handler = Mock()
+        device_linked_handler.HANDLER_NAME = "auto_device_name"
+
+        registry.register_device_linked_handler(device_linked_handler)
+
+        assert registry.device_linked_handler_classes["auto_device_name"] == device_linked_handler
+
+    def test_register_handlers_without_name(self, registry):
+        """Test registering handlers without specifying names (uses HANDLER_NAME)."""
+        # Test all three handler types with auto-naming
+        for handler_type, register_method in [
+            ("controller", registry.register_controller_handler),
+            ("vm_aware", registry.register_vm_aware_handler),
+            ("device_linked", registry.register_device_linked_handler)
+        ]:
+            handler = Mock()
+            handler.HANDLER_NAME = f"auto_{handler_type}_name"
+
+            register_method(handler)
+
+            # Verify it was registered with the auto-generated name
+            if handler_type == "controller":
+                assert registry.controller_handler_classes["auto_controller_name"] == handler
+            elif handler_type == "vm_aware":
+                assert registry.vm_aware_handler_classes["auto_vm_aware_name"] == handler
+            else:
+                assert registry.device_linked_handler_classes["auto_device_linked_name"] == handler
+
 
 class TestConfigurationBuilder:
     """Test cases for ConfigurationBuilder class."""
@@ -165,12 +213,14 @@ class TestConfigurationBuilder:
                 error_handler=builder.error_handler,
                 params=builder.module.params,
                 change_set=mock_change_set,
+                vm=builder.vm,
                 device_tracker=builder.device_tracker,
             )
             mock_handler_class2.assert_called_once_with(
                 error_handler=builder.error_handler,
                 params=builder.module.params,
                 change_set=mock_change_set,
+                vm=builder.vm,
                 device_tracker=builder.device_tracker,
             )
 
@@ -215,3 +265,40 @@ class TestConfigurationBuilder:
             result = builder._create_non_controller_handlers()
 
             assert result == [mock_device_linked_handler, mock_vm_aware_handler]
+
+    def test_add_handler_if_params_are_defined_by_user(self, builder):
+        """Test _add_handler_if_params_are_defined_by_user method."""
+        handler_list = []
+
+        # Test True case
+        handler_true = Mock()
+        handler_true.PARAMS_DEFINED_BY_USER = True
+        builder._add_handler_if_params_are_defined_by_user(handler_true, handler_list)
+        assert handler_list == [handler_true]
+
+        # Test False case
+        handler_false = Mock()
+        handler_false.PARAMS_DEFINED_BY_USER = False
+        builder._add_handler_if_params_are_defined_by_user(handler_false, handler_list)
+        assert handler_list == [handler_true]  # Only the True one should be added
+
+    def test_handler_filtering_in_creation_methods(self, builder, mock_registry):
+        """Test that handlers are only added when PARAMS_DEFINED_BY_USER is True."""
+        # Set up handlers with different PARAMS_DEFINED_BY_USER values
+        mock_handler_true = Mock()
+        mock_handler_true.PARAMS_DEFINED_BY_USER = True
+
+        mock_handler_false = Mock()
+        mock_handler_false.PARAMS_DEFINED_BY_USER = False
+
+        # Test controller handlers
+        mock_registry.controller_handler_classes = {"ctrl": Mock(return_value=mock_handler_true)}
+        result = builder._create_controller_handlers()
+        assert result == [mock_handler_true]
+
+        # Test non-controller handlers
+        mock_registry.device_linked_handler_classes = {"device": Mock(return_value=mock_handler_false)}
+        mock_registry.vm_aware_handler_classes = {"vm": Mock(return_value=mock_handler_true)}
+
+        result = builder._create_non_controller_handlers()
+        assert result == [mock_handler_true]  # Only the True one should be added
