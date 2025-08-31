@@ -22,7 +22,6 @@ author:
 
 requirements:
     - vSphere Automation SDK
-    - aiohttp
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
