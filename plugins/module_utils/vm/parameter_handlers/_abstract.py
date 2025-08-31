@@ -188,7 +188,7 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
         Get the VMware device class this handler manages. This is a property so vim imports can
         be done lazily, and not cause sanity checks to fail.
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     @property
     def device_type_to_sub_class_map(self):
