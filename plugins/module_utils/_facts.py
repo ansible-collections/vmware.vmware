@@ -20,7 +20,6 @@ except ImportError:
     pass
 
 from ansible.module_utils._text import to_text
-from ansible.module_utils.six import integer_types, string_types, iteritems
 import ansible.module_utils.common._collections_compat as collections_compat
 from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import get_folder_path_of_vsphere_object
 
@@ -500,8 +499,8 @@ def serialize_spec(clonespec):
             data[x] = []
             for xe in xo:
                 data[x].append(serialize_spec(xe))
-        elif issubclass(xt, string_types + integer_types + (float, bool)):
-            if issubclass(xt, integer_types):
+        elif issubclass(xt, (str, int, float, bool)):
+            if issubclass(xt, int):
                 data[x] = int(xo)
             else:
                 data[x] = to_text(xo)
@@ -539,7 +538,7 @@ def deepmerge_dicts(d, u):
     Returns:
         dict, with u merged into d
     """
-    for k, v in iteritems(u):
+    for k, v in u.items():
         if isinstance(v, collections_compat.Mapping):
             d[k] = deepmerge_dicts(d.get(k, {}), v)
         else:
