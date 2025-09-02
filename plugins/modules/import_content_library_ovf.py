@@ -160,13 +160,13 @@ import os
 
 from urllib.parse import urlparse
 
-from ansible.module_utils.urls import open_url
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
 
 try:
+    import requests
     from com.vmware.content.library.item_client import UpdateSessionModel
     from com.vmware.content.library_client import ItemModel
     from com.vmware.content.library.item.updatesession_client import (
@@ -308,9 +308,12 @@ class VmwareRemoteOvf(ModuleRestBase):
                     'Content-Length': str(os.path.getsize(f_path)),
                     'Content-Type': 'text/ovf'
                 }
-                open_url(
-                    method='POST', url=file_info.upload_endpoint.uri, data=local_file.read(),
-                    headers=headers, validate_certs=self.params['validate_certs'], timeout=self.params['timeout']
+                requests.post(
+                    url=file_info.upload_endpoint.uri,
+                    data=local_file,
+                    headers=headers,
+                    verify=self.params['validate_certs'],
+                    timeout=self.params['timeout']
                 )
 
     def __wait_for_upload(self):
