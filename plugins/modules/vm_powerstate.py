@@ -110,7 +110,7 @@ options:
         description:
             - If this argument is set to a positive integer, the module will wait for the VM to reach the poweredoff state.
             - The value sets a timeout in seconds for the module to wait for the state change.
-            - Can not be used if O(state) is V(shutdown-guest) or V(reboot-guest).
+            - This value is ignored if the desired state is V(reboot-guest).
         default: 3600
         type: int
     question_answers:
@@ -231,7 +231,8 @@ except ImportError:
     pass
 
 from random import randint
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text, to_native
 
@@ -274,6 +275,24 @@ class VmPowerstateModule(ModulePyvmomiBase):
             self.module.fail_json(msg=to_text(e))
         finally:
             self.result['changed'] = True
+
+    def _poll_vm_state_for_shutdown(self):
+        """
+        Since the shutdown guest state is triggered through VMware tools, we cannot tell when the task ends. So
+        instead we will poll the VM state over and over again, until the timeout is met.
+        """
+        timeout = self.params['timeout']
+        if not timeout:
+            return
+
+        end_time = datetime.now() + timedelta(seconds=timeout)
+        while datetime.now() < end_time:
+            if self.vm.summary.runtime.powerState.lower() == 'poweredoff':
+                break
+            time.sleep(5)
+
+        else:
+            self.module.fail_json(msg="Timeout limit reached while waiting for VM to enter a powered off state.")
 
     def reset_vm(self):
         if self.current_state not in ('poweredon', 'poweringon', 'resetting', 'poweredoff'):
@@ -332,6 +351,8 @@ class VmPowerstateModule(ModulePyvmomiBase):
             self.module.fail_json(msg=to_text(e))
 
         self.run_vm_configuration_task(task)
+        if self.desired_state == 'shutdownguest':
+            self._poll_vm_state_for_shutdown()
 
     def configure_vm_powerstate(self):
         """
