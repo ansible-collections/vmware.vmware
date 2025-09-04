@@ -8,7 +8,7 @@ hardware configurations.
 """
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    AbstractVmAwareParameterHandler,
+    AbstractParameterHandler,
 )
 
 try:
@@ -17,7 +17,7 @@ except ImportError:
     pass
 
 
-class MetadataParameterHandler(AbstractVmAwareParameterHandler):
+class MetadataParameterHandler(AbstractParameterHandler):
     """
     Handler for VM metadata parameters like name, guest ID, and basic file store structure.
 

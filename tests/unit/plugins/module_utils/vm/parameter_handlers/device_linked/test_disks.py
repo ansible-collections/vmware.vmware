@@ -36,11 +36,12 @@ class TestDiskParameterHandler:
         error_handler = Mock()
         params = {}
         change_set = Mock()
+        vm = Mock()
         device_tracker = Mock()
         controller_handlers = [mock_controller_handler]
 
         return DiskParameterHandler(
-            error_handler, params, change_set, device_tracker, controller_handlers
+            error_handler, params, change_set, vm, device_tracker, controller_handlers
         )
 
     @patch(
@@ -49,17 +50,30 @@ class TestDiskParameterHandler:
     def test_vim_device_class(self, mock_virtual_disk, disk_parameter_handler):
         assert disk_parameter_handler.vim_device_class == mock_virtual_disk
 
-    def test_verify_parameter_constraints(self, disk_parameter_handler):
-        # kind of cheating, but we can test multiple paths with one test
+    def test_verify_parameter_constraints_no_disks(self, disk_parameter_handler):
         disk_parameter_handler._parse_disk_params = Mock()
+        disk_parameter_handler.params = {'disks': []}
+
+        disk_parameter_handler.vm = None
+        disk_parameter_handler.disks = []
         disk_parameter_handler.verify_parameter_constraints()
         disk_parameter_handler._parse_disk_params.assert_called_once()
         disk_parameter_handler.error_handler.fail_with_parameter_error.assert_called_once()
 
-        disk_parameter_handler.disks = [Mock()]
+        disk_parameter_handler.vm = Mock()
+        disk_parameter_handler._parse_disk_params.reset_mock()
+        disk_parameter_handler.error_handler.fail_with_parameter_error.reset_mock()
+        disk_parameter_handler.verify_parameter_constraints()
+        disk_parameter_handler._parse_disk_params.assert_called_once()
+        disk_parameter_handler.error_handler.fail_with_parameter_error.assert_not_called()
+
+    def test_verify_parameter_constraints_disks(self, disk_parameter_handler):
         disk_parameter_handler._parse_disk_params = Mock()
+        disk_parameter_handler.params = {'disks': []}
+        disk_parameter_handler.disks = [Mock()]
         disk_parameter_handler.verify_parameter_constraints()
         disk_parameter_handler._parse_disk_params.assert_not_called()
+        disk_parameter_handler.error_handler.fail_with_parameter_error.assert_not_called()
 
     def test_parse_disk_params(self, disk_parameter_handler):
         disk_parameter_handler.params = {

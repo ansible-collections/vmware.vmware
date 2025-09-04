@@ -12,14 +12,14 @@ increases without VM power cycling.
 """
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    AbstractVmAwareParameterHandler,
+    AbstractParameterHandler,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
     PowerCycleRequiredError,
 )
 
 
-class MemoryParameterHandler(AbstractVmAwareParameterHandler):
+class MemoryParameterHandler(AbstractParameterHandler):
     """
     Handler for memory configuration parameters.
 
@@ -54,7 +54,8 @@ class MemoryParameterHandler(AbstractVmAwareParameterHandler):
                       services and allowing kwargs makes initialization more flexible.
         """
         super().__init__(error_handler, params, change_set, vm)
-        self.memory_params = self.params.get("memory", {})
+        self._check_if_params_are_defined_by_user("memory", required_for_vm_creation=True)
+        self.memory_params = self.params.get("memory") or {}
 
     def verify_parameter_constraints(self):
         """

@@ -19,10 +19,10 @@ class MockDiskControllerParameterHandlerBase(DiskControllerParameterHandlerBase)
     HANDLER_NAME = "mock_controller"
 
     def __init__(
-        self, error_handler, params, change_set, device_tracker, category, max_count=4
+        self, error_handler, params, change_set, vm, device_tracker, category, max_count=4
     ):
         super().__init__(
-            error_handler, params, change_set, device_tracker, category, max_count
+            error_handler, params, change_set, vm, device_tracker, category, max_count
         )
 
     def _parse_device_controller_params(self):
@@ -41,6 +41,7 @@ class TestDiskControllerParameterHandlerBase:
             error_handler=Mock(),
             params={},
             change_set=Mock(),
+            vm=Mock(),
             device_tracker=Mock(),
             category="scsi",
         )
@@ -139,6 +140,7 @@ class TestScsiControllerParameterHandler:
             error_handler=Mock(),
             params={},
             change_set=Mock(),
+            vm=Mock(),
             device_tracker=Mock(),
         )
         handler.error_handler.fail_with_parameter_error = Mock(
@@ -180,6 +182,7 @@ class TestSataControllerParameterHandler:
             error_handler=Mock(),
             params={},
             change_set=Mock(),
+            vm=Mock(),
             device_tracker=Mock(),
         )
         handler.error_handler.fail_with_parameter_error = Mock(
@@ -211,6 +214,7 @@ class TestNvmeControllerParameterHandler:
             error_handler=Mock(),
             params={},
             change_set=Mock(),
+            vm=Mock(),
             device_tracker=Mock(),
         )
         handler.error_handler.fail_with_parameter_error = Mock(
@@ -244,6 +248,7 @@ class TestIdeControllerParameterHandler:
             error_handler=Mock(),
             params={},
             change_set=Mock(),
+            vm=Mock(),
             device_tracker=Mock(),
         )
         handler.error_handler.fail_with_parameter_error = Mock(

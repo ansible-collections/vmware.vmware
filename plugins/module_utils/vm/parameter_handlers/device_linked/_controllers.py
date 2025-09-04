@@ -50,7 +50,7 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
     """
 
     def __init__(
-        self, error_handler, params, change_set, device_tracker, category, max_count=4
+        self, error_handler, params, change_set, vm, device_tracker, category, max_count=4
     ):
         """
         Initialize the controller parameter handler.
@@ -59,11 +59,12 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
             error_handler: Service for parameter validation error handling
             params (dict): Module parameters containing controller configuration
             change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
             category (str): Controller category identifier (scsi, sata, nvme, ide)
             max_count (int): Maximum number of controllers allowed (default 4)
         """
-        super().__init__(error_handler, params, change_set, device_tracker)
+        super().__init__(error_handler, params, change_set, vm, device_tracker)
         self.controllers = {}  # {bus_number: controller}
         self.max_count = max_count
         self.category = category
@@ -212,7 +213,7 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
 
     HANDLER_NAME = "scsi_controller"
 
-    def __init__(self, error_handler, params, change_set, device_tracker):
+    def __init__(self, error_handler, params, change_set, vm, device_tracker):
         """
         Initialize the SCSI controller parameter handler.
 
@@ -220,9 +221,11 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
             error_handler: Service for parameter validation error handling
             params (dict): Module parameters containing SCSI controller configuration
             change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
         """
-        super().__init__(error_handler, params, change_set, device_tracker, "scsi")
+        super().__init__(error_handler, params, change_set, vm, device_tracker, "scsi")
+        self._check_if_params_are_defined_by_user("scsi_controllers", required_for_vm_creation=False)
 
     @property
     def vim_device_class(self):
@@ -255,9 +258,7 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with ScsiController objects representing
             the desired SCSI controller configuration.
         """
-        # for some reason, ansible sets this param to None if its undefined
-        scsi_controllers = self.params.get("scsi_controllers") or []
-        for index, controller_param_def in enumerate(scsi_controllers):
+        for index, controller_param_def in enumerate(self.params.get("scsi_controllers")):
             self.controllers[index] = ScsiController(
                 bus_number=index,
                 device_type=controller_param_def.get("controller_type"),
@@ -285,7 +286,7 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
 
     HANDLER_NAME = "sata_controller"
 
-    def __init__(self, error_handler, params, change_set, device_tracker):
+    def __init__(self, error_handler, params, change_set, vm, device_tracker):
         """
         Initialize the SATA controller parameter handler.
 
@@ -293,9 +294,11 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
             error_handler: Service for parameter validation error handling
             params (dict): Module parameters containing SATA controller configuration
             change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
         """
-        super().__init__(error_handler, params, change_set, device_tracker, "sata")
+        super().__init__(error_handler, params, change_set, vm, device_tracker, "sata")
+        self._check_if_params_are_defined_by_user("sata_controller_count", required_for_vm_creation=False)
 
     @property
     def vim_device_class(self):
@@ -340,7 +343,7 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
 
     HANDLER_NAME = "nvme_controller"
 
-    def __init__(self, error_handler, params, change_set, device_tracker):
+    def __init__(self, error_handler, params, change_set, vm, device_tracker):
         """
         Initialize the NVMe controller parameter handler.
 
@@ -348,9 +351,11 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
             error_handler: Service for parameter validation error handling
             params (dict): Module parameters containing NVMe controller configuration
             change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
         """
-        super().__init__(error_handler, params, change_set, device_tracker, "nvme")
+        super().__init__(error_handler, params, change_set, vm, device_tracker, "nvme")
+        self._check_if_params_are_defined_by_user("nvme_controllers", required_for_vm_creation=False)
 
     @property
     def vim_device_class(self):
@@ -371,9 +376,7 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with NvmeController objects representing
             the desired NVMe controller configuration.
         """
-        # for some reason, ansible sets this param to None if it undefined
-        nvme_controllers = self.params.get("nvme_controllers") or []
-        for index, controller_param_def in enumerate(nvme_controllers):
+        for index, controller_param_def in enumerate(self.params.get("nvme_controllers")):
             self.controllers[index] = NvmeController(
                 bus_number=index, bus_sharing=controller_param_def.get("bus_sharing")
             )
@@ -397,7 +400,7 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
 
     HANDLER_NAME = "ide_controller"
 
-    def __init__(self, error_handler, params, change_set, device_tracker):
+    def __init__(self, error_handler, params, change_set, vm, device_tracker):
         """
         Initialize the IDE controller parameter handler.
 
@@ -406,9 +409,10 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
             params (dict): Module parameters containing VM configuration
             change_set: Service for tracking configuration changes and requirements
             device_tracker: Service for device identification and error reporting
+            vm: VM object being configured (None for new VM creation)
         """
         super().__init__(
-            error_handler, params, change_set, device_tracker, "ide", max_count=2
+            error_handler, params, change_set, vm, device_tracker, "ide", max_count=2
         )
 
     @property

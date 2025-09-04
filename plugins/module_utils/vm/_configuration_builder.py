@@ -204,28 +204,31 @@ class ConfigurationBuilder:
         for (
             handler_class
         ) in self.configuration_registry.device_linked_handler_classes.values():
-            handlers.append(
+            self._add_handler_if_params_are_defined_by_user(
                 handler_class(
                     error_handler=self.error_handler,
                     params=self.module.params,
                     change_set=self._create_change_set(),
+                    vm=self.vm,
                     device_tracker=self.device_tracker,
                     controller_handlers=self._create_controller_handlers(),
-                )
+                ),
+                handlers
             )
 
-        # VM aware handlers - manages VM parameters that are not device linked like resources, metadata, etc.
+        # All other handlers - manages VM parameters that are not device linked like resources, metadata, etc.
         for (
             handler_class
         ) in self.configuration_registry.vm_aware_handler_classes.values():
-            handlers.append(
+            self._add_handler_if_params_are_defined_by_user(
                 handler_class(
                     error_handler=self.error_handler,
                     params=self.module.params,
                     change_set=self._create_change_set(),
                     vm=self.vm,
                     placement=self.placement,
-                )
+                ),
+                handlers
             )
 
         return handlers
@@ -245,13 +248,19 @@ class ConfigurationBuilder:
             for (
                 handler_class
             ) in self.configuration_registry.controller_handler_classes.values():
-                self._controller_handlers.append(
+                self._add_handler_if_params_are_defined_by_user(
                     handler_class(
                         error_handler=self.error_handler,
                         params=self.module.params,
                         change_set=self._create_change_set(),
+                        vm=self.vm,
                         device_tracker=self.device_tracker,
-                    )
+                    ),
+                    self._controller_handlers
                 )
 
         return self._controller_handlers
+
+    def _add_handler_if_params_are_defined_by_user(self, handler, handler_list):
+        if handler.PARAMS_DEFINED_BY_USER:
+            handler_list.append(handler)
