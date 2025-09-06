@@ -217,4 +217,3 @@ class TestCpuParameterHandler:
 
         cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(configspec)
         assert configspec.cpuAllocation is None
-
