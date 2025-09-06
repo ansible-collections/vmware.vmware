@@ -21,7 +21,11 @@ class TestCpuParameterHandler:
     @pytest.fixture
     def allocation(self):
         mock_allocation = Mock()
-        mock_allocation.limit, mock_allocation.reservation, mock_allocation.shares = None, None, None
+        mock_allocation.limit, mock_allocation.reservation, mock_allocation.shares = (
+            None,
+            None,
+            None,
+        )
 
         return mock_allocation
 
@@ -88,11 +92,15 @@ class TestCpuParameterHandler:
 
     def test_populate_config_spec_with_parameters(self, cpu_parameter_handler):
         configspec = Mock()
-        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters = Mock()
+        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters = (
+            Mock()
+        )
         cpu_parameter_handler.cpu_params = {"cores": 4}
         cpu_parameter_handler.populate_config_spec_with_parameters(configspec)
         assert configspec.numCPUs == 4
-        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters.assert_called_once_with(configspec)
+        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters.assert_called_once_with(
+            configspec
+        )
 
     def test_compare_live_config_with_desired_config(self, cpu_parameter_handler):
         cpu_parameter_handler._check_cpu_changes_with_hot_add_remove = Mock()
@@ -159,15 +167,28 @@ class TestCpuParameterHandler:
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.ResourceAllocationInfo"
     )
-    @patch("ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.SharesInfo")
-    def test__populate_config_spec_with_cpu_allocation_parameters_all(self, mock_shares_info, mock_resource_allocation_info, cpu_parameter_handler, allocation, shares_info):
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.SharesInfo"
+    )
+    def test__populate_config_spec_with_cpu_allocation_parameters_all(
+        self,
+        mock_shares_info,
+        mock_resource_allocation_info,
+        cpu_parameter_handler,
+        allocation,
+        shares_info,
+    ):
         configspec = Mock()
         mock_resource_allocation_info.return_value = allocation
         mock_shares_info.return_value = shares_info
         configspec.cpuAllocation = None
 
-        cpu_parameter_handler.cpu_params = dict(shares_level="low", shares=10, limit=10, reservation=10)
-        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(configspec)
+        cpu_parameter_handler.cpu_params = dict(
+            shares_level="low", shares=10, limit=10, reservation=10
+        )
+        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(
+            configspec
+        )
         assert configspec.cpuAllocation is allocation
         assert configspec.cpuAllocation.shares is shares_info
         assert configspec.cpuAllocation.limit == 10
@@ -178,15 +199,26 @@ class TestCpuParameterHandler:
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.ResourceAllocationInfo"
     )
-    @patch("ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.SharesInfo")
-    def test__populate_config_spec_with_cpu_allocation_parameters_only_shares_level(self, mock_shares_info, mock_resource_allocation_info, cpu_parameter_handler, allocation, shares_info):
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.SharesInfo"
+    )
+    def test__populate_config_spec_with_cpu_allocation_parameters_only_shares_level(
+        self,
+        mock_shares_info,
+        mock_resource_allocation_info,
+        cpu_parameter_handler,
+        allocation,
+        shares_info,
+    ):
         configspec = Mock()
         mock_resource_allocation_info.return_value = allocation
         mock_shares_info.return_value = shares_info
         configspec.cpuAllocation = None
 
         cpu_parameter_handler.cpu_params = dict(shares_level="low")
-        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(configspec)
+        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(
+            configspec
+        )
         assert configspec.cpuAllocation is allocation
         assert configspec.cpuAllocation.shares is shares_info
         assert configspec.cpuAllocation.limit is None
@@ -197,23 +229,38 @@ class TestCpuParameterHandler:
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.ResourceAllocationInfo"
     )
-    @patch("ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.SharesInfo")
-    def test__populate_config_spec_with_cpu_allocation_parameters_only_limit(self, mock_shares_info, mock_resource_allocation_info, cpu_parameter_handler, allocation, shares_info):
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._cpu.vim.SharesInfo"
+    )
+    def test__populate_config_spec_with_cpu_allocation_parameters_only_limit(
+        self,
+        mock_shares_info,
+        mock_resource_allocation_info,
+        cpu_parameter_handler,
+        allocation,
+        shares_info,
+    ):
         configspec = Mock()
         mock_resource_allocation_info.return_value = allocation
         mock_shares_info.return_value = shares_info
         configspec.cpuAllocation = None
 
         cpu_parameter_handler.cpu_params = dict(limit=10)
-        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(configspec)
+        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(
+            configspec
+        )
         assert configspec.cpuAllocation is allocation
         assert configspec.cpuAllocation.shares is None
         assert configspec.cpuAllocation.limit == 10
         assert configspec.cpuAllocation.reservation is None
 
-    def test__populate_config_spec_with_cpu_allocation_parameters_no_params(self, cpu_parameter_handler):
+    def test__populate_config_spec_with_cpu_allocation_parameters_no_params(
+        self, cpu_parameter_handler
+    ):
         configspec = Mock()
         configspec.cpuAllocation = None
 
-        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(configspec)
+        cpu_parameter_handler._populate_config_spec_with_cpu_allocation_parameters(
+            configspec
+        )
         assert configspec.cpuAllocation is None

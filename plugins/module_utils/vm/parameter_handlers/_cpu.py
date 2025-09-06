@@ -187,7 +187,9 @@ class CpuParameterHandler(AbstractParameterHandler):
 
         if self.cpu_params.get("shares") is None:
             self.change_set.check_if_change_is_required(
-                "cpu.shares_level", "config.cpuAllocation.shares.level", power_sensitive=True
+                "cpu.shares_level",
+                "config.cpuAllocation.shares.level",
+                power_sensitive=True,
             )
 
     def _check_cpu_changes_with_hot_add_remove(self):
@@ -255,14 +257,19 @@ class CpuParameterHandler(AbstractParameterHandler):
         limit_param = self.cpu_params.get("limit")
         reservation_param = self.cpu_params.get("reservation")
 
-        if shares_level_param is None and shares_param is None and limit_param is None and reservation_param is None:
+        if (
+            shares_level_param is None
+            and shares_param is None
+            and limit_param is None
+            and reservation_param is None
+        ):
             return
 
         allocation = vim.ResourceAllocationInfo()
         if shares_level_param is not None or shares_param is not None:
             shares_info = vim.SharesInfo()
             if shares_param is not None:
-                shares_info.level = 'custom'
+                shares_info.level = "custom"
                 shares_info.shares = shares_param
             else:
                 shares_info.level = shares_level_param
