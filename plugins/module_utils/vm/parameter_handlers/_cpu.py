@@ -17,6 +17,11 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set impor
     PowerCycleRequiredError,
 )
 
+try:
+    from pyVmomi import vim
+except ImportError:
+    pass
+
 
 class CpuParameterHandler(AbstractParameterHandler):
     """
@@ -37,9 +42,13 @@ class CpuParameterHandler(AbstractParameterHandler):
     - cpu.enable_performance_counters: Enable vPMC performance counters
     - cpu.enable_hot_add: Enable CPU hot-add capability
     - cpu.enable_hot_remove: Enable CPU hot-remove capability
+    - cpu.shares: Custom number of shares of CPU allocated to this virtual machine
+    - cpu.shares_level: The allocation level of CPU resources for the virtual machine
+    - cpu.limit: The maximum number of CPUs the VM can use
+    - cpu.reservation: The amount of CPU resource that is guaranteed available to the virtual machine
 
     Attributes:
-        cpu_params (dict): CPU-specific parameters from module input
+        cpu_params (dict): CPU-specific parameters from module input.
     """
 
     HANDLER_NAME = "cpu"
@@ -133,16 +142,18 @@ class CpuParameterHandler(AbstractParameterHandler):
             cores per socket, performance counters, and hot-add/remove capabilities.
         """
         param_to_configspec_attr = {
-            "enable_performance_counters": "vPMCEnabled",
             "cores": "numCPUs",
             "cores_per_socket": "numCoresPerSocket",
             "enable_hot_add": "cpuHotAddEnabled",
             "enable_hot_remove": "cpuHotRemoveEnabled",
+            "enable_performance_counters": "vPMCEnabled",
         }
         for param_name, configspec_attr in param_to_configspec_attr.items():
             value = self.cpu_params.get(param_name)
             if value is not None:
                 setattr(configspec, configspec_attr, value)
+
+        self._populate_config_spec_with_cpu_allocation_parameters(configspec)
 
     def compare_live_config_with_desired_config(self):
         """
@@ -160,15 +171,23 @@ class CpuParameterHandler(AbstractParameterHandler):
 
         # Define parameter mappings for change detection
         param_mappings = [
-            ("cores_per_socket", "config.numCoresPerSocket"),
-            ("enable_hot_add", "config.cpuHotAddEnabled"),
-            ("enable_hot_remove", "config.cpuHotRemoveEnabled"),
-            ("enable_performance_counters", "config.vPMCEnabled"),
+            ("cpu.cores_per_socket", "config.hardware.numCoresPerSocket"),
+            ("cpu.enable_hot_add", "config.cpuHotAddEnabled"),
+            ("cpu.enable_hot_remove", "config.cpuHotRemoveEnabled"),
+            ("cpu.enable_performance_counters", "config.vPMCEnabled"),
+            ("cpu.shares", "config.cpuAllocation.shares.shares"),
+            ("cpu.limit", "config.cpuAllocation.limit"),
+            ("cpu.reservation", "config.cpuAllocation.reservation"),
         ]
 
         for param_name, attribute_path in param_mappings:
             self.change_set.check_if_change_is_required(
                 param_name, attribute_path, power_sensitive=True
+            )
+
+        if self.cpu_params.get("shares") is None:
+            self.change_set.check_if_change_is_required(
+                "cpu.shares_level", "config.cpuAllocation.shares.level", power_sensitive=True
             )
 
     def _check_cpu_changes_with_hot_add_remove(self):
@@ -188,7 +207,7 @@ class CpuParameterHandler(AbstractParameterHandler):
         """
         try:
             self.change_set.check_if_change_is_required(
-                "cores",
+                "cpu.cores",
                 "config.hardware.numCPU",
                 power_sensitive=True,
                 errors_fatal=False,
@@ -220,3 +239,39 @@ class CpuParameterHandler(AbstractParameterHandler):
                 )
             # hot add/remove is allowed, so we can proceed with the change without power cycling
             self.change_set.power_cycle_required = False
+
+    def _populate_config_spec_with_cpu_allocation_parameters(self, configspec):
+        """
+        Populate the configspec with the CPU allocation resource parameters.
+
+        Args:
+            configspec: VMware VirtualMachineConfigSpec to populate
+
+        Side Effects:
+            Modifies configspec with CPU allocation parameters, like shares, limit, reservation.
+        """
+        shares_level_param = self.cpu_params.get("shares_level")
+        shares_param = self.cpu_params.get("shares")
+        limit_param = self.cpu_params.get("limit")
+        reservation_param = self.cpu_params.get("reservation")
+
+        if shares_level_param is None and shares_param is None and limit_param is None and reservation_param is None:
+            return
+
+        allocation = vim.ResourceAllocationInfo()
+        if shares_level_param is not None or shares_param is not None:
+            shares_info = vim.SharesInfo()
+            if shares_param is not None:
+                shares_info.level = 'custom'
+                shares_info.shares = shares_param
+            else:
+                shares_info.level = shares_level_param
+            allocation.shares = shares_info
+
+        if limit_param is not None:
+            allocation.limit = limit_param
+
+        if reservation_param is not None:
+            allocation.reservation = reservation_param
+
+        configspec.cpuAllocation = allocation

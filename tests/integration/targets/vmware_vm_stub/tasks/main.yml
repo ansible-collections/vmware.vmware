@@ -25,13 +25,27 @@
         scsi_controllers:
           - controller_type: buslogic
             bus_sharing: noSharing
+      register: _basic_create_task
+
+    - name: Store VM moid
+      ansible.builtin.set_fact:
+        test_vm_moid: "{{ _basic_create_task.vm.moid }}"
 
     # from this point on, the vm definition above is not reliable. Tests
     # should establish relevant vm options as a first task.
     - name: Test vm update
       ansible.builtin.include_tasks: basic_vm_update_tests.yml
 
+    - name: Test cpu params
+      ansible.builtin.include_tasks: cpu_params_tests.yml
+
   always:
+    - name: Power off vm
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vcenter_datacenter }}"
+        moid: "{{ test_vm_name }}"
+        state: powered-off
+
     - name: Delete VM
       vmware.vmware._vm_stub:
         name: "{{ test_vm_name }}"

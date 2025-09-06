@@ -204,18 +204,19 @@ options:
                 type: bool
                 required: false
                 default: false
-            enable_hardware_assisted_virtualization:
-                description:
-                    - Whether to enable hardware assisted virtualization.
-                type: bool
-                required: false
-                default: false
-            enable_io_mmu:
-                description:
-                    - Whether to enable IO Memory Management Unit (IO MMU).
-                type: bool
-                required: false
-                default: false
+            # TODO:these should not be with the cpu parameters, but not sure where to put them yet
+            # enable_hardware_assisted_virtualization:
+            #     description:
+            #         - Whether to enable hardware assisted virtualization.
+            #     type: bool
+            #     required: false
+            #     default: false
+            # enable_io_mmu:
+            #     description:
+            #         - Whether to enable IO Memory Management Unit (IO MMU).
+            #     type: bool
+            #     required: false
+            #     default: false
 
     memory:
         description:
