@@ -246,13 +246,11 @@ options:
                 type: str
                 required: false
                 choices: [ low, normal, high ]
-                default: normal
             enable_hot_add:
                 description:
                     - Whether to enable memory hot add. This allows you to add memory to the VM while it is powered on.
                 type: bool
                 required: false
-                default: false
             reservation:
                 description:
                     - The amount of memory resource that is guaranteed available to the VM.
@@ -262,6 +260,13 @@ options:
                 description:
                     - The maximum amount of memory the VM can use.
                 type: int
+                required: false
+            reserve_all_memory:
+                description:
+                    - Whether to reserve (lock) all memory allocated for the VM.
+                    - This will cause VMware to reserve all memory allocated for the VM, meaning that the
+                      memory will not be available to other VMs even if this VM is not actively using it.
+                type: bool
                 required: false
 
     disks:
