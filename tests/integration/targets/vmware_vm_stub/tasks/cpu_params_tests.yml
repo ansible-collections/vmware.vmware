@@ -1,0 +1,56 @@
+---
+- name: Power off vm
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    moid: "{{ test_vm_moid }}"
+    state: powered-off
+
+- name: Set vm CPU settings
+  vmware.vmware._vm_stub: &set-cpu-params
+    name: "{{ test_vm_name }}"
+    cpu:
+      cores: 2
+      cores_per_socket: 1
+      shares: 1000
+      limit: 1000
+      reservation: 1000
+      enable_hot_add: true
+      enable_hot_remove: true
+  register: _set_cpu_params
+
+- name: Set vm CPU settings - idempotence check
+  vmware.vmware._vm_stub: *set-cpu-params
+  register: _set_cpu_params_idempotent
+
+- name: Lookup VM CPU Info
+  vmware.vmware.vm_resource_info:
+    moid: "{{ test_vm_moid }}"
+    gather_memory_config: false
+    gather_memory_stats: false
+  register: _lookup_vm_resource_info
+
+- name: Check set cpu params tasks
+  ansible.builtin.assert:
+    that:
+      - _set_cpu_params is ansible.builtin.changed
+      - _set_cpu_params_idempotent is not ansible.builtin.changed
+
+      - vm_resource_info.cpu.cores_per_socket == 1
+      - vm_resource_info.cpu.processor_count == 2
+      - vm_resource_info.cpu.hot_add_enabled == true
+      - vm_resource_info.cpu.hot_remove_enabled == true
+  vars:
+    vm_resource_info: "{{ _lookup_vm_resource_info.vms[0] }}"
+
+- name: Set invalid socket count - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    cpu:
+      cores: 2
+      cores_per_socket: 3
+  register: _invalid_socket_count
+  ignore_errors: true
+
+- name: Check invalid socket count test
+  ansible.builtin.assert:
+    that: _invalid_socket_count is ansible.builtin.failed

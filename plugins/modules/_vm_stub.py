@@ -153,14 +153,15 @@ options:
             cores:
                 description:
                     - The number of CPU cores to add to the VM.
+                    - This is required when creating a new VM.
                 type: int
-                required: true
+                required: false
             cores_per_socket:
                 description:
                     - The number of cores per socket to use for the VM.
                     - If this is defined, O(cpu.cores) must be a multiple of O(cpu.cores_per_socket).
                 type: int
-                required: true
+                required: false
             enable_hot_add:
                 description:
                     - Whether to enable CPU hot add. This allows you to add CPUs to the VM while it is powered on.
@@ -180,7 +181,7 @@ options:
                 required: false
             limit:
                 description:
-                    - The maximum number of CPUs the VM can use.
+                    - The maximum amount of CPU resources the VM can use.
                 type: int
                 required: false
             shares:
@@ -204,18 +205,19 @@ options:
                 type: bool
                 required: false
                 default: false
-            enable_hardware_assisted_virtualization:
-                description:
-                    - Whether to enable hardware assisted virtualization.
-                type: bool
-                required: false
-                default: false
-            enable_io_mmu:
-                description:
-                    - Whether to enable IO Memory Management Unit (IO MMU).
-                type: bool
-                required: false
-                default: false
+            # TODO:these should not be with the cpu parameters, but not sure where to put them yet
+            # enable_hardware_assisted_virtualization:
+            #     description:
+            #         - Whether to enable hardware assisted virtualization.
+            #     type: bool
+            #     required: false
+            #     default: false
+            # enable_io_mmu:
+            #     description:
+            #         - Whether to enable IO Memory Management Unit (IO MMU).
+            #     type: bool
+            #     required: false
+            #     default: false
 
     memory:
         description:
@@ -565,7 +567,22 @@ def main():
                 guest_id=dict(type='str', required=False),
                 allow_power_cycling=dict(type='bool', default=False),
 
-                cpu=dict(type='dict', required=False),
+                cpu=dict(
+                    type='dict', required=False, options=dict(
+                        cores=dict(type='int', required=False),
+                        cores_per_socket=dict(type='int', required=False),
+                        enable_hot_add=dict(type='bool', default=False),
+                        enable_hot_remove=dict(type='bool', default=False),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high'], default='normal'),
+                        enable_performance_counters=dict(type='bool', default=False),
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
+                ),
                 memory=dict(type='dict', required=False),
                 disks=dict(type='list', elements='dict', required=False),
                 scsi_controllers=dict(type='list', elements='dict', required=False),
