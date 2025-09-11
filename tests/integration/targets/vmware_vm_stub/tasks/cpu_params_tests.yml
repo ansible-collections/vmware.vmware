@@ -14,7 +14,6 @@
       shares: 1000
       limit: 1000
       reservation: 1000
-      shares_level: low # this should be ignored due to shares being set
       enable_hot_add: true
       enable_hot_remove: true
   register: _set_cpu_params
