@@ -78,7 +78,8 @@ options:
   search_paths:
     description:
       - Specify a list of paths that should be searched recursively for VMware objects.
-      - This effectively allows you to only include objects in certain datacenters, clusters, or folders.
+      - This effectively allows you to only include objects in certain datacenters, clusters, or folders. The path must
+        be a valid vSphere inventory or folder path. Valid paths depend on the object type (vm, network, host, datastore).
       - >-
         Filtering is done before the initial object gathering query. If you have a large number of VMware objects, specifying
         a subset of paths to search can help speed up the inventory plugin.

@@ -39,6 +39,15 @@ options:
             {key: 'config.guestId', separator: ''},
             {key: 'summary.runtime.powerState', separator: ''},
         ]
+    gather_compute_objects:
+        description:
+            - If true, gather the cluster and ESXi host identifiers for this VM. This will add the cluster
+              and esxi_host properties to the VM object.
+            - If these properties are not available for some reason, the values will be empty strings.
+            - If false, these properties will not be added to the VM object.
+            - Looking up these values can add time to the inventory process.
+        default: false
+        type: bool
 """
 
 EXAMPLES = r"""
@@ -71,14 +80,15 @@ keyed_groups:
     separator: ""
   - key: guest.toolsRunningStatus
     separator: ""
-# Only gather VMs found in certain paths
+# Only gather VMs found in certain vSphere folder paths
 search_paths:
-  - /DC1/vm/ClusterA
-  - /DC1/vm/ClusterC
+  - /DC1/vm/production
+  - /DC1/vm/hq/production
   - /DC3
 # Filter out VMs using jinja patterns. For example, filter out powered off VMs
 filter_expressions:
   - 'summary.runtime.powerState == "poweredOff"'
+
 # Set custom inventory hostnames based on attributes
 # If more than one host has the same name, only the first host is shown in the inventory and a warning is thrown.
 # If strict is true, this warning is considered a fatal error.
@@ -89,9 +99,8 @@ hostnames:
 compose:
   ansible_user: "'root'"
   ansible_connection: "'ssh'"
-  # assuming path is something like /MyDC/vms/MyCluster
+  # assuming path is something like /MyDC/vms/myfolder
   datacenter: "(path | split('/'))[1]"
-  cluster: "(path | split('/'))[3]"
 ...
 
 # Use Tags and Tag Categories to create groups
@@ -126,6 +135,30 @@ keyed_groups:
     prefix: "vmware_tag_category_name_"
     separator: ""
 ...
+
+# gather and group hosts by compute resource information.
+---
+plugin: vmware.vmware.vms
+
+# creates properties for cluster and ESXi host identifiers on the VM object, like
+# cluster: {name: "Cluster1", moid: "1234567890"}
+# esxi_host: {name: "esxi-host-1", moid: "1234567890"}
+gather_compute_objects: true
+
+# create groups based on cluster and ESXi host name.
+keyed_groups:
+  - key: 'cluster["name"]'
+    prefix: "cluster"
+    separator: "_"
+  - key: 'esxi_host["name"]'
+    prefix: "esxi_host"
+    separator: "_"
+
+# filter out VMs that are not running in one or more of clusters.
+filter_expressions:
+  - 'cluster["name"] in ["Cluster1", "Cluster2"]'
+...
+
 
 # customizing hostnames based on VM's FQDN. The second hostnames template acts as a fallback mechanism.
 ---
@@ -186,6 +219,8 @@ class VmInventoryHost(VmwareInventoryHost):
     def __init__(self):
         super().__init__()
         self._guest_ip = None
+        self._cluster = None
+        self._esxi_host = None
 
     @property
     def guest_ip(self):
@@ -198,6 +233,34 @@ class VmInventoryHost(VmwareInventoryHost):
             self._guest_ip = ""
 
         return self._guest_ip
+
+    @property
+    def cluster(self):
+        if self._cluster is None:
+            try:
+                _cluster = self.object.summary.runtime.host.parent
+                self._cluster = dict(
+                    name=_cluster.name,
+                    moid=_cluster._GetMoId()
+                )
+            except AttributeError:
+                self._cluster = dict(name='', moid='')
+
+        return self._cluster
+
+    @property
+    def esxi_host(self):
+        if self._esxi_host is None:
+            try:
+                _esxi_host = self.object.summary.runtime.host
+                self._esxi_host = dict(
+                    name=_esxi_host.name,
+                    moid=_esxi_host._GetMoId()
+                )
+            except AttributeError:
+                self._esxi_host = dict(name='', moid='')
+
+        return self._esxi_host
 
     def get_tags(self, rest_client):
         return rest_client.get_tags_by_vm_moid(self.object._GetMoId())
@@ -253,6 +316,10 @@ class InventoryModule(VmwareInventoryBase):
         if "summary.runtime.powerState" not in properties_param:
             properties_param.append("summary.runtime.powerState")
 
+        # needed by esxi_host and cluster properties value
+        if self.get_option("gather_compute_objects"):
+            properties_param.append("summary.runtime.host")
+
         return properties_param
 
     def populate_from_cache(self, cache_data):
@@ -286,6 +353,10 @@ class InventoryModule(VmwareInventoryBase):
 
             if self.get_option("gather_tags"):
                 self.add_tags_to_object_properties(vm)
+
+            if self.get_option("gather_compute_objects"):
+                vm.properties['cluster'] = vm.cluster
+                vm.properties['esxi_host'] = vm.esxi_host
 
             self.set_inventory_hostname(vm)
             self.add_host_object_from_vcenter_to_inventory(new_host=vm, hostvars=hostvars)
