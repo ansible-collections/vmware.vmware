@@ -302,7 +302,7 @@ def main():
     vmware_contentlib = VmwareContentTemplate(module)
     if module.check_mode:
         result.update(
-            vm_name=module.params['vm_name'],
+            vm_name=module.params.get('vm_name'),
             changed=True,
             desired_operation='{} template'.format(module.params.get('state')),
         )
