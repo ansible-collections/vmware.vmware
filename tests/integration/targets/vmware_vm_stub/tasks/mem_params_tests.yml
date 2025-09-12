@@ -12,9 +12,8 @@
       size_mb: 1024
       shares: 1024
       limit: 2048
-      reservation: 2048
+      reservation: 1000
       enable_hot_add: true
-      reserve_all_memory: true
   register: _set_mem_params
 
 - name: Set vm memory settings - idempotence check
@@ -36,5 +35,7 @@
     that:
       - _set_mem_params is ansible.builtin.changed
       - _set_mem_params_idempotent is not ansible.builtin.changed
+      - vm_resource_info.memory.size_mb == 1024
+      - vm_resource_info.memory.hot_add_enabled is true
   vars:
     vm_resource_info: "{{ _lookup_vm_resource_info.vms[0] }}"

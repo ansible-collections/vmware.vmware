@@ -81,8 +81,11 @@ class MemoryParameterHandler(AbstractParameterHandler):
             Calls error_handler.fail_with_parameter_error() for missing
             required parameters or invalid memory decrease attempts.
         """
-        memory_size_mb = self.memory_params.get("size_mb")
+        self._verify_memory_size_parameter_constraints()
+        self._verify_reservation_parameter_constraints()
 
+    def _verify_memory_size_parameter_constraints(self):
+        memory_size_mb = self.memory_params.get("size_mb")
         if self.vm is None:
             if memory_size_mb is None:
                 self.error_handler.fail_with_parameter_error(
@@ -102,6 +105,21 @@ class MemoryParameterHandler(AbstractParameterHandler):
                 details={
                     "size_mb": memory_size_mb,
                     "current_size_mb": self.vm.config.hardware.memoryMB,
+                },
+            )
+
+    def _verify_reservation_parameter_constraints(self):
+        if self.memory_params.get("reservation") is None:
+            return
+
+        memory_size_mb = self.memory_params.get("size_mb") or self.vm.config.hardware.memoryMB
+        if memory_size_mb < self.memory_params.get("reservation"):
+            self.error_handler.fail_with_parameter_error(
+                parameter_name="memory.reservation",
+                message="Memory reservation cannot be greater than the VM's memory size.",
+                details={
+                    "size_mb": memory_size_mb,
+                    "reservation": self.memory_params.get("reservation"),
                 },
             )
 

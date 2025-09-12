@@ -251,20 +251,24 @@ options:
             reservation:
                 description:
                     - The amount of memory resource that is guaranteed available to the VM.
+                    - Only one of O(memory.reservation) or O(memory.reserve_all_memory) can be set.
+                    - This value must be less than or equal to the VMs total memory in MB.
                 type: int
+                required: false
+            reserve_all_memory:
+                description:
+                    - Whether to reserve (lock) all memory allocated for the VM.
+                    - Only one of O(memory.reservation) or O(memory.reserve_all_memory) can be set.
+                    - This will cause VMware to reserve all memory allocated for the VM, meaning that the
+                      memory will not be available to other VMs even if this VM is not actively using it.
+                type: bool
                 required: false
             limit:
                 description:
                     - The maximum amount of memory the VM can use.
                 type: int
                 required: false
-            reserve_all_memory:
-                description:
-                    - Whether to reserve (lock) all memory allocated for the VM.
-                    - This will cause VMware to reserve all memory allocated for the VM, meaning that the
-                      memory will not be available to other VMs even if this VM is not actively using it.
-                type: bool
-                required: false
+
 
     disks:
         description:
@@ -596,7 +600,8 @@ def main():
                         reserve_all_memory=dict(type='bool', required=False),
                     ),
                     mutually_exclusive=[
-                        ['shares', 'shares_level']
+                        ['shares', 'shares_level'],
+                        ['reservation', 'reserve_all_memory'],
                     ],
                 ),
                 disks=dict(type='list', elements='dict', required=False),
