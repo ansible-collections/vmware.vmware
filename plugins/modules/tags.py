@@ -28,18 +28,29 @@ options:
         type: str
         required: True
         choices: [present, absent, set]
-    object_moid:
-        description:
-            - The MOID of the vSphere object to manage.
-        type: str
-        required: False
 
     tags:
         description:
             - A list of tags to manage.
         type: list
         required: True
-        elements: str
+        elements: dict
+        options:
+            name:
+                description:
+                    - The name of the tag.
+                type: str
+                required: True
+            category:
+                description:
+                    - The category of the tag.
+                type: str
+                required: True
+            description:
+                description:
+                    - The description of the tag.
+                type: str
+                required: False
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
@@ -145,7 +156,6 @@ vms:
     ]
 '''
 
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
@@ -153,44 +163,133 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 )
 
 
-
-class VmwareTag(ModuleRestBase):
+class VmwareTagModule(ModuleRestBase):
     def __init__(self, module):
         super().__init__(module)
-        # self.dynamic_managed_object = DynamicID(type=self.object_type, id=managed_object_id)
 
-    def _main(self):
-        all_categories = self.tag_category_service.list()
-        for category_id in all_categories:
-            category_model = self.tag_category_service.get(category_id)
-            print("Category ID '{}', name '{}', description '{}'".format(
-                category_model.id, category_model.name, category_model.description
-            ))
+    def _map_category_names_to_ids(self):
+        category_map = dict()
+        category_names = set(tag.get('category_name') for tag in self.params['tags'] if tag.get('category_name'))
+        if not category_names:
+            return category_map
 
-    def get_tags_to_change(self):
-        tags_to_create = []
-        tags_to_update = []
-        tags_to_delete = []
+        for tag_category_id in self.tag_category_service.list():
+            category_data = self.tag_category_service.get(tag_category_id)
+            if category_data.name in category_names:
+                category_names.remove(category_data.name)
+                category_map[category_data.name] = category_data.id
 
-        all_tags = self.tag_service.list()
-        for tag_id in all_tags:
-            tag_model = self.tag_service.get(tag_id)
-            if tag_model.name not in self.params['tags']:
-                tags_to_create.append(tag_model.name)
-                continue
+            if not category_names:
+                break
 
-            if self.is_tag_model_different(tag_model):
-                tags_to_update.append(tag_model.name)
-                continue
+        return category_map
 
-        return tags_to_create, tags_to_update, tags_to_delete
+    def _map_tag_params_to_dict(self, category_names_to_ids):
+        tag_dict = dict()
+        for tag_param in self.params['tags']:
+            category_id = category_names_to_ids[tag_param['category_name']] if tag_param.get('category_name') else tag_param['category_id']
+            if category_id not in tag_dict:
+                tag_dict[category_id] = dict()
 
-    def is_tag_model_different(self, tag_model):
-        if tag_model.name not in self.params['tags']:
-            return True
-        if tag_model.description != self.params['tags'][tag_model.name]['description']:
-            return True
-        return False
+            tag_dict[category_id][tag_param['name']] = tag_param.get('description', None)
+        return tag_dict
+
+    def parse_tag_params_to_dict(self):
+        category_names_to_ids = self._map_category_names_to_ids()
+        return self._map_tag_params_to_dict(category_names_to_ids)
+
+    def get_tags_to_remove(self):
+        tags_to_remove = []
+        tag_params = self.parse_tag_params_to_dict()
+        for category_id in tag_params.keys():
+            for existing_tag_id in self.tag_service.list_tags_for_category(category_id):
+                existing_tag = self.tag_service.get(existing_tag_id)
+                if existing_tag.name in tag_params[category_id]:
+                    tags_to_remove.append(existing_tag)
+                    del tag_params[category_id][existing_tag.name]
+
+                if not tag_params[category_id]:
+                    break
+
+        return tags_to_remove
+
+    def get_tags_to_create_or_update(self):
+        tags_to_update = {}
+        tags_to_create = {}
+        tag_params = self.parse_tag_params_to_dict()
+        for category_id in tag_params.keys():
+            for existing_tag_id in self.tag_service.list_tags_for_category(category_id):
+                self._check_if_tag_needs_updating(tag_params, category_id, existing_tag_id, tags_to_update)
+                if not tag_params[category_id]:
+                    break
+
+            if tag_params[category_id]:
+                tags_to_create[category_id] = [
+                    {'name': tag[0], 'description': tag[1]} for tag in tag_params[category_id].items()
+                ]
+
+        return tags_to_create, tags_to_update
+
+    def _check_if_tag_needs_updating(self, tag_params, category_id, existing_tag_id, tags_to_update):
+        existing_tag = self.tag_service.get(existing_tag_id)
+        if not existing_tag.name in tag_params[category_id]:
+            return
+
+        new_tag_description = tag_params[category_id][existing_tag.name]
+        if new_tag_description is None or existing_tag.description == new_tag_description:
+            return
+
+        if category_id not in tags_to_update:
+            tags_to_update[category_id] = []
+
+        tags_to_update[category_id].append({
+            'before': {
+                'name': existing_tag.name,
+                'description': existing_tag.description,
+                'id': existing_tag.id,
+            },
+            'after': {
+                'name': existing_tag.name,
+                'description': new_tag_description,
+                'id': existing_tag.id,
+            },
+        })
+        del tag_params[category_id][existing_tag.name]
+
+    def create_and_update_tags(self, tags_to_create, tags_to_update):
+        for category_id, tags in tags_to_create.items():
+            for tag in tags:
+                new_tag_id = self._create_tag(tag['name'], tag['description'], category_id)
+                tag['id'] = new_tag_id
+
+        for category_id, tags in tags_to_update.items():
+            for tag in tags:
+                self.update_tag(tag['after']['id'], tag['after']['description'])
+
+    # def get_tags_to_change(self):
+    #     tags_to_create = []
+    #     tags_to_update = []
+    #     tags_to_delete = []
+
+    #     all_tags = self.tag_service.list()
+    #     for tag_id in all_tags:
+    #         tag_model = self.tag_service.get(tag_id)
+    #         if tag_model.name not in self.params['tags']:
+    #             tags_to_create.append(tag_model.name)
+    #             continue
+
+    #         if self.is_tag_model_different(tag_model):
+    #             tags_to_update.append(tag_model.name)
+    #             continue
+
+    #     return tags_to_create, tags_to_update, tags_to_delete
+
+    # def is_tag_model_different(self, tag_model):
+    #     if tag_model.name not in self.params['tags']:
+    #         return True
+    #     if tag_model.description != self.params['tags'][tag_model.name]['description']:
+    #         return True
+    #     return False
 
     # def tag_object(self, object_moid):
     #     print('Tagging the cluster {0}...'.format(self.cluster_name))
@@ -206,27 +305,28 @@ class VmwareTag(ModuleRestBase):
     #     assert self.tag_attached
     #     print('Tagged cluster: {0}'.format(self.cluster_moid))
 
-    def create_tag_category(self, name, description, cardinality):
-        """create a category. User who invokes this needs create category privilege."""
-        create_spec = self.tag_category_service.CreateSpec()
-        create_spec.name = name
-        create_spec.description = description
-        create_spec.cardinality = cardinality
-        associableTypes = set()
-        create_spec.associable_types = associableTypes
-        return self.tag_category_service.create(create_spec)
+    # def create_tag_category(self, name, description, cardinality):
+    #     """create a category. User who invokes this needs create category privilege."""
+    #     create_spec = self.tag_category_service.CreateSpec()
+    #     create_spec.name = name
+    #     create_spec.description = description
+    #     create_spec.cardinality = cardinality
+    #     associableTypes = set()
+    #     create_spec.associable_types = associableTypes
+    #     return self.tag_category_service.create(create_spec)
 
-    def delete_tag_category(self, category_id):
-        """Deletes an existing tag category; User who invokes this API needs
-        delete privilege on the tag category.
-        """
-        self.tag_category_service.delete(category_id)
+    # def delete_tag_category(self):
+    #     """Deletes an existing tag category; User who invokes this API needs
+    #     delete privilege on the tag category.
+    #     """
+    #     return
+    #     self.tag_category_service.delete(self.category_id)
 
-    def create_tag(self, name, description, category_id):
+    def _create_tag(self, name, description, category_id):
         """Creates a Tag"""
         create_spec = self.tag_service.CreateSpec()
         create_spec.name = name
-        create_spec.description = description
+        create_spec.description = description or ''
         create_spec.category_id = category_id
         return self.tag_service.create(create_spec)
 
@@ -235,48 +335,61 @@ class VmwareTag(ModuleRestBase):
         update_spec.setDescription = description
         self.tag_service.update(tag_id, update_spec)
 
-    def delete_tag(self, tag_id):
+    def delete_tags(self, tags_to_remove):
         """Delete an existing tag.
         User who invokes this API needs delete privilege on the tag."""
-        self.tag_service.delete(tag_id)
+        for tags in tags_to_remove.values():
+            for tag in tags:
+                self.tag_service.delete(tag['id'])
+
 
 def main():
     argument_spec = rest_compatible_argument_spec()
     argument_spec.update(
         dict(
-            state=dict(type='str', choices=['present', 'absent', 'set'], required=True),
-            object_moid=dict(type='str', required=False),
-            tags=dict(type='list', elements='str', required=True),
+            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            tags=dict(
+                type='list', elements='dict', required=True, options=dict(
+                    name=dict(type='str', required=True),
+                    category_name=dict(type='str', required=False),
+                    category_id=dict(type='str', required=False),
+                    description=dict(type='str', required=False),
+                ),
+                required_one_of=[['category_name', 'category_id']]
+            )
         )
     )
+
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=True,
-        mutually_exclusive=[['name', 'uuid', 'moid']]
+        supports_check_mode=True
     )
 
     result = dict(
         changed=False,
-        created_tags=[],
         updated_tags=[],
-        deleted_tags=[]
+        created_tags=[],
+        removed_tags=[]
     )
 
-    vmware_tag = VmwareTag(module)
-    tags_to_create, tags_to_update, tags_to_delete = vmware_tag.get_tags_to_change()
+    vmware_tag = VmwareTagModule(module)
+    if module.params['state'] == 'present':
+        tags_to_create, tags_to_update = vmware_tag.get_tags_to_create_or_update()
+        if tags_to_create or tags_to_update:
+            result['changed'] = True
+            result['created_tags'] = tags_to_create
+            result['updated_tags'] = tags_to_update
 
-    if any([tags_to_create, tags_to_update, tags_to_delete]):
-        result['changed'] = True
-        result['created_tags'] = tags_to_create
-        result['updated_tags'] = tags_to_update
-        result['deleted_tags'] = tags_to_delete
+        if not module.check_mode:
+            vmware_tag.create_and_update_tags(tags_to_create, tags_to_update)
 
-    for tag_id in tags_to_create:
-        vmware_tag.create_tag(tag_id)
-    for tag_id in tags_to_update:
-        vmware_tag.update_tag(tag_id)
-    for tag_id in tags_to_delete:
-        vmware_tag.delete_tag(tag_id)
+    elif module.params['state'] == 'absent':
+        tags_to_remove = vmware_tag.get_tags_to_remove()
+        if tags_to_remove:
+            result['changed'] = True
+            result['removed_tags'] = tags_to_remove
+            if not module.check_mode:
+                vmware_tag.delete_tags(tags_to_remove)
 
     module.exit_json(**result)
 
