@@ -167,13 +167,11 @@ options:
                     - Whether to enable CPU hot add. This allows you to add CPUs to the VM while it is powered on.
                 type: bool
                 required: false
-                default: false
             enable_hot_remove:
                 description:
                     - Whether to enable CPU hot remove. This allows you to remove CPUs from the VM while it is powered on.
                 type: bool
                 required: false
-                default: false
             reservation:
                 description:
                     - The amount of CPU resource that is guaranteed available to the virtual machine.
@@ -198,13 +196,11 @@ options:
                 type: str
                 required: false
                 choices: [ low, normal, high ]
-                default: normal
             enable_performance_counters:
                 description:
                     - Whether to enable Virtual CPU Performance Monitoring Counters (VPMC).
                 type: bool
                 required: false
-                default: false
             # TODO:these should not be with the cpu parameters, but not sure where to put them yet
             # enable_hardware_assisted_virtualization:
             #     description:
@@ -230,6 +226,7 @@ options:
                 description:
                     - The amount of memory to add to the VM.
                     - Memory cannot be changed while the VM is powered on, unless memory hot add is already enabled.
+                    - This parameter is required when creating a new VM.
                 type: int
                 required: false
             shares:
@@ -576,19 +573,32 @@ def main():
                     type='dict', required=False, options=dict(
                         cores=dict(type='int', required=False),
                         cores_per_socket=dict(type='int', required=False),
-                        enable_hot_add=dict(type='bool', default=False),
-                        enable_hot_remove=dict(type='bool', default=False),
+                        enable_hot_add=dict(type='bool', required=False),
+                        enable_hot_remove=dict(type='bool', required=False),
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         shares=dict(type='int', required=False),
-                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high'], default='normal'),
-                        enable_performance_counters=dict(type='bool', default=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        enable_performance_counters=dict(type='bool', required=False),
                     ),
                     mutually_exclusive=[
                         ['shares', 'shares_level']
                     ],
                 ),
-                memory=dict(type='dict', required=False),
+                memory=dict(
+                    type='dict', required=False, options=dict(
+                        size_mb=dict(type='int', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        limit=dict(type='int', required=False),
+                        reservation=dict(type='int', required=False),
+                        enable_hot_add=dict(type='bool', required=False),
+                        reserve_all_memory=dict(type='bool', required=False),
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
+                ),
                 disks=dict(type='list', elements='dict', required=False),
                 scsi_controllers=dict(type='list', elements='dict', required=False),
                 nvme_controllers=dict(type='list', elements='dict', required=False),

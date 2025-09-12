@@ -13,7 +13,6 @@
       shares: 1024
       limit: 2048
       reservation: 2048
-      shares_level: low # this should be ignored due to shares being set
       enable_hot_add: true
       reserve_all_memory: true
   register: _set_mem_params
@@ -37,10 +36,5 @@
     that:
       - _set_mem_params is ansible.builtin.changed
       - _set_mem_params_idempotent is not ansible.builtin.changed
-
-      # - vm_resource_info.memory.cores_per_socket == 1
-      # - vm_resource_info.cpu.processor_count == 2
-      # - vm_resource_info.cpu.hot_add_enabled == true
-      # - vm_resource_info.cpu.hot_remove_enabled == true
   vars:
     vm_resource_info: "{{ _lookup_vm_resource_info.vms[0] }}"
