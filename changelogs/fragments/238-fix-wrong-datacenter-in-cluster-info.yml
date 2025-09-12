@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - cluster_info - Fix wrong datacenter name if you have folders between cluster and datacenter. 
