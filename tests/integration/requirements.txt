@@ -1,6 +1,5 @@
-ansible-core==2.19.0b5
+ansible-core
 
-git+https://github.com/vmware/vsphere-automation-sdk-python.git@v8.0.2.0
-podman
-requests
 aiohttp
+pyVmomi>=8.0.3.0.1
+vmware-vcenter
