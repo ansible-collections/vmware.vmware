@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - cluster_ha - Fix admission control policy not being updated when ac is disabled
