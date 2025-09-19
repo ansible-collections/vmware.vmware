@@ -53,7 +53,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
     HANDLER_NAME = "disk"
 
     def __init__(
-        self, error_handler, params, change_set, vm, device_tracker, controller_handlers
+        self, error_handler, params, change_set, vm, device_tracker, controller_handlers, **kwargs
     ):
         """
         Initialize the disk parameter handler.

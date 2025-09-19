@@ -5,6 +5,7 @@ vcenter_datacenter: "Eco-Datacenter"
 vcenter_resource_pool: "Resources"
 vcenter_port: 443
 vcenter_validate_certs: false
+vcenter_vm_network_name: vm_traffic
 
 shared_storage_01: "eco-iscsi-ds1"
 shared_storage_02: "eco-iscsi-ds2"
