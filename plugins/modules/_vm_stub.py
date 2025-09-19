@@ -381,7 +381,8 @@ options:
             - A list of e1000 network adapters to manage on the VM.
             - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
-        type: dict
+        type: list
+        elements: dict
         required: false
         suboptions:
             network:
@@ -390,12 +391,6 @@ options:
                     - The portgroup must already exist.
                 type: str
                 required: true
-            label:
-                description:
-                    - The label of the network adapter.
-                    - This is a user-defined string used to uniquely identify the adapter.
-                type: str
-                required: false
             connected:
                 type: bool
                 description:
@@ -411,13 +406,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(e1000_network_adapters.shares) or O(e1000_network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(e1000_network_adapters.shares) or O(e1000_network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -445,7 +440,8 @@ options:
             - A list of e1000e network adapters to manage on the VM.
             - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
-        type: dict
+        type: list
+        elements: dict
         required: false
         suboptions:
             network:
@@ -469,13 +465,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(e1000e_network_adapters.shares) or O(e1000e_network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(e1000e_network_adapters.shares) or O(e1000e_network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -503,7 +499,8 @@ options:
             - A list of pcnet32 network adapters to manage on the VM.
             - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
-        type: dict
+        type: list
+        elements: dict
         required: false
         suboptions:
             network:
@@ -527,13 +524,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(pcnet32_network_adapters.shares) or O(pcnet32_network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(pcnet32_network_adapters.shares) or O(pcnet32_network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -561,7 +558,8 @@ options:
             - A list of vmxnet2 network adapters to manage on the VM.
             - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
-        type: dict
+        type: list
+        elements: dict
         required: false
         suboptions:
             network:
@@ -585,13 +583,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet2_network_adapters.shares) or O(vmxnet2_network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet2_network_adapters.shares) or O(vmxnet2_network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -619,7 +617,8 @@ options:
             - A list of vmxnet3 network adapters to manage on the VM.
             - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
-        type: dict
+        type: list
+        elements: dict
         required: false
         suboptions:
             network:
@@ -643,13 +642,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet3_network_adapters.shares) or O(vmxnet3_network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet3_network_adapters.shares) or O(vmxnet3_network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -677,7 +676,8 @@ options:
             - A list of sriov network adapters to manage on the VM.
             - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
-        type: dict
+        type: list
+        elements: dict
         required: false
         suboptions:
             network:
@@ -701,13 +701,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(sriov_network_adapters.shares) or O(sriov_network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                    - Only one of O(sriov_network_adapters.shares) or O(sriov_network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -964,7 +964,10 @@ def main():
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         mac_address=dict(type='str', required=False),
-                    )
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
                 ),
                 e1000e_network_adapters=dict(
                     type='list', elements='dict', required=False, options=dict(
@@ -976,10 +979,13 @@ def main():
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         mac_address=dict(type='str', required=False),
-                    )
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
                 ),
                 pcnet32_network_adapters=dict(
-                        type='list', elements='dict', required=False, options=dict(
+                    type='list', elements='dict', required=False, options=dict(
                         network=dict(type='str', required=True),
                         connected=dict(type='bool', required=False),
                         connect_at_power_on=dict(type='bool', required=False),
@@ -988,10 +994,13 @@ def main():
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         mac_address=dict(type='str', required=False),
-                    )
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
                 ),
                 vmxnet2_network_adapters=dict(
-                        type='list', elements='dict', required=False, options=dict(
+                    type='list', elements='dict', required=False, options=dict(
                         network=dict(type='str', required=True),
                         connected=dict(type='bool', required=False),
                         connect_at_power_on=dict(type='bool', required=False),
@@ -1000,7 +1009,10 @@ def main():
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         mac_address=dict(type='str', required=False),
-                    )
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
                 ),
                 vmxnet3_network_adapters=dict(
                     type='list', elements='dict', required=False, options=dict(
@@ -1012,7 +1024,10 @@ def main():
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         mac_address=dict(type='str', required=False),
-                    )
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
                 ),
                 sriov_network_adapters=dict(
                     type='list', elements='dict', required=False, options=dict(
@@ -1024,7 +1039,10 @@ def main():
                         reservation=dict(type='int', required=False),
                         limit=dict(type='int', required=False),
                         mac_address=dict(type='str', required=False),
-                    )
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
                 ),
                 timeout=dict(type='int', default=600),
             )

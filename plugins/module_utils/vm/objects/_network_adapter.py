@@ -43,10 +43,17 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
         reservation (int, optional): Reserved network bandwidth in Mbps
         limit (int, optional): Maximum network bandwidth in Mbps
         _raw_device: Original VMware resource allocation object
-        _linked_device: Corresponding live device for change detection
+        _live_object: Corresponding live device for change detection
     """
 
-    def __init__(self, shares=None, shares_level=None, reservation=None, limit=None, raw_device=None):
+    def __init__(
+        self,
+        shares=None,
+        shares_level=None,
+        reservation=None,
+        limit=None,
+        raw_device=None,
+    ):
         """
         Initialize network adapter resource allocation.
 
@@ -64,39 +71,55 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
         self.limit = limit
 
     @classmethod
-    def from_device_spec(cls, device_allocation):
+    def from_live_device_spec(cls, live_device_spec):
         """
         Create instance from VMware device allocation specification.
 
         Args:
-            device_allocation: VMware VirtualEthernetCard.ResourceAllocation object
+            live_device_spec: VMware VirtualEthernetCard.ResourceAllocation object
 
         Returns:
             NetworkAdapterResourceAllocation: Configured resource allocation instance
         """
         return cls(
-            shares=device_allocation.share.shares if device_allocation.share.level == "custom" else None,
-            shares_level=device_allocation.share.level if device_allocation.share.level != "custom" else None,
-            reservation=device_allocation.reservation,
-            limit=device_allocation.limit,
-            raw_device=device_allocation,
+            shares=(
+                live_device_spec.share.shares
+                if live_device_spec.share.level == "custom"
+                else None
+            ),
+            shares_level=(
+                live_device_spec.share.level
+                if live_device_spec.share.level != "custom"
+                else None
+            ),
+            reservation=live_device_spec.reservation,
+            limit=live_device_spec.limit,
+            raw_device=live_device_spec,
         )
 
-    def differs_from_linked_device(self):
+    def differs_from_live_object(self):
         """
         Check if this resource allocation differs from the linked live device.
 
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._linked_device is None:
+        if self._live_object is None:
             return True
 
         return (
-            self._compare_attributes_for_changes(self.shares, self._linked_device.shares) or
-            self._compare_attributes_for_changes(self.shares_level, self._linked_device.shares_level) or
-            self._compare_attributes_for_changes(self.reservation, self._linked_device.reservation) or
-            self._compare_attributes_for_changes(self.limit, self._linked_device.limit)
+            self._compare_attributes_for_changes(
+                self.shares, self._live_object.shares
+            )
+            or self._compare_attributes_for_changes(
+                self.shares_level, self._live_object.shares_level
+            )
+            or self._compare_attributes_for_changes(
+                self.reservation, self._live_object.reservation
+            )
+            or self._compare_attributes_for_changes(
+                self.limit, self._live_object.limit
+            )
         )
 
     def to_new_spec(self):
@@ -107,7 +130,12 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
             vim.vm.device.VirtualEthernetCard.ResourceAllocation or None:
                 VMware resource allocation spec, or None if no allocation configured
         """
-        if self.shares is None and self.shares_level is None and self.limit is None and self.reservation is None:
+        if (
+            self.shares is None
+            and self.shares_level is None
+            and self.limit is None
+            and self.reservation is None
+        ):
             return None
 
         allocation = vim.vm.device.VirtualEthernetCard.ResourceAllocation()
@@ -152,6 +180,7 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
             "limit": self.limit,
         }
 
+
 class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
     """
     Abstract base class for network adapter portgroup configurations.
@@ -171,22 +200,32 @@ class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
         super().__init__(raw_device)
 
     @classmethod
-    def from_device_spec(cls, device_backing):
+    def from_live_device_spec(cls, live_device_spec):
         """
         Create appropriate portgroup instance from live VMware device backing.
 
         Args:
-            device_backing: VMware device backing object
+            live_device_spec: VMware device backing object
 
         Returns:
             NetworkAdapterPortgroup: Appropriate portgroup subclass instance
         """
-        if hasattr(device_backing, 'port'):
-            return DvsNetworkAdapterPortgroup(device_backing.port.portgroupKey, device_backing.port.switchUuid, raw_device=device_backing)
-        elif hasattr(device_backing, 'opaqueNetworkId'):
-            return NsxtNetworkAdapterPortgroup(device_backing.opaqueNetworkId, raw_device=device_backing)
+        if hasattr(live_device_spec, "port"):
+            return DvsNetworkAdapterPortgroup(
+                live_device_spec.port.portgroupKey,
+                live_device_spec.port.switchUuid,
+                raw_device=live_device_spec,
+            )
+        elif hasattr(live_device_spec, "opaqueNetworkId"):
+            return NsxtNetworkAdapterPortgroup(
+                live_device_spec.opaqueNetworkId, raw_device=live_device_spec
+            )
         else:
-            return VswitchNetworkAdapterPortgroup(device_backing.deviceName, device_backing.network, raw_device=device_backing)
+            return VswitchNetworkAdapterPortgroup(
+                live_device_spec.deviceName,
+                live_device_spec.network,
+                raw_device=live_device_spec,
+            )
 
     @classmethod
     def from_portgroup(cls, portgroup):
@@ -202,12 +241,20 @@ class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
         if portgroup is None:
             return None
 
-        if hasattr(portgroup, 'key'):
-            return DvsNetworkAdapterPortgroup(portgroup.key, portgroup.config.distributedVirtualSwitch.uuid, raw_device=portgroup)
-        elif hasattr(portgroup, 'capability'):
-            return NsxtNetworkAdapterPortgroup(portgroup.summary.opaqueNetworkId, raw_device=portgroup)
+        if hasattr(portgroup, "key"):
+            return DvsNetworkAdapterPortgroup(
+                portgroup.key,
+                portgroup.config.distributedVirtualSwitch.uuid,
+                raw_device=portgroup,
+            )
+        elif hasattr(portgroup, "capability"):
+            return NsxtNetworkAdapterPortgroup(
+                portgroup.summary.opaqueNetworkId, raw_device=portgroup
+            )
         else:
-            return VswitchNetworkAdapterPortgroup(portgroup.name, portgroup, raw_device=portgroup)
+            return VswitchNetworkAdapterPortgroup(
+                portgroup.name, portgroup, raw_device=portgroup
+            )
 
 
 class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
@@ -262,19 +309,20 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         """
         return self.to_new_spec()
 
-    def differs_from_linked_device(self):
+    def differs_from_live_object(self):
         """
         Check if this DVS portgroup differs from the linked live device.
 
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._linked_device is None:
+        if self._live_object is None:
             return True
 
-        return (
-            self._compare_attributes_for_changes(self.key, self._linked_device.key) or
-            self._compare_attributes_for_changes(self.switch_uuid, self._linked_device.switch_uuid)
+        return self._compare_attributes_for_changes(
+            self.key, self._live_object.key
+        ) or self._compare_attributes_for_changes(
+            self.switch_uuid, self._live_object.switch_uuid
         )
 
     def _to_module_output(self):
@@ -322,9 +370,9 @@ class NsxtNetworkAdapterPortgroup(NetworkAdapterPortgroup):
                 VMware NSX-T portgroup backing spec
         """
         backing = vim.vm.device.VirtualEthernetCard.OpaqueNetworkBackingInfo()
-        backing.opaqueNetworkType = 'nsx.LogicalSwitch'
+        backing.opaqueNetworkType = "nsx.LogicalSwitch"
         backing.opaqueNetworkId = self.opaque_network_id
-        backing.deviceInfo.summary = 'nsx.LogicalSwitch: %s' % self.opaque_network_id
+        backing.deviceInfo.summary = "nsx.LogicalSwitch: %s" % self.opaque_network_id
 
         return backing
 
@@ -338,17 +386,19 @@ class NsxtNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         """
         return self.to_new_spec()
 
-    def differs_from_linked_device(self):
+    def differs_from_live_object(self):
         """
         Check if this NSX-T portgroup differs from the linked live device.
 
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._linked_device is None:
+        if self._live_object is None:
             return True
 
-        return self._compare_attributes_for_changes(self.opaque_network_id, self._linked_device.opaque_network_id)
+        return self._compare_attributes_for_changes(
+            self.opaque_network_id, self._live_object.opaque_network_id
+        )
 
     def _to_module_output(self):
         """
@@ -412,19 +462,20 @@ class VswitchNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         """
         return self.to_new_spec()
 
-    def differs_from_linked_device(self):
+    def differs_from_live_object(self):
         """
         Check if this vSwitch portgroup differs from the linked live device.
 
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._linked_device is None:
+        if self._live_object is None:
             return True
 
-        return (
-            self._compare_attributes_for_changes(self.name, self._linked_device.name) or
-            self._compare_attributes_for_changes(self.network, self._linked_device.network)
+        return self._compare_attributes_for_changes(
+            self.name, self._live_object.name
+        ) or self._compare_attributes_for_changes(
+            self.network, self._live_object.network
         )
 
     def _to_module_output(self):
@@ -461,10 +512,20 @@ class NetworkAdapter(AbstractVsphereObject):
         resource_allocation (NetworkAdapterResourceAllocation): Resource allocation settings
         mac_address (str): MAC address of the network adapter ("automatic" for generated)
         _raw_object: Original VMware device object
-        _linked_device: Corresponding live device for change detection
+        _live_object: Corresponding live device for change detection
     """
 
-    def __init__(self, index, adapter_vim_class, connect_at_power_on, connected, mac_address, resource_allocation: NetworkAdapterResourceAllocation, portgroup: NetworkAdapterPortgroup, raw_object=None):
+    def __init__(
+        self,
+        index,
+        adapter_vim_class,
+        connect_at_power_on,
+        connected,
+        mac_address,
+        resource_allocation: NetworkAdapterResourceAllocation,
+        portgroup: NetworkAdapterPortgroup,
+        raw_object=None,
+    ):
         """
         Initialize a new network adapter object.
 
@@ -488,48 +549,53 @@ class NetworkAdapter(AbstractVsphereObject):
         self.mac_address = mac_address
 
     @classmethod
-    def from_device_spec(cls, device_spec):
+    def from_live_device_spec(cls, live_device_spec):
         """
         Create network adapter instance from VMware device specification.
 
         Args:
-            device_spec: VMware VirtualDeviceSpec object
+            live_device_spec: VMware VirtualDeviceSpec object
 
         Returns:
             NetworkAdapter: Configured network adapter instance
         """
         return cls(
             index="",
-            adapter_vim_class=type(device_spec),
-            portgroup=NetworkAdapterPortgroup.from_device_spec(device_spec.backing),
-            connect_at_power_on=device_spec.connectable.startConnected,
-            connected=device_spec.connectable.connected,
-            mac_address="automatic" if device_spec.addressType == "generated" else device_spec.macAddress,
-            resource_allocation=NetworkAdapterResourceAllocation.from_device_spec(device_spec.resourceAllocation),
-            raw_object=device_spec,
+            adapter_vim_class=type(live_device_spec),
+            portgroup=NetworkAdapterPortgroup.from_live_device_spec(live_device_spec.backing),
+            connect_at_power_on=live_device_spec.connectable.startConnected,
+            connected=live_device_spec.connectable.connected,
+            mac_address=(
+                "automatic"
+                if live_device_spec.addressType == "generated"
+                else live_device_spec.macAddress
+            ),
+            resource_allocation=NetworkAdapterResourceAllocation.from_live_device_spec(
+                live_device_spec.resourceAllocation
+            ),
+            raw_object=live_device_spec,
         )
 
-    def differs_from_linked_device(self):
+    def differs_from_live_object(self):
         """
         Check if this network adapter differs from the linked live device.
 
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._linked_device is None:
+        if self._live_object is None:
             return True
 
         att = [
-            (self.portgroup, self._linked_device.portgroup),
-            (self.resource_allocation, self._linked_device.resource_allocation),
-            (self.mac_address, self._linked_device.mac_address),
-            (self.connect_at_power_on, self._linked_device.connect_at_power_on),
-            (self.connected, self._linked_device.connected),
+            (self.portgroup, self._live_object.portgroup),
+            (self.resource_allocation, self._live_object.resource_allocation),
+            (self.mac_address, self._live_object.mac_address),
+            (self.connect_at_power_on, self._live_object.connect_at_power_on),
+            (self.connected, self._live_object.connected),
         ]
 
         for a in att:
             if self._compare_attributes_for_changes(a[0], a[1]):
-                raise Exception("diffs %s from %s" % (a[0], a[1]))
                 return True
         return False
 
@@ -546,11 +612,13 @@ class NetworkAdapter(AbstractVsphereObject):
         network_adapter_spec.device.key = -randint(25000, 29999)
 
         network_adapter_spec.device.deviceInfo = vim.Description()
-        network_adapter_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
-        if self.mac_address == 'automatic' or self.mac_address is None:
-            network_adapter_spec.device.addressType = 'generated'
+        network_adapter_spec.device.connectable = (
+            vim.vm.device.VirtualDevice.ConnectInfo()
+        )
+        if self.mac_address == "automatic" or self.mac_address is None:
+            network_adapter_spec.device.addressType = "generated"
         else:
-            network_adapter_spec.device.addressType = 'manual'
+            network_adapter_spec.device.addressType = "manual"
             network_adapter_spec.device.macAddress = self.mac_address
 
         self._update_network_adapter_spec_with_options(network_adapter_spec)
@@ -565,27 +633,31 @@ class NetworkAdapter(AbstractVsphereObject):
         """
         network_adapter_spec = vim.vm.device.VirtualDeviceSpec()
         network_adapter_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
-        network_adapter_spec.device = self._raw_object or self._linked_device._raw_object
+        network_adapter_spec.device = (
+            self._raw_object or self._live_object._raw_object
+        )
 
-        if self.mac_address == 'automatic':
-            network_adapter_spec.device.addressType = 'generated'
+        if self.mac_address == "automatic":
+            network_adapter_spec.device.addressType = "generated"
         elif self.mac_address is not None:
-            network_adapter_spec.device.addressType = 'manual'
+            network_adapter_spec.device.addressType = "manual"
             network_adapter_spec.device.macAddress = self.mac_address
 
         self._update_network_adapter_spec_with_options(network_adapter_spec)
         return network_adapter_spec
 
-    def link_corresponding_live_device(self, device: "NetworkAdapter"):
+    def link_corresponding_live_object(self, abstract_vsphere_object: "NetworkAdapter"):
         """
         Link this network adapter to its corresponding live device for change detection.
 
         Args:
-            device (NetworkAdapter): The live network adapter device to link
+            abstract_vsphere_object (NetworkAdapter): The live network adapter device to link
         """
-        super().link_corresponding_live_device(device)
-        self.portgroup.link_corresponding_live_device(device.portgroup)
-        self.resource_allocation.link_corresponding_live_device(device.resource_allocation)
+        super().link_corresponding_live_object(abstract_vsphere_object)
+        self.portgroup.link_corresponding_live_object(abstract_vsphere_object.portgroup)
+        self.resource_allocation.link_corresponding_live_object(
+            abstract_vsphere_object.resource_allocation
+        )
 
     @property
     def name_as_str(self):
@@ -598,7 +670,10 @@ class NetworkAdapter(AbstractVsphereObject):
         Returns:
             str: Human-readable network adapter name (e.g., "Network Adapter - VirtualE1000 - 0")
         """
-        return "Network Adapter - %s - %s" % (self.adapter_vim_class.__name__, self.index)
+        return "Network Adapter - %s - %s" % (
+            self.adapter_vim_class.__name__,
+            self.index,
+        )
 
     def _update_network_adapter_spec_with_options(self, network_adapter_spec):
         """
@@ -611,7 +686,9 @@ class NetworkAdapter(AbstractVsphereObject):
             Modifies the provided network_adapter_spec with network adapter properties.
         """
         if self.connect_at_power_on is not None:
-            network_adapter_spec.device.connectable.startConnected = self.connect_at_power_on
+            network_adapter_spec.device.connectable.startConnected = (
+                self.connect_at_power_on
+            )
 
         if self.connected is not None:
             network_adapter_spec.device.connectable.connected = self.connected

@@ -44,9 +44,13 @@ class VsphereObjectCache(ModulePyvmomiBase, AbstractService):
 
         # dvs portgroups are technically standard portgroups, so we need to check for dvs first and
         # then fallback to standard portgroups
-        portgroup = self.get_dvs_portgroup_by_name_or_moid(portgroup_identifier, fail_on_missing=True)
+        portgroup = self.get_dvs_portgroup_by_name_or_moid(
+            portgroup_identifier, fail_on_missing=True
+        )
         if not portgroup:
-            portgroup = self.get_standard_portgroup_by_name_or_moid(portgroup_identifier, fail_on_missing=False)
+            portgroup = self.get_standard_portgroup_by_name_or_moid(
+                portgroup_identifier, fail_on_missing=False
+            )
 
         self._cache[portgroup.name] = portgroup
         self._cache[portgroup._GetMoId()] = portgroup

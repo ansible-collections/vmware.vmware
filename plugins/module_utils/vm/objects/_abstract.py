@@ -32,7 +32,7 @@ class AbstractVsphereObject(ABC):
 
     Attributes:
         _raw_object: Original VMware object from pyVmomi (optional, only makes sense for live objects)
-        _linked_device: Corresponding live device for change detection (optional, only makes sense for input parameters)
+        _live_object: Corresponding live device for change detection (optional, only makes sense for input parameters)
     """
 
     def __init__(self, raw_object=None):
@@ -44,11 +44,11 @@ class AbstractVsphereObject(ABC):
                        Used when creating object from existing VMware device
         """
         self._raw_object = raw_object
-        self._linked_device = None
+        self._live_object = None
 
     @classmethod
     @abstractmethod
-    def from_device_spec(cls, device_spec):
+    def from_live_device_spec(cls, live_device_spec):
         """
         Create object instance from VMware device specification.
 
@@ -64,7 +64,7 @@ class AbstractVsphereObject(ABC):
         Raises:
             NotImplementedError: Must be implemented by subclasses
         """
-        raise NotImplementedError("from_device_spec must be implemented by subclasses")
+        raise NotImplementedError("from_live_device_spec must be implemented by subclasses")
 
     @abstractmethod
     def to_new_spec(self):
@@ -101,7 +101,7 @@ class AbstractVsphereObject(ABC):
         raise NotImplementedError("to_update_spec must be implemented by subclasses")
 
     @abstractmethod
-    def differs_from_linked_device(self):
+    def differs_from_live_object(self):
         """
         Determine if this object differs from its linked live device.
 
@@ -115,7 +115,9 @@ class AbstractVsphereObject(ABC):
         Raises:
             NotImplementedError: Must be implemented by subclasses
         """
-        raise NotImplementedError("differs_from_linked_device must be implemented by subclasses")
+        raise NotImplementedError(
+            "differs_from_live_object must be implemented by subclasses"
+        )
 
     def _compare_attributes_for_changes(self, param_value, device_value):
         """
@@ -124,7 +126,7 @@ class AbstractVsphereObject(ABC):
         This method provides comparison logic for different values with Ansible idempotency in mind.
         If a parameter value is not specified (None), it is not considered a change.
         If a device value is not specified (None), it is considered a change.
-        If a parameter value is an AbstractVsphereObject, it is compared using the differs_from_linked_device method.
+        If a parameter value is an AbstractVsphereObject, it is compared using the differs_from_live_object method.
         Otherwise, the direct equality comparison is used.
 
         Args:
@@ -142,7 +144,7 @@ class AbstractVsphereObject(ABC):
             return True
 
         if isinstance(param_value, AbstractVsphereObject):
-            return param_value.differs_from_linked_device()
+            return param_value.differs_from_live_object()
         return param_value != device_value
 
     @abstractmethod
@@ -183,8 +185,8 @@ class AbstractVsphereObject(ABC):
         """
         new_value = self._to_module_output()
         old_value = {}
-        if self._linked_device is not None:
-            old_value = self._linked_device._to_module_output()
+        if self._live_object is not None:
+            old_value = self._live_object._to_module_output()
 
         # Remove None values from both new and old values
         for key, value in new_value.copy().items():
@@ -198,7 +200,7 @@ class AbstractVsphereObject(ABC):
             "old_value": old_value,
         }
 
-    def link_corresponding_live_device(self, device: "AbstractVsphereObject"):
+    def link_corresponding_live_object(self, abstract_vsphere_object: "AbstractVsphereObject"):
         """
         Link this object to its corresponding live device for change detection.
 
@@ -207,7 +209,7 @@ class AbstractVsphereObject(ABC):
         is used for change detection and comparison operations.
 
         Args:
-            device: The corresponding live device object to link
+            abstract_vsphere_object: The corresponding live device object to link
 
         Raises:
             Exception: If a device is already linked (prevents multiple links)
@@ -216,7 +218,7 @@ class AbstractVsphereObject(ABC):
             This method should be called when setting up change detection
             between desired and current object states.
         """
-        if self._linked_device is not None:
+        if self._live_object is not None:
             raise Exception("Linked device already set, cannot link another one.")
 
-        self._linked_device = device
+        self._live_object = abstract_vsphere_object
