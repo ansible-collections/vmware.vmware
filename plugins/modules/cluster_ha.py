@@ -490,6 +490,9 @@ class VmwareCluster(ModulePyvmomiBase):
         if not isinstance(ac_config, policy_classes[self.params.get("admission_control_policy")]):
             return True
 
+        if not ha_config.admissionControlEnabled:
+            return True
+
         if self.params.get("admission_control_policy") == 'dedicated_host':
             ac_config.failoverHosts.sort(key=lambda h: h.name)
             if ac_config.failoverHosts != self.ac_failover_hosts:
