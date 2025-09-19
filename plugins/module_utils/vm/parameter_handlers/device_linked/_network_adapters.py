@@ -13,7 +13,7 @@ placement and validates disk parameters against available controllers.
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._network_adapter import NetworkAdapter
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._network_adapter import NetworkAdapter, NetworkAdapterPortgroup, NetworkAdapterResourceAllocation
 
 try:
     from pyVmomi import vim
@@ -21,7 +21,7 @@ except ImportError:
     pass
 
 
-class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
+class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
     """
     Handler for virtual network adapter configuration parameters.
 
@@ -54,7 +54,7 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
     HANDLER_NAME = "network_adapter"
 
     def __init__(
-        self, error_handler, params, change_set, vm, device_tracker
+        self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs
     ):
         """
         Initialize the disk parameter handler.
@@ -67,17 +67,8 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
             device_tracker: Service for device identification and error reporting
         """
         super().__init__(error_handler, params, change_set, vm, device_tracker)
-        self._check_if_params_are_defined_by_user("network_adapters", required_for_vm_creation=True)
-
-        self.network_adapters = []
-
-    @property
-    def vim_device_class(self):
-        """
-        Get the VMware device class for this network adapter type.
-        This is a parent class; network adapters are all subclasses of this vim class.
-        """
-        return vim.vm.device.VirtualEthernetCard
+        self.vsphere_object_cache = vsphere_object_cache
+        self.adapters = []
 
     def verify_parameter_constraints(self):
         """
@@ -91,13 +82,13 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
             Calls error_handler.fail_with_parameter_error() for invalid disk
             parameters, missing controllers, or missing disk definitions.
         """
-        if len(self.network_adapters) == 0:
+        if len(self.adapters) == 0:
             try:
                 self._parse_network_adapter_params()
             except ValueError as e:
                 self.error_handler.fail_with_parameter_error(
-                    parameter_name="network_adapters",
-                    message="Error parsing network adapter parameters: %s" % str(e),
+                    parameter_name="%ss" % self.HANDLER_NAME,
+                    message="Error parsing %s parameters: %s" % (self.HANDLER_NAME, str(e)),
                     details={"error": str(e)},
                 )
 
@@ -109,23 +100,37 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
         and creates NetworkAdapter objects.
 
         Side Effects:
-            Populates self.network_adapters with NetworkAdapter objects representing desired configuration.
+            Populates self.adapters with NetworkAdapter objects representing desired configuration.
         """
-        network_params = self.params.get("network_adapters") or {}
-        for label, network_param in network_params.items():
-            network_adapter = NetworkAdapter(
-                label=label,
-                portgroup_name=network_param.get("portgroup_name"),
-                adapter_type=network_param.get("adapter_type"),
-                connect_at_power_on=network_param.get("connect_at_power_on"),
-                connected=network_param.get("connected"),
-                shares=network_param.get("shares"),
-                shares_level=network_param.get("shares_level"),
-                reservation=network_param.get("reservation"),
-                limit=network_param.get("limit"),
-                mac_address=network_param.get("mac_address"),
+        adapter_params = self.params.get("%ss" % self.HANDLER_NAME) or []
+        for index, adapter_param in enumerate(adapter_params):
+            resource_allocation = NetworkAdapterResourceAllocation(
+                shares=adapter_param.get("shares"),
+                shares_level=adapter_param.get("shares_level"),
+                reservation=adapter_param.get("reservation"),
+                limit=adapter_param.get("limit"),
             )
-            self.network_adapters.append(network_adapter)
+            try:
+                network_portgroup = NetworkAdapterPortgroup.from_portgroup(
+                    portgroup=self.vsphere_object_cache.get_portgroup(adapter_param.get("network")),
+                )
+            except Exception as e:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="%ss" % self.HANDLER_NAME,
+                    message="Error looking up the portgroup %s for network adapter %s: %s" % (adapter_param.get("network"), index, str(e)),
+                    details={"error": str(e)},
+                )
+
+            network_adapter = NetworkAdapter(
+                index=index,
+                adapter_vim_class=self.vim_device_class,
+                connect_at_power_on=adapter_param.get("connect_at_power_on"),
+                connected=adapter_param.get("connected"),
+                mac_address=adapter_param.get("mac_address"),
+                resource_allocation=resource_allocation,
+                portgroup=network_portgroup,
+            )
+            self.adapters.append(network_adapter)
 
     def populate_config_spec_with_parameters(self, configspec):
         """
@@ -144,18 +149,18 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
         """
         for network_adapter in self.change_set.objects_to_add:
             self.device_tracker.track_device_id_from_spec(network_adapter)
-            configspec.deviceChange.append(network_adapter.create_network_adapter_spec())
+            configspec.deviceChange.append(network_adapter.to_new_spec())
         for network_adapter in self.change_set.objects_to_update:
             self.device_tracker.track_device_id_from_spec(network_adapter)
-            configspec.deviceChange.append(network_adapter.update_network_adapter_spec())
+            configspec.deviceChange.append(network_adapter.to_update_spec())
 
     def compare_live_config_with_desired_config(self):
         """
-        Compare current VM disk configuration with desired configuration.
+        Compare current VM adapter configurations with desired configuration.
 
-        Analyzes each disk to determine if it needs to be added, updated,
+        Analyzes each adapter to determine if it needs to be added, updated,
         or is already in sync with the desired configuration. Categorizes
-        disks based on their current state and required changes.
+        adapters based on their current state and required changes.
 
         Returns:
             ParameterChangeSet: Updated change set with disk change requirements
@@ -163,10 +168,10 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
         Side Effects:
             Updates change_set with disk objects categorized by required actions.
         """
-        for network_adapter in self.network_adapters:
-            if network_adapter._device is None:
+        for network_adapter in self.adapters:
+            if network_adapter._linked_device is None:
                 self.change_set.objects_to_add.append(network_adapter)
-            elif network_adapter.linked_device_differs_from_config():
+            elif network_adapter.differs_from_linked_device():
                 self.change_set.objects_to_update.append(network_adapter)
             else:
                 self.change_set.objects_in_sync.append(network_adapter)
@@ -177,27 +182,121 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
         """
         Link a VMware network adapter device to the appropriate network adapter object.
 
-        Matches a VMware network adapter device to the corresponding network adapter object based
-        on controller key and unit number. This establishes the connection
-        between the existing VM device and the handler's network adapter representation.
+        This links the object representation of the live network adapter device to the
+        object representation of the network adapter parameters specified by the user.
+        That way, parameters can easily be compared to the live device.
 
         Args:
-            device: VMware VirtualEthernetCard device to link
+            device: vsphere object representing the live network adapter device
 
         Raises:
             Exception: If no matching network adapter object is found for the device
 
         Side Effects:
-            Sets the _device attribute on the matching disk object.
+            Sets the _linked_device attribute on the matching param_adapter object.
         """
-        for network_adapter in self.network_adapters:
-            if (
-                isinstance(device, network_adapter.vim_device_class)
-                and device.deviceInfo.label == network_adapter.label
-            ):
-                network_adapter._device = device
+        for param_adapter in self.adapters:
+            # Network adapters are not easily identified, but vmware always lists them in the same order.
+            # So we can just link the first one that doesn't have a linked device.
+            if param_adapter._linked_device is None:
+                param_adapter.link_corresponding_live_device(NetworkAdapter.from_device_spec(device))
                 return
 
         raise Exception(
             "Network adapter not found for device %s" % device.deviceInfo.label
         )
+
+class E1000NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
+    """
+    Handler for e1000 network adapter configuration parameters.
+    """
+
+    HANDLER_NAME = "e1000_network_adapter"
+
+    def __init__(self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs):
+        super().__init__(error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs)
+        self._check_if_params_are_defined_by_user("e1000_network_adapters", required_for_vm_creation=False)
+
+    @property
+    def vim_device_class(self):
+        return vim.vm.device.VirtualE1000
+
+
+class E1000eNetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
+    """
+    Handler for e1000e network adapter configuration parameters.
+    """
+
+    HANDLER_NAME = "e1000e_network_adapter"
+
+    def __init__(self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs):
+        super().__init__(error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs)
+        self._check_if_params_are_defined_by_user("e1000e_network_adapters", required_for_vm_creation=False)
+
+    @property
+    def vim_device_class(self):
+        return vim.vm.device.VirtualE1000e
+
+
+class Pcnet32NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
+    """
+    Handler for pcnet32 network adapter configuration parameters.
+    """
+
+    HANDLER_NAME = "pcnet32_network_adapter"
+
+    def __init__(self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs):
+        super().__init__(error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs)
+        self._check_if_params_are_defined_by_user("pcnet32_network_adapters", required_for_vm_creation=False)
+
+    @property
+    def vim_device_class(self):
+        return vim.vm.device.VirtualPCNet32
+
+
+class Vmxnet2NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
+    """
+    Handler for vmxnet2 network adapter configuration parameters.
+    """
+
+    HANDLER_NAME = "vmxnet2_network_adapter"
+
+    def __init__(self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs):
+        super().__init__(error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs)
+        self._check_if_params_are_defined_by_user("vmxnet2_network_adapters", required_for_vm_creation=False)
+
+    @property
+    def vim_device_class(self):
+        return vim.vm.device.VirtualVmxnet2
+
+
+class Vmxnet3NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
+    """
+    Handler for vmxnet3 network adapter configuration parameters.
+    """
+
+    HANDLER_NAME = "vmxnet3_network_adapter"
+
+    def __init__(self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs):
+        super().__init__(error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs)
+        self._check_if_params_are_defined_by_user("vmxnet3_network_adapters", required_for_vm_creation=False)
+
+    @property
+    def vim_device_class(self):
+        return vim.vm.device.VirtualVmxnet3
+
+
+class SriovNetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
+    """
+    Handler for sriov network adapter configuration parameters.
+    """
+
+    HANDLER_NAME = "sriov_network_adapter"
+
+    def __init__(self, error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs):
+        super().__init__(error_handler, params, change_set, vm, device_tracker, vsphere_object_cache, **kwargs)
+        self._check_if_params_are_defined_by_user("sriov_network_adapters", required_for_vm_creation=False)
+
+    @property
+    def vim_device_class(self):
+        return vim.vm.device.VirtualSriovEthernetCard

@@ -376,27 +376,25 @@ options:
                 choices: [ usb2, usb3 ]
                 default: usb3
 
-    network_adapters:
+    e1000_network_adapters:
         description:
-            - A dictionary of network adapters to manage on the VM.
-            - Each key is the label of the network adapter, which is
-              a user-defined string used to uniquely identify the adapter.
+            - A list of e1000 network adapters to manage on the VM.
+            - Portgroups must already exist; this module does not create them.
             - If an adapter is not specified, it will be removed from the VM.
         type: dict
         required: false
         suboptions:
-            portgroup_name:
+            network:
                 description:
-                    - Name of the portgroup or distributed virtual portgroup for this interface.
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
                     - The portgroup must already exist.
                 type: str
                 required: true
-            adapter_type:
-                type: str
+            label:
                 description:
-                    - The type of the network adapter.
-                    - Valid values are one of [ e1000, e1000e, pcnet32, vmxnet2, vmxnet3, sriov ].
-                default: vmxnet3
+                    - The label of the network adapter.
+                    - This is a user-defined string used to uniquely identify the adapter.
+                type: str
                 required: false
             connected:
                 type: bool
@@ -408,19 +406,18 @@ options:
                 description:
                     - Specifies whether or not to connect the network adapter when the virtual machine starts.
                 required: false
-                default: true
             shares:
                 type: int
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(shares) or O(shares_level) can be set.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(shares) or O(shares_level) can be set.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -443,6 +440,297 @@ options:
                     - If not specified and this is a new adapter, a random MAC address will be assigned.
                     - If not specified and this is an existing adapter, the MAC address will not be changed.
                 required: false
+    e1000e_network_adapters:
+        description:
+            - A list of e1000e network adapters to manage on the VM.
+            - Portgroups must already exist; this module does not create them.
+            - If an adapter is not specified, it will be removed from the VM.
+        type: dict
+        required: false
+        suboptions:
+            network:
+                description:
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
+                    - The portgroup must already exist.
+                type: str
+                required: true
+            connected:
+                type: bool
+                description:
+                    - Indicates whether the NIC is currently connected.
+                required: false
+            connect_at_power_on:
+                type: bool
+                description:
+                    - Specifies whether or not to connect the network adapter when the virtual machine starts.
+                required: false
+            shares:
+                type: int
+                description:
+                    - The percentage of network resources allocated to the network adapter.
+                    - If setting this, it should be between 0 and 100.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+            shares_level:
+                type: str
+                description:
+                    - The pre-defined allocation level of network resources for the network adapter.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+                choices: [ low, normal, high ]
+            reservation:
+                type: int
+                description:
+                    - The amount of network resources reserved for the network adapter.
+                    - The unit is Mbps.
+                required: false
+            limit:
+                type: int
+                description:
+                    - The maximum amount of network resources the network adapter can use.
+                    - The unit is Mbps.
+                required: false
+            mac_address:
+                type: str
+                description:
+                    - The MAC address of the network adapter.
+                    - If you want to use a generated or automatic mac address, set this to 'automatic'.
+                    - If not specified and this is a new adapter, a random MAC address will be assigned.
+                    - If not specified and this is an existing adapter, the MAC address will not be changed.
+                required: false
+    pcnet32_network_adapters:
+        description:
+            - A list of pcnet32 network adapters to manage on the VM.
+            - Portgroups must already exist; this module does not create them.
+            - If an adapter is not specified, it will be removed from the VM.
+        type: dict
+        required: false
+        suboptions:
+            network:
+                description:
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
+                    - The portgroup must already exist.
+                type: str
+                required: true
+            connected:
+                type: bool
+                description:
+                    - Indicates whether the NIC is currently connected.
+                required: false
+            connect_at_power_on:
+                type: bool
+                description:
+                    - Specifies whether or not to connect the network adapter when the virtual machine starts.
+                required: false
+            shares:
+                type: int
+                description:
+                    - The percentage of network resources allocated to the network adapter.
+                    - If setting this, it should be between 0 and 100.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+            shares_level:
+                type: str
+                description:
+                    - The pre-defined allocation level of network resources for the network adapter.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+                choices: [ low, normal, high ]
+            reservation:
+                type: int
+                description:
+                    - The amount of network resources reserved for the network adapter.
+                    - The unit is Mbps.
+                required: false
+            limit:
+                type: int
+                description:
+                    - The maximum amount of network resources the network adapter can use.
+                    - The unit is Mbps.
+                required: false
+            mac_address:
+                type: str
+                description:
+                    - The MAC address of the network adapter.
+                    - If you want to use a generated or automatic mac address, set this to 'automatic'.
+                    - If not specified and this is a new adapter, a random MAC address will be assigned.
+                    - If not specified and this is an existing adapter, the MAC address will not be changed.
+                required: false
+    vmxnet2_network_adapters:
+        description:
+            - A list of vmxnet2 network adapters to manage on the VM.
+            - Portgroups must already exist; this module does not create them.
+            - If an adapter is not specified, it will be removed from the VM.
+        type: dict
+        required: false
+        suboptions:
+            network:
+                description:
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
+                    - The portgroup must already exist.
+                type: str
+                required: true
+            connected:
+                type: bool
+                description:
+                    - Indicates whether the NIC is currently connected.
+                required: false
+            connect_at_power_on:
+                type: bool
+                description:
+                    - Specifies whether or not to connect the network adapter when the virtual machine starts.
+                required: false
+            shares:
+                type: int
+                description:
+                    - The percentage of network resources allocated to the network adapter.
+                    - If setting this, it should be between 0 and 100.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+            shares_level:
+                type: str
+                description:
+                    - The pre-defined allocation level of network resources for the network adapter.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+                choices: [ low, normal, high ]
+            reservation:
+                type: int
+                description:
+                    - The amount of network resources reserved for the network adapter.
+                    - The unit is Mbps.
+                required: false
+            limit:
+                type: int
+                description:
+                    - The maximum amount of network resources the network adapter can use.
+                    - The unit is Mbps.
+                required: false
+            mac_address:
+                type: str
+                description:
+                    - The MAC address of the network adapter.
+                    - If you want to use a generated or automatic mac address, set this to 'automatic'.
+                    - If not specified and this is a new adapter, a random MAC address will be assigned.
+                    - If not specified and this is an existing adapter, the MAC address will not be changed.
+                required: false
+    vmxnet3_network_adapters:
+        description:
+            - A list of vmxnet3 network adapters to manage on the VM.
+            - Portgroups must already exist; this module does not create them.
+            - If an adapter is not specified, it will be removed from the VM.
+        type: dict
+        required: false
+        suboptions:
+            network:
+                description:
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
+                    - The portgroup must already exist.
+                type: str
+                required: true
+            connected:
+                type: bool
+                description:
+                    - Indicates whether the NIC is currently connected.
+                required: false
+            connect_at_power_on:
+                type: bool
+                description:
+                    - Specifies whether or not to connect the network adapter when the virtual machine starts.
+                required: false
+            shares:
+                type: int
+                description:
+                    - The percentage of network resources allocated to the network adapter.
+                    - If setting this, it should be between 0 and 100.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+            shares_level:
+                type: str
+                description:
+                    - The pre-defined allocation level of network resources for the network adapter.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+                choices: [ low, normal, high ]
+            reservation:
+                type: int
+                description:
+                    - The amount of network resources reserved for the network adapter.
+                    - The unit is Mbps.
+                required: false
+            limit:
+                type: int
+                description:
+                    - The maximum amount of network resources the network adapter can use.
+                    - The unit is Mbps.
+                required: false
+            mac_address:
+                type: str
+                description:
+                    - The MAC address of the network adapter.
+                    - If you want to use a generated or automatic mac address, set this to 'automatic'.
+                    - If not specified and this is a new adapter, a random MAC address will be assigned.
+                    - If not specified and this is an existing adapter, the MAC address will not be changed.
+                required: false
+    sriov_network_adapters:
+        description:
+            - A list of sriov network adapters to manage on the VM.
+            - Portgroups must already exist; this module does not create them.
+            - If an adapter is not specified, it will be removed from the VM.
+        type: dict
+        required: false
+        suboptions:
+            network:
+                description:
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
+                    - The portgroup must already exist.
+                type: str
+                required: true
+            connected:
+                type: bool
+                description:
+                    - Indicates whether the NIC is currently connected.
+                required: false
+            connect_at_power_on:
+                type: bool
+                description:
+                    - Specifies whether or not to connect the network adapter when the virtual machine starts.
+                required: false
+            shares:
+                type: int
+                description:
+                    - The percentage of network resources allocated to the network adapter.
+                    - If setting this, it should be between 0 and 100.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+            shares_level:
+                type: str
+                description:
+                    - The pre-defined allocation level of network resources for the network adapter.
+                    - Only one of O(network_adapters.shares) or O(network_adapters.shares_level) can be set.
+                required: false
+                choices: [ low, normal, high ]
+            reservation:
+                type: int
+                description:
+                    - The amount of network resources reserved for the network adapter.
+                    - The unit is Mbps.
+                required: false
+            limit:
+                type: int
+                description:
+                    - The maximum amount of network resources the network adapter can use.
+                    - The unit is Mbps.
+                required: false
+            mac_address:
+                type: str
+                description:
+                    - The MAC address of the network adapter.
+                    - If you want to use a generated or automatic mac address, set this to 'automatic'.
+                    - If not specified and this is a new adapter, a random MAC address will be assigned.
+                    - If not specified and this is an existing adapter, the MAC address will not be changed.
+                required: false
+
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
@@ -490,6 +778,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked import (
     _disks,
     _controllers,
+    _network_adapters,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
     ConfigurationRegistry,
@@ -516,6 +805,12 @@ class VmModule(ModulePyvmomiBase):
         self.configuration_registry.register_vm_aware_handler(_memory.MemoryParameterHandler)
 
         self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.E1000NetworkAdapterParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.E1000eNetworkAdapterParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.Pcnet32NetworkAdapterParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.Vmxnet2NetworkAdapterParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.Vmxnet3NetworkAdapterParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.SriovNetworkAdapterParameterHandler)
 
         self.configuration_registry.register_controller_handler(_controllers.ScsiControllerParameterHandler)
         self.configuration_registry.register_controller_handler(_controllers.NvmeControllerParameterHandler)
@@ -659,6 +954,78 @@ def main():
                 sata_controller_count=dict(type='int', required=False, default=0),
                 usb_controllers=dict(type='list', elements='dict', required=False),
 
+                e1000_network_adapters=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    )
+                ),
+                e1000e_network_adapters=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    )
+                ),
+                pcnet32_network_adapters=dict(
+                        type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    )
+                ),
+                vmxnet2_network_adapters=dict(
+                        type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    )
+                ),
+                vmxnet3_network_adapters=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    )
+                ),
+                sriov_network_adapters=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    )
+                ),
                 timeout=dict(type='int', default=600),
             )
         },

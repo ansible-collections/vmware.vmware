@@ -39,6 +39,9 @@
     - name: Test cpu params
       ansible.builtin.include_tasks: cpu_params_tests.yml
 
+    - name: Test network adapter params
+      ansible.builtin.include_tasks: network_adapter_params_tests.yml
+
   always:
     - name: Power off vm
       vmware.vmware.vm_powerstate:

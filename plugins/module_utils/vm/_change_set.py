@@ -66,14 +66,12 @@ class ParameterChangeSet:
 
     @property
     def changes(self):
-        # TODO I think we should return a list of devices changed too,
-        # but I'm not sure how to represent them via json yet
+        # TODO remove hasattr checks once all objects implement abstractvsphereobject
         return {
             "changed_parameters": self._changed_parameters,
-            # "objects_to_add": self.objects_to_add,
-            # "objects_to_update": self.objects_to_update,
-            # "objects_in_sync": self.objects_in_sync,
-            # "objects_to_remove": self.objects_to_remove,
+            "objects_to_add": [obj.to_change_set_output()['new_value'] for obj in self.objects_to_add if hasattr(obj, "to_change_set_output")],
+            "objects_to_update": [obj.to_change_set_output() for obj in self.objects_to_update if hasattr(obj, "to_change_set_output")],
+            "objects_to_remove": [obj.to_change_set_output()['old_value'] for obj in self.objects_to_remove if hasattr(obj, "to_change_set_output")],
         }
 
     def are_changes_required(self):
@@ -210,6 +208,11 @@ class ParameterChangeSet:
             raise ValueError("change_set must be an instance of ParameterChangeSet")
 
         self._changed_parameters.update(other._changed_parameters)
+        self.objects_to_add.extend(other.objects_to_add)
+        self.objects_to_update.extend(other.objects_to_update)
+        self.objects_in_sync.extend(other.objects_in_sync)
+        self.objects_to_remove.extend(other.objects_to_remove)
+
         self.power_cycle_required = (
             self.power_cycle_required or other.power_cycle_required
         )
