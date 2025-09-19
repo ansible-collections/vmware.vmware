@@ -1,0 +1,41 @@
+---
+- name: Power off vm
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    moid: "{{ test_vm_moid }}"
+    state: powered-off
+
+- name: Set vm memory settings
+  vmware.vmware._vm_stub: &set-mem-params
+    name: "{{ test_vm_name }}"
+    memory:
+      size_mb: 1024
+      shares: 1024
+      limit: 2048
+      reservation: 1000
+      enable_hot_add: true
+  register: _set_mem_params
+
+- name: Set vm memory settings - idempotence check
+  vmware.vmware._vm_stub: *set-mem-params
+  register: _set_mem_params_idempotent
+
+- name: Lookup VM memory Info
+  vmware.vmware.vm_resource_info:
+    moid: "{{ test_vm_moid }}"
+    gather_cpu_config: false
+    gather_cpu_stats: false
+  register: _lookup_vm_resource_info
+
+- debug:
+    var: _lookup_vm_resource_info
+
+- name: Check set memory params tasks
+  ansible.builtin.assert:
+    that:
+      - _set_mem_params is ansible.builtin.changed
+      - _set_mem_params_idempotent is not ansible.builtin.changed
+      - vm_resource_info.memory.size_mb == 1024
+      - vm_resource_info.memory.hot_add_enabled is true
+  vars:
+    vm_resource_info: "{{ _lookup_vm_resource_info.vms[0] }}"
