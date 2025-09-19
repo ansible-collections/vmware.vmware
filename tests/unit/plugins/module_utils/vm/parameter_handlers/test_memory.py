@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory import (
     MemoryParameterHandler,
@@ -17,6 +17,24 @@ class TestMemoryParameterHandler:
     @pytest.fixture
     def memory_parameter_handler(self):
         return MemoryParameterHandler(Mock(), {}, Mock(), Mock())
+
+    @pytest.fixture
+    def allocation(self):
+        mock_allocation = Mock()
+        mock_allocation.limit, mock_allocation.reservation, mock_allocation.shares = (
+            None,
+            None,
+            None,
+        )
+
+        return mock_allocation
+
+    @pytest.fixture
+    def shares_info(self):
+        mock_shares_info = Mock()
+        mock_shares_info.shares, mock_shares_info.level = None, None
+
+        return mock_shares_info
 
     def test_verify_parameter_constraints_new_vm(self, memory_parameter_handler):
         """Test parameter constraints validation for new VM creation."""
@@ -40,7 +58,9 @@ class TestMemoryParameterHandler:
         """Test parameter constraints validation for existing VM."""
         memory_parameter_handler.vm = Mock()
         memory_parameter_handler.vm.config.hardware.memoryMB = 2048
-        memory_parameter_handler.error_handler.fail_with_parameter_error.side_effect = Exception("test")
+        memory_parameter_handler.error_handler.fail_with_parameter_error.side_effect = (
+            Exception("test")
+        )
 
         # Test memory decrease (should fail)
         memory_parameter_handler.memory_params = {"size_mb": 1024}
@@ -62,9 +82,15 @@ class TestMemoryParameterHandler:
             "size_mb": 2048,
             "enable_hot_add": True,
         }
+        memory_parameter_handler._populate_config_spec_with_memory_allocation_parameters = (
+            Mock()
+        )
         memory_parameter_handler.populate_config_spec_with_parameters(configspec)
         assert configspec.memoryMB == 2048
         assert configspec.memoryHotAddEnabled is True
+        memory_parameter_handler._populate_config_spec_with_memory_allocation_parameters.assert_called_once_with(
+            configspec
+        )
 
     def test_populate_config_spec_with_partial_parameters(
         self, memory_parameter_handler
@@ -81,7 +107,7 @@ class TestMemoryParameterHandler:
         memory_parameter_handler.compare_live_config_with_desired_config()
         assert (
             memory_parameter_handler.change_set.check_if_change_is_required.call_count
-            == 1
+            == 6
         )
 
     def test_check_memory_changes_with_hot_add(self, memory_parameter_handler):
@@ -166,3 +192,104 @@ class TestMemoryParameterHandler:
             memory_parameter_handler.error_handler.fail_with_parameter_error.call_count
             == 0
         )
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory.vim.ResourceAllocationInfo"
+    )
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory.vim.SharesInfo"
+    )
+    def test__populate_config_spec_with_memory_allocation_parameters_all(
+        self,
+        mock_shares_info,
+        mock_resource_allocation_info,
+        memory_parameter_handler,
+        allocation,
+        shares_info,
+    ):
+        configspec = Mock()
+        mock_resource_allocation_info.return_value = allocation
+        mock_shares_info.return_value = shares_info
+        configspec.memoryAllocation = None
+
+        memory_parameter_handler.memory_params = dict(
+            shares_level="low", shares=10, limit=10, reservation=10
+        )
+        memory_parameter_handler._populate_config_spec_with_memory_allocation_parameters(
+            configspec
+        )
+        assert configspec.memoryAllocation is allocation
+        assert configspec.memoryAllocation.shares is shares_info
+        assert configspec.memoryAllocation.limit == 10
+        assert configspec.memoryAllocation.reservation == 10
+        assert configspec.memoryAllocation.shares.level == "custom"
+        assert configspec.memoryAllocation.shares.shares == 10
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory.vim.ResourceAllocationInfo"
+    )
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory.vim.SharesInfo"
+    )
+    def test__populate_config_spec_with_memory_allocation_parameters_only_shares_level(
+        self,
+        mock_shares_info,
+        mock_resource_allocation_info,
+        memory_parameter_handler,
+        allocation,
+        shares_info,
+    ):
+        configspec = Mock()
+        mock_resource_allocation_info.return_value = allocation
+        mock_shares_info.return_value = shares_info
+        configspec.memoryAllocation = None
+
+        memory_parameter_handler.memory_params = dict(shares_level="low")
+        memory_parameter_handler._populate_config_spec_with_memory_allocation_parameters(
+            configspec
+        )
+        assert configspec.memoryAllocation is allocation
+        assert configspec.memoryAllocation.shares is shares_info
+        assert configspec.memoryAllocation.limit is None
+        assert configspec.memoryAllocation.reservation is None
+        assert configspec.memoryAllocation.shares.level == "low"
+        assert configspec.memoryAllocation.shares.shares is None
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory.vim.ResourceAllocationInfo"
+    )
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._memory.vim.SharesInfo"
+    )
+    def test__populate_config_spec_with_memory_allocation_parameters_only_limit(
+        self,
+        mock_shares_info,
+        mock_resource_allocation_info,
+        memory_parameter_handler,
+        allocation,
+        shares_info,
+    ):
+        configspec = Mock()
+        mock_resource_allocation_info.return_value = allocation
+        mock_shares_info.return_value = shares_info
+        configspec.memoryAllocation = None
+
+        memory_parameter_handler.memory_params = dict(limit=10)
+        memory_parameter_handler._populate_config_spec_with_memory_allocation_parameters(
+            configspec
+        )
+        assert configspec.memoryAllocation is allocation
+        assert configspec.memoryAllocation.shares is None
+        assert configspec.memoryAllocation.limit == 10
+        assert configspec.memoryAllocation.reservation is None
+
+    def test__populate_config_spec_with_memory_allocation_parameters_no_params(
+        self, memory_parameter_handler
+    ):
+        configspec = Mock()
+        configspec.memoryAllocation = None
+
+        memory_parameter_handler._populate_config_spec_with_memory_allocation_parameters(
+            configspec
+        )
+        assert configspec.memoryAllocation is None
