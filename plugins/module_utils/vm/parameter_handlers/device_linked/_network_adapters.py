@@ -1,13 +1,13 @@
 """
-Disk parameter handler for VM storage configuration.
+Network adapter parameter handler for VM network adapter configuration.
 
-This module provides the DiskParameterHandler class which manages virtual disk
-configuration including disk creation, modification, and controller assignment.
-It handles disk parameter validation, device linking, and VMware specification
+This module provides the NetworkAdapterParameterHandler class which manages virtual network adapter
+configuration including network adapter creation, modification, and portgroup assignment.
+It handles network adapter parameter validation, device linking, and VMware specification
 generation for storage management.
 
-The handler works closely with controller handlers to ensure proper disk
-placement and validates disk parameters against available controllers.
+The handler works closely with portgroup handlers to ensure proper network adapter
+placement and validates network adapter parameters against available portgroups.
 """
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
@@ -68,7 +68,7 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
         **kwargs
     ):
         """
-        Initialize the disk parameter handler.
+        Initialize the network adapter parameter handler.
 
         Args:
             error_handler: Service for parameter validation error handling
@@ -76,6 +76,7 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
             change_set: Service for tracking configuration changes and requirements
             vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
+            vsphere_object_cache: Service for caching vsphere objects
         """
         super().__init__(error_handler, params, change_set, vm, device_tracker)
         self.vsphere_object_cache = vsphere_object_cache
@@ -83,15 +84,14 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
 
     def verify_parameter_constraints(self):
         """
-        Validate disk parameter constraints and requirements.
+        Validate network adapter parameter constraints and requirements.
 
-        Parses disk parameters and validates that at least one disk is defined
-        for VM creation or modification. Validates that all required controllers
-        exist and that disk specifications are valid.
+        Parses network adapter parameters. Validates that all required portgroups
+        exist and that network adapter specifications are valid.
 
         Raises:
-            Calls error_handler.fail_with_parameter_error() for invalid disk
-            parameters, missing controllers, or missing disk definitions.
+            Calls error_handler.fail_with_parameter_error() for invalid network adapter
+            parameters, missing portgroups, or missing network adapter definitions.
         """
         if len(self.adapters) == 0:
             try:
@@ -178,10 +178,10 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
         adapters based on their current state and required changes.
 
         Returns:
-            ParameterChangeSet: Updated change set with disk change requirements
+            ParameterChangeSet: Updated change set with network adapter change requirements
 
         Side Effects:
-            Updates change_set with disk objects categorized by required actions.
+            Updates change_set with network adapter objects categorized by required actions.
         """
         for network_adapter in self.adapters:
             if network_adapter._live_object is None:

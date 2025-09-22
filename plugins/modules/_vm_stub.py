@@ -406,13 +406,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(e1000_network_adapters.shares) or O(e1000_network_adapters.shares_level) can be set.
+                    - Only one of O(e1000_network_adapters[].shares) or O(e1000_network_adapters[].shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(e1000_network_adapters.shares) or O(e1000_network_adapters.shares_level) can be set.
+                    - Only one of O(e1000_network_adapters[].shares) or O(e1000_network_adapters[].shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -465,13 +465,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(e1000e_network_adapters.shares) or O(e1000e_network_adapters.shares_level) can be set.
+                    - Only one of O(e1000e_network_adapters[].shares) or O(e1000e_network_adapters[].shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(e1000e_network_adapters.shares) or O(e1000e_network_adapters.shares_level) can be set.
+                    - Only one of O(e1000e_network_adapters[].shares) or O(e1000e_network_adapters[].shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -524,13 +524,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(pcnet32_network_adapters.shares) or O(pcnet32_network_adapters.shares_level) can be set.
+                    - Only one of O(pcnet32_network_adapters[].shares) or O(pcnet32_network_adapters[].shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(pcnet32_network_adapters.shares) or O(pcnet32_network_adapters.shares_level) can be set.
+                    - Only one of O(pcnet32_network_adapters[].shares) or O(pcnet32_network_adapters[].shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -583,13 +583,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(vmxnet2_network_adapters.shares) or O(vmxnet2_network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet2_network_adapters[].shares) or O(vmxnet2_network_adapters[].shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(vmxnet2_network_adapters.shares) or O(vmxnet2_network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet2_network_adapters[].shares) or O(vmxnet2_network_adapters[].shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -642,13 +642,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(vmxnet3_network_adapters.shares) or O(vmxnet3_network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet3_network_adapters[].shares) or O(vmxnet3_network_adapters[].shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(vmxnet3_network_adapters.shares) or O(vmxnet3_network_adapters.shares_level) can be set.
+                    - Only one of O(vmxnet3_network_adapters[].shares) or O(vmxnet3_network_adapters[].shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
@@ -701,13 +701,13 @@ options:
                 description:
                     - The percentage of network resources allocated to the network adapter.
                     - If setting this, it should be between 0 and 100.
-                    - Only one of O(sriov_network_adapters.shares) or O(sriov_network_adapters.shares_level) can be set.
+                    - Only one of O(sriov_network_adapters[].shares) or O(sriov_network_adapters[].shares_level) can be set.
                 required: false
             shares_level:
                 type: str
                 description:
                     - The pre-defined allocation level of network resources for the network adapter.
-                    - Only one of O(sriov_network_adapters.shares) or O(sriov_network_adapters.shares_level) can be set.
+                    - Only one of O(sriov_network_adapters[].shares) or O(sriov_network_adapters[].shares_level) can be set.
                 required: false
                 choices: [ low, normal, high ]
             reservation:
