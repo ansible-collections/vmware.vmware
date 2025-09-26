@@ -608,7 +608,7 @@ class NetworkAdapter(AbstractVsphereObject):
         """
         network_adapter_spec = vim.vm.device.VirtualDeviceSpec()
         network_adapter_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
-        network_adapter_spec.device = self.adapter_vim_class()
+        network_adapter_spec.device = self.adapter_vim_class() if self.adapter_vim_class is not None else vim.vm.device.VirtualVmxnet3()
         network_adapter_spec.device.key = -randint(25000, 29999)
 
         network_adapter_spec.device.deviceInfo = vim.Description()
@@ -668,12 +668,9 @@ class NetworkAdapter(AbstractVsphereObject):
         for easy identification in error messages and logs.
 
         Returns:
-            str: Human-readable network adapter name (e.g., "Network Adapter - VirtualE1000 - 0")
+            str: Human-readable network adapter name (e.g., "Network Adapter 1")
         """
-        return "Network Adapter - %s - %s" % (
-            self.adapter_vim_class.__name__,
-            self.index,
-        )
+        return "Network Adapter %s" % self.index
 
     def _update_network_adapter_spec_with_options(self, network_adapter_spec):
         """
@@ -709,7 +706,7 @@ class NetworkAdapter(AbstractVsphereObject):
             dict
         """
         return {
-            "type": self.adapter_vim_class.__name__.lower(),
+            "type": None if self.adapter_vim_class is None else self.adapter_vim_class.__name__.lower(),
             "portgroup": self.portgroup._to_module_output(),
             "connect_at_power_on": self.connect_at_power_on,
             "connected": self.connected,

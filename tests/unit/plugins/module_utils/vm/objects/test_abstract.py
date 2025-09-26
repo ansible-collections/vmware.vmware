@@ -13,6 +13,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._abstract
 class ConcreteObject(AbstractVsphereObject):
     """Concrete implementation for testing AbstractVsphereObject."""
 
+    @classmethod
     def from_live_device_spec(cls, live_device_spec):
         """Test implementation of abstract method."""
         return cls(live_device_spec)

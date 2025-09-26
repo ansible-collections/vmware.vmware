@@ -6,19 +6,14 @@ import pytest
 from unittest.mock import Mock, patch
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters import (
-    E1000NetworkAdapterParameterHandler,
-    E1000eNetworkAdapterParameterHandler,
-    Pcnet32NetworkAdapterParameterHandler,
-    Vmxnet2NetworkAdapterParameterHandler,
-    Vmxnet3NetworkAdapterParameterHandler,
-    SriovNetworkAdapterParameterHandler,
+    NetworkAdapterParameterHandler,
 )
 
 
-class TestAbstractNetworkAdapterParameterHandler:
+class TestNetworkAdapterParameterHandler:
     @pytest.fixture
     def parameter_handler(self):
-        """Create a E1000NetworkAdapterParameterHandler instance for testing."""
+        """Create a NetworkAdapterParameterHandler instance for testing."""
         error_handler = Mock()
         params = {}
         change_set = Mock()
@@ -26,13 +21,14 @@ class TestAbstractNetworkAdapterParameterHandler:
         device_tracker = Mock()
         vsphere_object_cache = Mock()
 
-        return E1000NetworkAdapterParameterHandler(
+        return NetworkAdapterParameterHandler(
             error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
         )
 
     def test_verify_parameter_constraints(self, parameter_handler):
         """Test verify_parameter_constraints method."""
         parameter_handler._parse_network_adapter_params = Mock()
+        parameter_handler.params = {'network_adapters': []}
         parameter_handler.verify_parameter_constraints()
         parameter_handler._parse_network_adapter_params.assert_called_once()
         assert parameter_handler.adapters == []
@@ -45,7 +41,7 @@ class TestAbstractNetworkAdapterParameterHandler:
 
     def test_parse_network_adapter_params(self, parameter_handler):
         """Test parse_network_adapter_params method."""
-        parameter_handler.params = {f"{parameter_handler.HANDLER_NAME}s": [{"network": "test"}]}
+        parameter_handler.params = {f"{parameter_handler.HANDLER_NAME}": [{"network": "test"}]}
         parameter_handler._parse_network_adapter_params()
         assert len(parameter_handler.adapters) == 1
 
@@ -67,6 +63,7 @@ class TestAbstractNetworkAdapterParameterHandler:
         """Test compare_live_config_with_desired_config method."""
         adapter = Mock()
         adapter._live_object = None
+        adapter.adapter_vim_class = Mock
         parameter_handler.adapters = [adapter]
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
@@ -100,6 +97,7 @@ class TestAbstractNetworkAdapterParameterHandler:
         """Test link_vm_device method."""
         adapter = Mock()
         adapter._live_object = None
+        adapter.adapter_vim_class = Mock
         assert adapter._live_object is None
 
         parameter_handler.adapters = [adapter]
@@ -110,138 +108,6 @@ class TestAbstractNetworkAdapterParameterHandler:
         """Test link_vm_device method when no matching adapter is found."""
         adapter = Mock()
         adapter._live_object = Mock()
+        adapter.adapter_vim_class = Mock
         parameter_handler.adapters = [adapter]
-        with pytest.raises(Exception, match="Network adapter not found for device"):
-            parameter_handler.link_vm_device(Mock())
-
-
-class TestE1000NetworkAdapterParameterHandler:
-    @pytest.fixture
-    def parameter_handler(self):
-        """Create a E1000NetworkAdapterParameterHandler instance for testing."""
-        error_handler = Mock()
-        params = {}
-        change_set = Mock()
-        vm = Mock()
-        device_tracker = Mock()
-        vsphere_object_cache = Mock()
-
-        return E1000NetworkAdapterParameterHandler(
-            error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
-        )
-
-    @patch(
-        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.vim.vm.device.VirtualE1000"
-    )
-    def test_vim_device_class(self, mock_virtual_e1000, parameter_handler):
-        assert parameter_handler.vim_device_class == mock_virtual_e1000
-
-
-class TestE1000eNetworkAdapterParameterHandler:
-    @pytest.fixture
-    def parameter_handler(self):
-        """Create a E1000eNetworkAdapterParameterHandler instance for testing."""
-        error_handler = Mock()
-        params = {}
-        change_set = Mock()
-        vm = Mock()
-        device_tracker = Mock()
-        vsphere_object_cache = Mock()
-
-        return E1000eNetworkAdapterParameterHandler(
-            error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
-        )
-
-    @patch(
-        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.vim.vm.device.VirtualE1000e"
-    )
-    def test_vim_device_class(self, mock_virtual_e1000e, parameter_handler):
-        assert parameter_handler.vim_device_class == mock_virtual_e1000e
-
-
-class TestPcnet32NetworkAdapterParameterHandler:
-    @pytest.fixture
-    def parameter_handler(self):
-        """Create a Pcnet32NetworkAdapterParameterHandler instance for testing."""
-        error_handler = Mock()
-        params = {}
-        change_set = Mock()
-        vm = Mock()
-        device_tracker = Mock()
-        vsphere_object_cache = Mock()
-
-        return Pcnet32NetworkAdapterParameterHandler(
-            error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
-        )
-
-    @patch(
-        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.vim.vm.device.VirtualPCNet32"
-    )
-    def test_vim_device_class(self, mock_virtual_pcnet32, parameter_handler):
-        assert parameter_handler.vim_device_class == mock_virtual_pcnet32
-
-
-class TestVmxnet2NetworkAdapterParameterHandler:
-    @pytest.fixture
-    def parameter_handler(self):
-        """Create a Vmxnet2NetworkAdapterParameterHandler instance for testing."""
-        error_handler = Mock()
-        params = {}
-        change_set = Mock()
-        vm = Mock()
-        device_tracker = Mock()
-        vsphere_object_cache = Mock()
-
-        return Vmxnet2NetworkAdapterParameterHandler(
-            error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
-        )
-
-    @patch(
-        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.vim.vm.device.VirtualVmxnet2"
-    )
-    def test_vim_device_class(self, mock_virtual_vmxnet2, parameter_handler):
-        assert parameter_handler.vim_device_class == mock_virtual_vmxnet2
-
-
-class TestVmxnet3NetworkAdapterParameterHandler:
-    @pytest.fixture
-    def parameter_handler(self):
-        """Create a Vmxnet3NetworkAdapterParameterHandler instance for testing."""
-        error_handler = Mock()
-        params = {}
-        change_set = Mock()
-        vm = Mock()
-        device_tracker = Mock()
-        vsphere_object_cache = Mock()
-
-        return Vmxnet3NetworkAdapterParameterHandler(
-            error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
-        )
-
-    @patch(
-        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.vim.vm.device.VirtualVmxnet3"
-    )
-    def test_vim_device_class(self, mock_virtual_vmxnet3, parameter_handler):
-        assert parameter_handler.vim_device_class == mock_virtual_vmxnet3
-
-
-class TestSriovNetworkAdapterParameterHandler:
-    @pytest.fixture
-    def parameter_handler(self):
-        """Create a SriovNetworkAdapterParameterHandler instance for testing."""
-        error_handler = Mock()
-        params = {}
-        change_set = Mock()
-        vm = Mock()
-        device_tracker = Mock()
-        vsphere_object_cache = Mock()
-
-        return SriovNetworkAdapterParameterHandler(
-            error_handler, params, change_set, vm, device_tracker, vsphere_object_cache
-        )
-
-    @patch(
-        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.vim.vm.device.VirtualSriovEthernetCard"
-    )
-    def test_vim_device_class(self, mock_virtual_sriov, parameter_handler):
-        assert parameter_handler.vim_device_class == mock_virtual_sriov
+        parameter_handler.link_vm_device(Mock())

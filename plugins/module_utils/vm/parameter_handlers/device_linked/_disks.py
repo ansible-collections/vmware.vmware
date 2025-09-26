@@ -12,6 +12,7 @@ placement and validates disk parameters against available controllers.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
+    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
@@ -228,7 +229,9 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                 disk._device = device
                 return
 
-        raise Exception(
+        raise DeviceLinkError(
             "Disk not found for device %s on controller %s"
-            % (device.unitNumber, device.controllerKey)
+            % (device.unitNumber, device.controllerKey),
+            device,
+            self,
         )

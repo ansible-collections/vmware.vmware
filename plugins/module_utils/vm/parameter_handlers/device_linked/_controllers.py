@@ -14,6 +14,7 @@ VMware requirements.
 from abc import abstractmethod
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
+    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers import (
     ScsiController,
@@ -181,8 +182,10 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
                 controller._device = device
                 return
 
-        raise Exception(
-            f"Controller {self.controllers[0].device_class.__name__} not found for device {device.busNumber}"
+        raise DeviceLinkError(
+            "Controller %s not found for device %s" % (self.controllers[0].device_class.__name__, device.busNumber),
+            device,
+            self,
         )
 
 

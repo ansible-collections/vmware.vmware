@@ -12,6 +12,7 @@ placement and validates network adapter parameters against available portgroups.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
+    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._network_adapter import (
     NetworkAdapter,
@@ -25,7 +26,7 @@ except ImportError:
     pass
 
 
-class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
+class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
     """
     Handler for virtual network adapter configuration parameters.
 
@@ -55,7 +56,7 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
         network_adapters (list): List of NetworkAdapter objects representing desired network adapter configuration
     """
 
-    HANDLER_NAME = "network_adapter"
+    HANDLER_NAME = "network_adapters"
 
     def __init__(
         self,
@@ -81,6 +82,22 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
         super().__init__(error_handler, params, change_set, vm, device_tracker)
         self.vsphere_object_cache = vsphere_object_cache
         self.adapters = []
+        self._check_if_params_are_defined_by_user("network_adapters", required_for_vm_creation=False)
+
+    @property
+    def type_parameters_to_vim_device_class_map(self):
+        return {
+            "e1000": vim.vm.device.VirtualE1000,
+            "e1000e": vim.vm.device.VirtualE1000e,
+            "pcnet32": vim.vm.device.VirtualPCNet32,
+            "vmxnet2": vim.vm.device.VirtualVmxnet2,
+            "vmxnet3": vim.vm.device.VirtualVmxnet3,
+            "sriov": vim.vm.device.VirtualSriovEthernetCard,
+        }
+
+    @property
+    def vim_device_class(self):
+        return tuple(self.type_parameters_to_vim_device_class_map.values())
 
     def verify_parameter_constraints(self):
         """
@@ -98,8 +115,8 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
                 self._parse_network_adapter_params()
             except ValueError as e:
                 self.error_handler.fail_with_parameter_error(
-                    parameter_name="%ss" % self.HANDLER_NAME,
-                    message="Error parsing %s parameters: %s"
+                    parameter_name=self.HANDLER_NAME,
+                    message="Error parsing %s parameter: %s"
                     % (self.HANDLER_NAME, str(e)),
                     details={"error": str(e)},
                 )
@@ -114,7 +131,7 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
         Side Effects:
             Populates self.adapters with NetworkAdapter objects representing desired configuration.
         """
-        adapter_params = self.params.get("%ss" % self.HANDLER_NAME) or []
+        adapter_params = self.params.get(self.HANDLER_NAME) or []
         for index, adapter_param in enumerate(adapter_params):
             resource_allocation = NetworkAdapterResourceAllocation(
                 shares=adapter_param.get("shares"),
@@ -130,21 +147,31 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
                 )
             except Exception as e:
                 self.error_handler.fail_with_parameter_error(
-                    parameter_name="%ss" % self.HANDLER_NAME,
+                    parameter_name=self.HANDLER_NAME,
                     message="Error looking up the portgroup %s for network adapter %s: %s"
                     % (adapter_param.get("network"), index, str(e)),
                     details={"error": str(e)},
                 )
 
-            network_adapter = NetworkAdapter(
-                index=index,
-                adapter_vim_class=self.vim_device_class,
-                connect_at_power_on=adapter_param.get("connect_at_power_on"),
-                connected=adapter_param.get("connected"),
-                mac_address=adapter_param.get("mac_address"),
-                resource_allocation=resource_allocation,
-                portgroup=network_portgroup,
-            )
+            try:
+                adapter_class = None
+                if adapter_param.get("adapter_type") is not None:
+                    adapter_class = self.type_parameters_to_vim_device_class_map[adapter_param.get("adapter_type")]
+                network_adapter = NetworkAdapter(
+                    index=index,
+                    adapter_vim_class=adapter_class,
+                    connect_at_power_on=adapter_param.get("connect_at_power_on"),
+                    connected=adapter_param.get("connected"),
+                    mac_address=adapter_param.get("mac_address"),
+                    resource_allocation=resource_allocation,
+                    portgroup=network_portgroup,
+                )
+            except KeyError as e:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name=self.HANDLER_NAME,
+                    message="Unsupported adapter type %s" % adapter_param.get("adapter_type"),
+                    details={"adapter_param": adapter_param},
+                )
             self.adapters.append(network_adapter)
 
     def populate_config_spec_with_parameters(self, configspec):
@@ -207,228 +234,33 @@ class AbstractNetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandle
         Raises:
             Exception: If no matching network adapter object is found for the device
 
+        Returns:
+            bool: True if the device was linked, False otherwise
+
         Side Effects:
             Sets the _live_object attribute on the matching param_adapter object.
+            Fails if the device type does not match the adapter type.
         """
         for param_adapter in self.adapters:
             # Network adapters are not easily identified, but vmware always lists them in the same order.
             # So we can just link the first one that doesn't have a linked device.
             if param_adapter._live_object is None:
+                if param_adapter.adapter_vim_class is not None and not isinstance(device, param_adapter.adapter_vim_class):
+                    self.error_handler.fail_with_parameter_error(
+                        parameter_name=self.HANDLER_NAME,
+                        message="Network adapter type %s in parameters does not match the device type %s, and changing types is not supported."
+                        % (getattr(param_adapter.adapter_vim_class, "__name__", "none"), type(device).__name__),
+                        details={"param_adapter": param_adapter.name_as_str, "device_label": device.deviceInfo.label},
+                    )
+
                 param_adapter.link_corresponding_live_object(
                     NetworkAdapter.from_live_device_spec(device)
                 )
-                return
+                return True
 
-        raise Exception(
-            "Network adapter not found for device %s" % device.deviceInfo.label
-        )
-
-
-class E1000NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
-    """
-    Handler for e1000 network adapter configuration parameters.
-    """
-
-    HANDLER_NAME = "e1000_network_adapter"
-
-    def __init__(
-        self,
-        error_handler,
-        params,
-        change_set,
-        vm,
-        device_tracker,
-        vsphere_object_cache,
-        **kwargs
-    ):
-        super().__init__(
-            error_handler,
-            params,
-            change_set,
-            vm,
-            device_tracker,
-            vsphere_object_cache,
-            **kwargs
-        )
-        self._check_if_params_are_defined_by_user(
-            "e1000_network_adapters", required_for_vm_creation=False
-        )
-
-    @property
-    def vim_device_class(self):
-        return vim.vm.device.VirtualE1000
-
-
-class E1000eNetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
-    """
-    Handler for e1000e network adapter configuration parameters.
-    """
-
-    HANDLER_NAME = "e1000e_network_adapter"
-
-    def __init__(
-        self,
-        error_handler,
-        params,
-        change_set,
-        vm,
-        device_tracker,
-        vsphere_object_cache,
-        **kwargs
-    ):
-        super().__init__(
-            error_handler,
-            params,
-            change_set,
-            vm,
-            device_tracker,
-            vsphere_object_cache,
-            **kwargs
-        )
-        self._check_if_params_are_defined_by_user(
-            "e1000e_network_adapters", required_for_vm_creation=False
-        )
-
-    @property
-    def vim_device_class(self):
-        return vim.vm.device.VirtualE1000e
-
-
-class Pcnet32NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
-    """
-    Handler for pcnet32 network adapter configuration parameters.
-    """
-
-    HANDLER_NAME = "pcnet32_network_adapter"
-
-    def __init__(
-        self,
-        error_handler,
-        params,
-        change_set,
-        vm,
-        device_tracker,
-        vsphere_object_cache,
-        **kwargs
-    ):
-        super().__init__(
-            error_handler,
-            params,
-            change_set,
-            vm,
-            device_tracker,
-            vsphere_object_cache,
-            **kwargs
-        )
-        self._check_if_params_are_defined_by_user(
-            "pcnet32_network_adapters", required_for_vm_creation=False
-        )
-
-    @property
-    def vim_device_class(self):
-        return vim.vm.device.VirtualPCNet32
-
-
-class Vmxnet2NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
-    """
-    Handler for vmxnet2 network adapter configuration parameters.
-    """
-
-    HANDLER_NAME = "vmxnet2_network_adapter"
-
-    def __init__(
-        self,
-        error_handler,
-        params,
-        change_set,
-        vm,
-        device_tracker,
-        vsphere_object_cache,
-        **kwargs
-    ):
-        super().__init__(
-            error_handler,
-            params,
-            change_set,
-            vm,
-            device_tracker,
-            vsphere_object_cache,
-            **kwargs
-        )
-        self._check_if_params_are_defined_by_user(
-            "vmxnet2_network_adapters", required_for_vm_creation=False
-        )
-
-    @property
-    def vim_device_class(self):
-        return vim.vm.device.VirtualVmxnet2
-
-
-class Vmxnet3NetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
-    """
-    Handler for vmxnet3 network adapter configuration parameters.
-    """
-
-    HANDLER_NAME = "vmxnet3_network_adapter"
-
-    def __init__(
-        self,
-        error_handler,
-        params,
-        change_set,
-        vm,
-        device_tracker,
-        vsphere_object_cache,
-        **kwargs
-    ):
-        super().__init__(
-            error_handler,
-            params,
-            change_set,
-            vm,
-            device_tracker,
-            vsphere_object_cache,
-            **kwargs
-        )
-        self._check_if_params_are_defined_by_user(
-            "vmxnet3_network_adapters", required_for_vm_creation=False
-        )
-
-    @property
-    def vim_device_class(self):
-        return vim.vm.device.VirtualVmxnet3
-
-
-class SriovNetworkAdapterParameterHandler(AbstractNetworkAdapterParameterHandler):
-    """
-    Handler for sriov network adapter configuration parameters.
-    """
-
-    HANDLER_NAME = "sriov_network_adapter"
-
-    def __init__(
-        self,
-        error_handler,
-        params,
-        change_set,
-        vm,
-        device_tracker,
-        vsphere_object_cache,
-        **kwargs
-    ):
-        super().__init__(
-            error_handler,
-            params,
-            change_set,
-            vm,
-            device_tracker,
-            vsphere_object_cache,
-            **kwargs
-        )
-        self._check_if_params_are_defined_by_user(
-            "sriov_network_adapters", required_for_vm_creation=False
-        )
-
-    @property
-    def vim_device_class(self):
-        return vim.vm.device.VirtualSriovEthernetCard
+        if self.params.get("network_adapter_remove_unmanaged"):
+            raise DeviceLinkError("Network adapter parameter not found for device %s" % device.deviceInfo.label)
+        else:
+            # the device is not linked to anything, and no DeviceLinkError was raised,
+            # so the module will ignore it
+            return
