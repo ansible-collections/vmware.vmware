@@ -6,17 +6,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
-module: tag
+module: tags
 short_description: Manage one or more VMware tags.
 description:
     - This module allows you to create, update, and delete VMware tags.
-    - You can also specify a vSphere object, and manage the tags assigned to it.
-    - If no object is specified, the module will manage the tags at a global level.
+    - For better performance, use object IDs instead of names when possible.
 
 author:
     - Ansible Cloud Team (@ansible-collections)
@@ -24,374 +24,456 @@ author:
 options:
     state:
         description:
-            - Whether to create, update, or delete the tag(s).
+            - Whether ensure the tags are present or absent.
         type: str
-        required: True
-        choices: [present, absent, set]
+        default: present
+        choices: [present, absent]
 
     tags:
         description:
             - A list of tags to manage.
         type: list
-        required: True
+        required: true
         elements: dict
-        options:
+        suboptions:
             name:
                 description:
                     - The name of the tag.
+                    - The name is required when creating a new tag.
+                    - If both name and ID are provided, the ID will be used to search for the tag. If
+                      a tag cannot be found and O(state) is present, an error will be raised.
+                    - If both name and ID are provided and a tag is found, the name will be updated if
+                      needed.
                 type: str
-                required: True
-            category:
+                required: false
+            id:
                 description:
-                    - The category of the tag.
+                    - The id of the tag to manage.
+                    - Only applicable if the tag already exists.
+                    - If both name and ID are provided, the ID will be used to search for the tag. If
+                      a tag cannot be found and O(state) is present, an error will be raised.
+                    - If both name and ID are provided and a tag is found, the name will be updated if
+                      needed.
                 type: str
-                required: True
+                required: false
+            category_name:
+                description:
+                    - The name of the category of the tag.
+                    - Either category_name or category_id is required when looking up a tag by name.
+                    - The category must already exist.
+                type: str
+                required: false
+            category_id:
+                description:
+                    - The id of the category of the tag.
+                    - Either category_name or category_id is required when looking up a tag by name.
+                    - The category must already exist.
+                type: str
+                required: false
             description:
                 description:
                     - The description of the tag.
                 type: str
-                required: False
+                required: false
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
     - vmware.vmware.additional_rest_options
-'''
 
-EXAMPLES = r'''
-- name: Gather VM Resource Info
-  vmware.vmware.vm_resource_info:
-    moid: "{{ vm_id }}"
+seealso:
+    - module: vmware.vmware.tag_categories
+"""
 
-- name: Gather VM Resource Info By Name
-  vmware.vmware.vm_resource_info:
-    name: "{{ vm_name }}"
-    name_match: first
+EXAMPLES = r"""
+- name: Create or update tags
+  vmware.vmware.tags:
+    state: present
+    tags:
+      - name: my-test-tag-1
+        category_id: urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL
+      - id: urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL
+        category_id: urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL
+        description: "This is a test tag"
+      - name: my-test-tag-3
+        category_name: my-test-category
+        description: "This is another test tag"
 
-- name: Gather Just Resource Config Info
-  vmware.vmware.vm_resource_info:
-    moid: "{{ vm_id }}"
-    gather_cpu_stats: false
-    gather_memory_stats: false
+- name: Delete tags
+  vmware.vmware.tags:
+    state: absent
+    tags:
+      - name: my-test-tag-1
+        category_id: urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL
+      - id: urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL
+        category_id: urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL
+"""
 
-- name: Gather Just The Host and Resource Pool IDs For All VMs
-  vmware.vmware.vm_resource_info:
-    moid: "{{ vm_id }}"
-    gather_cpu_config: false
-    gather_memory_config: false
-    gather_cpu_stats: false
-    gather_memory_stats: false
-# Note: although all gather parameters are set to false in the previous example, the output keys will still be present in the results. For example:
-# "vms": [
-#     {
-#         "cpu": {},
-#         "esxi_host": {
-#             "moid": "host-64",
-#             "name": "10.10.10.129"
-#         },
-#         "memory": {},
-#         "moid": "vm-75373",
-#         "name": "ma1",
-#         "resource_pool": {
-#             "moid": "resgroup-35",
-#             "name": "Resources"
-#         },
-#         "stats": {
-#             "cpu": {},
-#             "memory": {}
-#         }
-#     }
-# ]
-'''
-
-RETURN = r'''
-vms:
+RETURN = r"""
+tag_changes:
     description:
-        - Information about CPU and memory for the selected VMs.
-    returned: Always
+        - Comparison of the tags before and after the changes.
+        - Before is empty if the tag was created.
+        - After is empty if the tag was deleted.
+    returned: always
     type: list
     sample: [
         {
-            "cpu": {
-                "cores_per_socket": 1,
-                "hot_add_enabled": false,
-                "hot_remove_enabled": false,
-                "processor_count": 1
+            "before": {
+                "category_id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
+                "name": "tag1",
+                "description": "Description of tag1",
+                "id": "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL"
             },
-            "esxi_host": {
-                "moid": "host-64",
-                "name": "10.10.10.129"
-            },
-            "memory": {
-                "hot_add_enabled": false,
-                "hot_add_increment": 0,
-                "hot_add_max_limit": 4096,
-                "size_mb": 4096
-            },
-            "moid": "vm-75373",
-            "name": "ma1",
-            "resource_pool": {
-                "moid": "resgroup-35",
-                "name": "Resources"
-            },
-            "stats": {
-                "cpu": {
-                    "demand_mhz": 68,
-                    "distributed_entitlement_mhz": 68,
-                    "readiness_mhz": 0,
-                    "static_entitlement_mhz": 1989,
-                    "usage_mhz": 68
-                },
-                "memory": {
-                    "active_mb": 81,
-                    "ballooned_mb": 0,
-                    "consumed_overhead_mb": 38,
-                    "distributed_entitlement_mb": 857,
-                    "guest_usage_mb": 81,
-                    "host_usage_mb": 1890,
-                    "static_entitlement_mb": 4406,
-                    "swapped_mb": 0
-                }
+            "after": {
+                "category_id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
+                "name": "tag1",
+                "description": "Updated description of tag1",
+                "id": "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL"
             }
-        }
+        },
     ]
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
-from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
-    rest_compatible_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import (
+    ModuleRestBase,
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
+    rest_compatible_argument_spec,
+)
+
+try:
+    from com.vmware.vapi.std.errors_client import NotFound
+except ImportError:
+    pass
+
+
+class TagChange:
+    """
+    A data class representing a change to a tag.
+
+    This class encapsulates the before and after state of a tag change,
+    providing methods to convert the change to module output format.
+
+    Attributes:
+        remote_def (object): Tag model before the change (None for new tags)
+        param_def (dict): Tag parameters after the change (None for deletions)
+    """
+
+    def __init__(self, remote_def: object = None, param_def: dict = None):
+        if param_def is None:
+            param_def = dict()
+        self.remote_def = remote_def
+        self.param_def = param_def
+
+    def to_module_output(self):
+        """
+        Convert the change to a dictionary format suitable for Ansible module output.
+
+        Returns:
+            dict: Dictionary with 'before' and 'after' keys containing tag information
+        """
+        output = dict(before=dict(), after=dict())
+        if self.remote_def:
+            output["before"] = {
+                "name": getattr(self.remote_def, "name", None),
+                "description": getattr(self.remote_def, "description", None),
+                "id": getattr(self.remote_def, "id", None),
+                "category_id": getattr(self.remote_def, "category_id", None),
+            }
+        if self.param_def:
+            output["after"] = {
+                "name": self.param_def.get("name") or output["before"].get("name"),
+                "id": self.param_def.get("id") or output["before"].get("id"),
+                "category_id": self.param_def.get("category_id") or output["before"].get("category_id"),
+                "description": self.param_def.get("description") or output["before"].get("description"),
+            }
+        return output
 
 
 class VmwareTagModule(ModuleRestBase):
+    """
+    A specialized Ansible module for managing VMware tags using the vSphere REST API.
+
+    This class extends ModuleRestBase to provide comprehensive tag management capabilities
+    including creation, updates, and deletion of VMware tags. It uses caching mechanisms
+    for optimal performance and supports both check mode and normal operation.
+
+    Attributes:
+        _category_names_to_ids_cache (dict): Maps category names to their IDs
+        _tag_ids_in_category_cache (dict): Maps category IDs to lists of tag IDs
+        _tag_names_to_tags_cache (dict): Maps tag names to tag model objects
+
+    Example:
+        vmware_tag = VmwareTagModule(module)
+        tag_changes = vmware_tag.determine_tag_changes()
+        vmware_tag.apply_tag_changes(tag_changes)
+    """
+
     def __init__(self, module):
         super().__init__(module)
+        self._category_names_to_ids_cache = self._resolve_category_ids()
+        if not all(self._category_names_to_ids_cache.values()):
+            missing_categories = [
+                category_name
+                for category_name, category_id in self._category_names_to_ids_cache.items()
+                if category_id is None
+            ]
+            self.module.fail_json(
+                msg="One or more categories specified in the parameters were not found: %s"
+                % missing_categories
+            )
 
-    def _map_category_names_to_ids(self):
-        category_map = dict()
-        category_names = set(tag.get('category_name') for tag in self.params['tags'] if tag.get('category_name'))
-        if not category_names:
-            return category_map
+        # Caches to help speed up the crawl through the remote tags
+        self._tag_ids_in_category_cache = (
+            dict()
+        )  # Maps category IDs to a list of tag IDs
+        self._tag_names_to_tags_cache = dict()  # Maps tag names to tag models
 
-        for tag_category_id in self.tag_category_service.list():
-            category_data = self.tag_category_service.get(tag_category_id)
-            if category_data.name in category_names:
-                category_names.remove(category_data.name)
-                category_map[category_data.name] = category_data.id
+    def _resolve_category_ids(self):
+        """
+        Resolve category names to their corresponding IDs by querying the remote VMware environment.
 
-            if not category_names:
+        This method optimizes performance by stopping once all required categories are found
+        and validates that all specified categories exist.
+
+        Returns:
+            dict: Mapping of category names to their IDs
+
+        Raises:
+            AnsibleModule.fail_json: If any categories specified in parameters are not found
+        """
+        param_category_names_to_ids_map = {
+            tag["category_name"]: None
+            for tag in self.params["tags"]
+            if tag.get("category_name")
+        }
+        param_category_ids = tuple(
+            [
+                tag["category_id"]
+                for tag in self.params["tags"]
+                if tag.get("category_id")
+            ]
+        )
+        processed_category_count = 0
+
+        for category_id in param_category_ids:
+            try:
+                remote_category = self.tag_category_service.get(category_id)
+            except NotFound:
+                self.module.fail_json(
+                    msg="Unable to find a category with the ID %s" % category_id
+                )
+
+        for remote_category_id in self.tag_category_service.list():
+            if processed_category_count >= len(param_category_names_to_ids_map.keys()):
+                # we found all of the categories in the parameters, no need to keep looking
                 break
 
-        return category_map
+            remote_category = self.tag_category_service.get(remote_category_id)
+            if remote_category.name in param_category_names_to_ids_map.keys():
+                # user specified the category name in the parameters and we found it
+                param_category_names_to_ids_map[remote_category.name] = (
+                    remote_category_id
+                )
+                processed_category_count += 1
+                continue
 
-    def _map_tag_params_to_dict(self, category_names_to_ids):
-        tag_dict = dict()
-        for tag_param in self.params['tags']:
-            category_id = category_names_to_ids[tag_param['category_name']] if tag_param.get('category_name') else tag_param['category_id']
-            if category_id not in tag_dict:
-                tag_dict[category_id] = dict()
+        return param_category_names_to_ids_map
 
-            tag_dict[category_id][tag_param['name']] = tag_param.get('description', None)
-        return tag_dict
+    def _lookup_tag(self, category_id=None, tag_id=None, tag_name=None):
+        """
+        Efficiently look up tags using caching to minimize API calls.
 
-    def parse_tag_params_to_dict(self):
-        category_names_to_ids = self._map_category_names_to_ids()
-        return self._map_tag_params_to_dict(category_names_to_ids)
+        Args:
+            category_id (str, optional): ID of the category to search in
+            tag_id (str, optional): Direct tag ID for lookup
+            tag_name (str, optional): Tag name for lookup
 
-    def get_tags_to_remove(self):
-        tags_to_remove = []
-        tag_params = self.parse_tag_params_to_dict()
-        for category_id in tag_params.keys():
-            for existing_tag_id in self.tag_service.list_tags_for_category(category_id):
-                existing_tag = self.tag_service.get(existing_tag_id)
-                if existing_tag.name in tag_params[category_id]:
-                    tags_to_remove.append(existing_tag)
-                    del tag_params[category_id][existing_tag.name]
+        Returns:
+            object: Tag model object if found, None otherwise
 
-                if not tag_params[category_id]:
-                    break
+        Raises:
+            Exception: If neither tag_id nor tag_name is provided
+        """
+        if tag_id is not None:
+            try:
+                return self.tag_service.get(tag_id)
+            except NotFound:
+                if self.module.params["state"] == "present":
+                    self.module.fail_json(
+                        msg="Unable to find a tag with the ID %s, and this module does not support creating tags when the ID is provided."
+                        % tag_id
+                    )
+                return None
 
-        return tags_to_remove
+        if tag_name is None:
+            raise Exception(msg="Either tag_id or tag_name must be provided")
 
-    def get_tags_to_create_or_update(self):
-        tags_to_update = {}
-        tags_to_create = {}
-        tag_params = self.parse_tag_params_to_dict()
-        for category_id in tag_params.keys():
-            for existing_tag_id in self.tag_service.list_tags_for_category(category_id):
-                self._check_if_tag_needs_updating(tag_params, category_id, existing_tag_id, tags_to_update)
-                if not tag_params[category_id]:
-                    break
+        if category_id is None:
+            raise Exception(msg="Either category_id or category_name must be provided when looking up a tag by name")
 
-            if tag_params[category_id]:
-                tags_to_create[category_id] = [
-                    {'name': tag[0], 'description': tag[1]} for tag in tag_params[category_id].items()
-                ]
+        if tag_name in self._tag_names_to_tags_cache:
+            return self._tag_names_to_tags_cache[tag_name]
 
-        return tags_to_create, tags_to_update
+        # Weve never looked this tag up, so we crawl through the category tags until we find it or we run out of tags
+        if category_id not in self._tag_ids_in_category_cache:
+            # Weve also never looked up the tags in this category, so we need to initialize the cache
+            self._tag_ids_in_category_cache[category_id] = (
+                self.tag_service.list_tags_for_category(category_id)
+            )
 
-    def _check_if_tag_needs_updating(self, tag_params, category_id, existing_tag_id, tags_to_update):
-        existing_tag = self.tag_service.get(existing_tag_id)
-        if not existing_tag.name in tag_params[category_id]:
-            return
+        for remote_tag_id in self._tag_ids_in_category_cache[category_id]:
+            remote_tag = self.tag_service.get(remote_tag_id)
 
-        new_tag_description = tag_params[category_id][existing_tag.name]
-        if new_tag_description is None or existing_tag.description == new_tag_description:
-            return
+            if remote_tag.name.lower() == tag_name.lower():
+                return remote_tag
 
-        if category_id not in tags_to_update:
-            tags_to_update[category_id] = []
+            # Cache tag for future lookups
+            self._tag_names_to_tags_cache[remote_tag.name] = remote_tag
 
-        tags_to_update[category_id].append({
-            'before': {
-                'name': existing_tag.name,
-                'description': existing_tag.description,
-                'id': existing_tag.id,
-            },
-            'after': {
-                'name': existing_tag.name,
-                'description': new_tag_description,
-                'id': existing_tag.id,
-            },
-        })
-        del tag_params[category_id][existing_tag.name]
+        return None
 
-    def create_and_update_tags(self, tags_to_create, tags_to_update):
-        for category_id, tags in tags_to_create.items():
-            for tag in tags:
-                new_tag_id = self._create_tag(tag['name'], tag['description'], category_id)
-                tag['id'] = new_tag_id
+    def _does_tag_need_update(self, tag_param, remote_tag):
+        if remote_tag is None:
+            return True
+        if tag_param.get("description") is not None and tag_param.get("description") != remote_tag.description:
+            return True
+        if tag_param.get("name") is not None and tag_param.get("name") != remote_tag.name:
+            return True
+        return False
 
-        for category_id, tags in tags_to_update.items():
-            for tag in tags:
-                self.update_tag(tag['after']['id'], tag['after']['description'])
+    def determine_tag_changes(self):
+        """
+        Analyze the current state of tags and determine what changes need to be made.
 
-    # def get_tags_to_change(self):
-    #     tags_to_create = []
-    #     tags_to_update = []
-    #     tags_to_delete = []
+        Returns:
+            list[TagChange]: List of tag changes to be applied
+        """
+        tag_changes = []
+        for tag_param in self.module.params["tags"]:
+            try:
+                tag_category_id = (
+                    tag_param.get("category_id")
+                    or self._category_names_to_ids_cache[tag_param.get("category_name")]
+                )
+            except KeyError:
+                tag_category_id = None
 
-    #     all_tags = self.tag_service.list()
-    #     for tag_id in all_tags:
-    #         tag_model = self.tag_service.get(tag_id)
-    #         if tag_model.name not in self.params['tags']:
-    #             tags_to_create.append(tag_model.name)
-    #             continue
+            remote_tag = self._lookup_tag(
+                category_id=tag_category_id,
+                tag_name=tag_param.get("name"),
+                tag_id=tag_param.get("id"),
+            )
 
-    #         if self.is_tag_model_different(tag_model):
-    #             tags_to_update.append(tag_model.name)
-    #             continue
+            if self.module.params["state"] == "present":
+                param_def = tag_param.copy()
+                param_def["category_id"] = tag_category_id
+                if remote_tag is None:
+                    if param_def.get("name") is None:
+                        self.module.fail_json(
+                            msg="A tag name is required when creating a new tag",
+                            violating_tag_param=tag_param,
+                        )
+                    tag_changes.append(TagChange(remote_def=None, param_def=param_def))
+                elif self._does_tag_need_update(param_def, remote_tag):
+                    tag_changes.append(TagChange(remote_def=remote_tag, param_def=param_def))
+            else:
+                if remote_tag is not None:
+                    tag_changes.append(TagChange(remote_def=remote_tag, param_def=None))
+        return tag_changes
 
-    #     return tags_to_create, tags_to_update, tags_to_delete
+    def apply_tag_changes(self, tag_changes):
+        """
+        Apply the determined tag changes to the VMware environment.
 
-    # def is_tag_model_different(self, tag_model):
-    #     if tag_model.name not in self.params['tags']:
-    #         return True
-    #     if tag_model.description != self.params['tags'][tag_model.name]['description']:
-    #         return True
-    #     return False
+        Args:
+            tag_changes (list[TagChange]): List of changes to apply
 
-    # def tag_object(self, object_moid):
-    #     print('Tagging the cluster {0}...'.format(self.cluster_name))
-    #     self.dynamic_id = DynamicID(
-    #         type='ClusterComputeResource', id=self.cluster_moid)
-    #     self.client.tagging.TagAssociation.attach(
-    #         tag_id=self.tag_id, object_id=self.dynamic_id)
-    #     for tag_id in self.client.tagging.TagAssociation.list_attached_tags(
-    #             self.dynamic_id):
-    #         if tag_id == self.tag_id:
-    #             self.tag_attached = True
-    #             break
-    #     assert self.tag_attached
-    #     print('Tagged cluster: {0}'.format(self.cluster_moid))
+        Operations performed:
+            - Create: Creates new tags with specified name, category, and description
+            - Update: Updates existing tag descriptions
+            - Delete: Removes tags from the system
+        """
+        for tag_change in tag_changes:
+            if tag_change.remote_def is None:
+                new_tag_id = self._create_tag(
+                    name=tag_change.param_def["name"],
+                    category_id=tag_change.param_def["category_id"],
+                    description=tag_change.param_def.get("description"),
+                )
+                tag_change.param_def["id"] = new_tag_id
+            elif not tag_change.param_def:
+                try:
+                    self.tag_service.delete(tag_change.remote_def.id)
+                except NotFound:
+                    raise Exception(f"Tag {tag_change.remote_def.id} not found")
+            else:
+                update_spec = self.tag_service.UpdateSpec(
+                    name=tag_change.param_def.get("name"),
+                    description=tag_change.param_def.get("description"),
+                )
+                self.tag_service.update(tag_change.remote_def.id, update_spec)
 
-    # def create_tag_category(self, name, description, cardinality):
-    #     """create a category. User who invokes this needs create category privilege."""
-    #     create_spec = self.tag_category_service.CreateSpec()
-    #     create_spec.name = name
-    #     create_spec.description = description
-    #     create_spec.cardinality = cardinality
-    #     associableTypes = set()
-    #     create_spec.associable_types = associableTypes
-    #     return self.tag_category_service.create(create_spec)
+    def _create_tag(self, name, category_id, description=None):
+        """
+        Create a new tag in the VMware environment.
 
-    # def delete_tag_category(self):
-    #     """Deletes an existing tag category; User who invokes this API needs
-    #     delete privilege on the tag category.
-    #     """
-    #     return
-    #     self.tag_category_service.delete(self.category_id)
+        Args:
+            name (str): Name of the tag to create
+            category_id (str): ID of the category to assign the tag to
+            description (str, optional): Description for the tag
 
-    def _create_tag(self, name, description, category_id):
-        """Creates a Tag"""
+        Returns:
+            str: ID of the newly created tag
+        """
         create_spec = self.tag_service.CreateSpec()
         create_spec.name = name
-        create_spec.description = description or ''
+        create_spec.description = description or ""
         create_spec.category_id = category_id
         return self.tag_service.create(create_spec)
-
-    def update_tag(self, tag_id, description):
-        update_spec = self.tag_service.UpdateSpec()
-        update_spec.setDescription = description
-        self.tag_service.update(tag_id, update_spec)
-
-    def delete_tags(self, tags_to_remove):
-        """Delete an existing tag.
-        User who invokes this API needs delete privilege on the tag."""
-        for tags in tags_to_remove.values():
-            for tag in tags:
-                self.tag_service.delete(tag['id'])
 
 
 def main():
     argument_spec = rest_compatible_argument_spec()
     argument_spec.update(
         dict(
-            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
             tags=dict(
-                type='list', elements='dict', required=True, options=dict(
-                    name=dict(type='str', required=True),
-                    category_name=dict(type='str', required=False),
-                    category_id=dict(type='str', required=False),
-                    description=dict(type='str', required=False),
+                type="list",
+                elements="dict",
+                required=True,
+                options=dict(
+                    name=dict(type="str", required=False),
+                    id=dict(type="str", required=False),
+                    category_name=dict(type="str", required=False),
+                    category_id=dict(type="str", required=False),
+                    description=dict(type="str", required=False),
                 ),
-                required_one_of=[['category_name', 'category_id']]
-            )
+                required_one_of=[["name", "id"]],
+                mutually_exclusive=[["category_name", "category_id"]],
+            ),
         )
     )
 
-    module = AnsibleModule(
-        argument_spec=argument_spec,
-        supports_check_mode=True
-    )
+    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
 
-    result = dict(
-        changed=False,
-        updated_tags=[],
-        created_tags=[],
-        removed_tags=[]
-    )
+    result = dict(changed=False, tag_changes=[])
 
     vmware_tag = VmwareTagModule(module)
-    if module.params['state'] == 'present':
-        tags_to_create, tags_to_update = vmware_tag.get_tags_to_create_or_update()
-        if tags_to_create or tags_to_update:
-            result['changed'] = True
-            result['created_tags'] = tags_to_create
-            result['updated_tags'] = tags_to_update
+    tag_changes = vmware_tag.determine_tag_changes()
+    if not tag_changes:
+        module.exit_json(**result)
 
-        if not module.check_mode:
-            vmware_tag.create_and_update_tags(tags_to_create, tags_to_update)
+    if not module.check_mode:
+        vmware_tag.apply_tag_changes(tag_changes)
 
-    elif module.params['state'] == 'absent':
-        tags_to_remove = vmware_tag.get_tags_to_remove()
-        if tags_to_remove:
-            result['changed'] = True
-            result['removed_tags'] = tags_to_remove
-            if not module.check_mode:
-                vmware_tag.delete_tags(tags_to_remove)
-
+    result["changed"] = True
+    result["tag_changes"] = [
+        tag_change.to_module_output() for tag_change in tag_changes
+    ]
     module.exit_json(**result)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
