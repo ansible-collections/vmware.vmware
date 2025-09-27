@@ -1,0 +1,21 @@
+---
+- name: Test On VCenter
+  environment: "{{ environment_auth_vars }}"
+  when: run_on_vcenter
+  block:
+    - name: Include category tests
+      ansible.builtin.include_tasks:
+        file: test_categories.yml
+    - name: Include tag tests
+      ansible.builtin.include_tasks:
+        file: test_tags.yml
+  always:
+    - name: Destroy Test Tags
+      vmware.vmware.tags:
+        state: absent
+        tags: "{{ test_tags }}"
+      ignore_errors: true
+    - name: Destroy Test Tag Categories
+      vmware.vmware.tag_categories:
+        state: absent
+        tag_categories: "{{ test_tag_categories }}"
