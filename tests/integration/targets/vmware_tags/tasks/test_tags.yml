@@ -1,0 +1,74 @@
+---
+- name: Assign tag category IDs to tags
+  ansible.builtin.set_fact:
+    _temp_test_tags_category: >-
+      {{ _temp_test_tags_category | default([]) + [new_tag_def] }}
+  vars:
+    new_tag_def: >-
+      {{ test_tags[item] | combine({'category_id': test_tag_categories[[0,1] | random].id}) }}
+  loop: "{{ range(0, test_tags | length) | list }}"
+
+- name: Reassign temp var to test_tags
+  ansible.builtin.set_fact:
+    test_tags: "{{ _temp_test_tags_category }}"
+
+- name: Create tags
+  vmware.vmware.tags:
+    state: present
+    tags: "{{ test_tags }}"
+  register: _tags
+
+- name: Update tag dict with IDs so this is faster
+  ansible.builtin.set_fact:
+    _temp_test_tags: >-
+      {{ _temp_test_tags | default([]) + [new_tag_def] }}
+  vars:
+    new_tag_def: >-
+      {{ test_tags[item] | combine({'id': _tags.tag_changes[item].after.id}) }}
+  loop: "{{ range(0, test_tags | length) | list }}"
+
+- name: Reassign temp var to test_tags
+  ansible.builtin.set_fact:
+    test_tags: "{{ _temp_test_tags }}"
+
+- name: Create tags - idempotency
+  vmware.vmware.tags:
+    state: present
+    tags: "{{ test_tags }}"
+  register: _tags_idem
+
+- name: Check tags output
+  ansible.builtin.assert:
+    that:
+      - _tags is changed
+      - _tags_idem is not changed
+      - (_tags.tag_changes | length) == (test_tags | length)
+
+- name: Update tag name
+  vmware.vmware.tags:
+    state: present
+    tags:
+      - id: "{{ test_tags[2].id }}"
+        name: "{{ tiny_prefix }}-tags-test-3-updated"
+  register: _tags_name_update
+
+- name: Update tag description
+  vmware.vmware.tags:
+    state: present
+    tags:
+      - id: "{{ test_tags[2].id }}"
+        description: "{{ tiny_prefix }}-tags-test-3-updated"
+  register: _tags_name_update
+
+- name: Remove tag
+  vmware.vmware.tags:
+    state: absent
+    tags:
+      - id: "{{ test_tags[2].id }}"
+  register: _tags_remove
+
+- name: Check tags output
+  ansible.builtin.assert:
+    that:
+      - _tags_name_update is changed
+      - _tags_remove is changed

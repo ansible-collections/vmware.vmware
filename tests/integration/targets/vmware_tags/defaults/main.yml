@@ -1,0 +1,24 @@
+---
+test_tags:
+  - name: "{{ tiny_prefix }}-tags-test-1"
+    description: Test tag used by ansible vmware.vmware collection test
+
+  - name: "{{ tiny_prefix }}-tags-test-2"
+    description: Test tag used by ansible vmware.vmware collection test
+
+  - name: "{{ tiny_prefix }}-tags-test-3"
+
+test_tag_categories:
+  - name: "{{ tiny_prefix }}-tag-category-test-1"
+    description: Test tag used by ansible vmware.vmware collection test
+    cardinality: MULTIPLE
+    associable_types:
+      - VirtualMachine
+
+  - name: "{{ tiny_prefix }}-tag-category-test-2"
+
+  - name: "{{ tiny_prefix }}-tag-category-test-3"
+    description: Test tag used by ansible vmware.vmware collection test
+    cardinality: SINGLE
+    associable_types:
+      - Folder

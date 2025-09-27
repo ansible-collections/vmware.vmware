@@ -1,0 +1,87 @@
+---
+- name: Create Categories
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories: "{{ test_tag_categories }}"
+  register: _tag_categories
+
+- name: Update category dict with IDs so this is faster
+  ansible.builtin.set_fact:
+    _temp_test_tag_categories: >-
+      {{ _temp_test_tag_categories | default([]) + [new_category_def] }}
+  vars:
+    new_category_def: >-
+      {{ test_tag_categories[item] | combine({'id': _tag_categories.category_changes[item].after.id}) }}
+  loop: "{{ range(0, test_tag_categories | length) | list }}"
+
+- name: Reassign temp var to test_tag_categories
+  ansible.builtin.set_fact:
+    test_tag_categories: "{{ _temp_test_tag_categories }}"
+
+- name: Create Categories - idempotency
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories: "{{ test_tag_categories }}"
+  register: _tag_categories_idem
+
+- name: Check Categories output
+  ansible.builtin.assert:
+    that:
+      - _tag_categories is changed
+      - _tag_categories_idem is not changed
+      - _tag_categories.category_changes | length == test_tag_categories | length
+
+- name: Update Category Description
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories:
+      - id: "{{ test_tag_categories[2].id }}"
+        description: "Updated description of tag3"
+  register: _update_description
+
+- name: Update Category Types
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories:
+      - id: "{{ test_tag_categories[2].id }}"
+        associable_types:
+          - VirtualMachine
+          - Datastore
+  register: _update_types
+
+- name: Update Category Cardinality
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories:
+      - id: "{{ test_tag_categories[2].id }}"
+        cardinality: MULTIPLE
+  register: _update_cardinality
+
+- name: Update Category Name
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories:
+      - id: "{{ test_tag_categories[2].id }}"
+        name: "{{ tiny_prefix }}-tag-category-test-3-updated"
+  register: _update_name
+
+- name: Remove Category
+  vmware.vmware.tag_categories:
+    state: absent
+    tag_categories:
+      - id: "{{ test_tag_categories[2].id }}"
+  register: _remove_category
+
+- name: Check Category output
+  ansible.builtin.assert:
+    that:
+      - _update_description is changed
+      - _update_types is changed
+      - _update_cardinality is changed
+      - _update_name is changed
+      - _remove_category is changed
+      - _remove_category.category_changes | length == 1
+      - _remove_category.category_changes[0].before.name == tiny_prefix + "-tag-category-test-3-updated"
+      - _remove_category.category_changes[0].before.description == "Updated description of tag3"
+      - _remove_category.category_changes[0].before.cardinality == "MULTIPLE"
+      - _remove_category.category_changes[0].before.associable_types | length == 3
