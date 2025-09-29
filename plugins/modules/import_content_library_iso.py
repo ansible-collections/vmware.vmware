@@ -135,7 +135,7 @@ EXAMPLES = r"""
     src: /opt/isos/my_iso.iso
     dest: my_iso_file
 
-- name: Delete an ISO 
+- name: Delete an ISO
   vmware.vmware.import_content_library_iso:
     hostname: "https://vcenter"
     username: "username"
