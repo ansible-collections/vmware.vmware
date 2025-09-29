@@ -24,6 +24,7 @@ action_groups:
         - local_content_library
         - subscribed_content_library
         - import_content_library_ovf
+        - import_content_library_iso
         - tags
         - tag_categories
         - vcsa_backup_schedule

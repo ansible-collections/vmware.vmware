@@ -1,0 +1,68 @@
+---
+- name: Test
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Upload ISO From URL
+      vmware.vmware.import_content_library_iso:
+        src: "{{ test_src_url }}"
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+        timeout: 1200
+      register: _test_url
+
+    - name: Upload ISO From URL - Idempotency
+      vmware.vmware.import_content_library_iso:
+        src: "{{ test_src_url }}"
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+      register: _test_url_idem
+
+    - name: Assert Upload From URL
+      ansible.builtin.assert:
+        that:
+          - _test_url is changed
+          - _test_url.library_item.id == _test_url_idem.library_item.id
+          - _test_url_idem is not changed
+
+    - name: Delete ISO
+      vmware.vmware.import_content_library_iso:
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+        state: absent
+      register: _test_url_del
+
+    - name: Assert Deletion
+      ansible.builtin.assert:
+        that:
+          - _test_url_del is changed
+          - _test_url.library_item.id == _test_url_del.library_item.id
+
+    - name: Download ISO Directly
+      ansible.builtin.get_url:
+        url: "{{ test_src_url }}"
+        dest: /tmp/{{ test_dest }}.iso
+
+    - name: Upload ISO From Local
+      vmware.vmware.import_content_library_iso:
+        src: /tmp/{{ test_dest }}.iso
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+      register: _test_local
+
+    - name: Assert Upload From Local
+      ansible.builtin.assert:
+        that:
+          - _test_local is changed
+          - _test_local.library_item.id is truthy
+
+  always:
+    - name: Delete Library ISO
+      vmware.vmware.import_content_library_iso:
+        dest: "{{ test_dest }}"
+        library_name: "{{ ci_resources_content_library }}"
+        state: absent
+    - name: Delete Local ISO
+      ansible.builtin.file:
+        state: absent
+        path: /tmp/{{ test_dest }}.iso

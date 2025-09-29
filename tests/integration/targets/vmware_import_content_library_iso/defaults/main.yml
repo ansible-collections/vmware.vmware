@@ -1,0 +1,5 @@
+---
+test_dest: "{{ tiny_prefix }}_content_library_iso_from_remote"
+
+# hopefully this link is stable enough for the test. We may want to host our own ISO somehow for the test one day
+test_src_url: https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/mini.iso
