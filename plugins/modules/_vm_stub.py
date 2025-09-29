@@ -311,6 +311,59 @@ options:
                 type: str
                 required: true
 
+    cdroms:
+        description:
+            - CD-ROMs to manage on the VM.
+            - If a CD-ROM is not specified, it will be removed from the VM.
+            - Controllers (except IDE) referenced by the O(cdroms[].device_node) parameter must be configured in the corresponding controller section.
+              IDE controllers are automatically added to the VM and can be safely referenced in this parameter.
+            - The device node should be unique across all other devices (CD-ROMs, disks, etc.) on the VM.
+        type: list
+        elements: dict
+        required: false
+        suboptions:
+            connect_at_power_on:
+                description:
+                    - Whether to connect the CD-ROM to the VM at power on.
+                    - If this is set to true, the CD-ROM will be connected to the VM at power on.
+                    - If this is set to false, the CD-ROM will remain disconnected from the VM at power on.
+                type: bool
+                required: false
+            media_path:
+                description:
+                    - The media to use for the CD-ROM.
+                    - If this is set to C(iso), the CD-ROM will be mounted as an ISO file from a datastore or content library.
+                    - If this is set to C(client), the CD-ROM will be presented as a device to the VM.
+                type: str
+                required: false
+            mode:
+                description:
+                    - The mode of the CD-ROM when in C(client) mode.
+                    - C(iso) mode is used to mount an ISO file from a datastore or content library to the VM.
+                      C(client) presents the CD-ROM as a device to the VM.
+                    - This parameter is ignored if O(media) is not set to C(client).
+                type: str
+                required: false
+                choices: [ client, iso ]
+            client_device_mode:
+                description:
+                    - The mode of the CD-ROM when in C(client) mode.
+                    - C(iso) mode is used to mount an ISO file from a datastore or content library to the VM.
+                      C(client) presents the CD-ROM as a device to the VM.
+                    - This parameter is ignored if O(media) is not set to C(client).
+                type: str
+                required: false
+                choices: [ emulated, passthrough ]
+            device_node:
+                description:
+                    - Specifies the controller, bus, and unit number of the CD-ROM.
+                    - The format of this value should be like 'SCSI(0:0)' or 'IDE(0:1)'.
+                    - CD-ROM controllers referenced in this attribute must be configured in the corresponding controller section.
+                      The exception to this are the two IDE controllers, which are automatically added to the VM.
+                    - The device node should be unique across all other devices (CD-ROMs, disks, etc.) on the VM.
+                type: str
+                required: true
+
     scsi_controllers:
         description:
             - SCSI device controllers to manage on the VM.
