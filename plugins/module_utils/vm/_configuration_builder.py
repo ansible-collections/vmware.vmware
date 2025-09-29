@@ -18,6 +18,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set impor
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._device_tracker import (
     DeviceTracker,
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._vsphere_object_cache import (
+    VsphereObjectCache,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._error_handler import (
     ErrorHandler,
 )
@@ -148,6 +151,7 @@ class ConfigurationBuilder:
 
         # Create services with focused dependencies
         self.device_tracker = DeviceTracker()
+        self.vsphere_object_cache = VsphereObjectCache(self.module)
         self.error_handler = ErrorHandler(self.module, self.device_tracker)
         self.placement = VmPlacement(self.module)
 
@@ -212,6 +216,7 @@ class ConfigurationBuilder:
                     vm=self.vm,
                     device_tracker=self.device_tracker,
                     controller_handlers=self._create_controller_handlers(),
+                    vsphere_object_cache=self.vsphere_object_cache,
                 ),
                 handlers
             )

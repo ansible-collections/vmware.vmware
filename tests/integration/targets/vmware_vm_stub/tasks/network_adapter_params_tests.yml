@@ -1,0 +1,96 @@
+---
+- name: Power off vm
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    moid: "{{ test_vm_moid }}"
+    state: powered-off
+
+- name: Set vm network settings
+  vmware.vmware._vm_stub: &set-network-params
+    name: "{{ test_vm_name }}"
+    network_adapters:
+      - network: "{{ vcenter_vm_network_name }}"
+      - network: "{{ vcenter_vm_network_name }}"
+        connected: false
+        connect_at_power_on: false
+        shares_level: "low"
+        reservation: 1000
+        limit: 1000
+        mac_address: "00:00:00:00:00:00"
+        adapter_type: e1000e
+  register: _set_network_params
+
+- name: Set vm network settings - idempotence check
+  vmware.vmware._vm_stub: *set-network-params
+  register: _set_network_params_idempotent
+
+- name: Lookup VM Info
+  vmware.vmware.guest_info:
+    moid: "{{ test_vm_moid }}"
+  register: _lookup_vm_guest_info
+
+- name: Check set network params tasks
+  ansible.builtin.assert:
+    that:
+      - _set_network_params is ansible.builtin.changed
+      - _set_network_params_idempotent is not ansible.builtin.changed
+
+      - vm_guest_info.hw_interfaces | length == 2
+      - vm_guest_info.hw_eth0.addresstype == "assigned" # aka generated
+      - vm_guest_info.hw_eth0.label == "Network adapter 1"
+      - vm_guest_info.hw_eth1.addresstype == "manual"
+      - vm_guest_info.hw_eth1.label == "Network adapter 2"
+      - vm_guest_info.hw_eth1.macaddress == "00:00:00:00:00:00"
+
+  vars:
+    vm_guest_info: "{{ _lookup_vm_guest_info.guests[0] }}"
+
+- name: Set invalid network name - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    network_adapters:
+      - network: Not a real name
+  register: _invalid_network_name
+  ignore_errors: true
+
+- name: Change network adapter type - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    network_adapters:
+      - network: "{{ vcenter_vm_network_name }}"
+        adapter_type: e1000e
+  register: _change_network_adapter_type
+  ignore_errors: true
+
+- name: Remove network adapter - ignore
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    network_adapter_remove_unmanaged: false
+    network_adapters:
+      - network: "{{ vcenter_vm_network_name }}"
+  register: _remove_network_adapter_ignore
+
+- name: Remove network adapter - remove unmanaged
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    network_adapter_remove_unmanaged: true
+    network_adapters:
+      - network: "{{ vcenter_vm_network_name }}"
+  register: _remove_network_adapter_remove_unmanaged
+
+- name: Remove network adapter - idempotence
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    network_adapter_remove_unmanaged: true
+    network_adapters:
+      - network: "{{ vcenter_vm_network_name }}"
+  register: _remove_network_adapter_remove_unmanaged_idem
+
+- name: Check invalid network name test
+  ansible.builtin.assert:
+    that:
+      - _invalid_network_name is ansible.builtin.failed
+      - _change_network_adapter_type is ansible.builtin.failed
+      - _remove_network_adapter_ignore is not changed
+      - _remove_network_adapter_remove_unmanaged is changed
+      - _remove_network_adapter_remove_unmanaged_idem is not changed

@@ -271,3 +271,17 @@ class TestParameterChangeSet:
             "cpu.cores", "config.hardware.fdsafdasfdsa"
         )
         assert change_set.are_changes_required() is True
+
+    def test_changes_output(self):
+        """Test changes output."""
+        params = {"cpu": {"cores": 4}}
+        vm = Mock()
+        error_handler = Mock()
+
+        change_set = ParameterChangeSet(params, vm, error_handler)
+        assert change_set.changes == {
+            "changed_parameters": {},
+            "objects_to_add": [],
+            "objects_to_update": [],
+            "objects_to_remove": [],
+        }

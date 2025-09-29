@@ -9,6 +9,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator imp
     Configurator,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
+    DeviceLinkError,
+)
 
 
 class TestConfigurator:
@@ -211,7 +214,7 @@ class TestConfigurator:
 
         handler = Mock()
         handler.vim_device_class = type(device)
-        handler.link_vm_device = Mock(side_effect=Exception("Link failed"))
+        handler.link_vm_device = Mock(side_effect=DeviceLinkError("Link failed"))
         configurator.all_handlers = [handler]
 
         result = configurator._link_vm_devices_to_handlers()
@@ -258,7 +261,7 @@ class TestConfigurator:
 
         handler2 = Mock()
         handler2.vim_device_class = type(device2)
-        handler2.link_vm_device = Mock(side_effect=Exception("Link failed"))
+        handler2.link_vm_device = Mock(side_effect=DeviceLinkError("Link failed"))
 
         configurator.all_handlers = [handler1, handler2]
 

@@ -160,7 +160,7 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
     3. Use device_tracker for device identification and error reporting
 
     Attributes:
-        vim_device_class: VMware device class this handler manages (must be overridden)
+        vim_device_class: VMware device class(es) this handler manages (must be overridden)
         device_type_to_sub_class_map (dict): Registry of device types to handler classes
         device_tracker: Service for device identification and error reporting
     """
@@ -187,6 +187,7 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
         """
         Get the VMware device class this handler manages. This is a property so vim imports can
         be done lazily, and not cause sanity checks to fail.
+        Can be a single class, or a tuple of classes.
         """
         raise NotImplementedError
 
@@ -226,3 +227,10 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
             May update internal state to track device relationships.
         """
         raise NotImplementedError
+
+
+class DeviceLinkError(Exception):
+    """
+    Exception raised when a device cannot be linked to a parameter handler.
+    """
+    pass
