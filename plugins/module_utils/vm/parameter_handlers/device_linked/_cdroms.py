@@ -1,19 +1,20 @@
 """
-Disk parameter handler for VM storage configuration.
+CD-ROM parameter handler for VM configuration.
 
-This module provides the DiskParameterHandler class which manages virtual disk
-configuration including disk creation, modification, and controller assignment.
-It handles disk parameter validation, device linking, and VMware specification
-generation for storage management.
+This module provides the CdromParameterHandler class which manages virtual cdrom
+configuration including cdrom creation, modification, and controller assignment.
+It handles cdrom parameter validation, device linking, and VMware specification
+generation for cdrom management.
 
-The handler works closely with controller handlers to ensure proper disk
-placement and validates disk parameters against available controllers.
+The handler works closely with controller handlers to ensure proper cdrom
+placement and validates cdrom parameters against available controllers.
 """
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
+    DeviceLinkError,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._cdrom import Cdrom
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
     parse_device_node,
 )
@@ -53,7 +54,7 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
     HANDLER_NAME = "cdrom"
 
     def __init__(
-        self, error_handler, params, change_set, vm, device_tracker, controller_handlers
+        self, error_handler, params, change_set, vm, device_tracker, controller_handlers, **kwargs
     ):
         """
         Initialize the cdrom parameter handler.
@@ -85,11 +86,11 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
 
         Parses cdrom parameters and validates that at least one cdrom is defined
         for VM creation or modification. Validates that all required controllers
-        exist and that disk specifications are valid.
+        exist and that cdrom specifications are valid.
 
         Raises:
-            Calls error_handler.fail_with_parameter_error() for invalid disk
-            parameters, missing controllers, or missing disk definitions.
+            Calls error_handler.fail_with_parameter_error() for invalid cdrom
+            parameters, missing controllers, or missing cdrom definitions.
         """
         if len(self.cdroms) == 0:
             try:
@@ -121,13 +122,22 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
             controller_type, controller_bus_number, unit_number = parse_device_node(
                 cdrom_param["device_node"]
             )
+            if controller_type.lower() not in ["sata", "ide"]:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="cdroms",
+                    message="Only SATA and IDE controllers are supported for CD-ROMs. Device node %s is not valid." % cdrom_param["device_node"],
+                    details={"violating_param": cdrom_param},
+                )
+
+            controller = None
             for controller_handler in self.controller_handlers:
                 if controller_type == controller_handler.category:
                     controller = controller_handler.controllers.get(
                         controller_bus_number
                     )
                     break
-            else:
+
+            if controller is None:
                 self.error_handler.fail_with_parameter_error(
                     parameter_name="cdroms",
                     message="No controller has been configured for device %s. You must specify this controller in the appropriate controller parameter."
@@ -143,57 +153,57 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
                 )
 
             cdrom = Cdrom(
-                media_path=cdrom_param.get("media_path"),
-                mode=cdrom_param.get("mode"),
+                iso_media_path=cdrom_param.get("iso_media_path"),
                 client_device_mode=cdrom_param.get("client_device_mode"),
                 controller=controller,
                 unit_number=unit_number,
+                connect_at_power_on=cdrom_param.get("connect_at_power_on"),
             )
             self.cdroms.append(cdrom)
 
     def populate_config_spec_with_parameters(self, configspec):
         """
-        Populate VMware configuration specification with disk parameters.
+        Populate VMware configuration specification with cdrom parameters.
 
-        Adds disk device specifications to the configuration for both new
-        disk creation and existing disk modification. Tracks device IDs
+        Adds cdrom device specifications to the configuration for both new
+        cdrom creation and existing cdrom modification. Tracks device IDs
         for proper error reporting and device management.
 
         Args:
             configspec: VMware VirtualMachineConfigSpec to populate
 
         Side Effects:
-            Adds disk device specifications to configspec.deviceChange.
+            Adds cdrom device specifications to configspec.deviceChange.
             Tracks device IDs through device_tracker for error reporting.
         """
-        for disk in self.change_set.objects_to_add:
-            self.device_tracker.track_device_id_from_spec(disk)
-            configspec.deviceChange.append(disk.create_disk_spec())
-        for disk in self.change_set.objects_to_update:
-            self.device_tracker.track_device_id_from_spec(disk)
-            configspec.deviceChange.append(disk.update_disk_spec())
+        for cdrom in self.change_set.objects_to_add:
+            self.device_tracker.track_device_id_from_spec(cdrom)
+            configspec.deviceChange.append(cdrom.to_new_spec())
+        for cdrom in self.change_set.objects_to_update:
+            self.device_tracker.track_device_id_from_spec(cdrom)
+            configspec.deviceChange.append(cdrom.to_update_spec())
 
     def compare_live_config_with_desired_config(self):
         """
-        Compare current VM disk configuration with desired configuration.
+        Compare current VM cdrom configuration with desired configuration.
 
-        Analyzes each disk to determine if it needs to be added, updated,
+        Analyzes each cdrom to determine if it needs to be added, updated,
         or is already in sync with the desired configuration. Categorizes
-        disks based on their current state and required changes.
+        cdroms based on their current state and required changes.
 
         Returns:
-            ParameterChangeSet: Updated change set with disk change requirements
+            ParameterChangeSet: Updated change set with cdrom change requirements
 
         Side Effects:
-            Updates change_set with disk objects categorized by required actions.
+            Updates change_set with cdrom objects categorized by required actions.
         """
-        for disk in self.disks:
-            if disk._device is None:
-                self.change_set.objects_to_add.append(disk)
-            elif disk.linked_device_differs_from_config():
-                self.change_set.objects_to_update.append(disk)
+        for cdrom in self.cdroms:
+            if cdrom._live_object is None:
+                self.change_set.objects_to_add.append(cdrom)
+            elif cdrom.differs_from_live_object():
+                self.change_set.objects_to_update.append(cdrom)
             else:
-                self.change_set.objects_in_sync.append(disk)
+                self.change_set.objects_in_sync.append(cdrom)
 
         return self.change_set
 
@@ -215,14 +225,21 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
             Sets the _device attribute on the matching cdrom object.
         """
         for cdrom in self.cdroms:
+            if cdrom._live_object is not None:
+                continue
+
             if (
                 device.unitNumber == cdrom.unit_number
                 and device.controllerKey == cdrom.controller.key
             ):
-                cdrom._device = device
+                cdrom.link_corresponding_live_object(
+                    Cdrom.from_live_device_spec(device, cdrom.controller)
+                )
                 return
 
-        raise Exception(
+        raise DeviceLinkError(
             "CD-ROM not found for device %s on controller %s"
-            % (device.unitNumber, device.controllerKey)
+            % (device.unitNumber, device.controllerKey),
+            device,
+            self,
         )

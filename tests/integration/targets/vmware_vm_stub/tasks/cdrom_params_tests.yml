@@ -1,0 +1,97 @@
+---
+- name: Power off vm
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    moid: "{{ test_vm_moid }}"
+    state: powered-off
+
+- name: Set vm cdroms
+  vmware.vmware._vm_stub: &set-cdrom-params
+    name: "{{ test_vm_name }}"
+    cdroms:
+      - device_node: IDE(0:0)
+        client_device_mode: emulated
+      - device_node: IDE(0:1)
+        client_device_mode: passthrough
+      - device_node: IDE(1:0)
+      - device_node: IDE(1:1)
+        iso_media_path: "{{ test_iso_path }}"
+        connect_at_power_on: true
+  register: _set_cdrom_params
+
+- name: Set vm cdroms - idempotence check
+  vmware.vmware._vm_stub: *set-cdrom-params
+  register: _set_cdrom_params_idempotent
+
+- name: Check set cdrom params tasks
+  ansible.builtin.assert:
+    that:
+      - _set_cdrom_params is ansible.builtin.changed
+      - _set_cdrom_params_idempotent is not ansible.builtin.changed
+
+- name: Update vm cdroms
+  vmware.vmware._vm_stub: &update-cdrom-params
+    name: "{{ test_vm_name }}"
+    cdroms:
+      - device_node: IDE(0:0)
+        connect_at_power_on: false
+      - device_node: IDE(0:1)
+        client_device_mode: emulated
+      - device_node: IDE(1:1)
+        iso_media_path: "{{ test_iso_path }}"
+        connect_at_power_on: false
+  register: _update_cdrom_params
+
+- name: Update vm cdroms - idempotence check
+  vmware.vmware._vm_stub: *update-cdrom-params
+  register: _update_cdrom_params_idempotent
+
+- name: Check set cdrom params tasks
+  ansible.builtin.assert:
+    that:
+      - _update_cdrom_params is ansible.builtin.changed
+      - _update_cdrom_params_idempotent is not ansible.builtin.changed
+
+- name: Set invalid controller type - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: paravirtual
+    cdroms:
+      - device_node: SCSI(0:0)
+  register: _invalid_controller_type
+  ignore_errors: true
+
+- name: Set missing controller type - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    cdroms:
+      - device_node: SATA(0:0)
+  register: _missing_controller_type
+  ignore_errors: true
+
+- name: Ignore cdroms
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+  register: _ignore_cdroms
+
+- name: Remove all cdroms
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    cdroms: []
+  register: _remove_cdroms
+
+- name: Remove cdroms - idempotence
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    cdroms: []
+  register: _remove_cdroms_idempotent
+
+- name: Check cdroms
+  ansible.builtin.assert:
+    that:
+      - _invalid_controller_type is ansible.builtin.failed
+      - _missing_controller_type is ansible.builtin.failed
+      - _ignore_cdroms is not ansible.builtin.changed
+      - _remove_cdroms is ansible.builtin.changed
+      - _remove_cdroms_idempotent is not ansible.builtin.changed
