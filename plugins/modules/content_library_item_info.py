@@ -211,7 +211,9 @@ class ContentLibaryItemInfo(ModuleRestBase):
     def get_relevant_library_item_info(self, library_item_ids):
         all_library_items_info = []
         for library_item_id in library_item_ids:
-            all_library_items_info.append(self.library_item_service.get(library_item_id).to_dict())
+            item_info = self.library_item_service.get(library_item_id).to_dict()
+            item_info['storage'] = [item.to_dict() for item in self.api_client.content.library.item.Storage.list(library_item_id=library_item_id)]
+            all_library_items_info.append(item_info)
 
         return all_library_items_info
 
