@@ -4,6 +4,27 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.4.0
+======
+
+Minor Changes
+-------------
+
+- Add module for importing iso images to content library.
+- Remove six imports from _facts.py and _vsphere_tasks.py due to new sanity rules. Python 2 (already not supported) will fail to execute these files.
+- tag_categories - Add module to manage tag categories
+- tags - Add module to manage tags
+- vms - Add option to inventory plugin to gather cluster and ESXi host name for VMs. (Fixes https://github.com/ansible-collections/vmware.vmware/issues/215)
+
+Bugfixes
+--------
+
+- Drop incorrect requirement on aiohttp (https://github.com/ansible-collections/vmware.vmware/pull/230).
+- cluster_ha - Fix admission control policy not being updated when ac is disabled
+- content_template - Fix typo in code for check mode that tried to access a module param which doesn't exist.
+- import_content_library_ovf - Fix large file import by using requests instead of open_url. Requests allows for streaming uploads, instead of reading the entire file into memory. (Fixes https://github.com/ansible-collections/vmware.vmware/issues/220)
+- vm_powerstate - Ensure timeout option also applies to the shutdown-guest state
+
 v2.3.0
 ======
 

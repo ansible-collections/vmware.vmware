@@ -1,3 +1,0 @@
----
-minor_changes:
-  - Remove six imports from _facts.py and _vsphere_tasks.py due to new sanity rules. Python 2 (already not supported) will fail to execute these files.
