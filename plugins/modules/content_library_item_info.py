@@ -112,6 +112,25 @@ library_item_info:
             "size": 2082617344,
             "type": "iso",
             "version": "1"
+            "storage": [
+                {
+                    "cached": true,
+                    "checksum_info": {
+                        "algorithm": "SHA1",
+                        "checksum": ""
+                    },
+                    "name": "Fedora-Workstation-Live-ppc64le-39-1.5.iso",
+                    "size": 2082617344,
+                    "storage_backing": {
+                        "datastore_id": "datastore-1111",
+                        "type": "DATASTORE"
+                    },
+                    "storage_uris": [
+                        "ds:///vmfs/volumes/11223344-11223344//contentlib-5a74aeab-333-222-1111-000000000/fa4d4b87-db09-4b8e-903c-4f30a84e13fb/Fedora-Workstation-Live-ppc64le-39-1.5.iso_11223344-1111-2222-3333-444444444444.iso?serverId=11111111-aaaa-bbbb-cccc-dddddddddddd"
+                    ],
+                    "version": "1"
+                }
+            ],
         },
         {
             "cached": true,
@@ -130,6 +149,26 @@ library_item_info:
             "size": 9264168960,
             "type": "iso",
             "version": "1"
+            "storage": [
+                {
+                    "cached": true,
+                    "checksum_info": {
+                        "algorithm": "SHA1",
+                        "checksum": ""
+                    },
+                    "name": "CentOS-8.3.2011-x86_64-dvd1.iso",
+                    "size": 9264168960,
+                    "storage_backing": {
+                        "datastore_id": "datastore-1111",
+                        "type": "DATASTORE"
+                    },
+                    "storage_uris": [
+                        "ds:///vmfs/volumes/11223344-11223344//contentlib-5a74aeab-333-222-1111-000000000/fa4d4b87-db09-4b8e-903c-4f30a84e13fb/Fedora-Workstation-Live-ppc64le-39-1.5_11223344-1111-2222-3333-444444444444.iso?serverId=11111111-aaaa-bbbb-cccc-dddddddddddd"
+                    ],
+                    "version": "1"
+                }
+            ],
+
         },
         {
             "cached": true,
