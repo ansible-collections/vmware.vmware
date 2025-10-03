@@ -6,7 +6,7 @@ import pytest
 from unittest import mock
 
 from ansible_collections.vmware.vmware.plugins.modules.tags import (
-    TagChange,
+    TagDiff,
     main as module_main
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import (
@@ -21,14 +21,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-class TestTagChange():
-    def test_to_module_output(self):
-        tc = TagChange(remote_def=None, param_def=None)
-        assert tc.to_module_output() == {
-            'before': {},
-            'after': {}
-        }
-
+class TestTagDiff():
+    def new_tag_state_to_module_output(self):
         before = mock.Mock(description='1.2', id='1.3', category_id='1.4')
         before.name = '1.1'
         after = {
@@ -36,37 +30,58 @@ class TestTagChange():
             'description': '2.2',
             'category_id': '2.4'
         }
-        tc = TagChange(remote_def=before, param_def=after)
-        assert tc.to_module_output() == {
-            'before': {
-                'name': '1.1',
-                'description': '1.2',
-                'id': '1.3',
-                'category_id': '1.4'
-            },
-            'after': {
-                'name': '2.1',
-                'description': '2.2',
-                'id': '1.3',
-                'category_id': '2.4'
-            }
+        td = TagDiff(remote_def=before, param_def=after)
+        assert td.new_tag_state_to_module_output() == {
+            'id': '1.3',
+            'name': '2.1',
+            'category_id': '2.4',
+            'description': '2.2'
         }
         after['id'] = '2.3'
-        tc = TagChange(remote_def=before, param_def=after)
-        assert tc.to_module_output() == {
-            'before': {
-                'name': '1.1',
-                'description': '1.2',
-                'id': '1.3',
-                'category_id': '1.4'
-            },
-            'after': {
-                'name': '2.1',
-                'description': '2.2',
-                'id': '2.3',
-                'category_id': '2.4'
-            }
+        td = TagDiff(remote_def=before, param_def=after)
+        assert td.new_tag_state_to_module_output() == {
+            'id': '2.3',
+            'name': '2.1',
+            'category_id': '2.4',
+            'description': '2.2'
         }
+
+    def test_is_creation(self):
+        td = TagDiff(remote_def=None, param_def=None)
+        assert td.is_creation() is False
+        td = TagDiff(remote_def=mock.Mock(), param_def={'1': 1})
+        assert td.is_creation() is False
+        td = TagDiff(remote_def=mock.Mock(), param_def={})
+        assert td.is_creation() is False
+        td = TagDiff(remote_def=None, param_def={'1': 1})
+        assert td.is_creation() is True
+
+    def test_is_removal(self):
+        td = TagDiff(remote_def=None, param_def=None)
+        assert td.is_removal() is False
+        td = TagDiff(remote_def=mock.Mock(), param_def={'1': 1})
+        assert td.is_removal() is False
+        td = TagDiff(remote_def=mock.Mock(), param_def={})
+        assert td.is_removal() is True
+        td = TagDiff(remote_def=None, param_def={'1': 1})
+        assert td.is_removal() is False
+
+    def test_is_update(self):
+        td = TagDiff(remote_def=None, param_def=None)
+        assert td.is_update() is False
+        td = TagDiff(remote_def=mock.Mock(), param_def={'1': 1})
+        assert td.is_update() is False
+        td = TagDiff(remote_def=mock.Mock(description='1.2'), param_def={'description': '1.3'})
+        assert td.is_update() is True
+        mock_tag = mock.Mock()
+        mock_tag.name = '1.1'
+        td = TagDiff(remote_def=mock_tag, param_def={'name': '1.2'})
+        assert td.is_update() is True
+        mock_tag.description = '1.2'
+        td = TagDiff(remote_def=mock_tag, param_def={'description': '1.2', 'name': '1.1'})
+        assert td.is_update() is False
+        td = TagDiff(remote_def=None, param_def={'1': 1})
+        assert td.is_update() is False
 
 
 class TestVmwareTagModule(ModuleTestCase):
@@ -137,7 +152,8 @@ class TestVmwareTagModule(ModuleTestCase):
         )
 
         result = run_module(module_entry=module_main, module_args=module_args)
-        assert result["tag_changes"] == []
+        assert result["created_tags"] == []
+        assert result["updated_tags"] == []
         assert result['changed'] is False
 
     def test_present_change(self, mocker):
@@ -157,7 +173,7 @@ class TestVmwareTagModule(ModuleTestCase):
         )
 
         result = run_module(module_entry=module_main, module_args=module_args)
-        assert len(result["tag_changes"]) == 1
+        assert len(result["updated_tags"]) == 1
         assert result['changed'] is True
 
     def test_absent_change(self, mocker):
@@ -173,7 +189,7 @@ class TestVmwareTagModule(ModuleTestCase):
         )
 
         result = run_module(module_entry=module_main, module_args=module_args)
-        assert len(result["tag_changes"]) == 1
+        assert len(result["removed_tags"]) == 1
         assert result['changed'] is True
 
     def test_absent_no_change(self, mocker):
@@ -189,5 +205,5 @@ class TestVmwareTagModule(ModuleTestCase):
         )
 
         result = run_module(module_entry=module_main, module_args=module_args)
-        assert result["tag_changes"] == []
+        assert result["removed_tags"] == []
         assert result['changed'] is False
