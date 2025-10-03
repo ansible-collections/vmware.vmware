@@ -157,30 +157,51 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-category_changes:
+vsphere_tag_categories:
     description:
-        - Comparison of the tag categories before and after the changes.
-        - Before is empty if the tag category was created.
-        - After is empty if the tag category was deleted.
+        - Dictionary of tag categories that were managed by this module. This includes any tag categories that the user specified, even
+          if nothing was changed.
+        - The key is the tag category ID, the value is a dictionary with tag category information.
+    returned: always
+    type: dict
+    sample: {
+        "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL": {
+            "name": "cat1",
+            "description": "Description of cat1",
+            "cardinality": "MULTIPLE",
+            "associable_types": ["VirtualMachine", "Datastore"],
+            "id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL"
+        },
+    }
+
+created_categories:
+    description:
+        - List of tag category IDs that were created by this module.
+        - The list is empty if no tag categories were created.
     returned: always
     type: list
     sample: [
-        {
-            "before": {
-                "id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
-                "name": "cat1",
-                "description": "Description of cat1",
-                "cardinality": "MULTIPLE",
-                "associable_types": ["VirtualMachine", "Datastore"]
-            },
-            "after": {
-                "id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
-                "name": "cat2",
-                "description": "Updated description of cat2",
-                "cardinality": "SINGLE",
-                "associable_types": ["VirtualMachine"]
-            }
-        },
+        "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
+    ]
+
+updated_categories:
+    description:
+        - List of tag category IDs that were updated by this module.
+        - The list is empty if no tag categories were updated.
+    returned: always
+    type: list
+    sample: [
+        "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
+    ]
+
+removed_categories:
+    description:
+        - List of tag category IDs that were removed by this module.
+        - The list is empty if no tag categories were removed.
+    returned: always
+    type: list
+    sample: [
+        "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
     ]
 """
 
@@ -219,19 +240,20 @@ ALL_ASSOCIABLE_TYPES = [
 ]
 
 
-class TagCategoryChange:
+class TagCategoryDiff:
     """
-    A data class representing a change to a tag category.
+    A data class representing a diff to a tag category.
 
-    This class encapsulates the before and after state of a tag category change,
-    providing methods to convert the change to module output format.
+    This class encapsulates the before and after state of a tag category diff,
+    providing methods to convert the diff to module output format.
 
     Attributes:
-        remote_def (object): Tag category model before the change (None for new categories)
-        param_def (dict): Tag category parameters after the change (None for deletions)
+        remote_def (object): Tag category model before the diff (None for new categories)
+        param_def (dict): Tag category parameters after the diff (None for deletions)
     """
 
     def __init__(self, remote_def: object = None, param_def: dict = None):
+        self._is_update = None
         if param_def is None:
             param_def = dict()
         # before is always a tag model, after is a dict of parameters
@@ -249,31 +271,72 @@ class TagCategoryChange:
         }
         return out
 
-    def to_module_output(self):
+    def get_category_id(self):
+        if self.remote_def is not None:
+            # Category already exists and is being updated or removed, so we can use the remote def ID
+            return self.remote_def.id
+
+        if self.param_def.get("id") is not None:
+            # Category didn't exist and we created it, so we have the new ID available
+            return self.param_def.get("id")
+
+        return None
+
+    def is_creation(self):
+        return self.param_def != dict() and self.remote_def is None
+
+    def is_update(self):
+        if self._is_update is None:
+            self._is_update = self._does_tag_category_need_update()
+
+        return self._is_update
+
+    def _does_tag_category_need_update(self):
         """
-        Convert the change to a dictionary format suitable for Ansible module output.
+        Determine if a tag category requires an update based on parameter changes.
+
+        Args:
+            param_category (dict): Category parameters from user input
+            remote_category (object, optional): Current category model from VMware
 
         Returns:
-            dict: Dictionary with 'before' and 'after' keys containing tag category information
+            bool: True if update is needed, False otherwise
         """
-        output = dict(before=dict(), after=dict())
-        if self.remote_def:
-            output["before"] = {
-                "name": self.remote_def.name,
-                "description": self.remote_def.description,
-                "id": self.remote_def.id,
-                "cardinality": self.remote_def.cardinality,
-                "associable_types": list(self.remote_def.associable_types),
-            }
-        if self.param_def:
-            output["after"] = {
-                "name": self.param_def.get("name") or output["before"].get("name"),
-                "id": self.param_def.get("id") or output["before"].get("id"),
-                "description": self.param_def.get("description") or output["before"].get("description"),
-                "cardinality": self.param_def.get("cardinality") or output["before"].get("cardinality"),
-                "associable_types": list(set(self.param_def["associable_types"]) | set(output["before"].get("associable_types", []))),
-            }
-        return output
+        if self.param_def == dict() or self.remote_def is None:
+            return False
+
+        for attr in ["name", "description", "cardinality"]:
+            if self.param_def.get(attr) is None:
+                continue
+            elif self.param_def[attr] != getattr(self.remote_def, attr):
+                return True
+
+        if self.param_def.get("associable_types") is not None:
+            if not self.remote_def.associable_types.issuperset(set(self.param_def["associable_types"])):
+                return True
+
+        return False
+
+    def is_removal(self):
+        return self.param_def == dict() and self.remote_def is not None
+
+    def new_tag_category_state_to_module_output(self):
+        """
+        Convert the future/new state of a tag to a dictionary format suitable for Ansible module output.
+
+        Returns:
+            dict: Dictionary with 'id', 'name', 'category_id', and 'description' keys containing tag information
+        """
+        if self.is_removal():
+            return dict()
+
+        return dict(
+            id=self.get_category_id(),
+            name=self.param_def.get("name") or self.remote_def.name,
+            description=self.param_def.get("description") or self.remote_def.description,
+            cardinality=self.param_def.get("cardinality") or self.remote_def.cardinality,
+            associable_types=list(set(self.param_def.get("associable_types") or []) | set(self.remote_def.associable_types)),
+        )
 
 
 class VmwareTagCategoryModule(ModuleRestBase):
@@ -299,16 +362,16 @@ class VmwareTagCategoryModule(ModuleRestBase):
             c.get("id") is not None for c in module.params["tag_categories"]
         )
 
-    def determine_tag_category_changes(self):
-        tag_category_changes = []
+    def determine_tag_category_diffs(self):
+        tag_category_diffs = []
         if self._params_only_use_ids:
-            self._determine_tag_category_changes_by_ids_only(tag_category_changes)
+            self._determine_tag_category_diffs_by_ids_only(tag_category_diffs)
         else:
-            self._determine_tag_category_changes_by_names_and_ids(tag_category_changes)
+            self._determine_tag_category_diffs_by_names_and_ids(tag_category_diffs)
 
-        return tag_category_changes
+        return tag_category_diffs
 
-    def _determine_tag_category_changes_by_ids_only(self, tag_category_changes):
+    def _determine_tag_category_diffs_by_ids_only(self, tag_category_diffs):
         """
         Process tag category changes when all parameters use IDs.
 
@@ -316,7 +379,7 @@ class VmwareTagCategoryModule(ModuleRestBase):
         allowing for direct lookups without needing to iterate through all remote categories.
 
         Args:
-            tag_category_changes (list): List to append changes to
+            tag_category_diffs (list): List to append diffs to
 
         Raises:
             AnsibleModule.fail_json: If an ID is provided for a new category creation
@@ -339,9 +402,9 @@ class VmwareTagCategoryModule(ModuleRestBase):
                 param_category, remote_category
             )
             if category_change is not None:
-                tag_category_changes.append(category_change)
+                tag_category_diffs.append(category_change)
 
-    def _determine_tag_category_changes_by_names_and_ids(self, tag_category_changes):
+    def _determine_tag_category_diffs_by_names_and_ids(self, tag_category_diffs):
         """
         Process tag category changes when parameters use names or mixed names/IDs.
 
@@ -375,7 +438,7 @@ class VmwareTagCategoryModule(ModuleRestBase):
                     param_category, remote_category
                 )
                 if category_change is not None:
-                    tag_category_changes.append(category_change)
+                    tag_category_diffs.append(category_change)
                 break
 
             if len(category_params_left_to_process) == 0:
@@ -385,7 +448,7 @@ class VmwareTagCategoryModule(ModuleRestBase):
         for param_category in category_params_left_to_process.values():
             category_change = self._create_category_change(param_category, None)
             if category_change is not None:
-                tag_category_changes.append(category_change)
+                tag_category_diffs.append(category_change)
 
     def _create_category_change(
         self, param_category: dict, remote_category: object = None
@@ -402,78 +465,45 @@ class VmwareTagCategoryModule(ModuleRestBase):
         """
         if self.module.params["state"] == "present":
             if remote_category is None:
-                return TagCategoryChange(remote_def=None, param_def=param_category)
+                return TagCategoryDiff(remote_def=None, param_def=param_category)
 
-            if self._does_tag_category_need_update(param_category, remote_category):
-                change = TagCategoryChange(remote_def=remote_category, param_def=param_category)
-                return change
+            if param_category.get("cardinality") == "SINGLE" and remote_category.cardinality == "MULTIPLE":
+                self.module.fail_json(
+                    msg="You cannot change the cardinality of a tag category from MULTIPLE to SINGLE.",
+                    violating_tag_category_param=param_category,
+                )
+            return TagCategoryDiff(remote_def=remote_category, param_def=param_category)
 
         else:
             if remote_category is not None:
-                return TagCategoryChange(remote_def=remote_category, param_def=None)
+                return TagCategoryDiff(remote_def=remote_category, param_def=None)
 
         return None
 
-    def _does_tag_category_need_update(
-        self, param_category: dict, remote_category: object = None
-    ):
-        """
-        Determine if a tag category requires an update based on parameter changes.
-
-        Args:
-            param_category (dict): Category parameters from user input
-            remote_category (object, optional): Current category model from VMware
-
-        Returns:
-            bool: True if update is needed, False otherwise
-        """
-        if remote_category is None:
-            return True
-        for attr in ["name", "description"]:
-            if param_category.get(attr) is None:
-                continue
-            elif param_category[attr] != getattr(remote_category, attr):
-                return True
-
-        if param_category.get("cardinality") is not None:
-            if param_category["cardinality"] != remote_category.cardinality:
-                if remote_category.cardinality == "MULTIPLE":
-                    self.module.fail_json(
-                        msg="You cannot change the cardinality of a tag category from MULTIPLE to SINGLE.",
-                        violating_tag_category_param=param_category,
-                    )
-                return True
-
-        if param_category.get("associable_types") is not None:
-            if not remote_category.associable_types.issuperset(set(param_category["associable_types"])):
-                return True
-
-        return False
-
-    def apply_tag_category_changes(self, tag_category_changes):
+    def apply_tag_category_changes(self, tag_category_diffs):
         """
         Apply the determined tag category changes to the VMware environment.
 
         Args:
-            tag_category_changes (list[TagCategoryChange]): List of changes to apply
+            tag_category_diffs (list[TagCategoryDiff]): List of diffs to apply
 
         Operations performed:
             - Create: Creates new tag categories with specified properties
             - Update: Updates existing tag category properties
             - Delete: Removes tag categories from the system
         """
-        for tag_category_change in tag_category_changes:
-            if tag_category_change.remote_def is None:
+        for tag_category_diff in tag_category_diffs:
+            if tag_category_diff.is_creation():
                 new_category_id = self._create_tag_category(
-                    **tag_category_change.param_def_to_spec_args()
+                    **tag_category_diff.param_def_to_spec_args()
                 )
-                tag_category_change.param_def["id"] = new_category_id
-            elif not tag_category_change.param_def:
-                self.tag_category_service.delete(tag_category_change.remote_def.id)
-            else:
+                tag_category_diff.param_def["id"] = new_category_id
+            elif tag_category_diff.is_removal():
+                self.tag_category_service.delete(tag_category_diff.remote_def.id)
+            elif tag_category_diff.is_update():
                 self._update_tag_category(
-                    tag_category_id=tag_category_change.remote_def.id,
-                    **tag_category_change.param_def_to_spec_args()
+                    tag_category_id=tag_category_diff.remote_def.id,
+                    **tag_category_diff.param_def_to_spec_args()
                 )
 
     def _create_tag_category(self, name, description, cardinality, associable_types):
@@ -527,20 +557,37 @@ def main():
 
     module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
 
-    result = dict(changed=False, category_changes=[])
+    result = dict(
+        changed=False,
+        created_categories=[],
+        updated_categories=[],
+        removed_categories=[],
+        vsphere_tag_categories={},
+    )
 
     vmware_tag_category = VmwareTagCategoryModule(module)
-    tag_category_changes = vmware_tag_category.determine_tag_category_changes()
-    if not tag_category_changes:
+    tag_category_diffs = vmware_tag_category.determine_tag_category_diffs()
+    result["vsphere_tag_categories"] = {
+        cat_diff.get_category_id(): cat_diff.new_tag_category_state_to_module_output()
+        for cat_diff in tag_category_diffs
+        if cat_diff.get_category_id() is not None and not cat_diff.is_removal()
+    }
+    if not tag_category_diffs:
         module.exit_json(**result)
 
     if not module.check_mode:
-        vmware_tag_category.apply_tag_category_changes(tag_category_changes)
-    result["changed"] = True
-    result["category_changes"] = [
-        tag_category_change.to_module_output()
-        for tag_category_change in tag_category_changes
-    ]
+        vmware_tag_category.apply_tag_category_changes(tag_category_diffs)
+
+    for cat_diff in tag_category_diffs:
+        if cat_diff.is_creation():
+            result["created_categories"].append(cat_diff.get_category_id())
+            result["changed"] = True
+        elif cat_diff.is_update():
+            result["updated_categories"].append(cat_diff.get_category_id())
+            result["changed"] = True
+        elif cat_diff.is_removal():
+            result["removed_categories"].append(cat_diff.get_category_id())
+            result["changed"] = True
 
     module.exit_json(**result)
 

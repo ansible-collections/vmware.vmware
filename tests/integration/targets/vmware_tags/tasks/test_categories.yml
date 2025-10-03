@@ -11,7 +11,7 @@
       {{ _temp_test_tag_categories | default([]) + [new_category_def] }}
   vars:
     new_category_def: >-
-      {{ test_tag_categories[item] | combine({'id': _tag_categories.category_changes[item].after.id}) }}
+      {{ test_tag_categories[item] | combine({'id': _tag_categories.created_categories[item]}) }}
   loop: "{{ range(0, test_tag_categories | length) | list }}"
 
 - name: Reassign temp var to test_tag_categories
@@ -29,7 +29,7 @@
     that:
       - _tag_categories is changed
       - _tag_categories_idem is not changed
-      - _tag_categories.category_changes | length == test_tag_categories | length
+      - _tag_categories.created_categories | length == test_tag_categories | length
 
 - name: Update Category Description
   vmware.vmware.tag_categories:
@@ -80,8 +80,4 @@
       - _update_cardinality is changed
       - _update_name is changed
       - _remove_category is changed
-      - _remove_category.category_changes | length == 1
-      - _remove_category.category_changes[0].before.name == tiny_prefix + "-tag-category-test-3-updated"
-      - _remove_category.category_changes[0].before.description == "Updated description of tag3"
-      - _remove_category.category_changes[0].before.cardinality == "MULTIPLE"
-      - _remove_category.category_changes[0].before.associable_types | length == 3
+      - _remove_category.removed_categories | length == 1
