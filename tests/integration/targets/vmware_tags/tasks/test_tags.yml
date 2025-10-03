@@ -24,7 +24,7 @@
       {{ _temp_test_tags | default([]) + [new_tag_def] }}
   vars:
     new_tag_def: >-
-      {{ test_tags[item] | combine({'id': _tags.tag_changes[item].after.id}) }}
+      {{ test_tags[item] | combine({'id': _tags.created_tags[item]}) }}
   loop: "{{ range(0, test_tags | length) | list }}"
 
 - name: Reassign temp var to test_tags
@@ -42,7 +42,7 @@
     that:
       - _tags is changed
       - _tags_idem is not changed
-      - (_tags.tag_changes | length) == (test_tags | length)
+      - (_tags.created_tags | length) == (test_tags | length)
 
 - name: Update tag name
   vmware.vmware.tags:
