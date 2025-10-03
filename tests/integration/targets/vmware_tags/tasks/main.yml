@@ -9,7 +9,18 @@
     - name: Include tag tests
       ansible.builtin.include_tasks:
         file: test_tags.yml
+    - name: Include tag association tests
+      ansible.builtin.include_tasks:
+        file: test_association.yml
   always:
+    - name: Destroy Test VM
+      community.vmware.vmware_guest:
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: absent
+        force: true
+        name: "{{ test_vm_name }}"
+      when: _test_association_vm.vm is defined
     - name: Destroy Test Tags
       vmware.vmware.tags:
         state: absent

@@ -1,4 +1,6 @@
 ---
+test_vm_name: "{{ tiny_prefix }}-tags-test-vm"
+
 test_tags:
   - name: "{{ tiny_prefix }}-tags-test-1"
     description: Test tag used by ansible vmware.vmware collection test
