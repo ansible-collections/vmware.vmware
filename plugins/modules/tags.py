@@ -308,10 +308,10 @@ class VmwareTagModule(ModuleRestBase):
                 return None
 
         if tag_name is None:
-            raise Exception(msg="Either tag_id or tag_name must be provided")
+            raise Exception("Either tag_id or tag_name must be provided")
 
         if category_id is None:
-            raise Exception(msg="Either category_id or category_name must be provided when looking up a tag by name")
+            raise Exception("Either category_id or category_name must be provided when looking up a tag by name")
 
         if tag_name in self._tag_names_to_tags_cache:
             return self._tag_names_to_tags_cache[tag_name]
@@ -407,7 +407,7 @@ class VmwareTagModule(ModuleRestBase):
                 try:
                     self.tag_service.delete(tag_change.remote_def.id)
                 except NotFound:
-                    raise Exception(f"Tag {tag_change.remote_def.id} not found")
+                    raise Exception("Tag %s not found" % tag_change.remote_def.id)
             else:
                 update_spec = self.tag_service.UpdateSpec(
                     name=tag_change.param_def.get("name"),
