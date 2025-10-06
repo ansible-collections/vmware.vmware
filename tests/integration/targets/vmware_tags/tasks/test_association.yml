@@ -1,0 +1,141 @@
+---
+- name: Create Virtual Machine From OVF Template
+  vmware.vmware.deploy_content_library_ovf:
+    library_item_name: "{{ rhel9_content_library_ovf }}"
+    vm_name: "{{ test_vm_name }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ shared_storage_02 }}"
+    cluster: "{{ vcenter_cluster_name }}"
+  register: _test_association_vm
+
+- name: Remap tag variable
+  ansible.builtin.set_fact:
+    _temp_test_tags_association: >-
+      {{ _temp_test_tags_association | default([]) + [new_tag_def] }}
+  vars:
+    new_tag_def:
+      id: "{{ test_tags[item].id }}"
+      category_id: "{{ test_tags[item].category_id }}"
+  loop: "{{ range(0, test_tags | length) | list }}"
+
+- name: Reassign temp var to test_tags_association
+  ansible.builtin.set_fact:
+    test_tags_association: "{{ _temp_test_tags_association }}"
+
+- name: Attach tags to a VM
+  vmware.vmware.tag_associations: &tag_associations_present
+    state: present
+    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_type: VirtualMachine
+    tags:
+      - "{{ test_tags_association[0] }}"
+      - "{{ test_tags_association[1] }}"
+  register: _tag_associations_present
+
+- name: Attach tags to a VM - idempotency
+  vmware.vmware.tag_associations: *tag_associations_present
+  register: _tag_associations_present_idem
+
+- name: Check tag associations output
+  ansible.builtin.assert:
+    that:
+      - _tag_associations_present is changed
+      - _tag_associations_present_idem is not changed
+      - _tag_associations_present.added_tags | length == 2
+      - _tag_associations_present.removed_tags | length == 0
+
+- name: Remove tag from a VM
+  vmware.vmware.tag_associations: &tag_associations_absent
+    state: absent
+    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_type: VirtualMachine
+    tags:
+      - "{{ test_tags_association[1] }}"
+  register: _tag_associations_absent
+
+- name: Remove tag from a VM - idempotency
+  vmware.vmware.tag_associations: *tag_associations_absent
+  register: _tag_associations_absent_idem
+
+- name: Check tag associations output - remove tag
+  ansible.builtin.assert:
+    that:
+      - _tag_associations_absent is changed
+      - _tag_associations_absent_idem is not changed
+      - _tag_associations_absent.added_tags | length == 0
+      - _tag_associations_absent.removed_tags | length == 1
+
+- name: Attach tags to a VM - remove extra tags
+  vmware.vmware.tag_associations: &tag_associations_remove_extra_tags
+    state: present
+    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_type: VirtualMachine
+    remove_extra_tags: true
+    tags:
+      - "{{ test_tags_association[1] }}"
+  register: _tag_associations_present_remove_extra_tags
+
+- name: Attach tags to a VM - remove extra tags - idempotency
+  vmware.vmware.tag_associations: *tag_associations_remove_extra_tags
+  register: _tag_associations_present_remove_extra_tags_idem
+
+- name: Check tag associations output - remove extra tags
+  ansible.builtin.assert:
+    that:
+      - _tag_associations_present_remove_extra_tags is changed
+      - _tag_associations_present_remove_extra_tags_idem is not changed
+      - _tag_associations_present_remove_extra_tags.added_tags | length == 1
+      - _tag_associations_present_remove_extra_tags.removed_tags | length == 1
+
+- name: Attach tags to a VM - remove all tags
+  vmware.vmware.tag_associations: &tag_associations_remove_all
+    state: absent
+    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_type: VirtualMachine
+    remove_extra_tags: true
+    tags: []
+  register: _tag_associations_present_remove_all_tags
+
+- name: Attach tags to a VM - remove all tags - idempotency
+  vmware.vmware.tag_associations: *tag_associations_remove_all
+  register: _tag_associations_present_remove_all_tags_idem
+
+- name: Check tag associations output - remove all tags
+  ansible.builtin.assert:
+    that:
+      - _tag_associations_present_remove_all_tags is changed
+      - _tag_associations_present_remove_all_tags_idem is not changed
+      - _tag_associations_present_remove_all_tags.added_tags | length == 0
+      - _tag_associations_present_remove_all_tags.removed_tags | length == 1
+
+- name: Attach tag without validation
+  vmware.vmware.tag_associations: &tag_no_validation
+    state: present
+    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_type: VirtualMachine
+    validate_tags_before_attaching: false
+    tags:
+      - "{{ test_tags_association[2] }}"
+  register: _tag_associations_no_validation
+
+- name: Attach tag without validation - idempotency
+  vmware.vmware.tag_associations: *tag_no_validation
+  register: _tag_associations_no_validation_idem
+
+- name: Attach tag without validation - expect error
+  vmware.vmware.tag_associations:
+    state: present
+    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_type: VirtualMachine
+    validate_tags_before_attaching: true
+    tags:
+      - "{{ test_tags_association[2] }}"
+  register: _tag_associations_validation_error
+  ignore_errors: true
+
+- name: Check tag associations output - no validation
+  ansible.builtin.assert:
+    that:
+      - _tag_associations_no_validation is changed
+      - _tag_associations_no_validation_idem is changed
+      - _tag_associations_validation_error is ansible.builtin.failed
