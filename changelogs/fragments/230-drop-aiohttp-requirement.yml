@@ -1,2 +1,0 @@
-bugfixes:
-  - Drop incorrect requirement on aiohttp (https://github.com/ansible-collections/vmware.vmware/pull/230).

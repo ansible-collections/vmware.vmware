@@ -383,3 +383,36 @@ releases:
     - 219-fix-proxy-disable-vcsa.yml
     - 220-add-additional-requests-var-docs.yml
     release_date: '2025-08-12'
+  2.4.0:
+    changes:
+      bugfixes:
+      - Drop incorrect requirement on aiohttp (https://github.com/ansible-collections/vmware.vmware/pull/230).
+      - cluster_ha - Fix admission control policy not being updated when ac is disabled
+      - content_template - Fix typo in code for check mode that tried to access a
+        module param which doesn't exist.
+      - import_content_library_ovf - Fix large file import by using requests instead
+        of open_url. Requests allows for streaming uploads, instead of reading the
+        entire file into memory. (Fixes https://github.com/ansible-collections/vmware.vmware/issues/220)
+      - vm_powerstate - Ensure timeout option also applies to the shutdown-guest state
+      minor_changes:
+      - Add module for importing iso images to content library.
+      - Remove six imports from _facts.py and _vsphere_tasks.py due to new sanity
+        rules. Python 2 (already not supported) will fail to execute these files.
+      - tag_associations - Add module to manage tag associations with objects
+      - tag_categories - Add module to manage tag categories
+      - tags - Add module to manage tags
+      - vms - Add option to inventory plugin to gather cluster and ESXi host name
+        for VMs. (Fixes https://github.com/ansible-collections/vmware.vmware/issues/215)
+    fragments:
+    - 217-add-vm-stub-module.yml
+    - 222-add-cluster-var-to-vm-inven.yml
+    - 223-fix-powerstate-wait.yml
+    - 230-drop-aiohttp-requirement.yml
+    - 232-remove-six-imports.yml
+    - 233-fix-large-file-import.yml
+    - 237-fix-wrong-param-for-check.yml
+    - 244-fix-cluster-ac-policy.yml
+    - 246-add-import-content-library-iso.yml
+    - 247-add-modules-for-tags.yml.yml
+    - 251-add-tag-assoc-module.yml
+    release_date: '2025-10-06'

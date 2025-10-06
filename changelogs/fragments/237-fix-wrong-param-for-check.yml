@@ -1,3 +1,0 @@
----
-bugfixes:
-  - content_template - Fix typo in code for check mode that tried to access a module param which doesn't exist.
