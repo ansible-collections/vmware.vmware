@@ -1,4 +1,0 @@
----
-bugfixes:
-  - import_content_library_ovf - Fix large file import by using requests instead of open_url. Requests allows for streaming uploads, instead of reading the entire file into memory.
-    (Fixes https://github.com/ansible-collections/vmware.vmware/issues/220)
