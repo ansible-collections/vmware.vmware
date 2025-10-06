@@ -7,6 +7,10 @@ It implements a composite pattern where individual handlers track their own
 changes and the configurator aggregates the overall state.
 """
 
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
+    DeviceLinkError,
+)
+
 try:
     from pyVmomi import vim
 except ImportError:
@@ -149,7 +153,13 @@ class Configurator:
 
         objects_to_remove = []
         device_linked_handlers = [handler for handler in self.all_handlers if hasattr(handler, "vim_device_class")]
-        managed_device_types = tuple(handler.vim_device_class for handler in device_linked_handlers)
+        managed_device_types = tuple()
+        for handler in device_linked_handlers:
+            if isinstance(handler.vim_device_class, tuple):
+                managed_device_types += handler.vim_device_class
+            else:
+                managed_device_types += tuple([handler.vim_device_class])
+
         for device in self.vm.config.hardware.device:
             # some devices are not managed by this module (like VMCI),
             # so we should skip them instead of failing to link and removing them
@@ -168,7 +178,7 @@ class Configurator:
                     handler.link_vm_device(device)
                     failed_to_link = False
                     break
-                except Exception:
+                except DeviceLinkError:
                     continue
 
             if failed_to_link:
