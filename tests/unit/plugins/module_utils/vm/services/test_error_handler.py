@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, ANY
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._error_handler import (
     ErrorHandler,
@@ -102,8 +102,7 @@ class TestErrorHandler:
         mock_error.__str__ = Mock(return_value="Invalid configuration for device '1'")
         mock_device = Mock()
         mock_device.name_as_str = "Test Device"
-        mock_device._device = None
-        mock_device._spec = None
+        mock_device._live_object = None
 
         error_handler.device_tracker.translate_device_id_to_device.return_value = (
             mock_device
@@ -114,9 +113,11 @@ class TestErrorHandler:
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="Device Test Device (device 1 in the VM spec) has an invalid configuration. Please check the device configuration and try again.",
+            original_error=ANY,
+            violating_parameter=ANY,
             device_is_being_added=True,
             device_is_being_removed=False,
-            device_is_in_sync=True,
+            device_is_being_updated=False,
         )
 
     def test_fail_with_device_configuration_error_with_bus_number(self, error_handler):
@@ -128,8 +129,7 @@ class TestErrorHandler:
         del mock_device.name_as_str
         del mock_device.unitNumber
         mock_device.busNumber = 0
-        mock_device._device = False
-        mock_device._spec = None
+        mock_device._live_object = False
 
         error_handler.device_tracker.translate_device_id_to_device.return_value = (
             mock_device
@@ -140,9 +140,11 @@ class TestErrorHandler:
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="Device Mock (bus 0) (device 2 in the VM spec) has an invalid configuration. Please check the device configuration and try again.",
+            original_error=ANY,
+            violating_parameter=ANY,
             device_is_being_added=False,
             device_is_being_removed=True,
-            device_is_in_sync=True,
+            device_is_being_updated=False,
         )
 
     def test_fail_with_device_configuration_error_with_unit_number(self, error_handler):
@@ -154,8 +156,7 @@ class TestErrorHandler:
         del mock_device.name_as_str
         del mock_device.busNumber
         mock_device.unitNumber = 1
-        mock_device._device = None
-        mock_device._spec = False
+        mock_device._live_object = ''
 
         error_handler.device_tracker.translate_device_id_to_device.return_value = (
             mock_device
@@ -166,9 +167,11 @@ class TestErrorHandler:
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="Device Mock (unit number 1) (device 3 in the VM spec) has an invalid configuration. Please check the device configuration and try again.",
-            device_is_being_added=True,
+            original_error=ANY,
+            violating_parameter=ANY,
+            device_is_being_added=False,
             device_is_being_removed=False,
-            device_is_in_sync=False,
+            device_is_being_updated=True,
         )
 
     def test_fail_with_device_configuration_error_translate_failure(

@@ -45,7 +45,7 @@ class Disk(AbstractVsphereObject):
         _device: Existing VMware device object (when linked)
     """
 
-    def __init__(self, size, provisioning, mode, datastore, controller, unit_number, enable_sharing, raw_object=None):
+    def __init__(self, size, provisioning, mode, datastore, filename, controller, unit_number, enable_sharing, raw_object=None):
         """
         Initialize a new disk object.
 
@@ -69,6 +69,7 @@ class Disk(AbstractVsphereObject):
         self.enable_sharing = enable_sharing
         self.unit_number = unit_number
         self.datastore = datastore
+        self.filename = filename
         self.controller = controller
         # only connect parameter objects to the controllers
         if raw_object is None:
@@ -96,6 +97,7 @@ class Disk(AbstractVsphereObject):
             provisioning=provisioning,
             mode=live_device_spec.backing.diskMode,
             datastore=live_device_spec.backing.datastore,
+            filename=live_device_spec.backing.fileName,
             enable_sharing=live_device_spec.backing.sharing == "sharingMultiWriter",
             unit_number=live_device_spec.unitNumber,
             raw_object=live_device_spec,
@@ -182,11 +184,11 @@ class Disk(AbstractVsphereObject):
         elif self.provisioning == "eagerzeroedthick":
             disk_spec.device.backing.eagerlyScrub = True
 
+        if self.datastore is not None:
+            disk_spec.device.backing.fileName = "[%s]" % self.datastore.name
+
         if self.mode is None:
             disk_spec.device.backing.diskMode = "persistent"
-
-        if self.datastore is not None:
-            disk_spec.device.backing.datastore = self.datastore
 
         self._update_disk_spec_with_options(disk_spec)
         return disk_spec
@@ -210,6 +212,9 @@ class Disk(AbstractVsphereObject):
         disk_spec.device.capacityInKB = self.size
         if self.mode is not None:
             disk_spec.device.backing.diskMode = self.mode
+
+        if self.filename is not None:
+            disk_spec.device.backing.fileName = self.filename
 
         if self.enable_sharing is not None:
             disk_spec.device.backing.sharing = "sharingMultiWriter" if self.enable_sharing else "sharingNone"
@@ -238,6 +243,9 @@ class Disk(AbstractVsphereObject):
                 self.size, self._live_object.size
             )
             or self._compare_attributes_for_changes(
+                self.filename, self._live_object.filename
+            )
+            or self._compare_attributes_for_changes(
                 self.mode, self._live_object.mode
             )
             or self._compare_attributes_for_changes(
@@ -259,5 +267,6 @@ class Disk(AbstractVsphereObject):
             "mode": self.mode,
             "unit_number": self.unit_number,
             "datastore": getattr(self.datastore, "name", 'N/A'),
+            "filename": self.filename,
             "enable_sharing": self.enable_sharing,
         }

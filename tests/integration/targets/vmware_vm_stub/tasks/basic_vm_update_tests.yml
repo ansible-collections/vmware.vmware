@@ -11,11 +11,8 @@
     memory:
       size_mb: 1024
     disks:
-      - location: "{{ shared_storage_01 }}"
-        size: 10gb
+      - size: 10gb
         provisioning: thin
-        sharing: no_sharing
-        mode: persistent
         device_node: SCSI(0:0)
     scsi_controllers:
       - controller_type: buslogic
@@ -34,11 +31,8 @@
     memory:
       size_mb: 1024
     disks:
-      - location: "{{ shared_storage_01 }}"
-        size: 10gb
+      - size: 10gb
         provisioning: thin
-        sharing: no_sharing
-        mode: persistent
         device_node: SCSI(0:0)
     scsi_controllers:
       - controller_type: buslogic

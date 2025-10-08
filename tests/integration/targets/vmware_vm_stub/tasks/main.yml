@@ -37,11 +37,11 @@
     - name: Test cpu params
       ansible.builtin.include_tasks: cpu_params_tests.yml
 
-    # - name: Test memory params
-    #   ansible.builtin.include_tasks: mem_params_tests.yml
+    - name: Test memory params
+      ansible.builtin.include_tasks: mem_params_tests.yml
 
-    # - name: Test network adapter params
-    #   ansible.builtin.include_tasks: network_adapter_params_tests.yml
+    - name: Test network adapter params
+      ansible.builtin.include_tasks: network_adapter_params_tests.yml
 
     - name: Test disk params
       ansible.builtin.include_tasks: disk_params_tests.yml

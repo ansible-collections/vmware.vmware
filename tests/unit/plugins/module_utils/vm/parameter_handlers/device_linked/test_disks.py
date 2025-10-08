@@ -252,13 +252,13 @@ class TestDiskParameterHandler:
         assert disk_parameter_handler.change_set.are_changes_required() is False
 
         disk_parameter_handler.disks = [
-            Mock(_device=None),
+            Mock(_live_object=None),
             Mock(
-                _device=Mock(),
+                _live_object=Mock(),
                 differs_from_live_object=Mock(return_value=True),
             ),
             Mock(
-                _device=Mock(),
+                _live_object=Mock(),
                 differs_from_live_object=Mock(return_value=False),
             ),
         ]

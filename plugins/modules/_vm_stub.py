@@ -331,10 +331,18 @@ options:
                 required: false
             datastore:
                 description:
-                    - The datastore where this disk should be stored. The host that the VM is running on must have access to this datastore.
-                    - This can be a name or a MOID. If using a name, the first datastore that matches the name will be used.
+                    - The datastore or datastore cluster where this disk should be stored. The host that the VM is running on must have access to this datastore.
+                    - This can be a name or a MOID. If using a name, the first datastore (or cluster) that matches the name will be used.
                     - If this is not specified, the disk will be created on the same datastore as the VM.
                     - This is only used when creating a new disk. If it is specified for an existing disk, it is ignored.
+                    - Only one of O(disks[].datastore) or O(disks[].filename) can be set.
+                type: str
+                required: false
+            filename:
+                description:
+                    - The filename of an existing disk to attach to the VM. This file must already exist on the datastore.
+                    - An example filename is '[my-datastore-name] some/folder/path/My.vmdk'.
+                    - Only one of O(disks[].datastore) or O(disks[].filename) can be set.
                 type: str
                 required: false
 
@@ -785,7 +793,11 @@ def main():
                         device_node=dict(type='str', required=True),
                         enable_sharing=dict(type='bool', required=False),
                         datastore=dict(type='str', required=False),
-                    )
+                        filename=dict(type='str', required=False),
+                    ),
+                    mutually_exclusive=[
+                        ['datastore', 'filename'],
+                    ],
                 ),
                 scsi_controllers=dict(type='list', elements='dict', required=False),
                 nvme_controllers=dict(type='list', elements='dict', required=False),

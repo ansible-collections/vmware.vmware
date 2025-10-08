@@ -36,18 +36,15 @@
     moid: "{{ test_vm_moid }}"
   register: _lookup_vm_info
 
-- debug:
-    var: _lookup_vm_info
-
 - name: Check set disk params tasks
   ansible.builtin.assert:
     that:
       - _set_disk_params is ansible.builtin.changed
       - _set_disk_params_idempotent is not ansible.builtin.changed
       - vm_info.hw_datastores | length == 2
-      - _set_disk_params.objects_to_add | length == 2
-      - _set_disk_params.objects_to_remove | length == 0
-      - _set_disk_params.objects_to_update | length == 0
+      - _set_disk_params.changes.objects_to_add | length == 2
+      - _set_disk_params.changes.objects_to_remove | length == 0
+      - _set_disk_params.changes.objects_to_update | length == 0
   vars:
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
 
@@ -62,7 +59,6 @@
         device_node: SCSI(0:0)
       - size: 10gb
         provisioning: thick
-        datastore: "{{ shared_storage_01 }}"
         device_node: SCSI(0:1)
       - size: 20gb
         provisioning: eagerzeroedthick
@@ -82,9 +78,9 @@
       - size: 10gb
         device_node: SCSI(0:0)
       - size: 30gb
-        provisioning: thin
         device_node: SCSI(0:1)
       - size: 20gb
+        mode: persistent
         device_node: SCSI(0:2)
   register: _update_disk_params
 
@@ -98,9 +94,9 @@
       - _update_disk_params is ansible.builtin.changed
       - _update_disk_params_idem is not ansible.builtin.changed
       - _update_no_changes is not ansible.builtin.changed
-      - _update_disk_params.objects_to_add | length == 0
-      - _update_disk_params.objects_to_remove | length == 0
-      - _update_disk_params.objects_to_update | length == 1
+      - _update_disk_params.changes.objects_to_add | length == 0
+      - _update_disk_params.changes.objects_to_remove | length == 0
+      - _update_disk_params.changes.objects_to_update | length == 2
   vars:
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
 
@@ -163,5 +159,5 @@
     that:
       - _remove_disk is ansible.builtin.changed
       - _remove_disk_idem is not ansible.builtin.changed
-      - _remove_disk.objects_to_add | length == 0
-      - _remove_disk.objects_to_update | length == 0
+      - _remove_disk.changes.objects_to_add | length == 0
+      - _remove_disk.changes.objects_to_update | length == 0

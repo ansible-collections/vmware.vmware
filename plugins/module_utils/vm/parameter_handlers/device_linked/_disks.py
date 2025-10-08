@@ -133,6 +133,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                 provisioning=disk_param.get("provisioning"),
                 mode=disk_param.get("mode"),
                 datastore=datastore,
+                filename=disk_param.get("filename"),
                 enable_sharing=disk_param.get("enable_sharing"),
                 controller=controller,
                 unit_number=unit_number,

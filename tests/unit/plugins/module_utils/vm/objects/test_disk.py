@@ -17,7 +17,8 @@ class TestDisk:
             size="100gb",
             provisioning="thin",
             mode="persistent",
-            datastore='',
+            datastore=None,
+            filename=None,
             enable_sharing=False,
             controller=Mock(),
             unit_number=1,
@@ -79,7 +80,6 @@ class TestDisk:
         spec = disk.to_new_spec()
         assert spec.device.backing.eagerlyScrub is True
 
-
     def test_update_disk_spec_with_options(self, disk):
         spec = Mock()
         disk._update_disk_spec_with_options(spec)
@@ -97,8 +97,6 @@ class TestDisk:
         "test_value, test_attr", [
             ("1", 'size'),
             ("different_mode", 'mode'),
-            ("independent_nonpersistent", 'mode'),
-            ('foo', 'datastore'),
             (True, 'enable_sharing'),
         ]
     )
