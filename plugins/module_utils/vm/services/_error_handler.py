@@ -165,6 +165,6 @@ class ErrorHandler(AbstractService):
             original_error=str(error),
             violating_parameter=violating_parameter,
             device_is_being_added=bool(getattr(device, "_live_object", False) is None),
-            device_is_being_updated=bool(getattr(device, "_live_object", False) is not None),
-            device_is_being_removed=bool(getattr(device, "_live_object", False) is False)
+            device_is_being_updated=bool(getattr(device, "_live_object", None) is not None),
+            device_is_being_removed=bool(not hasattr(device, "_live_object"))
         )

@@ -129,7 +129,7 @@ class TestErrorHandler:
         del mock_device.name_as_str
         del mock_device.unitNumber
         mock_device.busNumber = 0
-        mock_device._live_object = False
+        del mock_device._live_object
 
         error_handler.device_tracker.translate_device_id_to_device.return_value = (
             mock_device
