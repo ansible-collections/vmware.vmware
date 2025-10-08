@@ -331,7 +331,8 @@ options:
                 required: false
             datastore:
                 description:
-                    - The datastore or datastore cluster where this disk should be stored. The host that the VM is running on must have access to this datastore.
+                    - The datastore or datastore cluster where this disk should be stored. The host that
+                      the VM is running on must have access to this datastore.
                     - This can be a name or a MOID. If using a name, the first datastore (or cluster) that matches the name will be used.
                     - If this is not specified, the disk will be created on the same datastore as the VM.
                     - This is only used when creating a new disk. If it is specified for an existing disk, it is ignored.
