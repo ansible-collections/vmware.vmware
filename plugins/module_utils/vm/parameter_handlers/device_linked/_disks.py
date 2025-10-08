@@ -38,11 +38,11 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
     node specifications and ensures that all required controllers exist.
 
     Managed Parameters:
-    - disks: List of disk configurations with size, backing, mode, and device_node
+    - disks: List of disk configurations with size, provisioning, mode, and device_node
 
     Each disk configuration includes:
     - size: Disk size (e.g., "100gb", "512mb")
-    - backing: Disk backing type ("thin", "thick", "eagerzeroedthick")
+    - provisioning: Disk provisioning type ("thin", "thick", "eagerzeroedthick")
     - mode: Disk mode ("persistent", "independent_persistent", etc.)
     - device_node: Controller assignment (e.g., "scsi:0:1", "sata:0:0")
 
@@ -54,7 +54,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
     HANDLER_NAME = "disk"
 
     def __init__(
-        self, error_handler, params, change_set, vm, device_tracker, controller_handlers, **kwargs
+        self, error_handler, params, change_set, vm, device_tracker, controller_handlers, vsphere_object_cache, **kwargs
     ):
         """
         Initialize the disk parameter handler.
@@ -66,12 +66,14 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             vm: VM object being configured (None for new VM creation)
             device_tracker: Service for device identification and error reporting
             controller_handlers (list): List of controller handlers for disk assignment
+            vsphere_object_cache: Service for caching vsphere objects
         """
         super().__init__(error_handler, params, change_set, vm, device_tracker)
         self._check_if_params_are_defined_by_user("disks", required_for_vm_creation=True)
 
         self.disks = []
         self.controller_handlers = controller_handlers
+        self.vsphere_object_cache = vsphere_object_cache
 
     @property
     def vim_device_class(self):
@@ -117,46 +119,98 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
         that all required controllers exist and are configured.
 
         Raises:
-            ValueError: For invalid device node specifications or parameter formats
-            Calls error_handler.fail_with_parameter_error() for missing controllers
+            Calls error_handler.fail_with_parameter_error() when errors are encountered.
 
         Side Effects:
             Populates self.disks with Disk objects representing desired configuration.
         """
         disk_params = self.params.get("disks") or []
         for disk_param in disk_params:
-            controller_type, controller_bus_number, unit_number = parse_device_node(
-                disk_param["device_node"]
-            )
-            for controller_handler in self.controller_handlers:
-                if controller_type == controller_handler.category:
-                    controller = controller_handler.controllers.get(
-                        controller_bus_number
-                    )
-                    break
-            else:
-                self.error_handler.fail_with_parameter_error(
-                    parameter_name="disks",
-                    message="No controller has been configured for device %s. You must specify this controller in the appropriate controller parameter."
-                    % disk_param["device_node"],
-                    details={
-                        "device_node": disk_param["device_node"],
-                        "available_controllers": [
-                            c.name_as_str
-                            for ch in self.controller_handlers
-                            for c in ch.controllers.values()
-                        ],
-                    },
-                )
-
+            controller, unit_number = self._parse_disk_param_controller(disk_param)
+            datastore = self._parse_disk_param_datastore(disk_param)
             disk = Disk(
                 size=disk_param.get("size"),
-                backing=disk_param.get("backing"),
+                provisioning=disk_param.get("provisioning"),
                 mode=disk_param.get("mode"),
+                datastore=datastore,
+                enable_sharing=disk_param.get("enable_sharing"),
                 controller=controller,
                 unit_number=unit_number,
             )
             self.disks.append(disk)
+
+    def _parse_disk_param_controller(self, disk_param):
+        """
+        Helper method to lookup the controller from the disk parameter.
+
+        Args:
+            disk_param (dict): The disk parameter to parse.
+
+        Returns:
+            vim.Device: The controller object.
+
+        Raises:
+            Raises an error if the controller parameter is not found.
+        """
+        try:
+            controller_type, controller_bus_number, unit_number = parse_device_node(
+                disk_param["device_node"]
+            )
+        except ValueError as e:
+            self.error_handler.fail_with_parameter_error(
+                parameter_name="disks",
+                message="Error parsing device node %s: %s" % (disk_param["device_node"], str(e)),
+                details={"device_node": disk_param["device_node"]},
+            )
+
+        for controller_handler in self.controller_handlers:
+            if controller_type == controller_handler.category:
+                controller = controller_handler.controllers.get(
+                    controller_bus_number
+                )
+                break
+        else:
+            self.error_handler.fail_with_parameter_error(
+                parameter_name="disks",
+                message="No controller has been configured for device %s. You must specify this controller in the appropriate controller parameter."
+                % disk_param["device_node"],
+                details={
+                    "device_node": disk_param["device_node"],
+                    "available_controllers": [
+                        c.name_as_str
+                        for ch in self.controller_handlers
+                        for c in ch.controllers.values()
+                    ],
+                },
+            )
+
+        return controller, unit_number
+
+    def _parse_disk_param_datastore(self, disk_param):
+        """
+        Helper method to lookup the datastore from the disk parameter.
+
+        Args:
+            disk_param (dict): The disk parameter to parse.
+
+        Returns:
+            vim.Datastore: The datastore object or None if no param was specified.
+
+        Raises:
+            Raises an error if the datastore parameter is supplied but none is found.
+        """
+        if disk_param.get("datastore") is None:
+            return None
+
+        datastore = self.vsphere_object_cache.get_datastore(disk_param["datastore"])
+        if datastore is None:
+            self.error_handler.fail_with_parameter_error(
+                parameter_name="disks",
+                message="Datastore %s not found." % disk_param["datastore"],
+                details={"datastore": disk_param["datastore"]},
+            )
+
+        return datastore
 
     def populate_config_spec_with_parameters(self, configspec):
         """
@@ -175,10 +229,10 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
         """
         for disk in self.change_set.objects_to_add:
             self.device_tracker.track_device_id_from_spec(disk)
-            configspec.deviceChange.append(disk.create_disk_spec())
+            configspec.deviceChange.append(disk.to_new_spec())
         for disk in self.change_set.objects_to_update:
             self.device_tracker.track_device_id_from_spec(disk)
-            configspec.deviceChange.append(disk.update_disk_spec())
+            configspec.deviceChange.append(disk.to_update_spec())
 
     def compare_live_config_with_desired_config(self):
         """
@@ -195,9 +249,9 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             Updates change_set with disk objects categorized by required actions.
         """
         for disk in self.disks:
-            if disk._device is None:
+            if disk._live_object is None:
                 self.change_set.objects_to_add.append(disk)
-            elif disk.linked_device_differs_from_config():
+            elif disk.differs_from_live_object():
                 self.change_set.objects_to_update.append(disk)
             else:
                 self.change_set.objects_in_sync.append(disk)
@@ -226,7 +280,16 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                 device.unitNumber == disk.unit_number
                 and device.controllerKey == disk.controller.key
             ):
-                disk._device = device
+                disk.link_corresponding_live_object(
+                    Disk.from_live_device_spec(device, disk.controller)
+                )
+
+                if disk.size < disk._live_object.size:
+                    self.error_handler.fail_with_parameter_error(
+                        parameter_name="disks",
+                        message="Disk size cannot be decreased.",
+                        details={"disk": disk.name_as_str, "live_size": disk._live_object.size, "desired_size": disk.size},
+                    )
                 return
 
         raise DeviceLinkError(

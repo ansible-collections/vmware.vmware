@@ -1,0 +1,167 @@
+---
+- name: Power off vm
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    moid: "{{ test_vm_moid }}"
+    state: powered-off
+
+- name: Set vm disk settings
+  vmware.vmware._vm_stub: &set-disk-params
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+    disks:
+      - size: 10gb
+        device_node: SCSI(0:0)
+      - size: 10gb
+        provisioning: thick
+        mode: independent_persistent
+        datastore: "{{ shared_storage_02 }}"
+        device_node: SCSI(0:1)
+      - size: 20gb
+        provisioning: eagerzeroedthick
+        mode: independent_nonpersistent
+        datastore: "{{ shared_storage_01 }}"
+        enable_sharing: false
+        device_node: SCSI(0:2)
+  register: _set_disk_params
+
+- name: Set vm disk settings - idempotence check
+  vmware.vmware._vm_stub: *set-disk-params
+  register: _set_disk_params_idempotent
+
+- name: Lookup VM disk Info
+  vmware.vmware.guest_info:
+    moid: "{{ test_vm_moid }}"
+  register: _lookup_vm_info
+
+- debug:
+    var: _lookup_vm_info
+
+- name: Check set disk params tasks
+  ansible.builtin.assert:
+    that:
+      - _set_disk_params is ansible.builtin.changed
+      - _set_disk_params_idempotent is not ansible.builtin.changed
+      - vm_info.hw_datastores | length == 2
+      - _set_disk_params.objects_to_add | length == 2
+      - _set_disk_params.objects_to_remove | length == 0
+      - _set_disk_params.objects_to_update | length == 0
+  vars:
+    vm_info: "{{ _lookup_vm_info.guests[0] }}"
+
+- name: Update vm disk settings - ignored settings
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+    disks:
+      - size: 10gb
+        device_node: SCSI(0:0)
+      - size: 10gb
+        provisioning: thick
+        datastore: "{{ shared_storage_01 }}"
+        device_node: SCSI(0:1)
+      - size: 20gb
+        provisioning: eagerzeroedthick
+        mode: independent_nonpersistent
+        datastore: "{{ shared_storage_01 }}"
+        enable_sharing: false
+        device_node: SCSI(0:2)
+  register: _update_no_changes
+
+- name: Update vm disk settings
+  vmware.vmware._vm_stub: &update-disk-params
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+    disks:
+      - size: 10gb
+        device_node: SCSI(0:0)
+      - size: 30gb
+        provisioning: thin
+        device_node: SCSI(0:1)
+      - size: 20gb
+        device_node: SCSI(0:2)
+  register: _update_disk_params
+
+- name: Update vm disk settings - idempotence check
+  vmware.vmware._vm_stub: *update-disk-params
+  register: _update_disk_params_idem
+
+- name: Check update disk params tasks
+  ansible.builtin.assert:
+    that:
+      - _update_disk_params is ansible.builtin.changed
+      - _update_disk_params_idem is not ansible.builtin.changed
+      - _update_no_changes is not ansible.builtin.changed
+      - _update_disk_params.objects_to_add | length == 0
+      - _update_disk_params.objects_to_remove | length == 0
+      - _update_disk_params.objects_to_update | length == 1
+  vars:
+    vm_info: "{{ _lookup_vm_info.guests[0] }}"
+
+- name: Decrease vm disk size - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+    disks:
+      - size: 10gb
+        device_node: SCSI(0:0)
+      - size: 1gb
+        device_node: SCSI(0:1)
+      - size: 20gb
+        device_node: SCSI(0:2)
+  register: _decrease_disk_size
+  ignore_errors: true
+
+- name: Use unknown datastore - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+    disks:
+      - size: 10gb
+        device_node: SCSI(0:0)
+      - size: 30gb
+        datastore: Not a real datastore
+        device_node: SCSI(0:1)
+      - size: 20gb
+        device_node: SCSI(0:2)
+  register: _unknown_datastore
+  ignore_errors: true
+
+- name: Check unknown datastore task
+  ansible.builtin.assert:
+    that:
+      - _unknown_datastore is ansible.builtin.failed
+      - _decrease_disk_size is ansible.builtin.failed
+
+- name: Remove disks
+  vmware.vmware._vm_stub: &remove-disk-params
+    name: "{{ test_vm_name }}"
+    scsi_controllers:
+      - controller_type: buslogic
+        bus_sharing: noSharing
+    disks:
+      - size: 10gb
+        device_node: SCSI(0:0)
+  register: _remove_disk
+
+- name: Remove disks - idempotence check
+  vmware.vmware._vm_stub: *remove-disk-params
+  register: _remove_disk_idem
+
+- name: Check remove disk tasks
+  ansible.builtin.assert:
+    that:
+      - _remove_disk is ansible.builtin.changed
+      - _remove_disk_idem is not ansible.builtin.changed
+      - _remove_disk.objects_to_add | length == 0
+      - _remove_disk.objects_to_update | length == 0

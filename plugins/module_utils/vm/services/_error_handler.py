@@ -152,12 +152,19 @@ class ErrorHandler(AbstractService):
                 device.unitNumber,
             )
 
+        if hasattr(device, "_to_module_output"):
+            violating_parameter = device._to_module_output()
+        else:
+            violating_parameter = dict()
+
         self.module.fail_json(
             msg=(
                 "Device %s (device %s in the VM spec) has an invalid configuration. Please check the device configuration and try again."
                 % (device_name, device_id)
             ),
-            device_is_being_added=bool(getattr(device, "_device", False) is None),
-            device_is_being_removed=bool(getattr(device, "_device", False) is False),
-            device_is_in_sync=bool(getattr(device, "_spec", False) is None),
+            original_error=str(error),
+            violating_parameter=violating_parameter,
+            device_is_being_added=bool(getattr(device, "_live_object", False) is None),
+            device_is_being_updated=bool(getattr(device, "_live_object", False) is not None),
+            device_is_being_removed=bool(getattr(device, "_live_object", False) is False)
         )
