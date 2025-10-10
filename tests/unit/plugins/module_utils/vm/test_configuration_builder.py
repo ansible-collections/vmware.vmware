@@ -140,15 +140,19 @@ class TestConfigurationBuilder:
             "ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder.ErrorHandler"
         ) as mock_error_handler_class, patch(
             "ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder.VmPlacement"
-        ) as mock_placement_class:
+        ) as mock_placement_class, patch(
+            "ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder.VsphereObjectCache"
+        ) as mock_vsphere_object_cache_class:
 
             mock_device_tracker = Mock()
             mock_error_handler = Mock()
             mock_placement = Mock()
+            mock_vsphere_object_cache = Mock()
 
             mock_device_tracker_class.return_value = mock_device_tracker
             mock_error_handler_class.return_value = mock_error_handler
             mock_placement_class.return_value = mock_placement
+            mock_vsphere_object_cache_class.return_value = mock_vsphere_object_cache
 
             builder = ConfigurationBuilder(mock_vm, mock_module, mock_registry)
 

@@ -1,3 +1,0 @@
----
-bugfixes:
-  - vm_powerstate - Ensure timeout option also applies to the shutdown-guest state

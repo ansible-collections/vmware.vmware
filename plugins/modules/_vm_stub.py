@@ -311,6 +311,49 @@ options:
                 type: str
                 required: true
 
+    cdroms:
+        description:
+            - CD-ROMs to manage on the VM.
+            - If a CD-ROM is not specified, it will be removed from the VM.
+        type: list
+        elements: dict
+        required: false
+        suboptions:
+            connect_at_power_on:
+                description:
+                    - Whether to connect the CD-ROM to the VM at power on.
+                    - This parameter is ignored if C(client_device_mode) is set.
+                    - If this is set to true, the CD-ROM will be connected to the VM at power on.
+                    - If this is set to false, the CD-ROM will remain disconnected from the VM at power on.
+                type: bool
+                required: false
+            iso_media_path:
+                description:
+                    - The ISO media path to use for the CD-ROM. This must be a valid datastore path that is accessible to the host of the VM.
+                    - One of O(cdroms[].iso_media_path) or O(cdroms[].client_device_mode) must be set.
+                    - A datastore path should be like '[my-datastore-name] some/folder/path/My.iso'.
+                    - A content library item can be referenced by its full datastore path only.
+                type: str
+                required: false
+            client_device_mode:
+                description:
+                    - The mode of the CD-ROM when acting as a client device.
+                    - One of O(cdroms[].iso_media_path) or O(cdroms[].client_device_mode) must be set.
+                    - If this is not set and the CD-ROM is being created, passthrough will be used.
+                    - C(passthrough) is similar to the 'client' mode in the community.vmware.vmware_guest module.
+                type: str
+                required: false
+                choices: [ passthrough, emulated ]
+            device_node:
+                description:
+                    - Specifies the controller, bus, and unit number of the CD-ROM. Only SATA and IDE controllers are supported.
+                    - The format of this value should be like 'SATA(0:0)' or 'IDE(0:1)'.
+                    - CD-ROM controllers referenced in this attribute must be configured in the corresponding controller section.
+                      The exception to this are the two IDE controllers, which are automatically added to the VM.
+                    - The device node should be unique across all other devices (CD-ROMs, disks, etc.) on the VM.
+                type: str
+                required: true
+
     scsi_controllers:
         description:
             - SCSI device controllers to manage on the VM.
@@ -318,6 +361,7 @@ options:
             - You may only specify four SCSI controllers per VM.
             - Controllers are added to the VM in the order they are specified. For example, the first controller specified
               will be assigned bus 0, the second controller will be assigned bus 1, etc.
+            - Valid unit numbers for SCSI controllers are 0-15, except for the reserved unit 7.
         type: list
         elements: dict
         required: false
@@ -343,6 +387,7 @@ options:
             - You may only specify four NVMe controllers per VM.
             - Controllers are added to the VM in the order they are specified. For example, the first controller specified
               will be assigned bus 0, the second controller will be assigned bus 1, etc.
+            - Valid unit numbers for NVMe controllers are 0-63.
         type: list
         elements: dict
         required: false
@@ -359,10 +404,12 @@ options:
             - The number of SATA controllers to add to the VM.
             - Since there are no configurable options for SATA controllers, you just need to specify the number of controllers to have on the VM.
             - You may only specify four SATA controllers per VM.
+            - Valid unit numbers for SATA controllers are 0-29.
         type: int
         required: false
         default: 0
 
+    # TODO: add support for USB controllers
     usb_controllers:
         description:
             - USB device controllers to manage on the VM.
@@ -380,6 +427,87 @@ options:
                 type: str
                 choices: [ usb2, usb3 ]
                 default: usb3
+
+    network_adapter_remove_unmanaged:
+        description:
+            - Whether to remove network adapters that are not specified in the O(network_adapters) parameter.
+            - If this is set to true, any network adapters that are not specified in the O(network_adapters) parameter will be removed.
+            - If this is set to false, the module will ignore network adapters beyond those listed in the O(network_adapters) parameter.
+        type: bool
+        required: false
+        default: false
+    network_adapters:
+        description:
+            - A list of network adapters to manage on the VM.
+            - Due to limitations in the VMware API, you cannot change the type of a network adapter once it has been created using
+              this module.
+            - The network adapter types defined in this parameter must match the types of any existing
+              adapters on the VM, in the same order that they are specified. For example, the first adapter in this list
+              must have the same type as the first adapter attached to the VM (if one exists).
+            - Any adapters in this list that do not exist on the VM will be created.
+            - Portgroups must already exist; this module does not create them.
+        type: list
+        elements: dict
+        required: false
+        suboptions:
+            network:
+                description:
+                    - The name or MOID of the standard or distributed virtual portgroup for this interface.
+                    - The portgroup must already exist.
+                type: str
+                required: true
+            adapter_type:
+                description:
+                    - The type of the adapter.
+                    - This is required when creating a new adapter.
+                    - Note that this cannot be changed once the adapter has been created.
+                type: str
+                required: false
+                choices: [ e1000, e1000e, pcnet32, vmxnet2, vmxnet3, sriov ]
+            connected:
+                type: bool
+                description:
+                    - Indicates whether the NIC is currently connected.
+                required: false
+            connect_at_power_on:
+                type: bool
+                description:
+                    - Specifies whether or not to connect the network adapter when the virtual machine starts.
+                required: false
+            shares:
+                type: int
+                description:
+                    - The percentage of network resources allocated to the network adapter.
+                    - If setting this, it should be between 0 and 100.
+                    - Only one of O(network_adapters[].shares) or O(network_adapters[].shares_level) can be set.
+                required: false
+            shares_level:
+                type: str
+                description:
+                    - The pre-defined allocation level of network resources for the network adapter.
+                    - Only one of O(network_adapters[].shares) or O(network_adapters[].shares_level) can be set.
+                required: false
+                choices: [ low, normal, high ]
+            reservation:
+                type: int
+                description:
+                    - The amount of network resources reserved for the network adapter.
+                    - The unit is Mbps.
+                required: false
+            limit:
+                type: int
+                description:
+                    - The maximum amount of network resources the network adapter can use.
+                    - The unit is Mbps.
+                required: false
+            mac_address:
+                type: str
+                description:
+                    - The MAC address of the network adapter.
+                    - If you want to use a generated or automatic mac address, set this to 'automatic'.
+                    - If not specified and this is a new adapter, a random MAC address will be assigned.
+                    - If not specified and this is an existing adapter, the MAC address will not be changed.
+                required: false
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
@@ -427,6 +555,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked import (
     _disks,
     _controllers,
+    _network_adapters,
+    _cdroms,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
     ConfigurationRegistry,
@@ -453,6 +583,8 @@ class VmModule(ModulePyvmomiBase):
         self.configuration_registry.register_vm_aware_handler(_memory.MemoryParameterHandler)
 
         self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_network_adapters.NetworkAdapterParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_cdroms.CdromParameterHandler)
 
         self.configuration_registry.register_controller_handler(_controllers.ScsiControllerParameterHandler)
         self.configuration_registry.register_controller_handler(_controllers.NvmeControllerParameterHandler)
@@ -605,11 +737,39 @@ def main():
                     ],
                 ),
                 disks=dict(type='list', elements='dict', required=False),
+                cdroms=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        device_node=dict(type='str', required=True),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        iso_media_path=dict(type='str', required=False),
+                        client_device_mode=dict(type='str', required=False, choices=['passthrough', 'emulated']),
+                    ),
+                    mutually_exclusive=[
+                        ['iso_media_path', 'client_device_mode'],
+                    ],
+                ),
                 scsi_controllers=dict(type='list', elements='dict', required=False),
                 nvme_controllers=dict(type='list', elements='dict', required=False),
                 sata_controller_count=dict(type='int', required=False, default=0),
                 usb_controllers=dict(type='list', elements='dict', required=False),
 
+                network_adapter_remove_unmanaged=dict(type='bool', required=False, default=False),
+                network_adapters=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        network=dict(type='str', required=True),
+                        adapter_type=dict(type='str', required=False, choices=['e1000', 'e1000e', 'pcnet32', 'vmxnet2', 'vmxnet3', 'sriov']),
+                        connected=dict(type='bool', required=False),
+                        connect_at_power_on=dict(type='bool', required=False),
+                        shares=dict(type='int', required=False),
+                        shares_level=dict(type='str', required=False, choices=['low', 'normal', 'high']),
+                        reservation=dict(type='int', required=False),
+                        limit=dict(type='int', required=False),
+                        mac_address=dict(type='str', required=False),
+                    ),
+                    mutually_exclusive=[
+                        ['shares', 'shares_level']
+                    ],
+                ),
                 timeout=dict(type='int', default=600),
             )
         },

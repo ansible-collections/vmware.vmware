@@ -109,28 +109,50 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-tag_changes:
+vsphere_tags:
     description:
-        - Comparison of the tags before and after the changes.
-        - Before is empty if the tag was created.
-        - After is empty if the tag was deleted.
+        - Dictionary of tags that were managed by this module. This includes any tags that the user specified, even
+          if nothing was changed.
+        - The key is the tag ID, the value is a dictionary with tag information.
+    returned: always
+    type: dict
+    sample: {
+        "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL": {
+            "category_id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
+            "name": "tag1",
+            "description": "Description of tag1",
+            "id": "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL"
+        },
+    }
+
+created_tags:
+    description:
+        - List of tag IDs that were created by this module.
+        - The list is empty if no tags were created.
     returned: always
     type: list
     sample: [
-        {
-            "before": {
-                "category_id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
-                "name": "tag1",
-                "description": "Description of tag1",
-                "id": "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL"
-            },
-            "after": {
-                "category_id": "urn:vmomi:InventoryServiceCategory:00000000-0000-0000-0000-000000000000:GLOBAL",
-                "name": "tag1",
-                "description": "Updated description of tag1",
-                "id": "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL"
-            }
-        },
+        "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL",
+    ]
+
+updated_tags:
+    description:
+        - List of tag IDs that were updated by this module.
+        - The list is empty if no tags were updated.
+    returned: always
+    type: list
+    sample: [
+        "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL",
+    ]
+
+removed_tags:
+    description:
+        - List of tag IDs that were removed by this module.
+        - The list is empty if no tags were removed.
+    returned: always
+    type: list
+    sample: [
+        "urn:vmomi:InventoryServiceTag:00000000-0000-0000-0000-21b1f07e73cf:GLOBAL",
     ]
 """
 
@@ -148,7 +170,7 @@ except ImportError:
     pass
 
 
-class TagChange:
+class TagDiff:
     """
     A data class representing a change to a tag.
 
@@ -165,30 +187,54 @@ class TagChange:
             param_def = dict()
         self.remote_def = remote_def
         self.param_def = param_def
+        self._is_update = None
 
-    def to_module_output(self):
+    def get_tag_id(self):
+        if self.remote_def is not None:
+            # Tag already exists and is being updated or removed, so we can use the remote def ID
+            return self.remote_def.id
+
+        if self.param_def.get("id") is not None:
+            # Tag didn't exist and we created it, so we have the new ID available
+            return self.param_def.get("id")
+
+        return None
+
+    def is_creation(self):
+        return self.param_def != dict() and self.remote_def is None
+
+    def is_update(self):
+        if self._is_update is None:
+            if self.param_def == dict() or self.remote_def is None:
+                self._is_update = False
+            elif self.param_def.get("description") is not None and self.param_def.get("description") != self.remote_def.description:
+                self._is_update = True
+            elif self.param_def.get("name") is not None and self.param_def.get("name") != self.remote_def.name:
+                self._is_update = True
+            else:
+                self._is_update = False
+
+        return self._is_update
+
+    def is_removal(self):
+        return self.param_def == dict() and self.remote_def is not None
+
+    def new_tag_state_to_module_output(self):
         """
-        Convert the change to a dictionary format suitable for Ansible module output.
+        Convert the future/new state of a tag to a dictionary format suitable for Ansible module output.
 
         Returns:
-            dict: Dictionary with 'before' and 'after' keys containing tag information
+            dict: Dictionary with 'id', 'name', 'category_id', and 'description' keys containing tag information
         """
-        output = dict(before=dict(), after=dict())
-        if self.remote_def:
-            output["before"] = {
-                "name": getattr(self.remote_def, "name", None),
-                "description": getattr(self.remote_def, "description", None),
-                "id": getattr(self.remote_def, "id", None),
-                "category_id": getattr(self.remote_def, "category_id", None),
-            }
-        if self.param_def:
-            output["after"] = {
-                "name": self.param_def.get("name") or output["before"].get("name"),
-                "id": self.param_def.get("id") or output["before"].get("id"),
-                "category_id": self.param_def.get("category_id") or output["before"].get("category_id"),
-                "description": self.param_def.get("description") or output["before"].get("description"),
-            }
-        return output
+        if self.is_removal():
+            return dict()
+
+        return dict(
+            id=self.get_tag_id(),
+            name=self.param_def.get("name") or self.remote_def.name,
+            category_id=self.param_def.get("category_id") or self.remote_def.category_id,
+            description=self.param_def.get("description") or self.remote_def.description,
+        )
 
 
 class VmwareTagModule(ModuleRestBase):
@@ -308,10 +354,10 @@ class VmwareTagModule(ModuleRestBase):
                 return None
 
         if tag_name is None:
-            raise Exception(msg="Either tag_id or tag_name must be provided")
+            raise Exception("Either tag_id or tag_name must be provided")
 
         if category_id is None:
-            raise Exception(msg="Either category_id or category_name must be provided when looking up a tag by name")
+            raise Exception("Either category_id or category_name must be provided when looking up a tag by name")
 
         if tag_name in self._tag_names_to_tags_cache:
             return self._tag_names_to_tags_cache[tag_name]
@@ -334,23 +380,15 @@ class VmwareTagModule(ModuleRestBase):
 
         return None
 
-    def _does_tag_need_update(self, tag_param, remote_tag):
-        if remote_tag is None:
-            return True
-        if tag_param.get("description") is not None and tag_param.get("description") != remote_tag.description:
-            return True
-        if tag_param.get("name") is not None and tag_param.get("name") != remote_tag.name:
-            return True
-        return False
-
-    def determine_tag_changes(self):
+    def determine_tag_diffs(self):
         """
-        Analyze the current state of tags and determine what changes need to be made.
+        Analyze the current state of tags and create diff objects for each tag,
+        indicating what needs to be created, updated, or deleted.
 
         Returns:
-            list[TagChange]: List of tag changes to be applied
+            list[TagDiff]: List of tag diffs to be applied
         """
-        tag_changes = []
+        tag_diffs = []
         for tag_param in self.module.params["tags"]:
             try:
                 tag_category_id = (
@@ -375,45 +413,46 @@ class VmwareTagModule(ModuleRestBase):
                             msg="A tag name is required when creating a new tag",
                             violating_tag_param=tag_param,
                         )
-                    tag_changes.append(TagChange(remote_def=None, param_def=param_def))
-                elif self._does_tag_need_update(param_def, remote_tag):
-                    tag_changes.append(TagChange(remote_def=remote_tag, param_def=param_def))
+                    tag_diffs.append(TagDiff(remote_def=None, param_def=param_def))
+                else:
+                    tag_diffs.append(TagDiff(remote_def=remote_tag, param_def=param_def))
+
             else:
                 if remote_tag is not None:
-                    tag_changes.append(TagChange(remote_def=remote_tag, param_def=None))
-        return tag_changes
+                    tag_diffs.append(TagDiff(remote_def=remote_tag, param_def=None))
+        return tag_diffs
 
-    def apply_tag_changes(self, tag_changes):
+    def apply_tag_changes(self, tag_diffs):
         """
         Apply the determined tag changes to the VMware environment.
 
         Args:
-            tag_changes (list[TagChange]): List of changes to apply
+            tag_diffs (list[TagDiff]): List of tag diffs to process
 
         Operations performed:
             - Create: Creates new tags with specified name, category, and description
             - Update: Updates existing tag descriptions
             - Delete: Removes tags from the system
         """
-        for tag_change in tag_changes:
-            if tag_change.remote_def is None:
+        for tag_diff in tag_diffs:
+            if tag_diff.is_creation():
                 new_tag_id = self._create_tag(
-                    name=tag_change.param_def["name"],
-                    category_id=tag_change.param_def["category_id"],
-                    description=tag_change.param_def.get("description"),
+                    name=tag_diff.param_def["name"],
+                    category_id=tag_diff.param_def["category_id"],
+                    description=tag_diff.param_def.get("description"),
                 )
-                tag_change.param_def["id"] = new_tag_id
-            elif not tag_change.param_def:
+                tag_diff.param_def["id"] = new_tag_id
+            elif tag_diff.is_removal():
                 try:
-                    self.tag_service.delete(tag_change.remote_def.id)
+                    self.tag_service.delete(tag_diff.remote_def.id)
                 except NotFound:
-                    raise Exception(f"Tag {tag_change.remote_def.id} not found")
-            else:
+                    raise Exception("Tag %s not found" % tag_diff.remote_def.id)
+            elif tag_diff.is_update():
                 update_spec = self.tag_service.UpdateSpec(
-                    name=tag_change.param_def.get("name"),
-                    description=tag_change.param_def.get("description"),
+                    name=tag_diff.param_def.get("name"),
+                    description=tag_diff.param_def.get("description"),
                 )
-                self.tag_service.update(tag_change.remote_def.id, update_spec)
+                self.tag_service.update(tag_diff.remote_def.id, update_spec)
 
     def _create_tag(self, name, category_id, description=None):
         """
@@ -458,20 +497,38 @@ def main():
 
     module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
 
-    result = dict(changed=False, tag_changes=[])
+    result = dict(
+        changed=False,
+        vsphere_tags=dict(),
+        removed_tags=[],
+        created_tags=[],
+        updated_tags=[],
+    )
 
     vmware_tag = VmwareTagModule(module)
-    tag_changes = vmware_tag.determine_tag_changes()
-    if not tag_changes:
+    tag_diffs = vmware_tag.determine_tag_diffs()
+    result["vsphere_tags"] = {
+        tag_diff.get_tag_id(): tag_diff.new_tag_state_to_module_output()
+        for tag_diff in tag_diffs
+        if tag_diff.get_tag_id() is not None and not tag_diff.is_removal()
+    }
+    if not tag_diffs:
         module.exit_json(**result)
 
     if not module.check_mode:
-        vmware_tag.apply_tag_changes(tag_changes)
+        vmware_tag.apply_tag_changes(tag_diffs)
 
-    result["changed"] = True
-    result["tag_changes"] = [
-        tag_change.to_module_output() for tag_change in tag_changes
-    ]
+    for tag_diff in tag_diffs:
+        if tag_diff.is_creation():
+            result["created_tags"].append(tag_diff.get_tag_id())
+            result["changed"] = True
+        elif tag_diff.is_update():
+            result["updated_tags"].append(tag_diff.get_tag_id())
+            result["changed"] = True
+        elif tag_diff.is_removal():
+            result["removed_tags"].append(tag_diff.get_tag_id())
+            result["changed"] = True
+
     module.exit_json(**result)
 
 
