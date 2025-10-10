@@ -201,19 +201,6 @@ options:
                     - Whether to enable Virtual CPU Performance Monitoring Counters (VPMC).
                 type: bool
                 required: false
-            # TODO:these should not be with the cpu parameters, but not sure where to put them yet
-            # enable_hardware_assisted_virtualization:
-            #     description:
-            #         - Whether to enable hardware assisted virtualization.
-            #     type: bool
-            #     required: false
-            #     default: false
-            # enable_io_mmu:
-            #     description:
-            #         - Whether to enable IO Memory Management Unit (IO MMU).
-            #     type: bool
-            #     required: false
-            #     default: false
 
     memory:
         description:
@@ -509,6 +496,82 @@ options:
                     - If not specified and this is an existing adapter, the MAC address will not be changed.
                 required: false
 
+    vm_options:
+        description:
+            - Advanced and miscellaneous options for the VM, including things like BIOS settings,
+              remote console settings, and encryption settings.
+        type: dict
+        required: false
+        suboptions:
+            maximum_remote_console_sessions:
+                description:
+                    - The maximum number of remote console sessions that can be established to the VM.
+                    - Must be a value between 0 and 40
+                type: int
+                required: false
+            enable_encryption:
+                description:
+                    - Whether to enable encryption for the VM.
+                    - If this is set to false, you can still modify O(vm_options.encrypted_vmotion) and O(vm_options.encrypted_fault_tolerance),
+                      but those settings will have no effect on the VM.
+                    - Encryption cannot be enabled if secure boot (O(vm_options.enable_secure_boot)) is also enabled.
+                    - Encryption can only be enabled when boot firmware (O(vm_options.boot_firmware)) is EFI.
+                type: bool
+                required: false
+            encrypted_vmotion:
+                description:
+                    - Modify how the VM can be migrated using vMotion, if encryption is enabled.
+                    - C(disabled) means do not use encrypted vMotion, even if available.
+                    - C(opportunistic) means use encrypted vMotion if source and destination hosts support it, fall back to unencrypted vMotion otherwise.
+                    - C(required) means allow only encrypted vMotion. If the source or destination host does not support vMotion
+                      encryption, do not allow the vMotion to occur.
+                type: str
+                required: false
+                choices: [ disabled, opportunistic, required ]
+            encrypted_fault_tolerance:
+                description:
+                    - Modify how the VM's Fault Tolerance (FT) replication is encrypted, if encryption is enabled.
+                    - C(disabled) means do not turn on encrypted Fault Tolerance (FT) replication logging.
+                    - C(opportunistic) means turn on encryption only if both sides are capable.
+                      The VM is allowed to move to an older host that does not support encrypted FT logging.
+                    - C(required) means run on primary/secondary FT hosts such that both hosts support encrypted FT logging.
+                type: str
+                required: false
+                choices: [ disabled, opportunistic, required ]
+            enable_hardware_assisted_virtualization:
+                description:
+                    - Whether to enable hardware assisted virtualization.
+                    - If true, the VM will be able to use hardware assisted, or nested, virtualization.
+                type: bool
+                required: false
+            enable_io_mmu:
+                description:
+                    - Whether to enable IO Memory Management Unit (IO MMU).
+                type: bool
+                required: false
+            enable_virtual_based_security:
+                description:
+                    - Whether to enable the Virtualization Based Security feature for Windows on at least ESXi 6.7, hardware version 14.
+                    - Supported Guest OS are Windows 10 64 bit, Windows Server 2016, Windows Server 2019 and later.
+                    - The firmware of virtual machine must be EFI and secure boot must be enabled.
+                    - Virtualization Based Security depends on nested virtualization and Intel Virtualization Technology for Directed I/O.
+                type: bool
+                required: false
+            enable_secure_boot:
+                description:
+                    - Whether to enable secure boot for the VM.
+                    - Only (U)EFI boot firmware is supported.
+                    - Secure boot cannot be enabled if encryption (O(vm_options.enable_encryption)) is also enabled.
+                type: bool
+                required: false
+            boot_firmware:
+                description:
+                    - The boot firmware to use for the VM.
+                    - Encryption (O(vm_options.enable_encryption)) can only be enabled when boot firmware is EFI.
+                type: str
+                required: false
+                choices: [ bios, efi ]
+
 extends_documentation_fragment:
     - vmware.vmware.base_options
 '''
@@ -551,6 +614,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     _metadata,
     _cpu,
     _memory,
+    _vm_options,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked import (
     _disks,
@@ -581,6 +645,7 @@ class VmModule(ModulePyvmomiBase):
         self.configuration_registry.register_vm_aware_handler(_metadata.MetadataParameterHandler)
         self.configuration_registry.register_vm_aware_handler(_cpu.CpuParameterHandler)
         self.configuration_registry.register_vm_aware_handler(_memory.MemoryParameterHandler)
+        self.configuration_registry.register_vm_aware_handler(_vm_options.VmOptionsParameterHandler)
 
         self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
         self.configuration_registry.register_device_linked_handler(_network_adapters.NetworkAdapterParameterHandler)
@@ -769,6 +834,27 @@ def main():
                     mutually_exclusive=[
                         ['shares', 'shares_level']
                     ],
+                ),
+
+                vm_options=dict(
+                    type='dict', required=False, options=dict(
+                        maximum_remote_console_sessions=dict(type='int', required=False),
+                        enable_encryption=dict(type='bool', required=False),
+                        encrypted_vmotion=dict(type='str', required=False, choices=['disabled', 'opportunistic', 'required']),
+                        encrypted_fault_tolerance=dict(
+                            type='str', required=False,
+                            choices=[
+                                'disabled',
+                                'opportunistic',
+                                'required',
+                            ]
+                        ),
+                        enable_hardware_assisted_virtualization=dict(type='bool', required=False),
+                        enable_io_mmu=dict(type='bool', required=False),
+                        enable_virtual_based_security=dict(type='bool', required=False),
+                        enable_secure_boot=dict(type='bool', required=False),
+                        boot_firmware=dict(type='str', required=False, choices=['bios', 'efi']),
+                    ),
                 ),
                 timeout=dict(type='int', default=600),
             )
