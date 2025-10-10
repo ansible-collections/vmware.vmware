@@ -87,6 +87,23 @@ EXAMPLES = r'''
         selectattr('type', 'equalto', 'iso') |
         map(attribute='name')
       }}
+
+
+- name: "Get info about item file storage"
+  register: kickstart_item_info
+  vmware.vmware.content_library_item_info:
+    library_item_name: "os-installer.iso"
+
+- name: Attach an installer ISO image to a guest VM
+  vars:
+    kickstart_iso_uri: "{{ kickstart_item_info['library_item_info'][0]['storage'][0]['storage_uris'][0] | ansible.builtin.regex_search('^(.*)\\?','\\1') | first }}"
+  vmware.vmware_rest.vcenter_vm_hardware_cdrom:
+    vm: "{{ created_vm.id }}"
+    type: IDE
+    start_connected: true
+    backing:
+      iso_file: "{{ kickstart_iso_uri }}"
+      type: ISO_FILE
 '''
 
 RETURN = r'''
