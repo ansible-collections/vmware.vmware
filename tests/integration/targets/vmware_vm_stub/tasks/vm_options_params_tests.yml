@@ -8,6 +8,8 @@
 - name: Set vm options settings
   vmware.vmware._vm_stub: &set-vm-options-params
     name: "{{ test_vm_name }}"
+    memory:
+      enable_hot_add: false
     vm_options:
       maximum_remote_console_sessions: 4
       enable_encryption: true

@@ -138,7 +138,7 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
 
     def _verify_parameter_constraints_enable_encryption(self):
         """
-        Verify that the secure boot and encryption are not enabled at the same time.
+        Verify that encryption can be enabled.
         """
         enable_encryption = self._vm_option_params.get("enable_encryption")
         if enable_encryption is None and self.vm is not None:
@@ -155,6 +155,21 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
                     "enable_encryption": enable_encryption,
                     "enable_secure_boot": secure_boot,
                     "boot_firmware": firmware,
+                }
+            )
+
+        memory_params = self.params.get("memory") or dict()
+        memory_hot_add = memory_params.get("enable_hot_add")
+        if memory_hot_add is None and self.vm is not None:
+            memory_hot_add = self.vm.config.memoryHotAddEnabled
+
+        if enable_encryption and memory_hot_add:
+            self.error_handler.fail_with_parameter_error(
+                parameter_name="enable_encryption",
+                message="Encryption cannot be enabled if memory hot-add is enabled.",
+                details={
+                    "enable_encryption": enable_encryption,
+                    "memory.enable_hot_add": memory_hot_add,
                 }
             )
 

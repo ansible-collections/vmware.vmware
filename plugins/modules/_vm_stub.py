@@ -233,6 +233,7 @@ options:
             enable_hot_add:
                 description:
                     - Whether to enable memory hot add. This allows you to add memory to the VM while it is powered on.
+                    - Encryption (O(vm_options.enable_encryption)) cannot be enabled if memory hot-add is enabled.
                 type: bool
                 required: false
             reservation:
@@ -516,6 +517,7 @@ options:
                       but those settings will have no effect on the VM.
                     - Encryption cannot be enabled if secure boot (O(vm_options.enable_secure_boot)) is also enabled.
                     - Encryption can only be enabled when boot firmware (O(vm_options.boot_firmware)) is EFI.
+                    - Encryption cannot be enabled if memory hot-add (O(memory.enable_hot_add)) is enabled.
                 type: bool
                 required: false
             encrypted_vmotion:
