@@ -165,11 +165,15 @@ options:
             enable_hot_add:
                 description:
                     - Whether to enable CPU hot add. This allows you to add CPUs to the VM while it is powered on.
+                    - Encryption (O(vm_options.enable_encryption)) cannot be enabled if CPU hot-add is enabled.
+                      You must disable CPU hot-add in a separate module call before you can attempt to enable encryption.
                 type: bool
                 required: false
             enable_hot_remove:
                 description:
                     - Whether to enable CPU hot remove. This allows you to remove CPUs from the VM while it is powered on.
+                    - Encryption (O(vm_options.enable_encryption)) cannot be enabled if CPU hot-remove is enabled.
+                      You must disable CPU hot-remove in a separate module call before you can attempt to enable encryption.
                 type: bool
                 required: false
             reservation:
@@ -233,7 +237,8 @@ options:
             enable_hot_add:
                 description:
                     - Whether to enable memory hot add. This allows you to add memory to the VM while it is powered on.
-                    - Encryption (O(vm_options.enable_encryption)) cannot be enabled if memory hot-add is enabled.
+                    - Encryption (O(vm_options.enable_encryption)) cannot be enabled if memory hot-add is enable.
+                      You must disable memory hot-add in a separate module call before you can attempt to enable encryption.
                 type: bool
                 required: false
             reservation:
@@ -515,9 +520,10 @@ options:
                     - Whether to enable encryption for the VM.
                     - If this is set to false, you can still modify O(vm_options.encrypted_vmotion) and O(vm_options.encrypted_fault_tolerance),
                       but those settings will have no effect on the VM.
-                    - Encryption cannot be enabled if secure boot (O(vm_options.enable_secure_boot)) is also enabled.
-                    - Encryption can only be enabled when boot firmware (O(vm_options.boot_firmware)) is EFI.
-                    - Encryption cannot be enabled if memory hot-add (O(memory.enable_hot_add)) is enabled.
+                    - Secure boot (O(vm_options.enable_secure_boot)) is not compatible with encryption.
+                    - Encryption requires EFI boot firmware (O(vm_options.boot_firmware)).
+                    - Memory hot-add (O(memory.enable_hot_add)) and CPU hot-add/hot-remove (O(cpu.enable_hot_add) or O(cpu.enable_hot_remove))
+                      must be disabled before you can enable encryption.
                 type: bool
                 required: false
             encrypted_vmotion:
@@ -591,9 +597,6 @@ vm:
         moid: vm-79828,
         name: test-d9c1-vm
 '''
-
-import re
-
 try:
     from pyVmomi import vim, vmodl
 except ImportError:
@@ -746,8 +749,8 @@ class VmModule(ModulePyvmomiBase):
                 timeout=self.params['timeout']
             )
         except TaskError as e:
-            if re.search(r'Invalid [\w]+ for device', str(e)):
-                self.error_handler.fail_with_device_configuration_error(error=e)
+            if isinstance(e.parent_error, vim.fault.InvalidVmConfig):
+                self.error_handler.fail_with_vm_config_error(error=e.parent_error, message=str(e))
             else:
                 self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:

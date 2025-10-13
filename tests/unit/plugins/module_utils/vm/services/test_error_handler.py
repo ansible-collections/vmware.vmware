@@ -110,7 +110,7 @@ class TestErrorHandler:
         )
 
         with pytest.raises(AnsibleFailJson) as exc_info:
-            error_handler.fail_with_device_configuration_error(mock_error)
+            error_handler._fail_with_device_configuration_error(mock_error)
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="Device Test Device (device 1 in the VM spec) has an invalid configuration. Please check the device configuration and try again.",
@@ -136,7 +136,7 @@ class TestErrorHandler:
         )
 
         with pytest.raises(AnsibleFailJson) as exc_info:
-            error_handler.fail_with_device_configuration_error(mock_error)
+            error_handler._fail_with_device_configuration_error(mock_error)
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="Device Mock (bus 0) (device 2 in the VM spec) has an invalid configuration. Please check the device configuration and try again.",
@@ -162,7 +162,7 @@ class TestErrorHandler:
         )
 
         with pytest.raises(AnsibleFailJson) as exc_info:
-            error_handler.fail_with_device_configuration_error(mock_error)
+            error_handler._fail_with_device_configuration_error(mock_error)
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="Device Mock (unit number 1) (device 3 in the VM spec) has an invalid configuration. Please check the device configuration and try again.",
@@ -183,7 +183,7 @@ class TestErrorHandler:
         )
 
         with pytest.raises(AnsibleFailJson) as exc_info:
-            error_handler.fail_with_device_configuration_error(mock_error)
+            error_handler._fail_with_device_configuration_error(mock_error)
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="A device has an invalid configuration, so the VM cannot be configured.",
@@ -200,7 +200,7 @@ class TestErrorHandler:
         )
 
         with pytest.raises(AnsibleFailJson) as exc_info:
-            error_handler.fail_with_device_configuration_error(mock_error)
+            error_handler._fail_with_device_configuration_error(mock_error)
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="A device has an invalid configuration, so the VM cannot be configured.",
@@ -215,7 +215,7 @@ class TestErrorHandler:
         mock_error.__str__ = Mock(return_value="Generic configuration error")
 
         with pytest.raises(AnsibleFailJson) as exc_info:
-            error_handler.fail_with_device_configuration_error(mock_error)
+            error_handler._fail_with_device_configuration_error(mock_error)
 
         error_handler.module.fail_json.assert_called_once_with(
             msg="A device has an invalid configuration, so the VM cannot be configured.",

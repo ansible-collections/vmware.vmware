@@ -84,27 +84,49 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         self._verify_parameter_constraints_virt_based_security()
         self._verify_parameter_constraints_enable_encryption()
 
-    def __get_effective_boot_firmware(self):
+    def __get_effective_boot_firmware(self, return_both=False):
         """
         Helper function to return the effective boot firmware value.
         This is the value that would exist after the module completes.
         """
         firmware = self._vm_option_params.get("boot_firmware")
-        if firmware is None and self.vm is not None:
-            firmware = self.vm.config.firmware
+        if self.vm is not None:
+            vm_firmware = self.vm.config.firmware
+        else:
+            vm_firmware = None
 
-        return firmware
+        if return_both:
+            return firmware, vm_firmware
+        elif firmware is not None:
+            return firmware
+        else:
+            return vm_firmware
 
-    def __get_effective_secure_boot(self):
+    def __get_effective_secure_boot(self, return_both=False):
         """
         Helper function to return the effective secure boot value.
         This is the value that would exist after the module completes.
         """
         secure_boot = self._vm_option_params.get("enable_secure_boot")
-        if secure_boot is None and self.vm is not None:
-            secure_boot = getattr(self.vm.config.bootOptions, 'efiSecureBootEnabled')
+        if self.vm is not None:
+            vm_secure_boot = getattr(self.vm.config.bootOptions, 'efiSecureBootEnabled')
+        else:
+            vm_secure_boot = None
 
-        return secure_boot
+        if return_both:
+            return secure_boot, vm_secure_boot
+        elif secure_boot is not None:
+            return secure_boot
+        else:
+            return vm_secure_boot
+
+    def _verify_parameter_constraints_enable_secure_boot(self):
+        """
+        Verify that secure boot can be enabled.
+        """
+        enable_secure_boot = self._vm_option_params.get("enable_secure_boot")
+        if enable_secure_boot is None and self.vm is not None:
+            enable_secure_boot = getattr(self.vm.config.bootOptions, 'efiSecureBootEnabled')
 
     def _verify_parameter_constraints_virt_based_security(self):
         """
@@ -158,18 +180,35 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
                 }
             )
 
-        memory_params = self.params.get("memory") or dict()
-        memory_hot_add = memory_params.get("enable_hot_add")
-        if memory_hot_add is None and self.vm is not None:
-            memory_hot_add = self.vm.config.memoryHotAddEnabled
+        self.__verify_parameter_constraints_enable_encryption_hot_add(enable_encryption=enable_encryption)
 
-        if enable_encryption and memory_hot_add:
+    def __verify_parameter_constraints_enable_encryption_hot_add(self, enable_encryption):
+        """
+        Verify that encryption can be enabled if memory or CPU hot-add/hot-remove is disabled.
+
+        Unlike firmware and secure boot, hot-add/hot-remove cannot be disabled in the same module call as
+        encryption is enabled. Vsphere doesn't like it for whatever reason.
+        """
+        memory_params = self.params.get("memory") or dict()
+        param_memory_hot_add = memory_params.get("enable_hot_add")
+        vm_memory_hot_add = False if self.vm is None else self.vm.config.memoryHotAddEnabled
+
+        cpu_params = self.params.get("cpu") or dict()
+        param_cpu_hot_add = cpu_params.get("enable_hot_add")
+        vm_cpu_hot_add = False if self.vm is None else self.vm.config.cpuHotAddEnabled
+
+        param_cpu_hot_remove = cpu_params.get("enable_hot_remove")
+        vm_cpu_hot_remove = False if self.vm is None else self.vm.config.cpuHotRemoveEnabled
+
+        if enable_encryption and (param_memory_hot_add or vm_memory_hot_add or param_cpu_hot_add or vm_cpu_hot_add):
             self.error_handler.fail_with_parameter_error(
                 parameter_name="enable_encryption",
-                message="Encryption cannot be enabled if memory hot-add is enabled.",
+                message="Encryption cannot be enabled if memory or CPU hot-add is currently enabled or is being enabled.",
                 details={
                     "enable_encryption": enable_encryption,
-                    "memory.enable_hot_add": memory_hot_add,
+                    "memory.enable_hot_add": param_memory_hot_add or vm_memory_hot_add,
+                    "cpu.enable_hot_add": param_cpu_hot_add or vm_cpu_hot_add,
+                    "cpu.enable_hot_remove": param_cpu_hot_remove or vm_cpu_hot_remove,
                 }
             )
 

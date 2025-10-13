@@ -6,6 +6,15 @@ and reporting for the VM configuration system. It provides standardized error
 messages and integrates with Ansible's module failure mechanisms.
 """
 
+import re
+
+try:
+    from pyVmomi import vim
+except ImportError:
+    pass
+
+from ansible.module_utils.common.text.converters import to_native
+
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._abstract import (
     AbstractService,
 )
@@ -116,16 +125,40 @@ class ErrorHandler(AbstractService):
         """
         self._generic_fail_json(parameter_name, message, "PARAMETER_ERROR", details)
 
-    def fail_with_device_configuration_error(self, error):
+    def fail_with_vm_config_error(self, error, message=""):
+        """
+        Fail due to invalid VM configuration.
+        """
+        try:
+            if isinstance(error, vim.fault.InvalidDeviceSpec) or re.search(r'Invalid [\w]+ for device', str(message)):
+                self._fail_with_device_configuration_error(error)
+            else:
+                self.module.fail_json(
+                    msg=str(error.faultMessage[0].message),
+                    error_code="VM_CONFIG_ERROR",
+                    error_type=str(type(error)),
+                    error_raw=to_native(error),
+                )
+        except Exception as excep:
+            self._generic_fail_json(
+                parameter_name="",
+                message="Failed to configure VM: %s" % str(error),
+                error_code="UNKNOWN_VM_CONFIG_ERROR",
+                details=dict(
+                    error_type=str(type(error)),
+                    handler_exception=str(type(excep)),
+                    handler_exception_message=str(excep)
+                )
+            )
+
+    # TODO fix this, seems outdated and not sure if it will actually work
+    def _fail_with_device_configuration_error(self, error):
         """
         Fail due to invalid device configuration.
 
         This method handles VMware API errors related to device configuration
         problems. It attempts to parse device IDs from error messages and
         provide detailed information about which device caused the problem.
-
-        Note: This method currently has a dependency on DeviceTracker.translate_device_id_to_device()
-        which is not available in this class. This is a known architectural issue.
 
         Args:
             error: VMware API error object containing device configuration details

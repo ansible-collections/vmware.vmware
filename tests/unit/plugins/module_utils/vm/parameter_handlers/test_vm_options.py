@@ -73,12 +73,13 @@ class TestVmOptionsParameterHandler:
             (True, 'bios', False, None, 1),
             (True, 'efi', False, None, 0),
             (True, 'efi', True, None, 1),
-            (True, None, None, Mock(), 1),
+            (True, None, None, Mock(), 2),
         ],
     )
     def test_verify_parameter_constraints_enable_encryption(
         self, vm_options_parameter_handler, enable_encryption, firmware, secure_boot, vm, expected_error_count
     ):
+        vm_options_parameter_handler.params = {'memory': {'enable_hot_add': False}, 'cpu': {'enable_hot_add': False}}
         vm_options_parameter_handler._vm_option_params = {
             'enable_encryption': enable_encryption,
             'boot_firmware': firmware,

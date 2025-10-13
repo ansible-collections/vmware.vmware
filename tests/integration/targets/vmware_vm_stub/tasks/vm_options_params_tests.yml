@@ -8,16 +8,17 @@
 - name: Set vm options settings
   vmware.vmware._vm_stub: &set-vm-options-params
     name: "{{ test_vm_name }}"
-    memory:
-      enable_hot_add: false
     vm_options:
       maximum_remote_console_sessions: 4
-      enable_encryption: true
+      enable_io_mmu: true
+      # keep encryption disabled for now
+      enable_encryption: false
       encrypted_vmotion: "opportunistic"
       encrypted_fault_tolerance: "opportunistic"
-      enable_hardware_assisted_virtualization: false
-      enable_io_mmu: true
-      enable_secure_boot: false
+      # enable vbs
+      enable_virtual_based_security: true
+      enable_hardware_assisted_virtualization: true
+      enable_secure_boot: true
       boot_firmware: efi
   register: _set_vm_options_params
 
@@ -35,12 +36,12 @@
   vmware.vmware._vm_stub: &update-vm-options-params
     name: "{{ test_vm_name }}"
     vm_options:
-      enable_encryption: false
       encrypted_vmotion: "required"
-      enable_hardware_assisted_virtualization: true
-      enable_virtual_based_security: true
-      enable_secure_boot: true
-      boot_firmware: efi
+      # disable vbs
+      enable_virtual_based_security: false
+      enable_hardware_assisted_virtualization: false
+      enable_secure_boot: false
+      boot_firmware: bios
   register: _update_vm_options_params
 
 - name: Update vm options settings - idempotence check
@@ -53,7 +54,39 @@
       - _update_vm_options_params is ansible.builtin.changed
       - _update_vm_options_params_idempotent is not ansible.builtin.changed
 
-- name: Set invalid console session count- expect failure
+- name: Enable encryption - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    memory:
+      enable_hot_add: false
+    cpu:
+      enable_hot_add: false
+      enable_hot_remove: false
+    vm_options:
+      enable_encryption: true
+      enable_secure_boot: false
+      boot_firmware: efi
+  register: _invalid_encryption_and_hot_add_failure
+  ignore_errors: true
+
+- name: Disable hot-add/hot-remove for encryption
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    memory:
+      enable_hot_add: false
+    cpu:
+      enable_hot_add: false
+      enable_hot_remove: false
+
+- name: Enable encryption
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    vm_options:
+      enable_encryption: true
+      enable_secure_boot: false
+      boot_firmware: efi
+
+- name: Set invalid console session count - expect failure
   vmware.vmware._vm_stub:
     name: "{{ test_vm_name }}"
     vm_options:
@@ -91,6 +124,7 @@
 - name: Check invalid tests
   ansible.builtin.assert:
     that:
+      - _invalid_encryption_and_hot_add_failure is ansible.builtin.failed
       - _invalid_console_session_count is ansible.builtin.failed
       - _invalid_virtualization_based_security is ansible.builtin.failed
       - _invalid_encryption_and_secure_boot is ansible.builtin.failed
