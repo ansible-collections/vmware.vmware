@@ -16,10 +16,8 @@
         memory:
           size_mb: 1024
         disks:
-          - location: "{{ shared_storage_01 }}"
-            size: 10gb
+          - size: 10gb
             provisioning: thin
-            sharing: no_sharing
             mode: persistent
             device_node: SCSI(0:0)
         scsi_controllers:
@@ -47,6 +45,9 @@
 
     - name: Test network adapter params
       ansible.builtin.include_tasks: network_adapter_params_tests.yml
+
+    - name: Test disk params
+      ansible.builtin.include_tasks: disk_params_tests.yml
 
     - name: Test cdrom params
       ansible.builtin.include_tasks: cdrom_params_tests.yml

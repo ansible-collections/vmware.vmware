@@ -1,4 +1,3 @@
 ---
-#test_vm_name: "{{ tiny_prefix }}-vm-stub"
-test_vm_name: "test_vm_stub"
+test_vm_name: "{{ tiny_prefix }}-vm-stub"
 test_iso_path: "[eco-nfs-datastore-iso] custom_esxi_8.iso"

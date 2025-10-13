@@ -279,22 +279,32 @@ options:
                     - The size of the disk.
                     - The format of this value should be like '100gb' or '100mb'.
                     - Supported units are 'kb', 'mb', 'gb', 'tb'.
+                    - Note that disk size cannot be decreased at any time.
                 type: str
                 required: true
             provisioning:
                 description:
-                    - The provisioning type of the disk.
+                    - The provisioning type for the disk.
+                    - This is only used when creating a new disk. If it is specified for an existing disk, it is ignored.
                 type: str
                 required: false
                 choices: [ thin, thick, eagerzeroedthick ]
-                default: thin
             mode:
                 description:
-                    - The mode of the disk.
+                    - The mode of the disk. Supported values are dependent on the disk storage location.
+                    - C(persistent) is supported by all disk backing types. In the UI, this is called "dependent".
+                    - C(persistent) means changes are immediately and permanently written to the virtual disk.
+                    - C(independent_persistent) means the same as C(persistent), but not affected by snapshots.
+                    - C(independent_nonpersistent) means the same as C(nonpersistent), but not affected by snapshots.
+                    - C(append) means changes are not written to the virtual disk.
+                    - C(nonpersistent) means changes  to virtual disk are made to a redo log and discarded at power off.
+                    - C(undoable) means changes are made to a redo log, but you are given the option to commit or undo.
+                    - If this is not specified, new disks will be created with C(persistent) mode.
+                    - If you chose a mode that is not supported by the disk storage type, the module
+                      will fail with an incompatible device backing error.
                 type: str
                 required: false
-                choices: [ persistent, independent_persistent, independent_nonpersistent ]
-                default: persistent
+                choices: [ persistent, independent_persistent, independent_nonpersistent, append, nonpersistent, undoable ]
             device_node:
                 description:
                     - Specifies the controller, bus, and unit number of the disk.
@@ -303,6 +313,32 @@ options:
                       The exception to this are the two IDE controllers, which are automatically added to the VM.
                 type: str
                 required: true
+            enable_sharing:
+                description:
+                    - If true, disk sharing will be enabled. This enabled multi-writer mode, allowing multiple VMs to write to the same disk.
+                    - If false, disk sharing will be disabled. This will cause the disk to be exclusive to the VM.
+                    - If this is not specified, new disks will be created with sharing disabled.
+                    - Sharing depends on the storage backing type. If your storage does not support sharing, enabling sharing will cause
+                      the module to fail with an incompatible device backing error.
+                type: bool
+                required: false
+            datastore:
+                description:
+                    - The datastore or datastore cluster where this disk should be stored. The host that
+                      the VM is running on must have access to this datastore.
+                    - This can be a name or a MOID. If using a name, the first datastore (or cluster) that matches the name will be used.
+                    - If this is not specified, the disk will be created on the same datastore as the VM.
+                    - This is only used when creating a new disk. If it is specified for an existing disk, it is ignored.
+                    - Only one of O(disks[].datastore) or O(disks[].filename) can be set.
+                type: str
+                required: false
+            filename:
+                description:
+                    - The filename of an existing disk to attach to the VM. This file must already exist on the datastore.
+                    - An example filename is '[my-datastore-name] some/folder/path/My.vmdk'.
+                    - Only one of O(disks[].datastore) or O(disks[].filename) can be set.
+                type: str
+                required: false
 
     cdroms:
         description:
@@ -806,7 +842,6 @@ def main():
                         ['reservation', 'reserve_all_memory'],
                     ],
                 ),
-                disks=dict(type='list', elements='dict', required=False),
                 cdroms=dict(
                     type='list', elements='dict', required=False, options=dict(
                         device_node=dict(type='str', required=True),
@@ -816,6 +851,23 @@ def main():
                     ),
                     mutually_exclusive=[
                         ['iso_media_path', 'client_device_mode'],
+                    ],
+                ),
+                disks=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        size=dict(type='str', required=True),
+                        provisioning=dict(type='str', required=False, choices=['thin', 'thick', 'eagerzeroedthick']),
+                        mode=dict(type='str', required=False, choices=[
+                            'persistent', 'independent_persistent', 'independent_nonpersistent',
+                            'append', 'nonpersistent', 'undoable'
+                        ]),
+                        device_node=dict(type='str', required=True),
+                        enable_sharing=dict(type='bool', required=False),
+                        datastore=dict(type='str', required=False),
+                        filename=dict(type='str', required=False),
+                    ),
+                    mutually_exclusive=[
+                        ['datastore', 'filename'],
                     ],
                 ),
                 scsi_controllers=dict(type='list', elements='dict', required=False),
