@@ -42,6 +42,9 @@
     - name: Test memory params
       ansible.builtin.include_tasks: mem_params_tests.yml
 
+    - name: Test vm options params
+      ansible.builtin.include_tasks: vm_options_params_tests.yml
+
     - name: Test network adapter params
       ansible.builtin.include_tasks: network_adapter_params_tests.yml
 

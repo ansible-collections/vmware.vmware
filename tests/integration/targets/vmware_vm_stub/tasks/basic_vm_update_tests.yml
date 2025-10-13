@@ -98,9 +98,6 @@
       - _update_vm_minimal_idempotent is not ansible.builtin.changed
       - vm_info.moid == _update_vm_minimal.vm.moid
       - vm_info.hw_name == _update_vm_minimal.vm.name
-      # TODO: not sure where the bug is, but guest_id is null in the vm info
-      # but confirmed changed in UI
-      # - vm_info.hw_guest_id == 'amazonlinux3_64Guest'
       - (_update_vm_minimal.changes.changed_parameters.keys() | length) == 1
   vars:
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
