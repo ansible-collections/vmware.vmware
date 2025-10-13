@@ -404,10 +404,16 @@ options:
             bus_sharing:
                 description:
                     - The bus sharing mode of the controller.
+                    - If this is not set, noSharing will be used for new controllers.
                 type: str
                 required: false
                 choices: [ noSharing, exclusive ]
-                default: noSharing
+            enable_hot_add_remove:
+                description:
+                    - Whether to enable hot add/remove for the controller.
+                    - If this is not set, hot add/remove will be enabled for new controllers.
+                type: bool
+                required: false
 
     nvme_controllers:
         description:
@@ -424,9 +430,9 @@ options:
             bus_sharing:
                 description:
                     - The bus sharing mode of the controller.
+                    - If this is not set, noSharing will be used for new controllers.
                 type: str
                 choices: [ noSharing, exclusive ]
-                default: noSharing
 
     sata_controller_count:
         description:

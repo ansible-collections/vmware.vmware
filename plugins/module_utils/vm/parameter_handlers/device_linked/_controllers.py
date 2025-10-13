@@ -129,12 +129,12 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
         for controller in self.change_set.objects_to_add:
             self.device_tracker.track_device_id_from_spec(controller)
             configspec.deviceChange.append(
-                controller.create_controller_spec(edit=False)
+                controller.to_new_spec()
             )
 
         for controller in self.change_set.objects_to_update:
             self.device_tracker.track_device_id_from_spec(controller)
-            configspec.deviceChange.append(controller.create_controller_spec(edit=True))
+            configspec.deviceChange.append(controller.to_update_spec())
 
     def compare_live_config_with_desired_config(self):
         """
@@ -151,9 +151,9 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
             Updates change_set with controller objects categorized by required actions.
         """
         for controller in self.controllers.values():
-            if controller._device is None:
+            if controller._live_object is None:
                 self.change_set.objects_to_add.append(controller)
-            elif controller.linked_device_differs_from_config():
+            elif controller.differs_from_live_object():
                 self.change_set.objects_to_update.append(controller)
             else:
                 self.change_set.objects_in_sync.append(controller)
@@ -179,7 +179,9 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
         """
         for controller in self.controllers.values():
             if device.busNumber == controller.bus_number:
-                controller._device = device
+                controller.link_corresponding_live_object(
+                    controller.from_live_device_spec(device)
+                )
                 return
 
         raise DeviceLinkError(
