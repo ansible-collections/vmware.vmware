@@ -17,10 +17,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers import (
-    ScsiController,
-    SataController,
-    NvmeController,
-    IdeController,
+    ScsiDeviceController,
+    BasicDeviceController,
+    ShareableDeviceController
 )
 
 try:
@@ -237,7 +236,7 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
         """
         Get the VMware device class for this controller type.
         """
-        return vim.vm.device.VirtualSCSIController
+        return tuple(self.device_type_to_sub_class_map.values())
 
     @property
     def device_type_to_sub_class_map(self):
@@ -263,11 +262,18 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with ScsiController objects representing
             the desired SCSI controller configuration.
         """
-        for index, controller_param_def in enumerate(self.params.get("scsi_controllers")):
-            self.controllers[index] = ScsiController(
-                bus_number=index,
+        for controller_param_def in self.params.get("scsi_controllers"):
+            bus_number = controller_param_def.get("bus_number")
+            if bus_number >= self.max_count:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="scsi_controllers",
+                    message="Bus number %s is out of range for SCSI controllers. Valid bus numbers are 0 to %s, inclusive." % (bus_number, self.max_count - 1),
+                    details={"violating_param": controller_param_def},
+                )
+            self.controllers[bus_number] = ScsiDeviceController(
+                bus_number=bus_number,
                 device_type=controller_param_def.get("controller_type"),
-                device_class=self.device_type_to_sub_class_map[
+                vim_device_class=self.device_type_to_sub_class_map[
                     controller_param_def.get("controller_type")
                 ],
                 bus_sharing=controller_param_def.get("bus_sharing"),
@@ -303,7 +309,7 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
             device_tracker: Service for device identification and error reporting
         """
         super().__init__(error_handler, params, change_set, vm, device_tracker, "sata")
-        self._check_if_params_are_defined_by_user("sata_controller_count", required_for_vm_creation=False)
+        self._check_if_params_are_defined_by_user("sata_controllers", required_for_vm_creation=False)
 
     @property
     def vim_device_class(self):
@@ -324,8 +330,18 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with SataController objects representing
             the desired SATA controller configuration.
         """
-        for index in range(self.params.get("sata_controller_count", 0)):
-            self.controllers[index] = SataController(bus_number=index)
+        for sata_controller_param in self.params.get("sata_controllers"):
+            bus_number = sata_controller_param.get("bus_number")
+            if bus_number >= self.max_count:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="sata_controllers",
+                    message="Bus number %s is out of range for SATA controllers. Valid bus numbers are 0 to %s, inclusive." % (bus_number, self.max_count - 1),
+                    details={"violating_param": sata_controller_param},
+                )
+            self.controllers[bus_number] = BasicDeviceController(
+                bus_number=bus_number,
+                vim_device_class=self.vim_device_class,
+            )
 
 
 class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -381,9 +397,18 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
             Populates self.controllers with NvmeController objects representing
             the desired NVMe controller configuration.
         """
-        for index, controller_param_def in enumerate(self.params.get("nvme_controllers")):
-            self.controllers[index] = NvmeController(
-                bus_number=index, bus_sharing=controller_param_def.get("bus_sharing")
+        for controller_param_def in self.params.get("nvme_controllers"):
+            bus_number = controller_param_def.get("bus_number")
+            if bus_number >= self.max_count:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="nvme_controllers",
+                    message="Bus number %s is out of range for NVMe controllers. Valid bus numbers are 0 to %s, inclusive." % (bus_number, self.max_count - 1),
+                    details={"violating_param": controller_param_def},
+                )
+            self.controllers[bus_number] = ShareableDeviceController(
+                bus_number=bus_number,
+                vim_device_class=self.vim_device_class,
+                bus_sharing=controller_param_def.get("bus_sharing")
             )
 
 
@@ -417,7 +442,7 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
             vm: VM object being configured (None for new VM creation)
         """
         super().__init__(
-            error_handler, params, change_set, vm, device_tracker, "ide", max_count=2
+            error_handler, params, change_set, vm, device_tracker, "ide", max_count=0
         )
 
     @property
@@ -440,4 +465,4 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
             the default IDE controllers (bus numbers 0 and 1).
         """
         for index in range(self.max_count):
-            self.controllers[index] = IdeController(bus_number=index)
+            self.controllers[index] = BasicDeviceController(bus_number=index, vim_device_class=self.vim_device_class)

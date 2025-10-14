@@ -395,25 +395,25 @@ options:
         elements: dict
         required: false
         suboptions:
+            bus_number:
+                description:
+                    - The bus number of the SCSI controller. This is used to identify the controller and is required.
+                    - Valid bus numbers are 0 to 3, inclusive.
+                type: int
+                required: true
             controller_type:
                 description:
                     - The type of the controller.
                 type: str
                 required: true
-                choices: [ buslogic, lsiLogic, lsiLogicSAS, pvscsi, virtio ]
+                choices: [ lsilogic, paravirtual, buslogic, lsilogicsas ]
             bus_sharing:
                 description:
                     - The bus sharing mode of the controller.
                     - If this is not set, noSharing will be used for new controllers.
                 type: str
                 required: false
-                choices: [ noSharing, exclusive ]
-            enable_hot_add_remove:
-                description:
-                    - Whether to enable hot add/remove for the controller.
-                    - If this is not set, hot add/remove will be enabled for new controllers.
-                type: bool
-                required: false
+                choices: [ noSharing, virtualSharing, physicalSharing ]
 
     nvme_controllers:
         description:
@@ -427,6 +427,12 @@ options:
         elements: dict
         required: false
         suboptions:
+            bus_number:
+                description:
+                    - The bus number of the NVMe controller. This is used to identify the controller and is required.
+                    - Valid bus numbers are 0 to 3, inclusive.
+                type: int
+                required: true
             bus_sharing:
                 description:
                     - The bus sharing mode of the controller.
@@ -434,15 +440,21 @@ options:
                 type: str
                 choices: [ noSharing, exclusive ]
 
-    sata_controller_count:
+    sata_controllers:
         description:
-            - The number of SATA controllers to add to the VM.
-            - Since there are no configurable options for SATA controllers, you just need to specify the number of controllers to have on the VM.
+            - SATA controllers to manage on the VM.
             - You may only specify four SATA controllers per VM.
             - Valid unit numbers for SATA controllers are 0-29.
-        type: int
+        type: list
+        elements: dict
         required: false
-        default: 0
+        suboptions:
+            bus_number:
+                description:
+                    - The bus number of the SATA controller. This is used to identify the controller and is required.
+                    - Valid bus numbers are 0 to 3, inclusive.
+                type: int
+                required: true
 
     # TODO: add support for USB controllers
     usb_controllers:
@@ -876,9 +888,25 @@ def main():
                         ['datastore', 'filename'],
                     ],
                 ),
-                scsi_controllers=dict(type='list', elements='dict', required=False),
-                nvme_controllers=dict(type='list', elements='dict', required=False),
-                sata_controller_count=dict(type='int', required=False, default=0),
+
+                scsi_controllers=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        bus_number=dict(type='int', required=True),
+                        controller_type=dict(type='str', required=True, choices=['lsilogic', 'paravirtual', 'buslogic', 'lsilogicsas']),
+                        bus_sharing=dict(type='str', required=False, choices=['noSharing', 'virtualSharing', 'physicalSharing'])
+                    )
+                ),
+                nvme_controllers=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        bus_number=dict(type='int', required=True),
+                        bus_sharing=dict(type='str', required=False, choices=['noSharing', 'exclusive']),
+                    )
+                ),
+                sata_controllers=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        bus_number=dict(type='int', required=True),
+                    )
+                ),
                 usb_controllers=dict(type='list', elements='dict', required=False),
 
                 network_adapter_remove_unmanaged=dict(type='bool', required=False, default=False),

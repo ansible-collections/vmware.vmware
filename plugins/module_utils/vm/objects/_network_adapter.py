@@ -327,7 +327,7 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
 
     def _to_module_output(self):
         """
-        Generate module output friendly representation of the DVS portgroup.
+        Generate module output friendly representation of this object.
 
         Returns:
             dict
@@ -402,7 +402,7 @@ class NsxtNetworkAdapterPortgroup(NetworkAdapterPortgroup):
 
     def _to_module_output(self):
         """
-        Generate module output friendly representation of the NSX-T portgroup.
+        Generate module output friendly representation of this object.
 
         Returns:
             dict
@@ -480,7 +480,7 @@ class VswitchNetworkAdapterPortgroup(NetworkAdapterPortgroup):
 
     def _to_module_output(self):
         """
-        Generate module output friendly representation of the vSwitch portgroup.
+        Generate module output friendly representation of this object.
 
         Returns:
             dict
@@ -700,7 +700,7 @@ class NetworkAdapter(AbstractVsphereObject):
 
     def _to_module_output(self):
         """
-        Generate module output friendly representation of the network adapter.
+        Generate module output friendly representation of this object.
 
         Returns:
             dict
