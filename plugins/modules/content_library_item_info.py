@@ -87,6 +87,27 @@ EXAMPLES = r'''
         selectattr('type', 'equalto', 'iso') |
         map(attribute='name')
       }}
+
+# You can attach an ISO file to a guest VM
+- name: "Get info about item file storage"
+  register: kickstart_item_info
+  vmware.vmware.content_library_item_info:
+    library_item_name: "os-installer.iso"
+
+- name: Attach an installer ISO image to a guest VM
+  vars:
+    kickstart_iso_uri: >-
+      {{
+        kickstart_item_info['library_item_info'][0]['storage'][0]['storage_uris'][0] |
+        ansible.builtin.regex_search('^(.*)\?','\1') | first
+      }}
+  vmware.vmware_rest.vcenter_vm_hardware_cdrom:
+    vm: "{{ created_vm.id }}"
+    type: IDE
+    start_connected: true
+    backing:
+      iso_file: "{{ kickstart_iso_uri }}"
+      type: ISO_FILE
 '''
 
 RETURN = r'''
@@ -111,7 +132,26 @@ library_item_info:
             "security_compliance": true,
             "size": 2082617344,
             "type": "iso",
-            "version": "1"
+            "version": "1",
+            "storage": [
+                {
+                    "cached": true,
+                    "checksum_info": {
+                        "algorithm": "SHA1",
+                        "checksum": ""
+                    },
+                    "name": "Fedora-Workstation-Live-ppc64le-39-1.5.iso",
+                    "size": 2082617344,
+                    "storage_backing": {
+                        "datastore_id": "datastore-1111",
+                        "type": "DATASTORE"
+                    },
+                    "storage_uris": [
+                        "ds:///vmfs/volumes/11223344-11223344//contentlib-5a74aeab-333-222-1111-000000000/fa4d4b87-db09-4b8e-903c-4f30a84e13fb/Fedora-Workstation-Live-ppc64le-39-1.5.iso_11223344-1111-2222-3333-444444444444.iso?serverId=11111111-aaaa-bbbb-cccc-dddddddddddd"
+                    ],
+                    "version": "1"
+                }
+            ],
         },
         {
             "cached": true,
@@ -129,7 +169,27 @@ library_item_info:
             "security_compliance": true,
             "size": 9264168960,
             "type": "iso",
-            "version": "1"
+            "version": "1",
+            "storage": [
+                {
+                    "cached": true,
+                    "checksum_info": {
+                        "algorithm": "SHA1",
+                        "checksum": ""
+                    },
+                    "name": "CentOS-8.3.2011-x86_64-dvd1.iso",
+                    "size": 9264168960,
+                    "storage_backing": {
+                        "datastore_id": "datastore-1111",
+                        "type": "DATASTORE"
+                    },
+                    "storage_uris": [
+                        "ds:///vmfs/volumes/11223344-11223344//contentlib-5a74aeab-333-222-1111-000000000/fa4d4b87-db09-4b8e-903c-4f30a84e13fb/Fedora-Workstation-Live-ppc64le-39-1.5_11223344-1111-2222-3333-444444444444.iso?serverId=11111111-aaaa-bbbb-cccc-dddddddddddd"
+                    ],
+                    "version": "1"
+                }
+            ],
+
         },
         {
             "cached": true,
@@ -211,7 +271,9 @@ class ContentLibaryItemInfo(ModuleRestBase):
     def get_relevant_library_item_info(self, library_item_ids):
         all_library_items_info = []
         for library_item_id in library_item_ids:
-            all_library_items_info.append(self.library_item_service.get(library_item_id).to_dict())
+            item_info = self.library_item_service.get(library_item_id).to_dict()
+            item_info['storage'] = [item.to_dict() for item in self.api_client.content.library.item.Storage.list(library_item_id=library_item_id)]
+            all_library_items_info.append(item_info)
 
         return all_library_items_info
 
