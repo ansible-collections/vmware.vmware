@@ -32,10 +32,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors impor
 
 class PyvmomiClient():
     def __init__(
-            self, hostname, username, password, port=443, validate_certs=True,
-            proxy_host=None, proxy_port=None, http_proxy_host=None, http_proxy_port=None,
-            **_
-        ):
+        self, hostname, username, password, port=443, validate_certs=True,
+        proxy_host=None, proxy_port=None, http_proxy_host=None, http_proxy_port=None,
+        **_
+    ):
         self.check_requirements()
         self.hostname = hostname
         self.username = username
