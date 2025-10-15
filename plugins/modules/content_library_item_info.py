@@ -88,7 +88,7 @@ EXAMPLES = r'''
         map(attribute='name')
       }}
 
-
+# You can attach an ISO file to a guest VM
 - name: "Get info about item file storage"
   register: kickstart_item_info
   vmware.vmware.content_library_item_info:
@@ -96,7 +96,11 @@ EXAMPLES = r'''
 
 - name: Attach an installer ISO image to a guest VM
   vars:
-    kickstart_iso_uri: "{{ kickstart_item_info['library_item_info'][0]['storage'][0]['storage_uris'][0] | ansible.builtin.regex_search('^(.*)\\?','\\1') | first }}"
+    kickstart_iso_uri: >-
+      {{
+        kickstart_item_info['library_item_info'][0]['storage'][0]['storage_uris'][0] |
+        ansible.builtin.regex_search('^(.*)\?','\1') | first
+      }}
   vmware.vmware_rest.vcenter_vm_hardware_cdrom:
     vm: "{{ created_vm.id }}"
     type: IDE
@@ -128,7 +132,7 @@ library_item_info:
             "security_compliance": true,
             "size": 2082617344,
             "type": "iso",
-            "version": "1"
+            "version": "1",
             "storage": [
                 {
                     "cached": true,
@@ -165,7 +169,7 @@ library_item_info:
             "security_compliance": true,
             "size": 9264168960,
             "type": "iso",
-            "version": "1"
+            "version": "1",
             "storage": [
                 {
                     "cached": true,
