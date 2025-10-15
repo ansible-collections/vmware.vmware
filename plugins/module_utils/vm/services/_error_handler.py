@@ -151,7 +151,6 @@ class ErrorHandler(AbstractService):
                 )
             )
 
-    # TODO fix this, seems outdated and not sure if it will actually work
     def _fail_with_device_configuration_error(self, error):
         """
         Fail due to invalid device configuration.
@@ -172,32 +171,23 @@ class ErrorHandler(AbstractService):
         except (KeyError, IndexError):
             self.module.fail_json(
                 msg="A device has an invalid configuration, so the VM cannot be configured.",
+                error_code="UNKNOWN_VM_DEVICE_ERROR",
                 original_error=error,
             )
 
-        if hasattr(device, "name_as_str"):
-            device_name = device.name_as_str
-        elif hasattr(device, "busNumber"):
-            device_name = "%s (bus %s)" % (type(device).__name__, device.busNumber)
+        if device._live_object is None and device._raw_object is None:
+            action = "add"
+        elif device._live_object is None and device._raw_object is not None:
+            action = "remove"
         else:
-            device_name = "%s (unit number %s)" % (
-                type(device).__name__,
-                device.unitNumber,
-            )
-
-        if hasattr(device, "_to_module_output"):
-            violating_parameter = device._to_module_output()
-        else:
-            violating_parameter = dict()
+            action = "update"
 
         self.module.fail_json(
             msg=(
-                "Device %s (device %s in the VM spec) has an invalid configuration. Please check the device configuration and try again."
-                % (device_name, device_id)
+                "Failed to %s device %s. Please check the device configuration and try again."
+                % (action, device)
             ),
             original_error=str(error),
-            violating_parameter=violating_parameter,
-            device_is_being_added=bool(getattr(device, "_live_object", False) is None),
-            device_is_being_updated=bool(getattr(device, "_live_object", None) is not None),
-            device_is_being_removed=bool(not hasattr(device, "_live_object"))
+            device_action=action,
+            violating_device=device._to_module_output(),
         )

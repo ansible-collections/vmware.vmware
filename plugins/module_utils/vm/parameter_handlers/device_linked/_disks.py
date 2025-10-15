@@ -12,7 +12,6 @@ placement and validates disk parameters against available controllers.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
-    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
@@ -289,13 +288,9 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                     self.error_handler.fail_with_parameter_error(
                         parameter_name="disks",
                         message="Disk size cannot be decreased.",
-                        details={"disk": disk.name_as_str, "live_size": disk._live_object.size, "desired_size": disk.size},
+                        details={"disk": str(disk), "live_size": disk._live_object.size, "desired_size": disk.size},
                     )
                 return
 
-        raise DeviceLinkError(
-            "Disk not found for device %s on controller %s"
-            % (device.unitNumber, device.controllerKey),
-            device,
-            self,
-        )
+        # device is unlinked and should be removed
+        return Disk.from_live_device_spec(device, None)

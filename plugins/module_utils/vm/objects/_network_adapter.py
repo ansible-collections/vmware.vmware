@@ -659,8 +659,7 @@ class NetworkAdapter(AbstractVsphereObject):
             abstract_vsphere_object.resource_allocation
         )
 
-    @property
-    def name_as_str(self):
+    def __str__(self):
         """
         Get a human-readable name for this network adapter.
 
@@ -706,6 +705,7 @@ class NetworkAdapter(AbstractVsphereObject):
             dict
         """
         return {
+            "object_type": "network adapter",
             "type": None if self.adapter_vim_class is None else self.adapter_vim_class.__name__.lower(),
             "portgroup": self.portgroup._to_module_output(),
             "connect_at_power_on": self.connect_at_power_on,

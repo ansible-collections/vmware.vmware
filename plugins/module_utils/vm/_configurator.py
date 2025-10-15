@@ -7,15 +7,6 @@ It implements a composite pattern where individual handlers track their own
 changes and the configurator aggregates the overall state.
 """
 
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    DeviceLinkError,
-)
-
-try:
-    from pyVmomi import vim
-except ImportError:
-    pass
-
 
 class Configurator:
     """
@@ -68,7 +59,10 @@ class Configurator:
         for handler in self.handlers:
             handler.verify_parameter_constraints()
 
-        self.change_set.objects_to_remove = self._link_vm_devices_to_handlers()
+        self.device_tracker.link_vm_devices_to_handler_devices(
+            self.vm,
+            [handler for handler in self.handlers if hasattr(handler, "vim_device_class")]
+        )
 
     def stage_configuration_changes(self):
         """
@@ -87,6 +81,8 @@ class Configurator:
         for handler in self.all_handlers:
             handler.compare_live_config_with_desired_config()
             self.change_set.propagate_required_changes_from(handler.change_set)
+
+        self.change_set.objects_to_remove = self.device_tracker.unlinked_devices
 
         return self.change_set
 
@@ -109,79 +105,8 @@ class Configurator:
         """
         for device in self.change_set.objects_to_remove:
             self.device_tracker.track_device_id_from_spec(device)
-            configspec.deviceChange.append(self._create_device_removal_spec(device))
+            configspec.deviceChange.append(device.to_removal_spec())
 
         for handler in self.all_handlers:
             if handler.change_set.are_changes_required():
                 handler.populate_config_spec_with_parameters(configspec)
-
-    def _create_device_removal_spec(self, device):
-        """
-        Create a VMware device specification for removing a device. By definition,
-        these devices are unmanaged and are not attached to any handler. So the method
-        resides in the configurator.
-
-        Args:
-            device: VMware device object to remove
-
-        Returns:
-            vim.vm.device.VirtualDeviceSpec: Device removal specification
-        """
-        spec = vim.vm.device.VirtualDeviceSpec()
-        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
-        spec.device = device
-        return spec
-
-    def _link_vm_devices_to_handlers(self):
-        """
-        Link existing VM devices to their appropriate handlers.
-
-        This method iterates over all devices on the VM and attempts to link
-        them to handlers that can manage them. Devices that cannot be linked
-        are considered unmanaged and will be removed from the VM.
-
-        Device linking rules:
-        - If a device type matches a handler's vim_device_class, try to link it
-        - If linking fails, (for example, the unit number of the device does not match a known device) the device is unmanaged and should be removed
-        - If no handler matches the device type, it's out of scope (ignored)
-
-        Returns:
-            list: List of unlinked devices that should be removed
-        """
-        if self.vm is None:
-            return []
-
-        objects_to_remove = []
-        device_linked_handlers = [handler for handler in self.all_handlers if hasattr(handler, "vim_device_class")]
-        managed_device_types = tuple()
-        for handler in device_linked_handlers:
-            if isinstance(handler.vim_device_class, tuple):
-                managed_device_types += handler.vim_device_class
-            else:
-                managed_device_types += tuple([handler.vim_device_class])
-
-        for device in self.vm.config.hardware.device:
-            # some devices are not managed by this module (like VMCI),
-            # so we should skip them instead of failing to link and removing them
-            if not isinstance(device, managed_device_types):
-                continue
-
-            failed_to_link = True
-            for handler in device_linked_handlers:
-                if not handler.PARAMS_DEFINED_BY_USER:
-                    continue
-
-                if not isinstance(device, handler.vim_device_class):
-                    continue
-
-                try:
-                    handler.link_vm_device(device)
-                    failed_to_link = False
-                    break
-                except DeviceLinkError:
-                    continue
-
-            if failed_to_link:
-                objects_to_remove.append(device)
-
-        return objects_to_remove

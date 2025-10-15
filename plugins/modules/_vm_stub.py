@@ -652,6 +652,52 @@ vm:
     sample:
         moid: vm-79828,
         name: test-d9c1-vm
+changes:
+    description:
+        - A dictionary showing any changes in settings or devices on the VM
+        - If there are no changes, this is an empty dictionary
+    returned: On success
+    type: dict
+    sample: {
+        "changed_parameters": {},
+        "objects_to_add": [
+            {
+                "bus_number": 0,
+                "device_class": "<class 'pyVmomi.VmomiSupport.vim.vm.device.VirtualIDEController'>",
+                "device_type": "ide",
+                "object_type": "controller",
+                "used_unit_numbers": []
+            },
+            {
+                "bus_number": 1,
+                "device_class": "<class 'pyVmomi.VmomiSupport.vim.vm.device.VirtualIDEController'>",
+                "device_type": "ide",
+                "object_type": "controller",
+                "used_unit_numbers": []
+            },
+        ],
+        "objects_to_remove": [],
+        "objects_to_update": [
+            {
+                "controller": "BUSLOGIC(0:)",
+                "datastore": "N/A",
+                "mode": "persistent",
+                "object_type": "virtual disk",
+                "provisioning": "thin",
+                "size": 10485760,
+                "unit_number": 0
+            },
+            {
+                "bus_number": 0,
+                "device_class": "<class 'pyVmomi.VmomiSupport.vim.vm.device.VirtualBusLogicController'>",
+                "device_type": "buslogic",
+                "object_type": "controller",
+                "used_unit_numbers": [
+                    0
+                ]
+            }
+        ]
+    }
 '''
 try:
     from pyVmomi import vim, vmodl
@@ -977,10 +1023,10 @@ def main():
         else:
             change_set = vm_module.create_new_vm()
 
-        result['vm']['moid'] = vm_module.vm._GetMoId()
-        result['vm']['name'] = vm_module.vm.name
-        result['changed'] = change_set.are_changes_required()
-        result['changes'] = change_set.changes
+            result['vm']['moid'] = vm_module.vm._GetMoId()
+            result['vm']['name'] = vm_module.vm.name
+            result['changed'] = change_set.are_changes_required()
+            result['changes'] = change_set.changes
 
     elif module.params['state'] == 'absent':
         if vm_module.vm:
@@ -990,7 +1036,6 @@ def main():
             vm_module.delete_vm()
 
     module.exit_json(**result)
-
 
 if __name__ == '__main__':
     main()

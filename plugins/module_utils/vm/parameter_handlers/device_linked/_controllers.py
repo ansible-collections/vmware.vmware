@@ -183,11 +183,10 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
                 )
                 return
 
-        raise DeviceLinkError(
-            "Controller %s not found for device %s" % (self.category, device.busNumber),
-            device,
-            self,
-        )
+        # device is unlinked and should be removed
+        # Since the device is just being removed, the basic controller has enough functionality
+        # to cover all types of controllers.
+        return BasicDeviceController.from_live_device_spec(device, self.category)
 
 
 class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -310,11 +309,8 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
                 )
                 return
 
-        raise DeviceLinkError(
-            "Controller %s not found for device %s" % (self.category, device.busNumber),
-            device,
-            self,
-        )
+        # device is unlinked and should be removed
+        raise ScsiDeviceController.from_live_device_spec(device, device_type)
 
 
 class SataControllerParameterHandler(DiskControllerParameterHandlerBase):

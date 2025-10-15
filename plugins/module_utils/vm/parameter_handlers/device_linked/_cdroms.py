@@ -12,7 +12,6 @@ placement and validates cdrom parameters against available controllers.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
-    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._cdrom import Cdrom
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
@@ -145,7 +144,7 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
                     details={
                         "device_node": cdrom_param["device_node"],
                         "available_controllers": [
-                            c.name_as_str
+                            str(c)
                             for ch in self.controller_handlers
                             for c in ch.controllers.values()
                         ],
@@ -237,9 +236,5 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
                 )
                 return
 
-        raise DeviceLinkError(
-            "CD-ROM not found for device %s on controller %s"
-            % (device.unitNumber, device.controllerKey),
-            device,
-            self,
-        )
+        # device is unlinked and should be removed
+        raise Cdrom.from_live_device_spec(device, None)

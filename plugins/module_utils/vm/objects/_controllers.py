@@ -79,8 +79,7 @@ class AbstractDeviceController(AbstractVsphereObject):
 
         return self._new_spec_key
 
-    @property
-    def name_as_str(self):
+    def __str__(self):
         """
         Get a human-readable name for this controller.
 
@@ -100,6 +99,7 @@ class AbstractDeviceController(AbstractVsphereObject):
             dict
         """
         return {
+            "object_type": "controller",
             "device_type": self.device_type,
             "bus_number": self.bus_number,
             "device_class": str(self.vim_device_class),
@@ -126,7 +126,7 @@ class AbstractDeviceController(AbstractVsphereObject):
         if device.unit_number in self.controlled_devices:
             raise ValueError(
                 "Cannot add multiple devices with unit number %s on controller %s"
-                % (device.unit_number, self.name_as_str)
+                % (device.unit_number, self)
             )
 
         self.controlled_devices[device.unit_number] = device

@@ -122,8 +122,7 @@ class Disk(AbstractVsphereObject):
 
         return None
 
-    @property
-    def name_as_str(self):
+    def __str__(self):
         """
         Get a human-readable name for this disk.
 
@@ -133,7 +132,7 @@ class Disk(AbstractVsphereObject):
         Returns:
             str: Human-readable disk name (e.g., "Disk - SCSI Controller 0 Unit 1")
         """
-        return "Disk - %s Unit %s" % (self.controller.name_as_str, self.unit_number)
+        return "Disk - %s Unit %s" % (self.controller, self.unit_number)
 
     def to_update_spec(self):
         """
@@ -261,7 +260,7 @@ class Disk(AbstractVsphereObject):
         """
         return {
             "object_type": "virtual disk",
-            "controller": getattr(self.controller, "name_as_str", 'None'),
+            "controller": str(self.controller),
             "size": self.size,
             "provisioning": self.provisioning,
             "mode": self.mode,

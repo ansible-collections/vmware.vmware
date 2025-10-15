@@ -16,6 +16,11 @@ Classes:
 
 from abc import ABC, abstractmethod
 
+try:
+    from pyVmomi import vim
+except ImportError:
+    pass
+
 
 class AbstractVsphereObject(ABC):
     """
@@ -99,6 +104,15 @@ class AbstractVsphereObject(ABC):
             NotImplementedError: Must be implemented by subclasses
         """
         raise NotImplementedError("to_update_spec must be implemented by subclasses")
+
+    def to_removal_spec(self):
+        if not self._raw_object:
+            raise AttributeError("Cannot create a removal spec for a device that has no raw_object attached.")
+
+        spec = vim.vm.device.VirtualDeviceSpec()
+        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+        spec.device = self._raw_object
+        return spec
 
     @abstractmethod
     def differs_from_live_object(self):

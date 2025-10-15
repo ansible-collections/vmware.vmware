@@ -12,7 +12,6 @@ placement and validates network adapter parameters against available portgroups.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
-    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._network_adapter import (
     NetworkAdapter,
@@ -250,7 +249,7 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
                         parameter_name=self.HANDLER_NAME,
                         message="Network adapter type %s in parameters does not match the device type %s, and changing types is not supported."
                         % (getattr(param_adapter.adapter_vim_class, "__name__", "none"), type(device).__name__),
-                        details={"param_adapter": param_adapter.name_as_str, "device_label": device.deviceInfo.label},
+                        details={"param_adapter": str(param_adapter), "device_label": device.deviceInfo.label},
                     )
 
                 param_adapter.link_corresponding_live_object(
@@ -259,7 +258,8 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
                 return True
 
         if self.params.get("network_adapter_remove_unmanaged"):
-            raise DeviceLinkError("Network adapter parameter not found for device %s" % device.deviceInfo.label)
+            # device is unlinked and should be removed
+            return NetworkAdapter.from_live_device_spec(device)
         else:
             # the device is not linked to anything, and no DeviceLinkError was raised,
             # so the module will ignore it

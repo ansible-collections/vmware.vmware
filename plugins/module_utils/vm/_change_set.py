@@ -66,12 +66,11 @@ class ParameterChangeSet:
 
     @property
     def changes(self):
-        # TODO remove hasattr checks once all objects implement abstractvsphereobject
         return {
             "changed_parameters": self._changed_parameters,
-            "objects_to_add": [obj.to_change_set_output()['new_value'] for obj in self.objects_to_add if hasattr(obj, "to_change_set_output")],
-            "objects_to_update": [obj.to_change_set_output() for obj in self.objects_to_update if hasattr(obj, "to_change_set_output")],
-            "objects_to_remove": [obj.to_change_set_output()['old_value'] for obj in self.objects_to_remove if hasattr(obj, "to_change_set_output")],
+            "objects_to_add": [obj.to_change_set_output()['new_value'] for obj in self.objects_to_add],
+            "objects_to_update": [obj.to_change_set_output() for obj in self.objects_to_update],
+            "objects_to_remove": [obj.to_change_set_output()['old_value'] for obj in self.objects_to_remove],
         }
 
     def are_changes_required(self):
