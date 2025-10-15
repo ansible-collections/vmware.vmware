@@ -179,12 +179,12 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
         for controller in self.controllers.values():
             if device.busNumber == controller.bus_number:
                 controller.link_corresponding_live_object(
-                    controller.from_live_device_spec(device)
+                    controller.from_live_device_spec(device, device_type=self.category)
                 )
                 return
 
         raise DeviceLinkError(
-            "Controller %s not found for device %s" % (self.controllers[0].device_class.__name__, device.busNumber),
+            "Controller %s not found for device %s" % (self.category, device.busNumber),
             device,
             self,
         )
@@ -279,6 +279,43 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
                 bus_sharing=controller_param_def.get("bus_sharing"),
             )
 
+    def link_vm_device(self, device):
+        """
+        Overloaded version of the base class method to handle SCSI controller specific logic.
+
+        Args:
+            device: VMware controller device to link
+
+        Raises:
+            Exception: If no matching controller object is found for the device
+
+        Side Effects:
+            Sets the _device attribute on the matching controller object.
+        """
+        for key, value in self.device_type_to_sub_class_map.items():
+            if isinstance(device, value):
+                device_type = key
+                break
+        else:
+            raise DeviceLinkError(
+                "SCSI controller type %s not supported device %s" % (str(type(device)), device.busNumber),
+                device,
+                self,
+            )
+
+        for controller in self.controllers.values():
+            if device.busNumber == controller.bus_number and device_type == controller.device_type:
+                controller.link_corresponding_live_object(
+                    ScsiDeviceController.from_live_device_spec(device, device_type)
+                )
+                return
+
+        raise DeviceLinkError(
+            "Controller %s not found for device %s" % (self.category, device.busNumber),
+            device,
+            self,
+        )
+
 
 class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
     """
@@ -340,6 +377,7 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
                 )
             self.controllers[bus_number] = BasicDeviceController(
                 bus_number=bus_number,
+                device_type=self.category,
                 vim_device_class=self.vim_device_class,
             )
 
@@ -406,6 +444,7 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
                     details={"violating_param": controller_param_def},
                 )
             self.controllers[bus_number] = ShareableDeviceController(
+                device_type=self.category,
                 bus_number=bus_number,
                 vim_device_class=self.vim_device_class,
                 bus_sharing=controller_param_def.get("bus_sharing")
@@ -442,7 +481,7 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
             vm: VM object being configured (None for new VM creation)
         """
         super().__init__(
-            error_handler, params, change_set, vm, device_tracker, "ide", max_count=0
+            error_handler, params, change_set, vm, device_tracker, "ide", max_count=2
         )
 
     @property
@@ -465,4 +504,4 @@ class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):
             the default IDE controllers (bus numbers 0 and 1).
         """
         for index in range(self.max_count):
-            self.controllers[index] = BasicDeviceController(bus_number=index, vim_device_class=self.vim_device_class)
+            self.controllers[index] = BasicDeviceController(bus_number=index, device_type=self.category, vim_device_class=self.vim_device_class)

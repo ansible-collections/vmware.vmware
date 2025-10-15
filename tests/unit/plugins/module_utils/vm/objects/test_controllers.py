@@ -41,7 +41,7 @@ class TestAbstractDeviceController:
         return MockController(device_type="scsi", vim_device_class=Mock, bus_number=0)
 
     def test_key(self, controller):
-        assert controller.key is None
+        assert controller.key < 0
 
         controller._live_object = Mock()
         controller._live_object.key = 1000
@@ -71,9 +71,7 @@ class TestAbstractDeviceController:
         spec = controller.to_new_spec()
         assert spec.operation == "add"
         assert spec.device.busNumber == controller.bus_number
-        assert (-spec.device.key >= controller.NEW_CONTROLLER_KEYS[0]) and (
-            -spec.device.key <= controller.NEW_CONTROLLER_KEYS[1]
-        )
+        assert spec.device.key < 0
 
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers.vim.vm.device.VirtualDeviceSpec"
@@ -117,7 +115,7 @@ class TestScsiDeviceController:
     def test_to_new_spec(self, mock_spec, controller):
         mock_spec.return_value = Mock()
         spec = controller.to_new_spec()
-        assert spec.device.hotAddRemove == True
+        assert spec.device.hotAddRemove is True
         assert spec.device.sharedBus == controller.bus_sharing
         assert spec.device.scsiCtlrUnitNumber == 7
 

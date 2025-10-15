@@ -56,7 +56,8 @@
   vmware.vmware._vm_stub:
     name: "{{ test_vm_name }}"
     scsi_controllers:
-      - controller_type: paravirtual
+      - bus_number: 0
+        controller_type: buslogic
     cdroms:
       - device_node: SCSI(0:0)
   register: _invalid_controller_type

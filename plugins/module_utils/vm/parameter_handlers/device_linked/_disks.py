@@ -69,7 +69,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             vsphere_object_cache: Service for caching vsphere objects
         """
         super().__init__(error_handler, params, change_set, vm, device_tracker)
-        self._check_if_params_are_defined_by_user("disks", required_for_vm_creation=True)
+        self._check_if_params_are_defined_by_user("disks", required_for_vm_creation=False)
 
         self.disks = []
         self.controller_handlers = controller_handlers

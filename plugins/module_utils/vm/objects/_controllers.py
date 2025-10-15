@@ -32,15 +32,12 @@ class AbstractDeviceController(AbstractVsphereObject):
     device management.
 
     Attributes:
-        NEW_CONTROLLER_KEYS (tuple): Range of device keys for new controllers (start, end)
         device_class: VMware device class for this controller type
         bus_number (int): Controller bus number for identification
         controlled_devices (dict): Registry of devices attached to this controller
         _raw_object: Original VMware device object
         _live_object: Corresponding live device for change detection
     """
-
-    NEW_CONTROLLER_KEYS = (1, 99999)
 
     def __init__(self, vim_device_class, bus_number, device_type, raw_object=None):
         """
@@ -61,6 +58,7 @@ class AbstractDeviceController(AbstractVsphereObject):
         self.device_type = device_type
         self.bus_number = int(bus_number)
         self.controlled_devices = dict()
+        self._new_spec_key = -randint(1, 99999)
 
     @property
     def key(self):
@@ -79,7 +77,7 @@ class AbstractDeviceController(AbstractVsphereObject):
         if self._live_object is not None:
             return self._live_object.key
 
-        return None
+        return self._new_spec_key
 
     @property
     def name_as_str(self):
@@ -134,15 +132,13 @@ class AbstractDeviceController(AbstractVsphereObject):
         self.controlled_devices[device.unit_number] = device
 
     def to_new_spec(self):
-        key_start, key_end = self.NEW_CONTROLLER_KEYS[0], self.NEW_CONTROLLER_KEYS[1]
-
         spec = vim.vm.device.VirtualDeviceSpec()
         spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
 
         spec.device = self.vim_device_class()
         spec.device.deviceInfo = vim.Description()
         spec.device.busNumber = self.bus_number
-        spec.device.key = -randint(key_start, key_end)
+        spec.device.key = self._new_spec_key
 
         return spec
 
@@ -188,8 +184,9 @@ class BasicDeviceController(AbstractDeviceController):
         bus_number,
         device_type,
         vim_device_class,
+        raw_object=None,
     ):
-        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number)
+        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, raw_object=raw_object)
 
     @classmethod
     def from_live_device_spec(cls, live_device_spec, device_type):
@@ -211,8 +208,9 @@ class ShareableDeviceController(BasicDeviceController):
         device_type,
         vim_device_class,
         bus_sharing=None,
+        raw_object=None,
     ):
-        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number)
+        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, raw_object=raw_object)
         self.bus_sharing = bus_sharing
 
     def to_new_spec(self):
@@ -264,8 +262,9 @@ class ScsiDeviceController(ShareableDeviceController):
         device_type,
         vim_device_class,
         bus_sharing=None,
+        raw_object=None,
     ):
-        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, bus_sharing=bus_sharing)
+        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, bus_sharing=bus_sharing, raw_object=raw_object)
 
     def to_new_spec(self):
         spec = super().to_new_spec()

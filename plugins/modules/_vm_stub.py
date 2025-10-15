@@ -131,7 +131,7 @@ options:
               parameter to allow the VM to be powered off, updated, and then powered on automatically.
             - If this is set to false, a failure will occur if the VM needs to be powered off before changes can be applied.
             - A "hard" power off is performed when the VM is powered off. If you do not want this, you could use this module in check mode,
-              M(vmware.vmware.vm_powerstate) module to power off the VM if needed, and then this module again to apply the changes .
+              M(vmware.vmware.vm_powerstate) module to power off the VM if needed, and then this module again to apply the changes.
         type: bool
         required: false
         default: false
@@ -403,7 +403,9 @@ options:
                 required: true
             controller_type:
                 description:
-                    - The type of the controller.
+                    - The sub-type of the SCSI controller.
+                    - Changing the type essentially removes the old controller and adds a new one in its place.
+                      Your VM should be powered off and dependent devices should support this kind of change.
                 type: str
                 required: true
                 choices: [ lsilogic, paravirtual, buslogic, lsilogicsas ]
@@ -438,7 +440,7 @@ options:
                     - The bus sharing mode of the controller.
                     - If this is not set, noSharing will be used for new controllers.
                 type: str
-                choices: [ noSharing, exclusive ]
+                choices: [ noSharing, physicalSharing ]
 
     sata_controllers:
         description:
@@ -899,7 +901,7 @@ def main():
                 nvme_controllers=dict(
                     type='list', elements='dict', required=False, options=dict(
                         bus_number=dict(type='int', required=True),
-                        bus_sharing=dict(type='str', required=False, choices=['noSharing', 'exclusive']),
+                        bus_sharing=dict(type='str', required=False, choices=['noSharing', 'physicalSharing']),
                     )
                 ),
                 sata_controllers=dict(

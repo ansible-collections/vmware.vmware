@@ -16,7 +16,7 @@
         device_node: SCSI(0:0)
     scsi_controllers:
       - controller_type: buslogic
-        bus_sharing: noSharing
+        bus_number: 0
   register: _create_vm_idempotent
 
 - name: Update VM
@@ -36,7 +36,7 @@
         device_node: SCSI(0:0)
     scsi_controllers:
       - controller_type: buslogic
-        bus_sharing: noSharing
+        bus_number: 0
   register: _update_vm
 
 - name: Update VM - Idempotent
