@@ -46,15 +46,15 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors impor
 class VmwareRestClient():
     def __init__(
         self, hostname, username, password, port=443, validate_certs=True,
-        http_proxy_host=None, http_proxy_port=None, http_proxy_protocol=None, **_
+        proxy_host=None, proxy_port=None, http_proxy_protocol=None, **_
     ):
         self.check_requirements()
         self.hostname = hostname
         self.username = username
         self.port = port
         self.validate_certs = validate_certs
-        self.http_proxy_host = http_proxy_host
-        self.http_proxy_port = http_proxy_port
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
         self.http_proxy_protocol = http_proxy_protocol
         self.api_client = self.connect_to_api(password=password)
 
@@ -132,11 +132,11 @@ class VmwareRestClient():
                 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def __configure_session_proxies(self, session):
-        if all([self.http_proxy_host, self.http_proxy_port, self.http_proxy_protocol]):
+        if all([self.proxy_host, self.proxy_port, self.http_proxy_protocol]):
             http_proxies = {
                 self.http_proxy_protocol: (
                     "{%s}://{%s}:{%s}" %
-                    self.http_proxy_protocol, self.http_proxy_host, self.http_proxy_port
+                    self.http_proxy_protocol, self.proxy_host, self.proxy_port
                 )
             }
 

@@ -31,14 +31,14 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors impor
 
 
 class PyvmomiClient():
-    def __init__(self, hostname, username, password, port=443, validate_certs=True, http_proxy_host=None, http_proxy_port=None, **_):
+    def __init__(self, hostname, username, password, port=443, validate_certs=True, proxy_host=None, proxy_port=None, **_):
         self.check_requirements()
         self.hostname = hostname
         self.username = username
         self.port = port
         self.validate_certs = validate_certs
-        self.http_proxy_host = http_proxy_host
-        self.http_proxy_port = http_proxy_port
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
         self.si, self.content = self.connect_to_api(password=password, return_si=True)
         self.custom_field_mgr = []
         if self.content.customFieldsManager:  # not an ESXi
@@ -140,9 +140,9 @@ class PyvmomiClient():
         """
         error_msg_suffix = ''
         try:
-            if self.http_proxy_host:
-                error_msg_suffix = " [proxy: %s:%s]" % (self.http_proxy_host, self.http_proxy_port)
-                connection_args.update(httpProxyHost=self.http_proxy_host, httpProxyPort=self.http_proxy_port)
+            if self.proxy_host:
+                error_msg_suffix = " [proxy: %s:%s]" % (self.proxy_host, self.proxy_port)
+                connection_args.update(httpProxyHost=self.proxy_host, httpProxyPort=self.proxy_port)
                 smart_stub = connect.SmartStubAdapter(**connection_args)
                 session_stub = connect.VimSessionOrientedStub(
                     smart_stub, connect.VimSessionOrientedStub.makeUserLoginMethod(self.username, self._password)

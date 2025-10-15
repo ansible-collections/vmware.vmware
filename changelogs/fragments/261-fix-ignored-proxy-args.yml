@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - Fix issue where modules that used the proxy_host and proxy_port arguments were ignoring these arguments when initializing clients.
+    (https://github.com/ansible-collections/vmware.vmware/issues/259)
