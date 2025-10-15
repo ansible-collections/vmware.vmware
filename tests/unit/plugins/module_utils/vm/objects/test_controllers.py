@@ -7,10 +7,9 @@ from unittest.mock import Mock, patch
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers import (
     AbstractDeviceController,
-    ScsiController,
-    SataController,
-    IdeController,
-    NvmeController,
+    ScsiDeviceController,
+    BasicDeviceController,
+    ShareableDeviceController
 )
 
 
@@ -18,6 +17,11 @@ class MockController(AbstractDeviceController):
     """Mock controller for testing."""
 
     NEW_CONTROLLER_KEYS = (1000, 9999)
+
+    @classmethod
+    def from_live_device_spec(cls, live_device_spec):
+        """Test implementation of abstract method."""
+        pass
 
 
 @pytest.fixture
@@ -34,21 +38,17 @@ class TestAbstractDeviceController:
     @pytest.fixture
     def controller(self):
         """Test controller."""
-        return MockController("scsi", Mock, 0)
-
-    def test_init(self):
-        with pytest.raises(NotImplementedError):
-            AbstractDeviceController("scsi", object, 0)
+        return MockController(device_type="scsi", vim_device_class=Mock, bus_number=0)
 
     def test_key(self, controller):
-        assert controller.key is None
+        assert controller.key < 0
 
-        controller._spec = Mock()
-        controller._spec.device.key = 1000
+        controller._live_object = Mock()
+        controller._live_object.key = 1000
         assert controller.key == 1000
 
-        controller._device = Mock()
-        controller._device.key = 1001
+        controller._raw_object = Mock()
+        controller._raw_object.key = 1001
         assert controller.key == 1001
 
     def test_name_as_str(self, controller):
@@ -64,118 +64,73 @@ class TestAbstractDeviceController:
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers.vim.vm.device.VirtualDeviceSpec"
     )
-    def test_create_controller_spec(self, mock_spec, controller):
-        mock_additional_config = Mock()
+    def test_to_new_spec(self, mock_spec, controller):
         mock_spec.return_value = Mock()
-        mock_spec.Operation.edit = "edit"
         mock_spec.Operation.add = "add"
 
-        spec = controller.create_controller_spec(
-            additional_config=mock_additional_config
-        )
-        assert controller._spec is spec
+        spec = controller.to_new_spec()
         assert spec.operation == "add"
         assert spec.device.busNumber == controller.bus_number
-        assert (-spec.device.key >= controller.NEW_CONTROLLER_KEYS[0]) and (
-            -spec.device.key <= controller.NEW_CONTROLLER_KEYS[1]
-        )
-        mock_additional_config.assert_called_once_with(spec, False)
+        assert spec.device.key < 0
 
-        mock_additional_config.reset_mock()
-        spec = controller.create_controller_spec(edit=True)
-        assert controller._spec is spec
-        assert not isinstance(spec.device.key, int)
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers.vim.vm.device.VirtualDeviceSpec"
+    )
+    def test_to_update_spec(self, mock_spec, controller):
+        mock_spec.return_value = Mock()
+        controller._raw_object = Mock()
+        mock_spec.Operation.edit = "edit"
+
+        spec = controller.to_update_spec()
         assert spec.operation == "edit"
-        mock_additional_config.assert_not_called()
+        assert spec.device.busNumber == controller.bus_number
 
-    def test_linked_device_differs_from_config(self, controller):
-        def additional_comparisons():
-            return True
+    def test_differs_from_live_object(self, controller):
+        controller._live_object = None
+        assert controller.differs_from_live_object() is True
 
-        controller._device = None
-        assert controller.linked_device_differs_from_config() is True
+        controller._live_object = Mock()
+        controller._live_object.bus_number = controller.bus_number
+        assert controller.differs_from_live_object() is False
 
-        controller._device = Mock()
-        controller._device.busNumber = controller.bus_number
-        assert controller.linked_device_differs_from_config() is False
-
-        assert (
-            controller.linked_device_differs_from_config(additional_comparisons) is True
-        )
-
-        controller._device.busNumber = controller.bus_number + 1
-        assert controller.linked_device_differs_from_config() is True
+        controller._live_object.bus_number = controller.bus_number + 1
+        assert controller.differs_from_live_object() is True
 
 
-class TestScsiController:
+class TestScsiDeviceController:
     """Test cases for ScsiController class."""
 
     @pytest.fixture
     def controller(self):
         """Test controller."""
-        return ScsiController(0)
+        c = ScsiDeviceController(bus_number=0, device_type="paravirtual", vim_device_class=Mock, bus_sharing="noSharing")
+        return c
 
     def test_init(self, controller):
-        c = ScsiController(1, device_class=Mock)
-        assert c.device_class is Mock
+        assert controller.vim_device_class is Mock
 
-        assert (
-            controller.device_class is not None and controller.device_class is not Mock
-        )
-
-    def test_create_controller_spec(self, controller):
-        spec = controller.create_controller_spec()
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers.vim.vm.device.VirtualDeviceSpec"
+    )
+    def test_to_new_spec(self, mock_spec, controller):
+        mock_spec.return_value = Mock()
+        spec = controller.to_new_spec()
         assert spec.device.hotAddRemove is True
         assert spec.device.sharedBus == controller.bus_sharing
         assert spec.device.scsiCtlrUnitNumber == 7
 
 
-class TestSataController:
+class TestBasicDeviceController:
     """Test cases for SataController class."""
-
-    @pytest.fixture
-    def controller(self):
-        """Test controller."""
-        return SataController(0)
-
-    def test_init(self, controller):
-        c = SataController(1, device_class=Mock)
-        assert c.device_class is Mock
-
-        assert (
-            controller.device_class is not None and controller.device_class is not Mock
-        )
+    def test_init(self):
+        c = BasicDeviceController(bus_number=1, device_type="scsi", vim_device_class=Mock)
+        assert c.vim_device_class is Mock
 
 
-class TestIdeController:
+class TestShareableDeviceController:
     """Test cases for IdeController class."""
 
-    @pytest.fixture
-    def controller(self):
-        """Test controller."""
-        return IdeController(0)
-
-    def test_init(self, controller):
-        c = IdeController(1, device_class=Mock)
-        assert c.device_class is Mock
-
-        assert (
-            controller.device_class is not None and controller.device_class is not Mock
-        )
-
-
-class TestNvmeController:
-    """Test cases for NvmeController class."""
-
-    @pytest.fixture
-    def controller(self):
-        """Test controller."""
-        return NvmeController(0)
-
-    def test_init(self, controller):
-        c = NvmeController(1, device_class=Mock)
-        assert c.device_class is Mock
-
-        assert (
-            controller.device_class is not None and controller.device_class is not Mock
-        )
+    def test_init(self):
+        c = ShareableDeviceController(bus_number=1, device_type="scsi", vim_device_class=Mock, bus_sharing="noSharing")
+        assert c.bus_sharing == "noSharing"
+        assert c.vim_device_class is Mock

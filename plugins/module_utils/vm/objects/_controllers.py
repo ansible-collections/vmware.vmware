@@ -9,15 +9,16 @@ connection and organization of devices like disks and CD-ROMs within a VM.
 """
 
 from random import randint
-from abc import ABC
 
 try:
     from pyVmomi import vim
 except ImportError:
     pass
 
+from ._abstract import AbstractVsphereObject
 
-class AbstractDeviceController(ABC):
+
+class AbstractDeviceController(AbstractVsphereObject):
     """
     Abstract base class for all VM device controllers.
 
@@ -31,25 +32,19 @@ class AbstractDeviceController(ABC):
     device management.
 
     Attributes:
-        NEW_CONTROLLER_KEYS (tuple): Range of device keys for new controllers (start, end)
         device_class: VMware device class for this controller type
-        device_type (str): Human-readable controller type name
         bus_number (int): Controller bus number for identification
         controlled_devices (dict): Registry of devices attached to this controller
-        _device: Existing VMware device object (when linked, otherwise None)
-        _spec: VMware device specification (when generated, otherwise None)
+        _raw_object: Original VMware device object
+        _live_object: Corresponding live device for change detection
     """
 
-    # Controller configurations: (key_range_start, key_range_end)
-    NEW_CONTROLLER_KEYS = ()
-
-    def __init__(self, device_type, device_class, bus_number):
+    def __init__(self, vim_device_class, bus_number, device_type, raw_object=None):
         """
         Initialize a device controller.
 
         Args:
-            device_type (str): Human-readable controller type (e.g., 'scsi', 'sata')
-            device_class: VMware device class for this controller
+            vim_device_class: VMware device class for this controller
             bus_number (int): Bus number for controller identification
 
         Raises:
@@ -58,17 +53,12 @@ class AbstractDeviceController(ABC):
         Side Effects:
             Initializes empty device registry for attached devices.
         """
-        if not self.NEW_CONTROLLER_KEYS:
-            raise NotImplementedError(
-                "Controller classes must define the NEW_CONTROLLER_KEYS attribute"
-            )
-
-        self.device_class = device_class
+        super().__init__(raw_object=raw_object)
+        self.vim_device_class = vim_device_class
         self.device_type = device_type
         self.bus_number = int(bus_number)
-        self._device = None
-        self._spec = None
         self.controlled_devices = dict()
+        self._new_spec_key = -randint(1, 99999)
 
     @property
     def key(self):
@@ -82,11 +72,12 @@ class AbstractDeviceController(ABC):
         Returns:
             int or None: VMware device key, or None if no device/spec exists
         """
-        if self._device is not None:
-            return self._device.key
-        if self._spec is not None:
-            return self._spec.device.key
-        return None
+        if self._raw_object is not None:
+            return self._raw_object.key
+        if self._live_object is not None:
+            return self._live_object.key
+
+        return self._new_spec_key
 
     @property
     def name_as_str(self):
@@ -100,6 +91,20 @@ class AbstractDeviceController(ABC):
             str: Human-readable controller name (e.g., "SCSI(0:)", "SATA(1:)")
         """
         return "%s(%s:)" % (self.device_type.upper(), self.bus_number)
+
+    def _to_module_output(self):
+        """
+        Generate module output friendly representation of this object.
+
+        Returns:
+            dict
+        """
+        return {
+            "device_type": self.device_type,
+            "bus_number": self.bus_number,
+            "device_class": str(self.vim_device_class),
+            "used_unit_numbers": list(self.controlled_devices.keys()),
+        }
 
     def add_device(self, device):
         """
@@ -126,47 +131,27 @@ class AbstractDeviceController(ABC):
 
         self.controlled_devices[device.unit_number] = device
 
-    def create_controller_spec(self, edit=False, additional_config=None):
-        """
-        Create a VMware device specification for this controller.
-
-        Generates a device specification that can be used to add this controller
-        to a VM or modify an existing controller. Assigns appropriate device keys
-        and applies any additional configuration provided by subclasses.
-
-        Args:
-            edit (bool): Whether this is an edit operation (True) or add operation (False)
-            additional_config (callable, optional): Function to apply additional configuration
-                                                   Takes (spec, edit) parameters
-
-        Returns:
-            vim.vm.device.VirtualDeviceSpec: VMware device specification for controller
-
-        Side Effects:
-            Caches the generated specification in self._spec.
-            Assigns random device key from NEW_CONTROLLER_KEYS range for new controllers.
-        """
-        key_start, key_end = self.NEW_CONTROLLER_KEYS[0], self.NEW_CONTROLLER_KEYS[1]
-
+    def to_new_spec(self):
         spec = vim.vm.device.VirtualDeviceSpec()
-        if edit:
-            spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
-        else:
-            spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
 
-        spec.device = self.device_class()
+        spec.device = self.vim_device_class()
         spec.device.deviceInfo = vim.Description()
         spec.device.busNumber = self.bus_number
-        if not edit:
-            spec.device.key = -randint(key_start, key_end)
+        spec.device.key = self._new_spec_key
 
-        if additional_config:
-            additional_config(spec, edit)
-
-        self._spec = spec
         return spec
 
-    def linked_device_differs_from_config(self, additional_comparisons=None):
+    def to_update_spec(self):
+        spec = vim.vm.device.VirtualDeviceSpec()
+        spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
+
+        spec.device = self._raw_object or self._live_object._raw_object
+        spec.device.busNumber = self.bus_number
+
+        return spec
+
+    def differs_from_live_object(self):
         """
         Check if the linked VM device differs from desired configuration.
 
@@ -184,161 +169,105 @@ class AbstractDeviceController(ABC):
         Note:
             Returns True if no device is linked (indicating creation is needed).
         """
-        if self._device is None:
+        if self._live_object is None:
             return True
 
-        if self._device.busNumber != self.bus_number:
+        if self._live_object.bus_number != self.bus_number:
             return True
-
-        if additional_comparisons:
-            return additional_comparisons()
 
         return False
 
 
-class ScsiController(AbstractDeviceController):
+class BasicDeviceController(AbstractDeviceController):
+    def __init__(
+        self,
+        bus_number,
+        device_type,
+        vim_device_class,
+        raw_object=None,
+    ):
+        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, raw_object=raw_object)
+
+    @classmethod
+    def from_live_device_spec(cls, live_device_spec, device_type):
+        """
+        Create a controller object from a live device specification.
+        """
+        return cls(
+            bus_number=live_device_spec.busNumber,
+            device_type=device_type,
+            vim_device_class=type(live_device_spec),
+            raw_object=live_device_spec
+        )
+
+
+class ShareableDeviceController(BasicDeviceController):
+    def __init__(
+        self,
+        bus_number,
+        device_type,
+        vim_device_class,
+        bus_sharing=None,
+        raw_object=None,
+    ):
+        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, raw_object=raw_object)
+        self.bus_sharing = bus_sharing
+
+    def to_new_spec(self):
+        spec = super().to_new_spec()
+        if self.bus_sharing is not None:
+            spec.device.sharedBus = self.bus_sharing
+        else:
+            spec.device.sharedBus = "noSharing"
+        return spec
+
+    def to_update_spec(self):
+        spec = super().to_update_spec()
+        if self.bus_sharing is not None:
+            spec.device.sharedBus = self.bus_sharing
+        return spec
+
+    def differs_from_live_object(self):
+        if super().differs_from_live_object():
+            return True
+
+        if self.bus_sharing is not None and self._live_object.bus_sharing != self.bus_sharing:
+            return True
+
+        return False
+
+    @classmethod
+    def from_live_device_spec(cls, live_device_spec, device_type):
+        return cls(
+            bus_number=live_device_spec.busNumber,
+            device_type=device_type,
+            vim_device_class=type(live_device_spec),
+            bus_sharing=live_device_spec.sharedBus,
+            raw_object=live_device_spec
+        )
+
+
+class ScsiDeviceController(ShareableDeviceController):
     """
     SCSI controller for managing SCSI devices like disks.
 
     SCSI controllers are the most common type for VM storage devices.
     They support hot-add/remove operations and can have up to 15 devices
     attached (unit numbers 0-15, excluding the controller itself at unit 7).
-
-    Attributes:
-        bus_sharing (str): Bus sharing mode ('noSharing' or 'exclusive')
     """
-
-    NEW_CONTROLLER_KEYS = (1000, 9999)
 
     def __init__(
         self,
         bus_number,
-        device_type="paravirtual",
-        device_class=None,
-        bus_sharing="noSharing",
+        device_type,
+        vim_device_class,
+        bus_sharing=None,
+        raw_object=None,
     ):
-        """
-        Initialize a SCSI controller.
+        super().__init__(device_type=device_type, vim_device_class=vim_device_class, bus_number=bus_number, bus_sharing=bus_sharing, raw_object=raw_object)
 
-        Args:
-            bus_number (int): SCSI bus number (typically 0-3)
-            device_type (str): Controller type description
-            device_class: VMware SCSI controller class
-            bus_sharing (str): Bus sharing mode ('noSharing' or 'exclusive')
-        """
-        if device_class is None:
-            device_class = vim.vm.device.ParaVirtualSCSIController
-
-        super().__init__(device_type, device_class, bus_number)
-        self.bus_sharing = bus_sharing
-
-    def create_controller_spec(self, edit=False):
-        """
-        Create a VMware device specification for this SCSI controller.
-
-        Generates a SCSI controller specification with SCSI-specific settings
-        including hot-add/remove support, bus sharing, and controller unit number.
-
-        Args:
-            edit (bool): Whether this is an edit operation (True) or add operation (False)
-
-        Returns:
-            vim.vm.device.VirtualDeviceSpec: VMware device specification for SCSI controller
-        """
-
-        def configure_scsi(spec, edit=False):
-            spec.device.hotAddRemove = True
-            spec.device.sharedBus = self.bus_sharing
-            spec.device.scsiCtlrUnitNumber = 7
-
-        return super().create_controller_spec(
-            edit=edit, additional_config=configure_scsi
-        )
-
-
-class SataController(AbstractDeviceController):
-    """
-    SATA controller for managing SATA devices.
-
-    SATA controllers are commonly used for CD/DVD drives and can also
-    support SATA disks. They typically support fewer devices than SCSI
-    controllers but provide better compatibility with certain guest OS types.
-    """
-
-    NEW_CONTROLLER_KEYS = (15000, 19999)
-
-    def __init__(self, bus_number, device_class=None):
-        """
-        Initialize a SATA controller.
-
-        Args:
-            bus_number (int): SATA bus number
-            device_class: VMware SATA controller class (defaults to AHCI)
-        """
-        if device_class is None:
-            device_class = vim.vm.device.VirtualAHCIController
-
-        super().__init__("sata", device_class, bus_number)
-
-
-class IdeController(AbstractDeviceController):
-    """
-    IDE controller for legacy device support.
-
-    IDE controllers are primarily used for legacy compatibility and
-    CD/DVD drives. Most modern VMs use SCSI or SATA controllers instead,
-    but IDE controllers are still needed for certain guest OS types.
-
-    All VMs have two IDE controllers that cannot be modified. We track them
-    because they could be referenced by other parts of the VM configuration.
-    """
-
-    NEW_CONTROLLER_KEYS = (200, 299)
-
-    def __init__(self, bus_number, device_class=None):
-        """
-        Initialize an IDE controller.
-
-        Args:
-            bus_number (int): IDE bus number (typically 0-1)
-            device_class: VMware IDE controller class
-        """
-        if device_class is None:
-            device_class = vim.vm.device.VirtualIDEController
-
-        super().__init__("ide", device_class, bus_number)
-
-
-class NvmeController(AbstractDeviceController):
-    """
-    NVMe controller for high-performance storage.
-
-    NVMe controllers provide high-performance storage access for modern
-    VMs that support NVMe devices. They offer better performance than
-    traditional SCSI controllers for supported workloads.
-
-    Attributes:
-        bus_sharing (str): Bus sharing mode ('noSharing' or 'exclusive')
-    """
-
-    NEW_CONTROLLER_KEYS = (31000, 39999)
-
-    def __init__(
-        self,
-        bus_number,
-        device_class=None,
-        bus_sharing="noSharing",
-    ):
-        """
-        Initialize an NVMe controller.
-
-        Args:
-            bus_number (int): NVMe bus number
-            device_class: VMware NVMe controller class
-            bus_sharing (str): Bus sharing mode ('noSharing' or 'exclusive')
-        """
-        if device_class is None:
-            device_class = vim.vm.device.VirtualNVMEController
-
-        super().__init__("nvme", device_class, bus_number)
-        self.bus_sharing = bus_sharing
+    def to_new_spec(self):
+        spec = super().to_new_spec()
+        spec.device.scsiCtlrUnitNumber = 7
+        spec.device.hotAddRemove = True
+        return spec

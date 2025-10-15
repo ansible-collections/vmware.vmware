@@ -255,7 +255,7 @@ class Disk(AbstractVsphereObject):
 
     def _to_module_output(self):
         """
-        Generate module output friendly representation of the cdrom.
+        Generate module output friendly representation of this object.
         Returns:
             dict
         """

@@ -21,8 +21,8 @@
             mode: persistent
             device_node: SCSI(0:0)
         scsi_controllers:
-          - controller_type: buslogic
-            bus_sharing: noSharing
+          - bus_number: 0
+            controller_type: buslogic
       register: _basic_create_task
 
     - name: Store VM moid
@@ -33,6 +33,9 @@
     # should establish relevant vm options as a first task.
     - name: Test vm update
       ansible.builtin.include_tasks: basic_vm_update_tests.yml
+
+    - name: Test controller params
+      ansible.builtin.include_tasks: controller_params_tests.yml
 
     - name: Test cpu params
       ansible.builtin.include_tasks: cpu_params_tests.yml
