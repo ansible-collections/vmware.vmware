@@ -178,6 +178,18 @@ class AbstractVsphereObject(ABC):
         """
         raise NotImplementedError("_to_module_output must be implemented by subclasses")
 
+    def represents_live_vm_device(self):
+        """
+        Helper method that indicates if this object was created from a live VM device
+        """
+        return self._raw_object is not None
+
+    def has_a_linked_live_vm_device(self):
+        """
+        Helper method that indicates if this object has already been linked to a live VM device
+        """
+        return self._live_object is not None and not self.represents_live_vm_device()
+
     def to_change_set_output(self):
         """
         Generate change set output for configuration tracking.
@@ -197,10 +209,14 @@ class AbstractVsphereObject(ABC):
                 "old_value": {"name": "old_name", "size": 512}
             }
         """
-        new_value = self._to_module_output()
-        old_value = {}
-        if self._live_object is not None:
-            old_value = self._live_object._to_module_output()
+        if self.represents_live_vm_device():
+            new_value = {}
+            old_value = self._to_module_output()
+        else:
+            new_value = self._to_module_output()
+            old_value = {}
+            if self.has_a_linked_live_vm_device():
+                old_value = self._live_object._to_module_output()
 
         # Remove None values from both new and old values
         for key, value in new_value.copy().items():
@@ -232,7 +248,10 @@ class AbstractVsphereObject(ABC):
             This method should be called when setting up change detection
             between desired and current object states.
         """
-        if self._live_object is not None:
-            raise Exception("Linked device already set, cannot link another one.")
+        if self.represents_live_vm_device():
+            raise ValueError("Cannot link a live VM object representation to another live VM object representation.")
+
+        if self.has_a_linked_live_vm_device():
+            raise ValueError("Linked device already set, cannot link another one.")
 
         self._live_object = abstract_vsphere_object

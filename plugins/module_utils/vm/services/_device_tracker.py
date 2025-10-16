@@ -89,7 +89,7 @@ class DeviceTracker(AbstractService):
             unlinked_devices: Populates this objects unlinked_devices attribute
         """
         if vm is None:
-            return []
+            return
 
         managed_device_types = tuple()
         for handler in device_linked_handlers:

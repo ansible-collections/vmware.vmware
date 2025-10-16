@@ -175,12 +175,12 @@ class ErrorHandler(AbstractService):
                 original_error=error,
             )
 
-        if device._live_object is None and device._raw_object is None:
-            action = "add"
-        elif device._live_object is None and device._raw_object is not None:
+        if device.represents_live_vm_device():
             action = "remove"
-        else:
+        elif device.has_a_linked_live_vm_device():
             action = "update"
+        else:
+            action = "add"
 
         self.module.fail_json(
             msg=(

@@ -659,7 +659,20 @@ changes:
     returned: On success
     type: dict
     sample: {
-        "changed_parameters": {},
+        "changed_parameters": {
+            "cpu.cores": {
+                "new_value": 2,
+                "old_value": 1
+            },
+            "memory.size_mb": {
+                "new_value": 1024,
+                "old_value": 2048
+            },
+            "name": {
+                "new_value": "my-new-vm",
+                "old_value": "foo"
+            }
+        },
         "objects_to_add": [
             {
                 "bus_number": 0,
@@ -1023,10 +1036,10 @@ def main():
         else:
             change_set = vm_module.create_new_vm()
 
-            result['vm']['moid'] = vm_module.vm._GetMoId()
-            result['vm']['name'] = vm_module.vm.name
-            result['changed'] = change_set.are_changes_required()
-            result['changes'] = change_set.changes
+        result['vm']['moid'] = vm_module.vm._GetMoId()
+        result['vm']['name'] = vm_module.vm.name
+        result['changed'] = change_set.are_changes_required()
+        result['changes'] = change_set.changes
 
     elif module.params['state'] == 'absent':
         if vm_module.vm:

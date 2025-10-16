@@ -150,12 +150,10 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
             Updates change_set with controller objects categorized by required actions.
         """
         for controller in self.controllers.values():
-            if controller._live_object is None:
+            if not controller.has_a_linked_live_vm_device():
                 self.change_set.objects_to_add.append(controller)
             elif controller.differs_from_live_object():
                 self.change_set.objects_to_update.append(controller)
-            else:
-                self.change_set.objects_in_sync.append(controller)
 
         return self.change_set
 
@@ -310,7 +308,7 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
                 return
 
         # device is unlinked and should be removed
-        raise ScsiDeviceController.from_live_device_spec(device, device_type)
+        return ScsiDeviceController.from_live_device_spec(device, device_type)
 
 
 class SataControllerParameterHandler(DiskControllerParameterHandlerBase):

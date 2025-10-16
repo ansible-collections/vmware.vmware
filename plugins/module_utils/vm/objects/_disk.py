@@ -115,9 +115,9 @@ class Disk(AbstractVsphereObject):
         Returns:
             int or None: VMware device key, or None if no device/spec exists
         """
-        if self._raw_object is not None:
+        if self.represents_live_vm_device():
             return self._raw_object.key
-        if self._live_object is not None:
+        if self.has_a_linked_live_vm_device():
             return self._live_object.key
 
         return None
@@ -234,7 +234,7 @@ class Disk(AbstractVsphereObject):
         Note:
             Returns True if no device is linked (indicating creation is needed).
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return (

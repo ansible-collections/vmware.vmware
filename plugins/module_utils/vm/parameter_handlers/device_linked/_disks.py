@@ -249,12 +249,10 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             Updates change_set with disk objects categorized by required actions.
         """
         for disk in self.disks:
-            if disk._live_object is None:
+            if not disk.has_a_linked_live_vm_device():
                 self.change_set.objects_to_add.append(disk)
             elif disk.differs_from_live_object():
                 self.change_set.objects_to_update.append(disk)
-            else:
-                self.change_set.objects_in_sync.append(disk)
 
         return self.change_set
 

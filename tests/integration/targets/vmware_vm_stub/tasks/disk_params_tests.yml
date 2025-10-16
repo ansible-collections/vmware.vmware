@@ -161,3 +161,4 @@
       - _remove_disk_idem is not ansible.builtin.changed
       - _remove_disk.changes.objects_to_add | length == 0
       - _remove_disk.changes.objects_to_update | length == 0
+      - _remove_disk.changes.objects_to_Remove | length == 2

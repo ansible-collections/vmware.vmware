@@ -42,7 +42,7 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
         shares_level (str, optional): Pre-defined shares level ("low", "normal", "high", "custom")
         reservation (int, optional): Reserved network bandwidth in Mbps
         limit (int, optional): Maximum network bandwidth in Mbps
-        _raw_device: Original VMware resource allocation object
+        _raw_object: Original VMware resource allocation object
         _live_object: Corresponding live device for change detection
     """
 
@@ -52,7 +52,7 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
         shares_level=None,
         reservation=None,
         limit=None,
-        raw_device=None,
+        raw_object=None,
     ):
         """
         Initialize network adapter resource allocation.
@@ -62,9 +62,9 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
             shares_level (str, optional): Pre-defined allocation level ("low", "normal", "high", "custom")
             reservation (int, optional): Reserved network bandwidth in Mbps
             limit (int, optional): Maximum network bandwidth in Mbps
-            raw_device: Original VMware resource allocation object
+            raw_object: Original VMware resource allocation object
         """
-        super().__init__(raw_device)
+        super().__init__(raw_object=raw_object)
         self.shares = shares
         self.shares_level = shares_level
         self.reservation = reservation
@@ -94,7 +94,7 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
             ),
             reservation=live_device_spec.reservation,
             limit=live_device_spec.limit,
-            raw_device=live_device_spec,
+            raw_object=live_device_spec,
         )
 
     def differs_from_live_object(self):
@@ -104,7 +104,7 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return (
@@ -190,14 +190,14 @@ class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
     and standard vSwitches.
     """
 
-    def __init__(self, raw_device=None):
+    def __init__(self, raw_object=None):
         """
         Initialize network adapter portgroup.
 
         Args:
-            raw_device: Original VMware portgroup object
+            raw_object: Original VMware portgroup object
         """
-        super().__init__(raw_device)
+        super().__init__(raw_object=raw_object)
 
     @classmethod
     def from_live_device_spec(cls, live_device_spec):
@@ -214,17 +214,17 @@ class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
             return DvsNetworkAdapterPortgroup(
                 live_device_spec.port.portgroupKey,
                 live_device_spec.port.switchUuid,
-                raw_device=live_device_spec,
+                raw_object=live_device_spec,
             )
         elif hasattr(live_device_spec, "opaqueNetworkId"):
             return NsxtNetworkAdapterPortgroup(
-                live_device_spec.opaqueNetworkId, raw_device=live_device_spec
+                live_device_spec.opaqueNetworkId, raw_object=live_device_spec
             )
         else:
             return VswitchNetworkAdapterPortgroup(
                 live_device_spec.deviceName,
                 live_device_spec.network,
-                raw_device=live_device_spec,
+                raw_object=live_device_spec,
             )
 
     @classmethod
@@ -244,16 +244,15 @@ class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
         if hasattr(portgroup, "key"):
             return DvsNetworkAdapterPortgroup(
                 portgroup.key,
-                portgroup.config.distributedVirtualSwitch.uuid,
-                raw_device=portgroup,
+                portgroup.config.distributedVirtualSwitch.uuid
             )
         elif hasattr(portgroup, "capability"):
             return NsxtNetworkAdapterPortgroup(
-                portgroup.summary.opaqueNetworkId, raw_device=portgroup
+                portgroup.summary.opaqueNetworkId
             )
         else:
             return VswitchNetworkAdapterPortgroup(
-                portgroup.name, portgroup, raw_device=portgroup
+                portgroup.name, portgroup
             )
 
 
@@ -270,16 +269,16 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         switch_uuid (str): Distributed virtual switch UUID
     """
 
-    def __init__(self, key, switch_uuid, raw_device=None):
+    def __init__(self, key, switch_uuid, raw_object=None):
         """
         Initialize DVS network adapter portgroup.
 
         Args:
             key (str): Portgroup key identifier
             switch_uuid (str): Distributed virtual switch UUID
-            raw_device: Original VMware portgroup object
+            raw_object: Original VMware portgroup object
         """
-        super().__init__(raw_device)
+        super().__init__(raw_object=raw_object)
         self.key = key
         self.switch_uuid = switch_uuid
 
@@ -316,7 +315,7 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return self._compare_attributes_for_changes(
@@ -350,15 +349,15 @@ class NsxtNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         opaque_network_id (str): NSX-T logical switch opaque network ID
     """
 
-    def __init__(self, opaque_network_id, raw_device=None):
+    def __init__(self, opaque_network_id, raw_object=None):
         """
         Initialize NSX-T network adapter portgroup.
 
         Args:
             opaque_network_id (str): NSX-T logical switch opaque network ID
-            raw_device: Original VMware portgroup object
+            raw_object: Original VMware portgroup object
         """
-        super().__init__(raw_device)
+        super().__init__(raw_object)
         self.opaque_network_id = opaque_network_id
 
     def to_new_spec(self):
@@ -393,7 +392,7 @@ class NsxtNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return self._compare_attributes_for_changes(
@@ -425,16 +424,16 @@ class VswitchNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         network: VMware network object reference
     """
 
-    def __init__(self, name, network, raw_device=None):
+    def __init__(self, name, network, raw_object=None):
         """
         Initialize vSwitch network adapter portgroup.
 
         Args:
             name (str): Portgroup name
             network: VMware network object reference
-            raw_device: Original VMware portgroup object
+            raw_object: Original VMware portgroup object
         """
-        super().__init__(raw_device)
+        super().__init__(raw_object=raw_object)
         self.name = name
         self.network = network
 
@@ -469,7 +468,7 @@ class VswitchNetworkAdapterPortgroup(NetworkAdapterPortgroup):
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return self._compare_attributes_for_changes(
@@ -583,7 +582,7 @@ class NetworkAdapter(AbstractVsphereObject):
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         att = [

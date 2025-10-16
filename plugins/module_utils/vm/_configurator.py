@@ -61,7 +61,7 @@ class Configurator:
 
         self.device_tracker.link_vm_devices_to_handler_devices(
             self.vm,
-            [handler for handler in self.handlers if hasattr(handler, "vim_device_class")]
+            self.controller_handlers + [handler for handler in self.handlers if hasattr(handler, "vim_device_class")]
         )
 
     def stage_configuration_changes(self):
