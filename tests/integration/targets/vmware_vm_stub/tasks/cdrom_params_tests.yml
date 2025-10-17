@@ -55,7 +55,7 @@
       - _update_cdrom_params is ansible.builtin.changed
       - _update_cdrom_params_idempotent is not ansible.builtin.changed
       - _update_cdrom_params.changes.objects_to_add | length == 0
-      - _update_cdrom_params.changes.objects_to_update | length == 3
+      - _update_cdrom_params.changes.objects_to_update | length == 2
       - _update_cdrom_params.changes.objects_to_remove | length == 1
 
 - name: Set invalid controller type - expect failure
