@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._abstract import (
     AbstractVsphereObject,
@@ -88,3 +88,22 @@ class TestAbstractVsphereObject:
 
         with pytest.raises(Exception):
             obj.link_corresponding_live_object(ConcreteObject())
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._abstract.vim"
+    )
+    def test_to_removal_spec(self, mock_vim):
+        """Test _create_device_removal_spec method."""
+        device = Mock()
+        mock_spec = Mock()
+        mock_vim.vm.device.VirtualDeviceSpec.return_value = mock_spec
+        obj = ConcreteObject()
+        obj._raw_object = device
+
+        result = obj.to_removal_spec()
+
+        # Verify spec was created correctly
+        mock_vim.vm.device.VirtualDeviceSpec.assert_called_once()
+        assert isinstance(mock_spec.operation, Mock)
+        assert mock_spec.device == device
+        assert result == mock_spec

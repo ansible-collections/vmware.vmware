@@ -72,15 +72,14 @@ class AbstractDeviceController(AbstractVsphereObject):
         Returns:
             int or None: VMware device key, or None if no device/spec exists
         """
-        if self._raw_object is not None:
+        if self.represents_live_vm_device():
             return self._raw_object.key
-        if self._live_object is not None:
+        if self.has_a_linked_live_vm_device():
             return self._live_object.key
 
         return self._new_spec_key
 
-    @property
-    def name_as_str(self):
+    def __str__(self):
         """
         Get a human-readable name for this controller.
 
@@ -100,6 +99,7 @@ class AbstractDeviceController(AbstractVsphereObject):
             dict
         """
         return {
+            "object_type": "controller",
             "device_type": self.device_type,
             "bus_number": self.bus_number,
             "device_class": str(self.vim_device_class),
@@ -126,7 +126,7 @@ class AbstractDeviceController(AbstractVsphereObject):
         if device.unit_number in self.controlled_devices:
             raise ValueError(
                 "Cannot add multiple devices with unit number %s on controller %s"
-                % (device.unit_number, self.name_as_str)
+                % (device.unit_number, self)
             )
 
         self.controlled_devices[device.unit_number] = device
@@ -169,7 +169,7 @@ class AbstractDeviceController(AbstractVsphereObject):
         Note:
             Returns True if no device is linked (indicating creation is needed).
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         if self._live_object.bus_number != self.bus_number:

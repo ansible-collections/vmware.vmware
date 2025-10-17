@@ -40,9 +40,9 @@ class TestDisk:
         disk._raw_object.key = 1000
         assert disk.key == 1000
 
-    def test_name_as_str(self, disk):
-        disk.controller.name_as_str = "SCSI Controller 0"
-        assert disk.name_as_str == "Disk - SCSI Controller 0 Unit 1"
+    def test_str(self, disk):
+        disk.controller = "SCSI Controller 0"
+        assert str(disk) == "Disk - SCSI Controller 0 Unit 1"
 
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk.vim.vm.device.VirtualDeviceSpec"

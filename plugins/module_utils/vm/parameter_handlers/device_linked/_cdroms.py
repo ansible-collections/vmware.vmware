@@ -12,7 +12,6 @@ placement and validates cdrom parameters against available controllers.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
-    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._cdrom import Cdrom
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
@@ -145,7 +144,7 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
                     details={
                         "device_node": cdrom_param["device_node"],
                         "available_controllers": [
-                            c.name_as_str
+                            str(c)
                             for ch in self.controller_handlers
                             for c in ch.controllers.values()
                         ],
@@ -198,12 +197,10 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
             Updates change_set with cdrom objects categorized by required actions.
         """
         for cdrom in self.cdroms:
-            if cdrom._live_object is None:
+            if not cdrom.has_a_linked_live_vm_device():
                 self.change_set.objects_to_add.append(cdrom)
             elif cdrom.differs_from_live_object():
                 self.change_set.objects_to_update.append(cdrom)
-            else:
-                self.change_set.objects_in_sync.append(cdrom)
 
         return self.change_set
 
@@ -225,7 +222,7 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
             Sets the _device attribute on the matching cdrom object.
         """
         for cdrom in self.cdroms:
-            if cdrom._live_object is not None:
+            if cdrom.has_a_linked_live_vm_device():
                 continue
 
             if (
@@ -237,9 +234,5 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
                 )
                 return
 
-        raise DeviceLinkError(
-            "CD-ROM not found for device %s on controller %s"
-            % (device.unitNumber, device.controllerKey),
-            device,
-            self,
-        )
+        # device is unlinked and should be removed
+        return Cdrom.from_live_device_spec(device, None)

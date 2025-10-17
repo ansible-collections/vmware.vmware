@@ -12,7 +12,6 @@ placement and validates network adapter parameters against available portgroups.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
-    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._network_adapter import (
     NetworkAdapter,
@@ -211,12 +210,10 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
             Updates change_set with network adapter objects categorized by required actions.
         """
         for network_adapter in self.adapters:
-            if network_adapter._live_object is None:
+            if not network_adapter.has_a_linked_live_vm_device():
                 self.change_set.objects_to_add.append(network_adapter)
             elif network_adapter.differs_from_live_object():
                 self.change_set.objects_to_update.append(network_adapter)
-            else:
-                self.change_set.objects_in_sync.append(network_adapter)
 
         return self.change_set
 
@@ -244,22 +241,25 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
         for param_adapter in self.adapters:
             # Network adapters are not easily identified, but vmware always lists them in the same order.
             # So we can just link the first one that doesn't have a linked device.
-            if param_adapter._live_object is None:
-                if param_adapter.adapter_vim_class is not None and not isinstance(device, param_adapter.adapter_vim_class):
-                    self.error_handler.fail_with_parameter_error(
-                        parameter_name=self.HANDLER_NAME,
-                        message="Network adapter type %s in parameters does not match the device type %s, and changing types is not supported."
-                        % (getattr(param_adapter.adapter_vim_class, "__name__", "none"), type(device).__name__),
-                        details={"param_adapter": param_adapter.name_as_str, "device_label": device.deviceInfo.label},
-                    )
+            if param_adapter.has_a_linked_live_vm_device():
+                continue
 
-                param_adapter.link_corresponding_live_object(
-                    NetworkAdapter.from_live_device_spec(device)
+            if param_adapter.adapter_vim_class is not None and not isinstance(device, param_adapter.adapter_vim_class):
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name=self.HANDLER_NAME,
+                    message="Network adapter type %s in parameters does not match the device type %s, and changing types is not supported."
+                    % (getattr(param_adapter.adapter_vim_class, "__name__", "none"), type(device).__name__),
+                    details={"param_adapter": str(param_adapter), "device_label": device.deviceInfo.label},
                 )
-                return True
+
+            param_adapter.link_corresponding_live_object(
+                NetworkAdapter.from_live_device_spec(device)
+            )
+            return
 
         if self.params.get("network_adapter_remove_unmanaged"):
-            raise DeviceLinkError("Network adapter parameter not found for device %s" % device.deviceInfo.label)
+            # device is unlinked and should be removed
+            return NetworkAdapter.from_live_device_spec(device)
         else:
             # the device is not linked to anything, and no DeviceLinkError was raised,
             # so the module will ignore it

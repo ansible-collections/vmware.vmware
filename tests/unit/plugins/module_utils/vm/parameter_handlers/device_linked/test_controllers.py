@@ -91,8 +91,8 @@ class TestDiskControllerParameterHandlerBase:
         mock_handler.controllers = {
             3: Mock(bus_number=3),
         }
-        with pytest.raises(Exception):
-            mock_handler.link_vm_device(device)
+        out = mock_handler.link_vm_device(device)
+        assert out is not None
 
     def test_populate_config_spec_with_parameters(self, mock_handler):
         mock_handler.change_set.objects_to_add = [Mock()]
@@ -114,13 +114,13 @@ class TestDiskControllerParameterHandlerBase:
         assert mock_handler.change_set.are_changes_required() is False
 
         mock_handler.controllers = {
-            0: Mock(_live_object=None),
+            0: Mock(has_a_linked_live_vm_device=Mock(return_value=False)),
             1: Mock(
-                _live_object=Mock(),
+                has_a_linked_live_vm_device=Mock(return_value=True),
                 differs_from_live_object=Mock(return_value=True),
             ),
             2: Mock(
-                _live_object=Mock(),
+                has_a_linked_live_vm_device=Mock(return_value=True),
                 differs_from_live_object=Mock(return_value=False),
             ),
         }
@@ -131,7 +131,6 @@ class TestDiskControllerParameterHandlerBase:
         assert (
             mock_handler.change_set.objects_to_update[0] is mock_handler.controllers[1]
         )
-        assert mock_handler.change_set.objects_in_sync[0] is mock_handler.controllers[2]
 
 
 class TestScsiControllerParameterHandler:

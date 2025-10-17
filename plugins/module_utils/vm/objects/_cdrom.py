@@ -84,9 +84,9 @@ class Cdrom(AbstractVsphereObject):
         Returns:
             int or None: VMware device key, or None if no device exists
         """
-        if self._raw_object is not None:
+        if self.represents_live_vm_device():
             return self._raw_object.key
-        if self._live_object is not None:
+        if self.has_a_linked_live_vm_device():
             return self._live_object.key
 
         return None
@@ -130,7 +130,7 @@ class Cdrom(AbstractVsphereObject):
         Returns:
             bool: True if there are differences, False otherwise
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         att = [
@@ -183,8 +183,7 @@ class Cdrom(AbstractVsphereObject):
         self._update_cdrom_spec_with_options(cdrom_spec)
         return cdrom_spec
 
-    @property
-    def name_as_str(self):
+    def __str__(self):
         """
         Get a human-readable name for this cdrom.
 
@@ -194,7 +193,7 @@ class Cdrom(AbstractVsphereObject):
         Returns:
             str: Human-readable cdrom name (e.g., "CD-ROM - SCSI Controller 0 Unit 1")
         """
-        return "CD-ROM - %s Unit %s" % (self.controller.name_as_str, self.unit_number)
+        return "CD-ROM - %s Unit %s" % (self.controller, self.unit_number)
 
     def _update_cdrom_spec_with_options(self, cdrom_spec):
         """
@@ -228,7 +227,8 @@ class Cdrom(AbstractVsphereObject):
             dict
         """
         return {
-            "controller": self.controller.name_as_str,
+            "object_type": "cdrom",
+            "controller": str(self.controller),
             "unit_number": self.unit_number,
             "connect_at_power_on": self.connect_at_power_on,
             "iso_media_path": self.iso_media_path,

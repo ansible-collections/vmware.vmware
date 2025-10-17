@@ -18,7 +18,6 @@ class TestDiskParameterHandler:
         """Create a mock controller for testing."""
         controller = Mock()
         controller.key = 1000
-        controller.name_as_str = "SCSI Controller 0"
         controller.category = "scsi"
         return controller
 
@@ -144,7 +143,7 @@ class TestDiskParameterHandler:
             message=ANY,
             details={
                 "device_node": "sata(0:0)",
-                "available_controllers": ["SCSI Controller 0"],
+                "available_controllers": ANY,
             },
         )
 
@@ -252,13 +251,13 @@ class TestDiskParameterHandler:
         assert disk_parameter_handler.change_set.are_changes_required() is False
 
         disk_parameter_handler.disks = [
-            Mock(_live_object=None),
+            Mock(has_a_linked_live_vm_device=Mock(return_value=False)),
             Mock(
-                _live_object=Mock(),
+                has_a_linked_live_vm_device=Mock(return_value=True),
                 differs_from_live_object=Mock(return_value=True),
             ),
             Mock(
-                _live_object=Mock(),
+                has_a_linked_live_vm_device=Mock(return_value=True),
                 differs_from_live_object=Mock(return_value=False),
             ),
         ]
@@ -271,8 +270,4 @@ class TestDiskParameterHandler:
         assert (
             disk_parameter_handler.change_set.objects_to_update[0]
             is disk_parameter_handler.disks[1]
-        )
-        assert (
-            disk_parameter_handler.change_set.objects_in_sync[0]
-            is disk_parameter_handler.disks[2]
         )

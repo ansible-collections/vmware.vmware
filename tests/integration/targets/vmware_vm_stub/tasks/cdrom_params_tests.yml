@@ -28,6 +28,9 @@
     that:
       - _set_cdrom_params is ansible.builtin.changed
       - _set_cdrom_params_idempotent is not ansible.builtin.changed
+      - _set_cdrom_params.changes.objects_to_add | length == 4
+      - _set_cdrom_params.changes.objects_to_update | length == 0
+      - _set_cdrom_params.changes.objects_to_remove | length == 0
 
 - name: Update vm cdroms
   vmware.vmware._vm_stub: &update-cdrom-params
@@ -51,6 +54,9 @@
     that:
       - _update_cdrom_params is ansible.builtin.changed
       - _update_cdrom_params_idempotent is not ansible.builtin.changed
+      - _update_cdrom_params.changes.objects_to_add | length == 0
+      - _update_cdrom_params.changes.objects_to_update | length == 2
+      - _update_cdrom_params.changes.objects_to_remove | length == 1
 
 - name: Set invalid controller type - expect failure
   vmware.vmware._vm_stub:
@@ -96,3 +102,6 @@
       - _ignore_cdroms is not ansible.builtin.changed
       - _remove_cdroms is ansible.builtin.changed
       - _remove_cdroms_idempotent is not ansible.builtin.changed
+      - _remove_cdroms.changes.objects_to_add | length == 0
+      - _remove_cdroms.changes.objects_to_update | length == 0
+      - _remove_cdroms.changes.objects_to_remove | length == 3

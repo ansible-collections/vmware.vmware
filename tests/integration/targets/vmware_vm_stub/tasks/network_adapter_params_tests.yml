@@ -34,6 +34,9 @@
     that:
       - _set_network_params is ansible.builtin.changed
       - _set_network_params_idempotent is not ansible.builtin.changed
+      - _set_network_params.changes.objects_to_add | length == 2
+      - _set_network_params.changes.objects_to_update | length == 0
+      - _set_network_params.changes.objects_to_remove | length == 0
 
       - vm_guest_info.hw_interfaces | length == 2
       - vm_guest_info.hw_eth0.addresstype == "assigned" # aka generated
@@ -94,3 +97,6 @@
       - _remove_network_adapter_ignore is not changed
       - _remove_network_adapter_remove_unmanaged is changed
       - _remove_network_adapter_remove_unmanaged_idem is not changed
+      - _remove_network_adapter_remove_unmanaged.changes.objects_to_add | length == 0
+      - _remove_network_adapter_remove_unmanaged.changes.objects_to_update | length == 0
+      - _remove_network_adapter_remove_unmanaged.changes.objects_to_remove | length == 1

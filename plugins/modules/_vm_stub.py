@@ -652,6 +652,65 @@ vm:
     sample:
         moid: vm-79828,
         name: test-d9c1-vm
+changes:
+    description:
+        - A dictionary showing any changes in settings or devices on the VM
+        - If there are no changes, this is an empty dictionary
+    returned: On success
+    type: dict
+    sample: {
+        "changed_parameters": {
+            "cpu.cores": {
+                "new_value": 2,
+                "old_value": 1
+            },
+            "memory.size_mb": {
+                "new_value": 1024,
+                "old_value": 2048
+            },
+            "name": {
+                "new_value": "my-new-vm",
+                "old_value": "foo"
+            }
+        },
+        "objects_to_add": [
+            {
+                "bus_number": 0,
+                "device_class": "<class 'pyVmomi.VmomiSupport.vim.vm.device.VirtualIDEController'>",
+                "device_type": "ide",
+                "object_type": "controller",
+                "used_unit_numbers": []
+            },
+            {
+                "bus_number": 1,
+                "device_class": "<class 'pyVmomi.VmomiSupport.vim.vm.device.VirtualIDEController'>",
+                "device_type": "ide",
+                "object_type": "controller",
+                "used_unit_numbers": []
+            },
+        ],
+        "objects_to_remove": [],
+        "objects_to_update": [
+            {
+                "controller": "BUSLOGIC(0:)",
+                "datastore": "N/A",
+                "mode": "persistent",
+                "object_type": "virtual disk",
+                "provisioning": "thin",
+                "size": 10485760,
+                "unit_number": 0
+            },
+            {
+                "bus_number": 0,
+                "device_class": "<class 'pyVmomi.VmomiSupport.vim.vm.device.VirtualBusLogicController'>",
+                "device_type": "buslogic",
+                "object_type": "controller",
+                "used_unit_numbers": [
+                    0
+                ]
+            }
+        ]
+    }
 '''
 try:
     from pyVmomi import vim, vmodl

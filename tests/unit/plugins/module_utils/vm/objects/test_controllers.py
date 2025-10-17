@@ -51,8 +51,8 @@ class TestAbstractDeviceController:
         controller._raw_object.key = 1001
         assert controller.key == 1001
 
-    def test_name_as_str(self, controller):
-        assert controller.name_as_str == "SCSI(0:)"
+    def test_str(self, controller):
+        assert str(controller) == "SCSI(0:)"
 
     def test_add_device(self, controller, device):
         controller.add_device(device)
