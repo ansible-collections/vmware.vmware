@@ -19,13 +19,148 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers import (
     ScsiDeviceController,
     BasicDeviceController,
-    ShareableDeviceController
+    ShareableDeviceController,
+    UsbDeviceController
 )
 
 try:
     from pyVmomi import vim
 except ImportError:
     pass
+
+
+class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
+
+    HANDLER_NAME = "usb_controller"
+
+    def __init__(
+        self, error_handler, params, change_set, vm, device_tracker
+    ):
+        """
+        Initialize the controller parameter handler.
+
+        Args:
+            error_handler: Service for parameter validation error handling
+            params (dict): Module parameters containing controller configuration
+            change_set: Service for tracking configuration changes and requirements
+            vm: VM object being configured (None for new VM creation)
+            device_tracker: Service for device identification and error reporting
+        """
+        super().__init__(error_handler, params, change_set, vm, device_tracker)
+        self.controllers = {}  # {bus_number: controller}
+        self.max_count = 2
+
+    def verify_parameter_constraints(self):
+        """
+        Parse USB controller parameters from module input.
+
+        Processes the usb_controllers parameter list and creates device
+        objects representing the desired USB controller configuration. Controllers are
+        indexed by their position in the list.
+
+        Side Effects:
+            Populates self.controllers with device objects representing
+            the desired USB controller configuration.
+        """
+        existing_types = []
+        for controller_param_def in self.params.get("usb_controllers"):
+            bus_number = controller_param_def.get("bus_number")
+            controller_type = controller_param_def.get("controller_type")
+            if bus_number >= self.max_count:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="usb_controllers",
+                    message="Bus number %s is out of range for USB controllers. Valid bus numbers are 0 to %s, inclusive." % (bus_number, self.max_count - 1),
+                    details={"violating_param": controller_param_def},
+                )
+            if controller_type in existing_types:
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name="usb_controllers",
+                    message="USB controller type %s is already defined for bus number %s. Only one controller of each type is allowed." % (controller_type, bus_number),
+                    details={"violating_param": controller_param_def},
+                )
+            existing_types.append(controller_type)
+            self.controllers[bus_number] = UsbDeviceController(
+                bus_number=bus_number,
+                vim_device_class=self.vim_device_class,
+                auto_connect_devices=controller_param_def.get("auto_connect_devices"),
+                enable_ehci=controller_param_def.get("enable_ehci"),
+            )
+
+    @property
+    def vim_device_class(self):
+        """
+        Get the VMware device class for this controller type.
+        """
+        return (vim.vm.device.VirtualUSBController, vim.vm.device.VirtualUSBXHCIController)
+
+    def populate_config_spec_with_parameters(self, configspec):
+        """
+        Populate VMware configuration specification with controller parameters.
+
+        Adds controller device specifications to the configuration for both
+        new controller creation and existing controller modification. Tracks
+        device IDs for proper error reporting and device management.
+
+        Args:
+            configspec: VMware VirtualMachineConfigSpec to populate
+
+        Side Effects:
+            Adds controller device specifications to configspec.deviceChange.
+            Tracks device IDs through device_tracker for error reporting.
+        """
+        for controller in self.change_set.objects_to_add:
+            self.device_tracker.track_device_id_from_spec(controller)
+            configspec.deviceChange.append(controller.to_new_spec())
+
+        for controller in self.change_set.objects_to_update:
+            self.device_tracker.track_device_id_from_spec(controller)
+            configspec.deviceChange.append(controller.to_update_spec())
+
+    def compare_live_config_with_desired_config(self):
+        """
+        Compare current VM controller configuration with desired configuration.
+
+        Analyzes each controller to determine if it needs to be added, updated,
+        or is already in sync with the desired configuration. Categorizes
+        controllers based on their current state and required changes.
+
+        Returns:
+            ParameterChangeSet: Updated change set with controller change requirements
+
+        Side Effects:
+            Updates change_set with controller objects categorized by required actions.
+        """
+        for controller in self.controllers.values():
+            if not controller.has_a_linked_live_vm_device():
+                self.change_set.objects_to_add.append(controller)
+            elif controller.differs_from_live_object():
+                self.change_set.objects_to_update.append(controller)
+
+        return self.change_set
+
+    def link_vm_device(self, device):
+        """
+        Link a VMware controller device to the appropriate controller object.
+
+        Matches a VMware controller device to the corresponding controller object
+        based on bus number. This establishes the connection between the existing
+        VM device and the handler's controller representation.
+
+        Args:
+            device: VMware controller device to link
+
+        Returns:
+            UsbDeviceController or None: None if device was linked, else a controller
+                                         object representing the VM device
+        """
+        for controller in self.controllers.values():
+            if device.busNumber == controller.bus_number:
+                controller.link_corresponding_live_object(
+                    UsbDeviceController.from_live_device_spec(device)
+                )
+                return
+
+        return UsbDeviceController.from_live_device_spec(device)
 
 
 class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):

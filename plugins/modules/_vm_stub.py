@@ -468,24 +468,38 @@ options:
                 type: int
                 required: true
 
-    # TODO: add support for USB controllers
     usb_controllers:
         description:
             - USB device controllers to manage on the VM.
-            - If a controller is not specified, it will be removed from the VM.
-            - You may only specify two USB controllers per VM.
-            - Controllers are added to the VM in the order they are specified. For example, the first controller specified
-              will be assigned bus 0, the second controller will be assigned bus 1, etc.
+            - You may only specify two USB controllers per VM, and only one of each type.
+            - The ESXi host that the VM is running on must have the required hardware and firmware to support the USB controller type.
         type: list
         elements: dict
         required: false
         suboptions:
+            bus_number:
+                description:
+                    - The bus number of the USB controller. This is used to identify the controller and is required.
+                    - Valid bus numbers are 0 to 1, inclusive.
+                type: int
+                required: true
             controller_type:
                 description:
-                    - The type of the controller.
+                    - The type of the USB controller.
                 type: str
+                required: true
                 choices: [ usb2, usb3 ]
-                default: usb3
+            auto_connect_devices:
+                description:
+                    - Whether to enable hot connect/disconnect devices on the USB controller.
+                type: bool
+                required: false
+            enable_ehci:
+                description:
+                    - Whether to enable EHCI (Enhanced Host Controller Interface) on the USB controller.
+                    - This is only supported on USB 2 controllers. It will be ignored for USB 3 controllers.
+                type: bool
+                required: false
 
     network_adapter_remove_unmanaged:
         description:
@@ -792,6 +806,7 @@ class VmModule(ModulePyvmomiBase):
         self.configuration_registry.register_controller_handler(_controllers.NvmeControllerParameterHandler)
         self.configuration_registry.register_controller_handler(_controllers.SataControllerParameterHandler)
         self.configuration_registry.register_controller_handler(_controllers.IdeControllerParameterHandler)
+        self.configuration_registry.register_controller_handler(_controllers.UsbControllerParameterHandler)
 
     def _init_configuration_builder(self):
         self.configuration_builder = ConfigurationBuilder(self.vm, self.module, self.configuration_registry)
@@ -1056,7 +1071,14 @@ def main():
                         bus_number=dict(type='int', required=True),
                     )
                 ),
-                usb_controllers=dict(type='list', elements='dict', required=False),
+                usb_controllers=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        bus_number=dict(type='int', required=True),
+                        controller_type=dict(type='str', required=True, choices=['usb2', 'usb3']),
+                        auto_connect_devices=dict(type='bool', required=False),
+                        enable_ehci=dict(type='bool', required=False),
+                    )
+                ),
 
                 network_adapter_remove_unmanaged=dict(type='bool', required=False, default=False),
                 network_adapters=dict(

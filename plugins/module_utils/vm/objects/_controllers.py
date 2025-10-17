@@ -271,3 +271,62 @@ class ScsiDeviceController(ShareableDeviceController):
         spec.device.scsiCtlrUnitNumber = 7
         spec.device.hotAddRemove = True
         return spec
+
+
+class UsbDeviceController(BasicDeviceController):
+    def __init__(
+        self,
+        bus_number,
+        vim_device_class,
+        raw_object=None,
+        auto_connect_devices=None,
+        enable_ehci=None,
+    ):
+        super().__init__(device_type="usb", vim_device_class=vim_device_class, bus_number=bus_number, raw_object=raw_object)
+        self.auto_connect_devices = auto_connect_devices
+        self.enable_ehci = None
+        if vim_device_class is vim.vm.device.VirtualUSBController:
+            self.enable_ehci = enable_ehci
+
+    @classmethod
+    def from_live_device_spec(cls, live_device_spec):
+        """
+        Create a controller object from a live device specification.
+        """
+        return cls(
+            bus_number=live_device_spec.busNumber,
+            vim_device_class=type(live_device_spec),
+            auto_connect_devices=live_device_spec.autoConnectDevices,
+            enable_ehci=getattr(live_device_spec, "ehciEnabled", None),
+            raw_object=live_device_spec
+        )
+
+    def to_new_spec(self):
+        spec = super().to_new_spec()
+        if self.auto_connect_devices is not None:
+            spec.device.autoConnectDevices = self.auto_connect_devices
+
+        if self.enable_ehci is not None:
+            spec.device.ehciEnabled = self.enable_ehci
+        return spec
+
+    def to_update_spec(self):
+        spec = super().to_update_spec()
+        if self.auto_connect_devices is not None:
+            spec.device.autoConnectDevices = self.auto_connect_devices
+
+        if self.enable_ehci is not None:
+            spec.device.ehciEnabled = self.enable_ehci
+        return spec
+
+    def differs_from_live_object(self):
+        if super().differs_from_live_object():
+            return True
+
+        if self.auto_connect_devices is not None and self._live_object.autoConnectDevices != self.auto_connect_devices:
+            return True
+
+        if self.enable_ehci is not None and self._live_object.ehciEnabled != self.enable_ehci:
+            return True
+
+        return False
