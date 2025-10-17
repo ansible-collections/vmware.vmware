@@ -177,7 +177,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                 details={
                     "device_node": disk_param["device_node"],
                     "available_controllers": [
-                        c.name_as_str
+                        str(c)
                         for ch in self.controller_handlers
                         for c in ch.controllers.values()
                     ],

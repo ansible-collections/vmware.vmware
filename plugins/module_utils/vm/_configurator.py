@@ -59,10 +59,11 @@ class Configurator:
         for handler in self.handlers:
             handler.verify_parameter_constraints()
 
-        self.device_tracker.link_vm_devices_to_handler_devices(
-            self.vm,
-            self.controller_handlers + [handler for handler in self.handlers if hasattr(handler, "vim_device_class")]
-        )
+        if self.vm is not None:
+            self.device_tracker.link_vm_devices_to_handler_devices(
+                self.vm.config.hardware.device,
+                self.controller_handlers + [handler for handler in self.handlers if hasattr(handler, "vim_device_class")]
+            )
 
     def stage_configuration_changes(self):
         """

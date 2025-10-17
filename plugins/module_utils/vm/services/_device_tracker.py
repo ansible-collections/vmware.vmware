@@ -14,6 +14,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     AbstractDeviceLinkedParameterHandler,
 )
 
+
 class DeviceTracker(AbstractService):
     """
     Service for tracking VMware device specifications during configuration.
@@ -22,6 +23,9 @@ class DeviceTracker(AbstractService):
     VM configuration. It enables translation between the device's location in
     the spec (ID) and the actual device object for better error reporting and
     debugging.
+
+    It also handles the linking of VM devices to their appropriate handlers
+    objects.
 
     The tracker is particularly useful when VMware API calls fail with device
     IDs that need to be mapped back to the original device specifications.
@@ -72,7 +76,7 @@ class DeviceTracker(AbstractService):
         """
         return self.spec_id_to_device[device_id - 1]
 
-    def link_vm_devices_to_handler_devices(self, vm, device_linked_handlers: list[AbstractDeviceLinkedParameterHandler]):
+    def link_vm_devices_to_handler_devices(self, vm_devices, device_linked_handlers: list[AbstractDeviceLinkedParameterHandler]):
         """
         Link existing VM devices to their appropriate handlers.
 
@@ -88,9 +92,6 @@ class DeviceTracker(AbstractService):
         Side effect:
             unlinked_devices: Populates this objects unlinked_devices attribute
         """
-        if vm is None:
-            return
-
         managed_device_types = tuple()
         for handler in device_linked_handlers:
             if isinstance(handler.vim_device_class, tuple):
@@ -98,7 +99,7 @@ class DeviceTracker(AbstractService):
             else:
                 managed_device_types += tuple([handler.vim_device_class])
 
-        for device in vm.config.hardware.device:
+        for device in vm_devices:
             # some devices are not managed by this module (like VMCI),
             # so we should skip them instead of failing to link and removing them
             if not isinstance(device, managed_device_types):
