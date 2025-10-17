@@ -568,6 +568,30 @@ options:
                     - If not specified and this is an existing adapter, the MAC address will not be changed.
                 required: false
 
+    nvdimm_remove_unmanaged:
+        description:
+            - Whether to remove NVDIMMs that are not specified in the O(nvdimms) parameter.
+            - If this is set to true, any NVDIMMs that are not specified in the O(nvdimms) parameter will be removed.
+            - If this is set to false, the module will ignore NVDIMMs beyond those listed in the O(nvdimms) parameter.
+        type: bool
+        required: false
+        default: false
+    nvdimms:
+        description:
+            - A list of non-volatile DIMMs to manage on the VM.
+            - Any NVDIMMs in this list that do not exist on the VM will be created.
+        type: list
+        elements: dict
+        required: false
+        suboptions:
+            size_mb:
+                description:
+                    - The amount of memory to add to the VM.
+                    - Memory cannot be changed while the VM is powered on, unless memory hot add is already enabled.
+                    - This parameter is required when creating a new VM.
+                type: int
+                required: true
+
     vm_options:
         description:
             - Advanced and miscellaneous options for the VM, including things like BIOS settings,
@@ -575,6 +599,14 @@ options:
         type: dict
         required: false
         suboptions:
+        required: false
+        suboptions:
+            bus_number:
+                description:
+                    - The bus number of the NVDimm. This is used to identify the NVDimm and is required.
+                    - Valid bus numbers are 0 to 3, inclusive.
+                type: int
+                required: true
             maximum_remote_console_sessions:
                 description:
                     - The maximum number of remote console sessions that can be established to the VM.
@@ -758,6 +790,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     _controllers,
     _network_adapters,
     _cdroms,
+    _nvdimms,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
     ConfigurationRegistry,
@@ -787,6 +820,7 @@ class VmModule(ModulePyvmomiBase):
         self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
         self.configuration_registry.register_device_linked_handler(_network_adapters.NetworkAdapterParameterHandler)
         self.configuration_registry.register_device_linked_handler(_cdroms.CdromParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_nvdimms.NvdimmParameterHandler)
 
         self.configuration_registry.register_controller_handler(_controllers.ScsiControllerParameterHandler)
         self.configuration_registry.register_controller_handler(_controllers.NvmeControllerParameterHandler)
@@ -1074,6 +1108,13 @@ def main():
                     mutually_exclusive=[
                         ['shares', 'shares_level']
                     ],
+                ),
+
+                nvdimm_remove_unmanaged=dict(type='bool', required=False, default=False),
+                nvdimms=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        size_mb=dict(type='int', required=True),
+                    )
                 ),
 
                 vm_options=dict(
