@@ -3,15 +3,12 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator import (
     Configurator,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    DeviceLinkError,
-)
 
 
 class TestConfigurator:

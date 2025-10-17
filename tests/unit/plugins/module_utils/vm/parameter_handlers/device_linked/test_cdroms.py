@@ -8,9 +8,6 @@ from unittest.mock import Mock, patch
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._cdroms import (
     CdromParameterHandler,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    DeviceLinkError,
-)
 
 
 class TestCdromParameterHandler:
