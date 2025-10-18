@@ -144,7 +144,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
                 validate_certs=self.get_option("validate_certs"),
                 proxy_host=self.get_option("proxy_host"),
                 proxy_port=self.get_option("proxy_port"),
-                http_proxy_protocol=self.get_option("proxy_protocol")
+                proxy_protocol=self.get_option("proxy_protocol")
             )
         except Exception as e:
             raise AnsibleParserError(message=to_native(e))
