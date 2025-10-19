@@ -113,6 +113,9 @@ class ParameterChangeSet:
             return
 
         self._check_if_param_differs_from_vm(parameter_name, vm_attribute)
+        if parameter_name not in self._changed_parameters:
+            return
+
         if power_sensitive:
             self._check_if_change_violates_power_state(
                 parameter_name, errors_fatal=errors_fatal

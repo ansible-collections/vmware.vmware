@@ -644,6 +644,13 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+power_cycled_for_update:
+    description:
+        - Whether the VM was powered cycled to apply the update.
+        - This is always returned, but always false for create and delete operations.
+    returned: On success
+    type: bool
+    sample: true
 vm:
     description:
         - Information about the target VM
@@ -735,15 +742,16 @@ class VmModule(ModulePyvmomiBase):
         return self.configurator.change_set
 
     def configure_existing_vm(self):
+        power_cycled = False
         self.configurator.prepare_parameter_handlers()
         change_set = self.configurator.stage_configuration_changes()
 
         if change_set.are_changes_required():
             update_spec = vim.vm.ConfigSpec()
             self.configurator.apply_staged_changes_to_config_spec(update_spec)
-            self._apply_update_spec(update_spec, change_set.power_cycle_required)
+            power_cycled = self._apply_update_spec(update_spec, change_set.power_cycle_required)
 
-        return change_set
+        return change_set, power_cycled
 
     def delete_vm(self):
         if not self.vm:
@@ -752,7 +760,7 @@ class VmModule(ModulePyvmomiBase):
         self._power_off_vm()
 
         try:
-            self._try_to_run_task(task_func=self.vm.Destroy_Task, error_prefix="Unable to delete VM.")
+            self._try_to_run_task(task_func=self.vm.Destroy_Task, action="delete")
         except Exception as e:
             self.module.fail_json(msg="%s." % to_native(type(e)))
 
@@ -761,43 +769,97 @@ class VmModule(ModulePyvmomiBase):
         task_result = self._try_to_run_task(
             task_func=vm_folder.CreateVM_Task,
             task_kwargs=dict(config=configspec, pool=self.placement.get_resource_pool(), host=self.placement.get_esxi_host()),
-            error_prefix="Unable to create VM."
+            action="create"
         )
 
         return task_result['result']
 
     def _apply_update_spec(self, update_spec, needs_power_cycle):
+        """
+        Apply an update spec to the VM.
+
+        If we detected a power sensitive change, we will power off the VM (if the user allows it)
+        and try to apply the update. If the update fails with an invalid power state error,
+        we will also power off the VM and try to apply the update again.
+
+        Args:
+            update_spec: The update spec to apply.
+            needs_power_cycle: Whether the VM needs to be powered off to apply the update.
+
+        Returns:
+            True if the VM was powered cycled to apply the update, False otherwise.
+        """
         if needs_power_cycle:
             self._power_off_vm()
-        self._try_to_run_task(
-            task_func=self.vm.ReconfigVM_Task,
-            task_kwargs=dict(spec=update_spec),
-            error_prefix="Unable to apply update spec."
-        )
+
+        try:
+            self._try_to_run_task(
+                task_func=self.vm.ReconfigVM_Task,
+                task_kwargs=dict(spec=update_spec),
+                action="update"
+            )
+        except self._get_invalid_power_state_error_classes():
+            self._power_off_vm()
+            needs_power_cycle = True
+            self._try_to_run_task(
+                task_func=self.vm.ReconfigVM_Task,
+                task_kwargs=dict(spec=update_spec),
+                action="update"
+            )
+
         if needs_power_cycle:
             self._power_on_vm()
 
+        return needs_power_cycle
+
     def _power_off_vm(self):
+        """
+        Attempt to power off the VM.
+
+        If the user did not allow power cycling via the allow_power_cycling parameter,
+        we will fail with a generic power cycle error and let the user know.
+        """
         if not self.vm or self.vm.summary.runtime.powerState.lower() == 'poweredoff':
             return
 
         if not self.params['allow_power_cycling']:
             self.error_handler.fail_with_generic_power_cycle_error(desired_power_state="powered off")
 
-        self._try_to_run_task(task_func=self.vm.PowerOffVM_Task, error_prefix="Unable to power off VM.")
+        self._try_to_run_task(task_func=self.vm.PowerOffVM_Task, action="power off")
 
     def _power_on_vm(self):
+        """
+        Attempt to power on the VM.
+
+        If the user did not allow power cycling via the allow_power_cycling parameter,
+        we will fail with a generic power cycle error and let the user know.
+        """
         if not self.vm or self.vm.summary.runtime.powerState.lower() == 'poweredon':
             return
 
         if not self.params['allow_power_cycling']:
             self.error_handler.fail_with_generic_power_cycle_error(desired_power_state="powered on")
 
-        self._try_to_run_task(task_func=self.vm.PowerOnVM_Task, error_prefix="Unable to power on VM.")
+        self._try_to_run_task(task_func=self.vm.PowerOnVM_Task, action="power on")
 
-    def _try_to_run_task(self, task_func, error_prefix="", task_kwargs=None):
+    def _try_to_run_task(self, task_func, action, task_kwargs=None):
+        """
+        Attempt to run a task on the VM.
+
+        This method will attempt to handle most task errors, and provide a better error message when possible.
+
+        Args:
+            task_func: The vSphere task function to run.
+            action: The action being performed (e.g. "create", "update", "power off", "power on").
+            task_kwargs: The keyword arguments to pass to the task function.
+
+        Returns:
+            The vSphere task result.
+        """
         if task_kwargs is None:
             task_kwargs = dict()
+
+        error_prefix = "Unable to %s VM." % action
 
         try:
             task = task_func(**task_kwargs)
@@ -807,13 +869,27 @@ class VmModule(ModulePyvmomiBase):
         except TaskError as e:
             if isinstance(e.parent_error, vim.fault.InvalidVmConfig):
                 self.error_handler.fail_with_vm_config_error(error=e.parent_error, message=str(e))
+            elif isinstance(e.parent_error, self._get_invalid_power_state_error_classes()) and action == "update":
+                # We may have missed a power sensitive change. We can retry the update task with the needs_power_cycle
+                # flag set to True, and let those tasks handle any new issues
+                raise e.parent_error
             else:
-                self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)))
+                self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)), exception=e.parent_error)
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:
             self.module.fail_json(msg="%s %s" % (error_prefix, e.msg))
 
         return task_result
 
+    def _get_invalid_power_state_error_classes(self):
+        """
+        Get the classes of invalid power state errors. These are errors raised when the VM is powered on and a
+        power sensitive change is attempted.
+        We put these in a method (instead of as a class variable) so the linter doesn't complain.
+        """
+        return (
+            vim.fault.InvalidPowerState, vim.fault.CpuHotPlugNotSupported, vim.fault.MemoryHotPlugNotSupported,
+            vim.fault.DeviceHotPlugNotSupported
+        )
 
 def main():
     module = AnsibleModule(
@@ -964,6 +1040,7 @@ def main():
     result = dict(
         changed=False,
         changes=dict(),
+        power_cycled_for_update=False,
         vm=dict(
             moid=None,
             name=None
@@ -973,7 +1050,8 @@ def main():
     vm_module = VmModule(module)
     if module.params['state'] == 'present':
         if vm_module.vm:
-            change_set = vm_module.configure_existing_vm()
+            change_set, power_cycled = vm_module.configure_existing_vm()
+            result['power_cycled_for_update'] = power_cycled
         else:
             change_set = vm_module.create_new_vm()
 
