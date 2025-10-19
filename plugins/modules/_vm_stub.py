@@ -891,6 +891,7 @@ class VmModule(ModulePyvmomiBase):
             vim.fault.DeviceHotPlugNotSupported
         )
 
+
 def main():
     module = AnsibleModule(
         argument_spec={

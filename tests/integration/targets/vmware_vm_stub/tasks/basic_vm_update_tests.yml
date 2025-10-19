@@ -54,6 +54,7 @@
       - _create_vm_idempotent is not ansible.builtin.changed
       - _update_vm is ansible.builtin.changed
       - _update_vm_idempotent is not ansible.builtin.changed
+      - _update_vm.power_cycled_for_update is false
       - vm_info != {}
       - vm_info.hw_cluster == vcenter_cluster_name
       - vm_info.hw_datastores[0] == shared_storage_01
@@ -95,3 +96,41 @@
       - (_update_vm_minimal.changes.changed_parameters.keys() | length) == 1
   vars:
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
+
+- name: Power on VM
+  vmware.vmware.vm_powerstate:
+    moid: "{{ _update_vm_minimal.vm.moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    state: powered-on
+
+- name: Change CPU (Power sensitive change) - expect failure
+  vmware.vmware._vm_stub:
+    moid: "{{ _update_vm_minimal.vm.moid }}"
+    cpu:
+      cores: 4
+    allow_power_cycling: false
+  register: _change_cpu_failure
+  ignore_errors: true
+
+- name: Change CPU (Power sensitive change)
+  vmware.vmware._vm_stub:
+    moid: "{{ _update_vm_minimal.vm.moid }}"
+    cpu:
+      cores: 4
+    allow_power_cycling: true
+  register: _change_cpu_success
+
+- name: Power off VM so we can see if the VM was powered on after the last change
+  vmware.vmware.vm_powerstate:
+    moid: "{{ _update_vm_minimal.vm.moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    state: powered-off
+  register: _power_off_vm
+
+- name: Check power sensitive change tasks
+  ansible.builtin.assert:
+    that:
+      - _change_cpu_failure is ansible.builtin.failed
+      - _change_cpu_success is ansible.builtin.changed
+      - _change_cpu_success.power_cycled_for_update is true
+      - _power_off_vm is ansible.builtin.changed
