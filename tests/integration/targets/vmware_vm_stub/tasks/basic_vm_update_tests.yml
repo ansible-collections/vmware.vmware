@@ -15,7 +15,7 @@
         provisioning: thin
         device_node: SCSI(0:0)
     scsi_controllers:
-      - controller_type: buslogic
+      - controller_type: paravirtual
         bus_number: 0
   register: _create_vm_idempotent
 
@@ -35,7 +35,7 @@
         provisioning: thin
         device_node: SCSI(0:0)
     scsi_controllers:
-      - controller_type: buslogic
+      - controller_type: paravirtual
         bus_number: 0
   register: _update_vm
 
