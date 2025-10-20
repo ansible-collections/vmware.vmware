@@ -19,8 +19,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controllers import (
     ScsiDeviceController,
     BasicDeviceController,
-    ShareableDeviceController,
-    UsbDeviceController
+    ShareableDeviceController
 )
 
 try:
@@ -47,7 +46,8 @@ class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
             device_tracker: Service for device identification and error reporting
         """
         super().__init__(error_handler, params, change_set, vm, device_tracker)
-        self.controllers = {}  # {bus_number: controller}
+        self._check_if_params_are_defined_by_user("usb_controllers", required_for_vm_creation=False)
+        self.controllers = {}  # {controller_type: controller}
         self.max_count = 2
 
     def verify_parameter_constraints(self):
@@ -62,31 +62,21 @@ class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
             Populates self.controllers with device objects representing
             the desired USB controller configuration.
         """
-        existing_types = []
         for controller_param_def in self.params.get("usb_controllers"):
-            bus_number = controller_param_def.get("bus_number")
             controller_type = controller_param_def.get("controller_type")
-            if bus_number >= self.max_count:
-                self.error_handler.fail_with_parameter_error(
-                    parameter_name="usb_controllers",
-                    message="Bus number %s is out of range for USB controllers. Valid bus numbers are 0 to %s, inclusive." % (bus_number, self.max_count - 1),
-                    details={"violating_param": controller_param_def},
-                )
-            if controller_type in existing_types:
+            if controller_type in self.controllers:
                 self.error_handler.fail_with_parameter_error(
                     parameter_name="usb_controllers",
                     message=(
-                        "USB controller type %s is already defined for bus number %s. Only one controller of each type is allowed."
-                        % (controller_type, bus_number)
+                        "USB controller type %s is already defined. Only one controller of each type is allowed."
+                        % (controller_type)
                     ),
                     details={"violating_param": controller_param_def},
                 )
-            existing_types.append(controller_type)
-            self.controllers[bus_number] = UsbDeviceController(
-                bus_number=bus_number,
-                vim_device_class=self.vim_device_class,
-                auto_connect_devices=controller_param_def.get("auto_connect_devices"),
-                enable_ehci=controller_param_def.get("enable_ehci"),
+            self.controllers[controller_type] = BasicDeviceController(
+                bus_number=0,  # bus number is always 0 for USB controllers, since only one of each type is allowed
+                device_type=controller_type,
+                vim_device_class=self.device_type_to_sub_class_map[controller_type],
             )
 
     @property
@@ -94,7 +84,17 @@ class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
         """
         Get the VMware device class for this controller type.
         """
-        return (vim.vm.device.VirtualUSBController, vim.vm.device.VirtualUSBXHCIController)
+        return tuple(self.device_type_to_sub_class_map.values())
+
+    @property
+    def device_type_to_sub_class_map(self):
+        """
+        Get a map of device types to their corresponding sub-classes.
+        """
+        return {
+            "usb2": vim.vm.device.VirtualUSBController,
+            "usb3": vim.vm.device.VirtualUSBXHCIController,
+        }
 
     def populate_config_spec_with_parameters(self, configspec):
         """
@@ -146,24 +146,37 @@ class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
         Link a VMware controller device to the appropriate controller object.
 
         Matches a VMware controller device to the corresponding controller object
-        based on bus number. This establishes the connection between the existing
-        VM device and the handler's controller representation.
+        based on the device class. Since USB devices are either version 2 or 3, and
+        there can only be one of each, the bus number is always 0 for both types.
 
         Args:
             device: VMware controller device to link
 
         Returns:
-            UsbDeviceController or None: None if device was linked, else a controller
-                                         object representing the VM device
+            BasicDeviceController or None: None if device was linked, else a controller
+                                           object representing the VM device
         """
-        for controller in self.controllers.values():
-            if device.busNumber == controller.bus_number:
-                controller.link_corresponding_live_object(
-                    UsbDeviceController.from_live_device_spec(device)
-                )
-                return
+        for key, value in self.device_type_to_sub_class_map.items():
+            if isinstance(device, value):
+                device_type = key
+                break
+        else:
+            raise DeviceLinkError(
+                "USB controller type %s not supported." % str(type(device)),
+                device,
+                self,
+            )
 
-        return UsbDeviceController.from_live_device_spec(device)
+        try:
+            controller = self.controllers[device_type]
+            controller.link_corresponding_live_object(
+                BasicDeviceController.from_live_device_spec(device, device_type)
+            )
+            return
+        except KeyError:
+            pass
+
+        return BasicDeviceController.from_live_device_spec(device, device_type)
 
 
 class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):

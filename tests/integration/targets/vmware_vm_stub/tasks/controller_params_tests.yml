@@ -25,14 +25,8 @@
       - bus_number: 2
         bus_sharing: physicalSharing
     usb_controllers:
-      - bus_number: 0
-        controller_type: usb2
-        auto_connect_devices: true
-        enable_ehci: true
-      - bus_number: 1
-        controller_type: usb3
-        auto_connect_devices: false
-        enable_ehci: true
+      - controller_type: usb2
+      - controller_type: usb3
   register: _set_controller_params
 
 - name: Set vm controller settings - idempotence check
@@ -63,15 +57,6 @@
       - bus_number: 0
         bus_sharing: physicalSharing
       - bus_number: 2
-    usb_controllers:
-      - bus_number: 0
-        controller_type: usb2
-        auto_connect_devices: false
-        enable_ehci: false
-      - bus_number: 1
-        controller_type: usb3
-        auto_connect_devices: false
-        enable_ehci: false # should be ignored for USB 3 controller
   register: _update_controller_params
 
 - name: Update vm controller settings - idempotence check
@@ -85,7 +70,7 @@
       - _update_controller_params_idem is not ansible.builtin.changed
       - _update_controller_params.changes.objects_to_add | length == 1
       - _update_controller_params.changes.objects_to_remove | length == 1
-      - _update_controller_params.changes.objects_to_update | length == 2
+      - _update_controller_params.changes.objects_to_update | length == 1
 
 - name: Out of bounds bus number - expect failure
   vmware.vmware._vm_stub:
@@ -100,10 +85,8 @@
   vmware.vmware._vm_stub:
     name: "{{ test_vm_name }}"
     usb_controllers:
-      - bus_number: 0
-        controller_type: usb2
-      - bus_number: 1
-        controller_type: usb2
+      - controller_type: usb2
+      - controller_type: usb2
   register: _duplicate_usb_controller
   ignore_errors: true
 
@@ -115,6 +98,7 @@
         controller_type: paravirtual
     sata_controllers: []
     nvme_controllers: []
+    usb_controllers: []
   register: _remove_controller_params
 
 - name: Remove controllers - idempotence check

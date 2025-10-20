@@ -298,17 +298,17 @@ class TestUsbControllerParameterHandler:
         assert mock_virtual_usb_xhci_controller in mock_handler.vim_device_class
 
     def test_parse_device_controller_params(self, mock_handler):
-        mock_handler.params = {"usb_controllers": []}
+        mock_handler.params = {'usb_controllers': []}
         mock_handler.verify_parameter_constraints()
         assert len(mock_handler.controllers) == 0
 
         mock_handler.params = {
             "usb_controllers": [
-                {"bus_number": 0, "controller_type": "usb2"},
-                {"bus_number": 1, "controller_type": "usb3"},
+                {"controller_type": "usb2"},
+                {"controller_type": "usb3"},
             ]
         }
         mock_handler.verify_parameter_constraints()
         assert len(mock_handler.controllers) == 2
-        assert mock_handler.controllers[0].vim_device_class == mock_handler.vim_device_class
-        assert mock_handler.controllers[1].vim_device_class == mock_handler.vim_device_class
+        assert mock_handler.controllers['usb2'].vim_device_class in mock_handler.vim_device_class
+        assert mock_handler.controllers['usb3'].vim_device_class in mock_handler.vim_device_class
