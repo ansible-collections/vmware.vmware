@@ -75,7 +75,10 @@ class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
             if controller_type in existing_types:
                 self.error_handler.fail_with_parameter_error(
                     parameter_name="usb_controllers",
-                    message="USB controller type %s is already defined for bus number %s. Only one controller of each type is allowed." % (controller_type, bus_number),
+                    message=(
+                        "USB controller type %s is already defined for bus number %s. Only one controller of each type is allowed."
+                        % (controller_type, bus_number)
+                    ),
                     details={"violating_param": controller_param_def},
                 )
             existing_types.append(controller_type)

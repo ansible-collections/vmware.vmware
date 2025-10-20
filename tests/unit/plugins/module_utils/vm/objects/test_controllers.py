@@ -9,7 +9,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controll
     AbstractDeviceController,
     ScsiDeviceController,
     BasicDeviceController,
-    ShareableDeviceController
+    ShareableDeviceController,
+    UsbDeviceController
 )
 
 
@@ -134,3 +135,64 @@ class TestShareableDeviceController:
         c = ShareableDeviceController(bus_number=1, device_type="scsi", vim_device_class=Mock, bus_sharing="noSharing")
         assert c.bus_sharing == "noSharing"
         assert c.vim_device_class is Mock
+
+
+class TestUsbDeviceController:
+    """Test cases for UsbDeviceController class."""
+
+    @pytest.fixture
+    def controller(self):
+        return UsbDeviceController(bus_number=1, vim_device_class=Mock)
+
+    def test_init(self, controller):
+        assert controller.vim_device_class is Mock
+        assert controller.auto_connect_devices is None
+        assert controller.enable_ehci is None
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._controllers.BasicDeviceController.to_new_spec"
+    )
+    def test_to_new_spec(self, mock_spec, controller):
+        mock_spec.return_value = Mock()
+        spec = controller.to_new_spec()
+        assert spec.device.autoConnectDevices is not True
+        assert spec.device.ehciEnabled is not True
+
+        controller.auto_connect_devices = True
+        controller.enable_ehci = True
+        spec = controller.to_new_spec()
+        assert spec.device.autoConnectDevices is True
+        assert spec.device.ehciEnabled is True
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._controllers.BasicDeviceController.to_new_spec"
+    )
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._controllers.vim.vm.device.VirtualDeviceSpec"
+    )
+    def test_to_update_spec(self, mock_device_spec, mock_spec, controller):
+        mock_device_spec.return_value = Mock()
+        mock_spec.return_value = Mock()
+        controller._raw_object = Mock()
+        spec = controller.to_update_spec()
+        assert spec.device.autoConnectDevices is not True
+        assert spec.device.ehciEnabled is not True
+
+        controller.auto_connect_devices = True
+        controller.enable_ehci = True
+        spec = controller.to_update_spec()
+        assert spec.device.autoConnectDevices is True
+        assert spec.device.ehciEnabled is True
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._controllers.BasicDeviceController.differs_from_live_object"
+    )
+    def test_differs_from_live_object(self, mock_differs, controller):
+        mock_differs.return_value = False
+        controller._live_object = Mock()
+        assert controller.differs_from_live_object() is False
+
+        controller._live_object = Mock()
+        controller._live_object.auto_connect_devices = False
+        controller.auto_connect_devices = True
+        assert controller.differs_from_live_object() is True
