@@ -118,3 +118,8 @@ class MetadataParameterHandler(AbstractParameterHandler):
 
         if self.params.get("guest_id"):
             configspec.guestId = self.params["guest_id"]
+
+        # only apply hardware version if we are creating a new VM, upgrading is not supported
+        # in this module
+        if self.params.get("hardware_version") and self.vm is None:
+            configspec.version = "vmx-%02d" % self.params["hardware_version"]

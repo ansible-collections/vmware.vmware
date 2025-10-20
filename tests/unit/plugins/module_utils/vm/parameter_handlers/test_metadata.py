@@ -59,7 +59,7 @@ class TestMetadataParameterHandler:
         metadata_parameter_handler.populate_config_spec_with_parameters(configspec)
         assert configspec.name == "test2"
 
-        metadata_parameter_handler.params = {"guest_id": "abc"}
+        metadata_parameter_handler.params = {"guest_id": "abc", "hardware_version": 10}
         metadata_parameter_handler.vm = None
         metadata_parameter_handler.populate_config_spec_with_parameters(configspec)
         mock_file_info.assert_called_once_with(
@@ -69,3 +69,4 @@ class TestMetadataParameterHandler:
             vmPathName=ANY,
         )
         assert configspec.guestId == "abc"
+        assert configspec.version == "vmx-10"

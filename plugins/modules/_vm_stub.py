@@ -124,6 +124,16 @@ options:
         type: str
         required: false
 
+    hardware_version:
+        description:
+            - Specify the hardware version for the new VM. This value should be an integer, where the actual version is 'vmx-<value>'.
+            - This parameter is ignored if the VM already exists. Upgrading hardware version is not supported in this module.
+            - If this is not specified, the highest available hardware version will be used.
+            - Your environment must support the hardware version you specify. Specifying an unsupported hardware version will cause
+              a vSphere error when deploying the VM.
+        type: int
+        required: false
+
     allow_power_cycling:
         description:
             - Whether to allow the VM to be powered off and on when required by the changes detected by the module.
@@ -888,6 +898,7 @@ def main():
                 use_instance_uuid=dict(type='bool', default=False),
 
                 guest_id=dict(type='str', required=False),
+                hardware_version=dict(type='int', required=False),
                 allow_power_cycling=dict(type='bool', default=False),
 
                 cpu=dict(
