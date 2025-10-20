@@ -8,9 +8,6 @@ from unittest.mock import Mock, patch
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._cdroms import (
     CdromParameterHandler,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
-    DeviceLinkError,
-)
 
 
 class TestCdromParameterHandler:
@@ -19,7 +16,6 @@ class TestCdromParameterHandler:
         """Create a mock controller for testing."""
         controller = Mock()
         controller.key = 1000
-        controller.name_as_str = "SATA Controller 0"
         controller.category = "sata"
         return controller
 
@@ -117,7 +113,7 @@ class TestCdromParameterHandler:
     def test_compare_live_config_with_desired_config(self, parameter_handler):
         """Test compare_live_config_with_desired_config method."""
         cdrom = Mock()
-        cdrom._live_object = None
+        cdrom.has_a_linked_live_vm_device = Mock(return_value=False)
         parameter_handler.cdroms = [cdrom]
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
@@ -125,17 +121,15 @@ class TestCdromParameterHandler:
         parameter_handler.compare_live_config_with_desired_config()
         assert len(parameter_handler.change_set.objects_to_add) == 1
         assert len(parameter_handler.change_set.objects_to_update) == 0
-        assert len(parameter_handler.change_set.objects_in_sync) == 0
 
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
         parameter_handler.change_set.objects_in_sync = []
-        cdrom._live_object = Mock()
+        cdrom.has_a_linked_live_vm_device = Mock(return_value=True)
         cdrom.differs_from_live_object = Mock(return_value=True)
         parameter_handler.compare_live_config_with_desired_config()
         assert len(parameter_handler.change_set.objects_to_add) == 0
         assert len(parameter_handler.change_set.objects_to_update) == 1
-        assert len(parameter_handler.change_set.objects_in_sync) == 0
 
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
@@ -144,7 +138,6 @@ class TestCdromParameterHandler:
         parameter_handler.compare_live_config_with_desired_config()
         assert len(parameter_handler.change_set.objects_to_add) == 0
         assert len(parameter_handler.change_set.objects_to_update) == 0
-        assert len(parameter_handler.change_set.objects_in_sync) == 1
 
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._cdroms.Cdrom"
@@ -174,10 +167,14 @@ class TestCdromParameterHandler:
         assert mock_cdrom._live_object is None
         assert mock_cdrom_class.from_live_device_spec.call_count == 1
 
-    def test_link_vm_device_no_matching_device(self, parameter_handler):
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._cdroms.Cdrom"
+    )
+    def test_link_vm_device_no_matching_device(self, mock_cdrom_class, parameter_handler):
         """Test link_vm_device method when no matching adapter is found."""
         cdrom = Mock()
         cdrom._live_object = Mock()
         parameter_handler.cdroms = [cdrom]
-        with pytest.raises(DeviceLinkError, match="CD-ROM not found for device"):
-            parameter_handler.link_vm_device(Mock())
+        mock_cdrom_class.from_live_device_spec.return_value = 1
+        out = parameter_handler.link_vm_device(Mock())
+        assert out is not None

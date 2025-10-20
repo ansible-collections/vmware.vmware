@@ -12,7 +12,6 @@ placement and validates disk parameters against available controllers.
 
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers._abstract import (
     AbstractDeviceLinkedParameterHandler,
-    DeviceLinkError,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._disk import Disk
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._utils import (
@@ -178,7 +177,7 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                 details={
                     "device_node": disk_param["device_node"],
                     "available_controllers": [
-                        c.name_as_str
+                        str(c)
                         for ch in self.controller_handlers
                         for c in ch.controllers.values()
                     ],
@@ -250,12 +249,10 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
             Updates change_set with disk objects categorized by required actions.
         """
         for disk in self.disks:
-            if disk._live_object is None:
+            if not disk.has_a_linked_live_vm_device():
                 self.change_set.objects_to_add.append(disk)
             elif disk.differs_from_live_object():
                 self.change_set.objects_to_update.append(disk)
-            else:
-                self.change_set.objects_in_sync.append(disk)
 
         return self.change_set
 
@@ -289,13 +286,9 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                     self.error_handler.fail_with_parameter_error(
                         parameter_name="disks",
                         message="Disk size cannot be decreased.",
-                        details={"disk": disk.name_as_str, "live_size": disk._live_object.size, "desired_size": disk.size},
+                        details={"disk": str(disk), "live_size": disk._live_object.size, "desired_size": disk.size},
                     )
                 return
 
-        raise DeviceLinkError(
-            "Disk not found for device %s on controller %s"
-            % (device.unitNumber, device.controllerKey),
-            device,
-            self,
-        )
+        # device is unlinked and should be removed
+        return Disk.from_live_device_spec(device, None)

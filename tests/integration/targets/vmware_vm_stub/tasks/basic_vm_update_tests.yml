@@ -64,6 +64,9 @@
       - vm_info.hw_name == _update_vm.vm.name
 
       - (_update_vm.changes.changed_parameters.keys() | length) == 1
+      - _update_vm.changes.objects_to_add == []
+      - _update_vm.changes.objects_to_update == []
+      - _update_vm.changes.objects_to_remove == []
       - _update_vm.changes.changed_parameters['guest_id'] is defined
       - _update_vm.changes.changed_parameters['guest_id'].old_value == 'amazonlinux3_64Guest'
       - _update_vm.changes.changed_parameters['guest_id'].new_value == 'centos7_64Guest'
@@ -93,5 +96,8 @@
       - vm_info.moid == _update_vm_minimal.vm.moid
       - vm_info.hw_name == _update_vm_minimal.vm.name
       - (_update_vm_minimal.changes.changed_parameters.keys() | length) == 1
+      - _update_vm.changes.objects_to_add == []
+      - _update_vm.changes.objects_to_update == []
+      - _update_vm.changes.objects_to_remove == []
   vars:
     vm_info: "{{ _lookup_vm_info.guests[0] }}"

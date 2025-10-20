@@ -38,7 +38,6 @@ class ParameterChangeSet:
         power_cycle_required (bool): Whether changes require VM power cycling
         objects_to_add (list): Objects that need to be added to the VM. May not be used, depending on the handler.
         objects_to_update (list): Objects that need to be updated on the VM. May not be used, depending on the handler.
-        objects_in_sync (list): Objects that are already in desired state. May not be used, depending on the handler.
         objects_to_remove (list): Objects that need to be removed from the VM. May not be used, depending on the handler.
         _changed_parameters (dict): Dictionary of changed parameters with old and new values
     Read-only Properties:
@@ -61,17 +60,15 @@ class ParameterChangeSet:
         self._changed_parameters = dict()
         self.objects_to_add = []
         self.objects_to_update = []
-        self.objects_in_sync = []
         self.objects_to_remove = []
 
     @property
     def changes(self):
-        # TODO remove hasattr checks once all objects implement abstractvsphereobject
         return {
             "changed_parameters": self._changed_parameters,
-            "objects_to_add": [obj.to_change_set_output()['new_value'] for obj in self.objects_to_add if hasattr(obj, "to_change_set_output")],
-            "objects_to_update": [obj.to_change_set_output() for obj in self.objects_to_update if hasattr(obj, "to_change_set_output")],
-            "objects_to_remove": [obj.to_change_set_output()['old_value'] for obj in self.objects_to_remove if hasattr(obj, "to_change_set_output")],
+            "objects_to_add": [obj.to_change_set_output()['new_value'] for obj in self.objects_to_add],
+            "objects_to_update": [obj.to_change_set_output() for obj in self.objects_to_update],
+            "objects_to_remove": [obj.to_change_set_output()['old_value'] for obj in self.objects_to_remove],
         }
 
     def are_changes_required(self):
@@ -109,11 +106,8 @@ class ParameterChangeSet:
             May call error_handler.fail_with_power_cycle_error() if errors_fatal=True.
             May raise PowerCycleRequiredError if errors_fatal=False.
         """
-        if self.vm is None:
-            return
-
         self._check_if_param_differs_from_vm(parameter_name, vm_attribute)
-        if power_sensitive:
+        if power_sensitive and self.vm is not None:
             self._check_if_change_violates_power_state(
                 parameter_name, errors_fatal=errors_fatal
             )
@@ -210,7 +204,6 @@ class ParameterChangeSet:
         self._changed_parameters.update(other._changed_parameters)
         self.objects_to_add.extend(other.objects_to_add)
         self.objects_to_update.extend(other.objects_to_update)
-        self.objects_in_sync.extend(other.objects_in_sync)
         self.objects_to_remove.extend(other.objects_to_remove)
 
         self.power_cycle_required = (
