@@ -46,9 +46,9 @@ class TestCdrom:
         cdrom._raw_object.key = 1000
         assert cdrom.key == 1000
 
-    def test_name_as_str(self, cdrom):
-        cdrom.controller.name_as_str = "SCSI Controller 0"
-        assert cdrom.name_as_str == "CD-ROM - SCSI Controller 0 Unit 1"
+    def test_str(self, cdrom):
+        cdrom.controller = "SCSI Controller 0"
+        assert str(cdrom) == "CD-ROM - SCSI Controller 0 Unit 1"
 
     @patch(
         "ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._cdrom.vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo",

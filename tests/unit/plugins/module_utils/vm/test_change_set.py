@@ -44,12 +44,12 @@ class TestParameterChangeSet:
         change_set._check_if_change_violates_power_state = Mock(return_value=None)
 
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
-        change_set._check_if_param_differs_from_vm.assert_not_called()
+        change_set._check_if_param_differs_from_vm.assert_called_once()
         change_set._check_if_change_violates_power_state.assert_not_called()
 
         change_set.vm = Mock()
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
-        change_set._check_if_param_differs_from_vm.assert_called_once_with(
+        change_set._check_if_param_differs_from_vm.assert_called_with(
             "cpu.cores", "config.hardware.numCPU"
         )
         change_set._check_if_change_violates_power_state.assert_not_called()

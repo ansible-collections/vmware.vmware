@@ -38,8 +38,8 @@ class TestPyvmomiClient():
             'password': 'a',
             'port': 443,
             'validate_certs': True,
-            'http_proxy_host': 'a',
-            'http_proxy_port': 443
+            'proxy_host': 'a',
+            'proxy_port': 443
         }
 
         PyvmomiClient(**init_args)

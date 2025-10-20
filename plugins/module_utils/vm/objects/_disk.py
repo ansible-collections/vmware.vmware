@@ -115,15 +115,14 @@ class Disk(AbstractVsphereObject):
         Returns:
             int or None: VMware device key, or None if no device/spec exists
         """
-        if self._raw_object is not None:
+        if self.represents_live_vm_device():
             return self._raw_object.key
-        if self._live_object is not None:
+        if self.has_a_linked_live_vm_device():
             return self._live_object.key
 
         return None
 
-    @property
-    def name_as_str(self):
+    def __str__(self):
         """
         Get a human-readable name for this disk.
 
@@ -133,7 +132,7 @@ class Disk(AbstractVsphereObject):
         Returns:
             str: Human-readable disk name (e.g., "Disk - SCSI Controller 0 Unit 1")
         """
-        return "Disk - %s Unit %s" % (self.controller.name_as_str, self.unit_number)
+        return "Disk - %s Unit %s" % (self.controller, self.unit_number)
 
     def to_update_spec(self):
         """
@@ -235,7 +234,7 @@ class Disk(AbstractVsphereObject):
         Note:
             Returns True if no device is linked (indicating creation is needed).
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return (
@@ -261,7 +260,7 @@ class Disk(AbstractVsphereObject):
         """
         return {
             "object_type": "virtual disk",
-            "controller": getattr(self.controller, "name_as_str", 'None'),
+            "controller": str(self.controller),
             "size": self.size,
             "provisioning": self.provisioning,
             "mode": self.mode,

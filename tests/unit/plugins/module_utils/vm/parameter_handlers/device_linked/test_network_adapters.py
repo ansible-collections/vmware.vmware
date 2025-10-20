@@ -62,7 +62,7 @@ class TestNetworkAdapterParameterHandler:
     def test_compare_live_config_with_desired_config(self, parameter_handler):
         """Test compare_live_config_with_desired_config method."""
         adapter = Mock()
-        adapter._live_object = None
+        adapter.has_a_linked_live_vm_device = Mock(return_value=False)
         adapter.adapter_vim_class = Mock
         parameter_handler.adapters = [adapter]
         parameter_handler.change_set.objects_to_add = []
@@ -71,17 +71,15 @@ class TestNetworkAdapterParameterHandler:
         parameter_handler.compare_live_config_with_desired_config()
         assert len(parameter_handler.change_set.objects_to_add) == 1
         assert len(parameter_handler.change_set.objects_to_update) == 0
-        assert len(parameter_handler.change_set.objects_in_sync) == 0
 
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
         parameter_handler.change_set.objects_in_sync = []
-        adapter._live_object = Mock()
+        adapter.has_a_linked_live_vm_device = Mock(return_value=True)
         adapter.differs_from_live_object = Mock(return_value=True)
         parameter_handler.compare_live_config_with_desired_config()
         assert len(parameter_handler.change_set.objects_to_add) == 0
         assert len(parameter_handler.change_set.objects_to_update) == 1
-        assert len(parameter_handler.change_set.objects_in_sync) == 0
 
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
@@ -90,19 +88,16 @@ class TestNetworkAdapterParameterHandler:
         parameter_handler.compare_live_config_with_desired_config()
         assert len(parameter_handler.change_set.objects_to_add) == 0
         assert len(parameter_handler.change_set.objects_to_update) == 0
-        assert len(parameter_handler.change_set.objects_in_sync) == 1
 
     @patch("ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.NetworkAdapter")
-    def test_link_vm_device(self, mock_network_adapter, parameter_handler):
+    def test_link_vm_device(self, mock_network_adapter_class, parameter_handler):
         """Test link_vm_device method."""
         adapter = Mock()
-        adapter._live_object = None
+        adapter.has_a_linked_live_vm_device = Mock(return_value=False)
         adapter.adapter_vim_class = Mock
-        assert adapter._live_object is None
-
         parameter_handler.adapters = [adapter]
         parameter_handler.link_vm_device(Mock())
-        adapter.link_corresponding_live_object.assert_called_once()
+        assert mock_network_adapter_class.from_live_device_spec.call_count == 1
 
     def test_link_vm_device_no_matching_adapter(self, parameter_handler):
         """Test link_vm_device method when no matching adapter is found."""

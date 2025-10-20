@@ -18,7 +18,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def get_option(value):
-    if value in ('hostname', 'username', 'password', 'port', 'validate_certs', 'http_proxy_port', 'http_proxy_host'):
+    if value in ('hostname', 'username', 'password', 'port', 'validate_certs', 'proxy_port', 'proxy_host'):
         return 'foo'
     if value == 'type':
         return 'all'
