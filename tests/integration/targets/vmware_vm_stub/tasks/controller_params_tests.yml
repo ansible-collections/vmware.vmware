@@ -10,7 +10,7 @@
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
-        controller_type: buslogic
+        controller_type: paravirtual
         bus_sharing: noSharing
       - bus_number: 1
         controller_type: paravirtual
@@ -44,7 +44,7 @@
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
-        controller_type: buslogic
+        controller_type: paravirtual
       - bus_number: 1
         controller_type: lsilogic
         bus_sharing: noSharing
@@ -83,7 +83,7 @@
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
-        controller_type: buslogic
+        controller_type: paravirtual
     sata_controllers: []
     nvme_controllers: []
   register: _remove_controller_params

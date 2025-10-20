@@ -54,6 +54,7 @@ class TestParameterChangeSet:
         )
         change_set._check_if_change_violates_power_state.assert_not_called()
 
+        change_set._changed_parameters = {"cpu.cores": {"old_value": 4, "new_value": 8}}
         change_set.check_if_change_is_required(
             "cpu.cores",
             "config.hardware.numCPU",
@@ -72,6 +73,7 @@ class TestParameterChangeSet:
         error_handler = Mock()
 
         change_set = ParameterChangeSet(params, vm, error_handler)
+        change_set._changed_parameters = {"cpu.cores": {"old_value": 4, "new_value": 8}}
         change_set.check_if_change_is_required("cpu.cores", "config.hardware.numCPU")
 
         assert change_set.are_changes_required() is True
