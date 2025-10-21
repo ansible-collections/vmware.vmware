@@ -1,0 +1,20 @@
+---
+# There is no Pmem datastore in the test environment, so this test will fail.
+- name: Power off vm
+  vmware.vmware.vm_powerstate:
+    datacenter: "{{ vcenter_datacenter }}"
+    moid: "{{ test_vm_moid }}"
+    state: powered-off
+
+- name: Set vm nvdimm settings - expect failure
+  vmware.vmware._vm_stub:
+    moid: "{{ test_vm_moid }}"
+    nvdimms:
+      - size_mb: 1024
+  register: _set_nvdimms_failure
+  ignore_errors: true
+
+- name: Check set nvdimm params tasks
+  ansible.builtin.assert:
+    that:
+      - _set_nvdimms_failure is ansible.builtin.failed

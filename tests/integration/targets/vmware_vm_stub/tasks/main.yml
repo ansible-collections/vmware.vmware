@@ -34,6 +34,9 @@
     - name: Test vm update
       ansible.builtin.include_tasks: basic_vm_update_tests.yml
 
+    - name: Test NVDIMM params
+      ansible.builtin.include_tasks: nvdimms_params_tests.yml
+
     - name: Test controller params
       ansible.builtin.include_tasks: controller_params_tests.yml
 
