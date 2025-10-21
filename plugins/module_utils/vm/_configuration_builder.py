@@ -218,7 +218,7 @@ class ConfigurationBuilder:
                     controller_handlers=self._create_controller_handlers(),
                     vsphere_object_cache=self.vsphere_object_cache,
                 ),
-                handlers
+                handlers,
             )
 
         # All other handlers - manages VM parameters that are not device linked like resources, metadata, etc.
@@ -233,7 +233,7 @@ class ConfigurationBuilder:
                     vm=self.vm,
                     placement=self.placement,
                 ),
-                handlers
+                handlers,
             )
 
         return handlers
@@ -261,7 +261,7 @@ class ConfigurationBuilder:
                         vm=self.vm,
                         device_tracker=self.device_tracker,
                     ),
-                    self._controller_handlers
+                    self._controller_handlers,
                 )
 
         return self._controller_handlers

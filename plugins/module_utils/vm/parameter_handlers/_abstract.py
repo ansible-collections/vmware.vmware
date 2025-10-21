@@ -60,7 +60,9 @@ class AbstractParameterHandler(ABC):
         self.params = params
         self.change_set = change_set
 
-    def _check_if_params_are_defined_by_user(self, parameter_name, required_for_vm_creation=False):
+    def _check_if_params_are_defined_by_user(
+        self, parameter_name, required_for_vm_creation=False
+    ):
         """
         Check if the relevant parameters are defined by the user, and update internal
         flag appropriately.
@@ -73,7 +75,8 @@ class AbstractParameterHandler(ABC):
             if self.vm is None and required_for_vm_creation:
                 self.error_handler.fail_with_parameter_error(
                     parameter_name=parameter_name,
-                    message="The %s parameter is mandatory for VM creation" % parameter_name,
+                    message="The %s parameter is mandatory for VM creation"
+                    % parameter_name,
                 )
             return
 
@@ -163,6 +166,7 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
         vim_device_class: VMware device class(es) this handler manages (must be overridden)
         device_type_to_sub_class_map (dict): Registry of device types to handler classes
         device_tracker: Service for device identification and error reporting
+        managed_parameter_objects (dict[any,AbstractVsphereObject]): Dictionary of parameter objects managed by this handler
     """
 
     def __init__(self, error_handler, params, change_set, vm, device_tracker):
@@ -179,6 +183,7 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
             NotImplementedError: If vim_device_class is not defined by subclass
         """
         super().__init__(error_handler, params, change_set, vm)
+        self.managed_parameter_objects = dict()  # {key: parameter_object}
         self.device_tracker = device_tracker
 
     @property
@@ -228,9 +233,54 @@ class AbstractDeviceLinkedParameterHandler(AbstractParameterHandler):
         """
         raise NotImplementedError
 
+    def populate_config_spec_with_parameters(self, configspec):
+        """
+        Populate VMware configuration specification with device linked parameters.
+
+        Adds device specifications to the configuration for both new
+        device creation and existing device modification. Tracks device IDs
+        for proper error reporting and device management.
+
+        Args:
+            configspec: VMware VirtualMachineConfigSpec to populate
+
+        Side Effects:
+            Adds device specifications to configspec.deviceChange.
+            Tracks device IDs through device_tracker for error reporting.
+        """
+        for device_object in self.change_set.objects_to_add:
+            self.device_tracker.track_device_id_from_spec(device_object)
+            configspec.deviceChange.append(device_object.to_new_spec())
+        for device_object in self.change_set.objects_to_update:
+            self.device_tracker.track_device_id_from_spec(device_object)
+            configspec.deviceChange.append(device_object.to_update_spec())
+
+    def compare_live_config_with_desired_config(self):
+        """
+        Compare current VM device configuration with desired configuration.
+
+        Analyzes each device to determine if it needs to be added, updated,
+        or is already in sync with the desired configuration. Categorizes
+        devices based on their current state and required changes.
+
+        Returns:
+            ParameterChangeSet: Updated change set with device change requirements
+
+        Side Effects:
+            Updates change_set with device objects categorized by required actions.
+        """
+        for device_object in self.managed_parameter_objects.values():
+            if not device_object.has_a_linked_live_vm_device():
+                self.change_set.objects_to_add.append(device_object)
+            elif device_object.differs_from_live_object():
+                self.change_set.objects_to_update.append(device_object)
+
+        return self.change_set
+
 
 class DeviceLinkError(Exception):
     """
     Exception raised when a device cannot be linked to a parameter handler.
     """
+
     pass

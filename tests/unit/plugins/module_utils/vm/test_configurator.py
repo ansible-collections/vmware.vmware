@@ -8,7 +8,9 @@ from unittest.mock import Mock
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configurator import (
     Configurator,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
+    ParameterChangeSet,
+)
 
 
 class TestConfigurator:
@@ -130,7 +132,9 @@ class TestConfigurator:
         handler_with_changes = Mock()
         handler_with_changes.change_set.are_changes_required = Mock(return_value=True)
         handler_without_changes = Mock()
-        handler_without_changes.change_set.are_changes_required = Mock(return_value=False)
+        handler_without_changes.change_set.are_changes_required = Mock(
+            return_value=False
+        )
         configurator.all_handlers = [handler_with_changes, handler_without_changes]
 
         configurator.apply_staged_changes_to_config_spec(config_spec)

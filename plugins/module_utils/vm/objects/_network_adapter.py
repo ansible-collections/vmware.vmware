@@ -18,7 +18,6 @@ the VM configuration management system to handle network adapter creation, modif
 and change detection.
 """
 
-from random import randint
 from abc import ABC
 
 try:
@@ -108,18 +107,14 @@ class NetworkAdapterResourceAllocation(AbstractVsphereObject):
             return True
 
         return (
-            self._compare_attributes_for_changes(
-                self.shares, self._live_object.shares
-            )
+            self._compare_attributes_for_changes(self.shares, self._live_object.shares)
             or self._compare_attributes_for_changes(
                 self.shares_level, self._live_object.shares_level
             )
             or self._compare_attributes_for_changes(
                 self.reservation, self._live_object.reservation
             )
-            or self._compare_attributes_for_changes(
-                self.limit, self._live_object.limit
-            )
+            or self._compare_attributes_for_changes(self.limit, self._live_object.limit)
         )
 
     def to_new_spec(self):
@@ -243,17 +238,12 @@ class NetworkAdapterPortgroup(AbstractVsphereObject, ABC):
 
         if hasattr(portgroup, "key"):
             return DvsNetworkAdapterPortgroup(
-                portgroup.key,
-                portgroup.config.distributedVirtualSwitch.uuid
+                portgroup.key, portgroup.config.distributedVirtualSwitch.uuid
             )
         elif hasattr(portgroup, "capability"):
-            return NsxtNetworkAdapterPortgroup(
-                portgroup.summary.opaqueNetworkId
-            )
+            return NsxtNetworkAdapterPortgroup(portgroup.summary.opaqueNetworkId)
         else:
-            return VswitchNetworkAdapterPortgroup(
-                portgroup.name, portgroup
-            )
+            return VswitchNetworkAdapterPortgroup(portgroup.name, portgroup)
 
 
 class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
@@ -265,21 +255,21 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
     distributed switches.
 
     Attributes:
-        key (str): Portgroup key identifier
+        portgroup_key (str): Portgroup key identifier
         switch_uuid (str): Distributed virtual switch UUID
     """
 
-    def __init__(self, key, switch_uuid, raw_object=None):
+    def __init__(self, portgroup_key, switch_uuid, raw_object=None):
         """
         Initialize DVS network adapter portgroup.
 
         Args:
-            key (str): Portgroup key identifier
+            portgroup_key (str): Portgroup key identifier
             switch_uuid (str): Distributed virtual switch UUID
             raw_object: Original VMware portgroup object
         """
         super().__init__(raw_object=raw_object)
-        self.key = key
+        self.portgroup_key = portgroup_key
         self.switch_uuid = switch_uuid
 
     def to_new_spec(self):
@@ -291,7 +281,7 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
                 VMware DVS portgroup backing spec
         """
         dvs_port_connection = vim.dvs.PortConnection()
-        dvs_port_connection.portgroupKey = self.key
+        dvs_port_connection.portgroupKey = self.portgroup_key
         dvs_port_connection.switchUuid = self.switch_uuid
         backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
         backing.port = dvs_port_connection
@@ -319,7 +309,7 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
             return True
 
         return self._compare_attributes_for_changes(
-            self.key, self._live_object.key
+            self.portgroup_key, self._live_object.portgroup_key
         ) or self._compare_attributes_for_changes(
             self.switch_uuid, self._live_object.switch_uuid
         )
@@ -332,7 +322,7 @@ class DvsNetworkAdapterPortgroup(NetworkAdapterPortgroup):
             dict
         """
         return {
-            "key": self.key,
+            "portgroup_key": self.portgroup_key,
             "switch_uuid": self.switch_uuid,
         }
 
@@ -561,7 +551,9 @@ class NetworkAdapter(AbstractVsphereObject):
         return cls(
             index="",
             adapter_vim_class=type(live_device_spec),
-            portgroup=NetworkAdapterPortgroup.from_live_device_spec(live_device_spec.backing),
+            portgroup=NetworkAdapterPortgroup.from_live_device_spec(
+                live_device_spec.backing
+            ),
             connect_at_power_on=live_device_spec.connectable.startConnected,
             connected=live_device_spec.connectable.connected,
             mac_address=(
@@ -607,8 +599,12 @@ class NetworkAdapter(AbstractVsphereObject):
         """
         network_adapter_spec = vim.vm.device.VirtualDeviceSpec()
         network_adapter_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
-        network_adapter_spec.device = self.adapter_vim_class() if self.adapter_vim_class is not None else vim.vm.device.VirtualVmxnet3()
-        network_adapter_spec.device.key = -randint(25000, 29999)
+        network_adapter_spec.device = (
+            self.adapter_vim_class()
+            if self.adapter_vim_class is not None
+            else vim.vm.device.VirtualVmxnet3()
+        )
+        network_adapter_spec.device.key = self._new_spec_key
 
         network_adapter_spec.device.deviceInfo = vim.Description()
         network_adapter_spec.device.connectable = (
@@ -632,9 +628,7 @@ class NetworkAdapter(AbstractVsphereObject):
         """
         network_adapter_spec = vim.vm.device.VirtualDeviceSpec()
         network_adapter_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
-        network_adapter_spec.device = (
-            self._raw_object or self._live_object._raw_object
-        )
+        network_adapter_spec.device = self._raw_object or self._live_object._raw_object
 
         if self.mac_address == "automatic":
             network_adapter_spec.device.addressType = "generated"
@@ -705,7 +699,11 @@ class NetworkAdapter(AbstractVsphereObject):
         """
         return {
             "object_type": "network adapter",
-            "type": None if self.adapter_vim_class is None else self.adapter_vim_class.__name__.lower(),
+            "type": (
+                None
+                if self.adapter_vim_class is None
+                else self.adapter_vim_class.__name__.lower()
+            ),
             "portgroup": self.portgroup._to_module_output(),
             "connect_at_power_on": self.connect_at_power_on,
             "connected": self.connected,
