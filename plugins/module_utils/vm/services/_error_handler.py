@@ -130,7 +130,9 @@ class ErrorHandler(AbstractService):
         Fail due to invalid VM configuration.
         """
         try:
-            if isinstance(error, vim.fault.InvalidDeviceSpec) or re.search(r'Invalid [\w]+ for device', str(message)):
+            if isinstance(error, vim.fault.InvalidDeviceSpec) or re.search(
+                r"Invalid [\w]+ for device", str(message)
+            ):
                 self._fail_with_device_configuration_error(error)
             else:
                 self.module.fail_json(
@@ -147,8 +149,8 @@ class ErrorHandler(AbstractService):
                 details=dict(
                     error_type=str(type(error)),
                     handler_exception=str(type(excep)),
-                    handler_exception_message=str(excep)
-                )
+                    handler_exception_message=str(excep),
+                ),
             )
 
     def _fail_with_device_configuration_error(self, error):

@@ -112,7 +112,9 @@ class MemoryParameterHandler(AbstractParameterHandler):
         if self.memory_params.get("reservation") is None:
             return
 
-        memory_size_mb = self.memory_params.get("size_mb") or self.vm.config.hardware.memoryMB
+        memory_size_mb = (
+            self.memory_params.get("size_mb") or self.vm.config.hardware.memoryMB
+        )
         if memory_size_mb < self.memory_params.get("reservation"):
             self.error_handler.fail_with_parameter_error(
                 parameter_name="memory.reservation",
@@ -157,10 +159,6 @@ class MemoryParameterHandler(AbstractParameterHandler):
         Detects differences between current and desired memory settings,
         handling special cases for hot-add operations. Memory increases
         require a power cycle unless hot-add is enabled.
-
-        Side Effects:
-            Updates change_set with detected configuration differences.
-            May handle memory hot-add operations without power cycling.
         """
         self._check_memory_changes_with_hot_add()
         param_mappings = [
@@ -195,9 +193,6 @@ class MemoryParameterHandler(AbstractParameterHandler):
         Raises:
             Calls error_handler.fail_with_power_cycle_error() if memory
             increases are attempted without hot-add capability.
-
-        Side Effects:
-            May disable power_cycle_required flag if hot-add is enabled.
         """
         try:
             self.change_set.check_if_change_is_required(

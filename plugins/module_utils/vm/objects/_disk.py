@@ -9,8 +9,6 @@ It is meant to represent one of the items in the module's 'disks'
 parameter.
 """
 
-from random import randint
-
 try:
     from pyVmomi import vim
 except ImportError:
@@ -39,13 +37,25 @@ class Disk(AbstractVsphereObject):
         size (int): Disk size in kilobytes
         provisioning (str): Disk provisioning type ('thin', 'thick', 'eagerzeroedthick')
         mode (str): Disk mode ('persistent', 'independent_persistent', etc.)
+        datastore: pyvmomi Datastore object to create the disk on
+        filename (str): Filename of the disk on the datastore
         unit_number (int): Unit number on the controller
+        enable_sharing (bool): Whether to enable sharing between multiple VMs
         controller: Controller object this disk is attached to
-        _spec: VMware device specification (when generated)
-        _device: Existing VMware device object (when linked)
     """
 
-    def __init__(self, size, provisioning, mode, datastore, filename, controller, unit_number, enable_sharing, raw_object=None):
+    def __init__(
+        self,
+        size,
+        provisioning,
+        mode,
+        datastore,
+        filename,
+        controller,
+        unit_number,
+        enable_sharing,
+        raw_object=None,
+    ):
         """
         Initialize a new disk object.
 
@@ -103,31 +113,9 @@ class Disk(AbstractVsphereObject):
             raw_object=live_device_spec,
         )
 
-    @property
-    def key(self):
-        """
-        Get the VMware device key for this disk.
-
-        The device key is VMware's unique identifier for the disk. This
-        property returns the key from either the existing device or the
-        generated specification.
-
-        Returns:
-            int or None: VMware device key, or None if no device/spec exists
-        """
-        if self.represents_live_vm_device():
-            return self._raw_object.key
-        if self.has_a_linked_live_vm_device():
-            return self._live_object.key
-
-        return None
-
     def __str__(self):
         """
         Get a human-readable name for this disk.
-
-        Generates a descriptive name including the controller information
-        and unit number for easy identification in error messages and logs.
 
         Returns:
             str: Human-readable disk name (e.g., "Disk - SCSI Controller 0 Unit 1")
@@ -166,16 +154,12 @@ class Disk(AbstractVsphereObject):
 
         Returns:
             vim.vm.device.VirtualDeviceSpec: VMware device specification for disk creation
-
-        Side Effects:
-            Caches the generated specification in self._spec.
-            Assigns a random negative device key for temporary identification.
         """
         disk_spec = vim.vm.device.VirtualDeviceSpec()
         disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
         disk_spec.fileOperation = vim.vm.device.VirtualDeviceSpec.FileOperation.create
         disk_spec.device = vim.vm.device.VirtualDisk()
-        disk_spec.device.key = -randint(20000, 24999)
+        disk_spec.device.key = self._new_spec_key
         disk_spec.device.backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
 
         if self.provisioning == "thin":
@@ -216,7 +200,9 @@ class Disk(AbstractVsphereObject):
             disk_spec.device.backing.fileName = self.filename
 
         if self.enable_sharing is not None:
-            disk_spec.device.backing.sharing = "sharingMultiWriter" if self.enable_sharing else "sharingNone"
+            disk_spec.device.backing.sharing = (
+                "sharingMultiWriter" if self.enable_sharing else "sharingNone"
+            )
 
     def differs_from_live_object(self):
         """
@@ -230,23 +216,16 @@ class Disk(AbstractVsphereObject):
 
         Returns:
             bool: True if the device differs from desired config, False if in sync
-
-        Note:
-            Returns True if no device is linked (indicating creation is needed).
         """
         if not self.has_a_linked_live_vm_device():
             return True
 
         return (
-            self._compare_attributes_for_changes(
-                self.size, self._live_object.size
-            )
+            self._compare_attributes_for_changes(self.size, self._live_object.size)
             or self._compare_attributes_for_changes(
                 self.filename, self._live_object.filename
             )
-            or self._compare_attributes_for_changes(
-                self.mode, self._live_object.mode
-            )
+            or self._compare_attributes_for_changes(self.mode, self._live_object.mode)
             or self._compare_attributes_for_changes(
                 self.enable_sharing, self._live_object.enable_sharing
             )
@@ -265,7 +244,7 @@ class Disk(AbstractVsphereObject):
             "provisioning": self.provisioning,
             "mode": self.mode,
             "unit_number": self.unit_number,
-            "datastore": getattr(self.datastore, "name", 'N/A'),
+            "datastore": getattr(self.datastore, "name", "N/A"),
             "filename": self.filename,
             "enable_sharing": self.enable_sharing,
         }
