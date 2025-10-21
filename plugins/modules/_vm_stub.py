@@ -714,7 +714,7 @@ EXAMPLES = r'''
       - bus_number: 0
     cdroms:
       - connect_at_power_on: true
-        iso_media_path: [ISODS01] OS/Linux/RHEL-9.iso
+        iso_media_path: '[ISODS01] OS/Linux/RHEL-9.iso'
         device_node: SATA(0:0)
       - client_device_mode: passthrough
         device_node: IDE(0:0)

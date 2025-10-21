@@ -176,6 +176,14 @@ class Disk(AbstractVsphereObject):
         self._update_disk_spec_with_options(disk_spec)
         return disk_spec
 
+    def to_removal_spec(self):
+        """
+        Create a VMware device specification for removing an existing disk.
+        """
+        disk_spec = super().to_removal_spec()
+        disk_spec.fileOperation = vim.vm.device.VirtualDeviceSpec.FileOperation.destroy
+        return disk_spec
+
     def _update_disk_spec_with_options(self, disk_spec):
         """
         Apply disk configuration options to a device specification.
