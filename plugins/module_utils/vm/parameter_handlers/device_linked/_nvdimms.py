@@ -147,11 +147,11 @@ class NvdimmParameterHandler(AbstractDeviceLinkedParameterHandler):
         Side Effects:
             Updates change_set with NVDIMM objects categorized by required actions.
         """
-        if self.controller is not None and not self.controller.has_live_object():
+        if self.controller is not None and not self.controller.has_a_linked_live_vm_device():
             self.change_set.objects_to_add.append(self.controller)
 
         for nvdimm in self.nvdimms:
-            if not nvdimm.has_live_object():
+            if not nvdimm.has_a_linked_live_vm_device():
                 self.change_set.objects_to_add.append(nvdimm)
             elif nvdimm.differs_from_live_object():
                 self.change_set.objects_to_update.append(nvdimm)
@@ -193,7 +193,7 @@ class NvdimmParameterHandler(AbstractDeviceLinkedParameterHandler):
 
     def _link_nvdimm_device(self, device):
         for param_nvdimm in self.nvdimms:
-            if param_nvdimm._live_object is None:
+            if not param_nvdimm.has_a_linked_live_vm_device():
                 param_nvdimm.link_corresponding_live_object(
                     Nvdimm.from_live_device_spec(device, self.controller)
                 )
@@ -202,7 +202,7 @@ class NvdimmParameterHandler(AbstractDeviceLinkedParameterHandler):
         return Nvdimm.from_live_device_spec(device, self.controller)
 
     def _link_nvdimm_controller(self, device):
-        if self.controller._live_object is None:
+        if not self.controller.has_a_linked_live_vm_device():
             self.controller.link_corresponding_live_object(
                 NvdimmDeviceController.from_live_device_spec(device)
             )

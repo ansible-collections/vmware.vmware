@@ -37,12 +37,23 @@ class NvdimmDeviceController(AbstractVsphereObject):
         A negative, unique key should be used for the new spec. VMware
         will overwrite this key with its own unique key when the controller is created.
         """
-        if self._raw_object is not None:
+        if self.represents_live_vm_device():
             return self._raw_object.key
-        if self._live_object is not None:
+        if self.has_a_linked_live_vm_device():
             return self._live_object.key
 
         return self._new_spec_key
+
+    @classmethod
+    def from_live_device_spec(cls, live_device_spec):
+        """
+        Create NvdimmDeviceController instance from VMware device specification.
+        Args:
+            live_device_spec: VMware VirtualDeviceSpec object
+        Returns:
+            NVDIMM controller: Configured NVDIMM controller instance
+        """
+        return cls(raw_object=live_device_spec)
 
     def _to_module_output(self):
         """
@@ -95,7 +106,7 @@ class NvdimmDeviceController(AbstractVsphereObject):
 
         NVDIMM controllers cannot be updated, so we always return False.
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return False
@@ -111,10 +122,10 @@ class Nvdimm(AbstractVsphereObject):
 
     def __init__(self, size_mb, index, controller, raw_object=None):
         super().__init__(raw_object=raw_object)
+        self.size_mb = size_mb
         self.index = index
         self._new_spec_key = -randint(1, 99999)
-        if raw_object is None:
-            self.controller.add_device(self)
+        self.controller = controller
 
     @classmethod
     def from_live_device_spec(cls, live_device_spec, controller):
@@ -141,9 +152,9 @@ class Nvdimm(AbstractVsphereObject):
         property returns the key from either the existing device or the
         generated specification.
         """
-        if self._raw_object is not None:
+        if self.represents_live_vm_device():
             return self._raw_object.key
-        if self._live_object is not None:
+        if self.has_a_linked_live_vm_device():
             return self._live_object.key
 
         return self._new_spec_key
@@ -206,7 +217,7 @@ class Nvdimm(AbstractVsphereObject):
         Returns:
             bool: True if the device differs from desired config, False if in sync
         """
-        if self._live_object is None:
+        if not self.has_a_linked_live_vm_device():
             return True
 
         return self._compare_attributes_for_changes(

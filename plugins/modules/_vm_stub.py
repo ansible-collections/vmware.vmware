@@ -580,6 +580,10 @@ options:
         description:
             - A list of non-volatile DIMMs to manage on the VM.
             - Any NVDIMMs in this list that do not exist on the VM will be created.
+            - If any NVDIMMs are specified, the module will automatically add and manage a NVDIMM controller on the VM.
+              If you remove all NVDIMMs, the NVDIMM controller will be removed as well.
+            - You must have a PMem datastore selected for the host that the VM is running on before adding
+              NVDIMMs to the VM.
         type: list
         elements: dict
         required: false
@@ -599,14 +603,6 @@ options:
         type: dict
         required: false
         suboptions:
-        required: false
-        suboptions:
-            bus_number:
-                description:
-                    - The bus number of the NVDimm. This is used to identify the NVDimm and is required.
-                    - Valid bus numbers are 0 to 3, inclusive.
-                type: int
-                required: true
             maximum_remote_console_sessions:
                 description:
                     - The maximum number of remote console sessions that can be established to the VM.
@@ -970,16 +966,27 @@ class VmModule(ModulePyvmomiBase):
                 timeout=self.params['timeout']
             )
         except TaskError as e:
-            if isinstance(e.parent_error, vim.fault.InvalidVmConfig):
+            if isinstance(e.parent_error, (vim.fault.InvalidVmConfig, vim.fault.NotFound)):
                 self.error_handler.fail_with_vm_config_error(error=e.parent_error, message=str(e))
             elif isinstance(e.parent_error, self._get_invalid_power_state_error_classes()) and action == "update":
                 # We may have missed a power sensitive change. We can retry the update task with the needs_power_cycle
                 # flag set to True, and let those tasks handle any new issues
                 raise e.parent_error
             else:
-                self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)), exception=e.parent_error)
+                self.module.fail_json(
+                    msg="%s %s" % (error_prefix, to_native(e)),
+                    error_code="TASK_ERROR",
+                    error_type=str(type(e.parent_error)),
+                    error_raw=to_native(e),
+                    exception=e.parent_error,
+                )
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:
-            self.module.fail_json(msg="%s %s" % (error_prefix, e.msg))
+            self.module.fail_json(
+                msg="%s %s" % (error_prefix, e.msg),
+                error_code="VIM_FAULT",
+                error_type=str(type(e)),
+                error_raw=to_native(e),
+            )
 
         return task_result
 
