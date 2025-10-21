@@ -8,7 +8,7 @@ import mock
 import pytest
 
 from ansible.module_utils import basic
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils.common.text.converters import to_bytes
 
 
 def run_module(module_entry, module_args=None, expect_success=True):

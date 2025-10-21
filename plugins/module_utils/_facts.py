@@ -19,7 +19,7 @@ try:
 except ImportError:
     pass
 
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 import ansible.module_utils.common._collections_compat as collections_compat
 from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import get_folder_path_of_vsphere_object
 

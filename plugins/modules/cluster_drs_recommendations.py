@@ -113,7 +113,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
     TaskError,
     RunningTaskMonitor
 )
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 
 
 class VMwareCluster(ModulePyvmomiBase):

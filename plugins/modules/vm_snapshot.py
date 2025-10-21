@@ -272,7 +272,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import RunningTaskMonitor
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text, to_native
+from ansible.module_utils.common.text.converters import to_text, to_native
 
 
 class VmSnapshotModule(ModulePyvmomiBase):

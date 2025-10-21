@@ -234,7 +234,7 @@ from random import randint
 from datetime import datetime, timedelta
 import time
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_text, to_native
+from ansible.module_utils.common.text.converters import to_text, to_native
 
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
     ModulePyvmomiBase
