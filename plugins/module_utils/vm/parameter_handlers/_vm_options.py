@@ -56,13 +56,19 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
                       services and allowing kwargs makes initialization more flexible.
         """
         super().__init__(error_handler, params, change_set, vm)
-        self._check_if_params_are_defined_by_user("vm_options", required_for_vm_creation=False)
+        self._check_if_params_are_defined_by_user(
+            "vm_options", required_for_vm_creation=False
+        )
 
         # remap the fault tolerance encryption parameter to vmwares enums
-        if self.params.get('vm_options') is not None:
-            original_ft_encryption = self.params['vm_options'].get('encrypted_fault_tolerance')
+        if self.params.get("vm_options") is not None:
+            original_ft_encryption = self.params["vm_options"].get(
+                "encrypted_fault_tolerance"
+            )
             if original_ft_encryption is not None:
-                self.params['vm_options']['encrypted_fault_tolerance'] = "ftEncryption%s" % original_ft_encryption.capitalize()
+                self.params["vm_options"]["encrypted_fault_tolerance"] = (
+                    "ftEncryption%s" % original_ft_encryption.capitalize()
+                )
 
         self._vm_option_params = self.params.get("vm_options") or {}
 
@@ -75,7 +81,10 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         - Virtualization Based Security requirements (EFI firmware and secure boot)
         """
         if self._vm_option_params.get("maximum_remote_console_sessions"):
-            if self._vm_option_params["maximum_remote_console_sessions"] < 0 or self._vm_option_params["maximum_remote_console_sessions"] > 40:
+            if (
+                self._vm_option_params["maximum_remote_console_sessions"] < 0
+                or self._vm_option_params["maximum_remote_console_sessions"] > 40
+            ):
                 self.error_handler.fail_with_parameter_error(
                     parameter_name="maximum_remote_console_sessions",
                     message="Maximum remote console sessions must be between 0 and 40.",
@@ -109,7 +118,7 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         """
         secure_boot = self._vm_option_params.get("enable_secure_boot")
         if self.vm is not None:
-            vm_secure_boot = getattr(self.vm.config.bootOptions, 'efiSecureBootEnabled')
+            vm_secure_boot = getattr(self.vm.config.bootOptions, "efiSecureBootEnabled")
         else:
             vm_secure_boot = None
 
@@ -126,7 +135,9 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         """
         enable_secure_boot = self._vm_option_params.get("enable_secure_boot")
         if enable_secure_boot is None and self.vm is not None:
-            enable_secure_boot = getattr(self.vm.config.bootOptions, 'efiSecureBootEnabled')
+            enable_secure_boot = getattr(
+                self.vm.config.bootOptions, "efiSecureBootEnabled"
+            )
 
     def _verify_parameter_constraints_virt_based_security(self):
         """
@@ -134,19 +145,25 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         """
         enable_vbs = self._vm_option_params.get("enable_virtual_based_security")
         if enable_vbs is None and self.vm is not None:
-            enable_vbs = getattr(self.vm.config.flags, 'vbsEnabled')
+            enable_vbs = getattr(self.vm.config.flags, "vbsEnabled")
 
         if not enable_vbs:
             return
 
-        enable_hardware_assisted_virtualization = self._vm_option_params.get("enable_hardware_assisted_virtualization")
+        enable_hardware_assisted_virtualization = self._vm_option_params.get(
+            "enable_hardware_assisted_virtualization"
+        )
         if enable_hardware_assisted_virtualization is None and self.vm is not None:
             enable_hardware_assisted_virtualization = self.vm.config.nestedHVEnabled
 
         firmware = self.__get_effective_boot_firmware()
         secure_boot = self.__get_effective_secure_boot()
 
-        if enable_vbs and (not firmware or not secure_boot or not enable_hardware_assisted_virtualization):
+        if enable_vbs and (
+            not firmware
+            or not secure_boot
+            or not enable_hardware_assisted_virtualization
+        ):
             self.error_handler.fail_with_parameter_error(
                 parameter_name="enable_virtual_based_security",
                 message="Virtualization Based Security requires EFI boot firmware, secure boot, and hardware assisted virtualization.",
@@ -155,7 +172,7 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
                     "firmware": firmware,
                     "secure_boot": secure_boot,
                     "enable_hardware_assisted_virtualization": enable_hardware_assisted_virtualization,
-                }
+                },
             )
 
     def _verify_parameter_constraints_enable_encryption(self):
@@ -169,7 +186,7 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         secure_boot = self.__get_effective_secure_boot()
         firmware = self.__get_effective_boot_firmware()
 
-        if enable_encryption and (secure_boot or firmware == 'bios'):
+        if enable_encryption and (secure_boot or firmware == "bios"):
             self.error_handler.fail_with_parameter_error(
                 parameter_name="enable_encryption",
                 message="Encryption requires EFI boot firmware and disabled secure boot.",
@@ -177,12 +194,16 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
                     "enable_encryption": enable_encryption,
                     "enable_secure_boot": secure_boot,
                     "boot_firmware": firmware,
-                }
+                },
             )
 
-        self.__verify_parameter_constraints_enable_encryption_hot_add(enable_encryption=enable_encryption)
+        self.__verify_parameter_constraints_enable_encryption_hot_add(
+            enable_encryption=enable_encryption
+        )
 
-    def __verify_parameter_constraints_enable_encryption_hot_add(self, enable_encryption):
+    def __verify_parameter_constraints_enable_encryption_hot_add(
+        self, enable_encryption
+    ):
         """
         Verify that encryption can be enabled if memory or CPU hot-add/hot-remove is disabled.
 
@@ -191,16 +212,25 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         """
         memory_params = self.params.get("memory") or dict()
         param_memory_hot_add = memory_params.get("enable_hot_add")
-        vm_memory_hot_add = False if self.vm is None else self.vm.config.memoryHotAddEnabled
+        vm_memory_hot_add = (
+            False if self.vm is None else self.vm.config.memoryHotAddEnabled
+        )
 
         cpu_params = self.params.get("cpu") or dict()
         param_cpu_hot_add = cpu_params.get("enable_hot_add")
         vm_cpu_hot_add = False if self.vm is None else self.vm.config.cpuHotAddEnabled
 
         param_cpu_hot_remove = cpu_params.get("enable_hot_remove")
-        vm_cpu_hot_remove = False if self.vm is None else self.vm.config.cpuHotRemoveEnabled
+        vm_cpu_hot_remove = (
+            False if self.vm is None else self.vm.config.cpuHotRemoveEnabled
+        )
 
-        if enable_encryption and (param_memory_hot_add or vm_memory_hot_add or param_cpu_hot_add or vm_cpu_hot_add):
+        if enable_encryption and (
+            param_memory_hot_add
+            or vm_memory_hot_add
+            or param_cpu_hot_add
+            or vm_cpu_hot_add
+        ):
             self.error_handler.fail_with_parameter_error(
                 parameter_name="enable_encryption",
                 message="Encryption cannot be enabled if memory or CPU hot-add is currently enabled or is being enabled.",
@@ -209,7 +239,7 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
                     "memory.enable_hot_add": param_memory_hot_add or vm_memory_hot_add,
                     "cpu.enable_hot_add": param_cpu_hot_add or vm_cpu_hot_add,
                     "cpu.enable_hot_remove": param_cpu_hot_remove or vm_cpu_hot_remove,
-                }
+                },
             )
 
     def compare_live_config_with_desired_config(self):
@@ -223,15 +253,37 @@ class VmOptionsParameterHandler(AbstractParameterHandler):
         Side Effects:
             Updates change_set with detected differences between current and desired state.
         """
-        self.change_set.check_if_change_is_required("vm_options.maximum_remote_console_sessions", "config.maxMksConnections", power_sensitive=True)
-        self.change_set.check_if_change_is_required("vm_options.encrypted_vmotion", "config.migrateEncryption")
-        self.change_set.check_if_change_is_required("vm_options.encrypted_fault_tolerance", "config.ftEncryptionMode")
-        self.change_set.check_if_change_is_required("vm_options.enable_encryption", "config.sevEnabled", power_sensitive=True)
-        self.change_set.check_if_change_is_required("vm_options.enable_hardware_assisted_virtualization", "config.nestedHVEnabled", power_sensitive=True)
-        self.change_set.check_if_change_is_required("vm_options.enable_io_mmu", "config.flags.vvtdEnabled")
-        self.change_set.check_if_change_is_required("vm_options.enable_virtual_based_security", "config.flags.vbsEnabled")
-        self.change_set.check_if_change_is_required("vm_options.enable_secure_boot", "config.bootOptions.efiSecureBootEnabled")
-        self.change_set.check_if_change_is_required("vm_options.boot_firmware", "config.firmware", power_sensitive=True)
+        self.change_set.check_if_change_is_required(
+            "vm_options.maximum_remote_console_sessions",
+            "config.maxMksConnections",
+            power_sensitive=True,
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.encrypted_vmotion", "config.migrateEncryption"
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.encrypted_fault_tolerance", "config.ftEncryptionMode"
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.enable_encryption", "config.sevEnabled", power_sensitive=True
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.enable_hardware_assisted_virtualization",
+            "config.nestedHVEnabled",
+            power_sensitive=True,
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.enable_io_mmu", "config.flags.vvtdEnabled"
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.enable_virtual_based_security", "config.flags.vbsEnabled"
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.enable_secure_boot", "config.bootOptions.efiSecureBootEnabled"
+        )
+        self.change_set.check_if_change_is_required(
+            "vm_options.boot_firmware", "config.firmware", power_sensitive=True
+        )
 
     def populate_config_spec_with_parameters(self, configspec):
         """

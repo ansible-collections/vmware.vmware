@@ -30,7 +30,7 @@ class TestDisk:
         return self.new_disk()
 
     def test_key(self, disk):
-        assert disk.key is None
+        assert disk.key < 0
 
         disk._live_object = Mock()
         disk._live_object.key = 1001
@@ -94,11 +94,12 @@ class TestDisk:
         assert spec.device.capacityInKB == disk.size
 
     @pytest.mark.parametrize(
-        "test_value, test_attr", [
-            ("1", 'size'),
-            ("different_mode", 'mode'),
-            (True, 'enable_sharing'),
-        ]
+        "test_value, test_attr",
+        [
+            ("1", "size"),
+            ("different_mode", "mode"),
+            (True, "enable_sharing"),
+        ],
     )
     def test_differs_from_live_object(self, disk, test_value, test_attr):
         disk._live_object = self.new_disk()

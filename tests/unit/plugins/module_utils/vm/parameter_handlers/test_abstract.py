@@ -68,7 +68,10 @@ class TestAbstractParameterHandler:
     def test_handler_name_validation(self):
         """Test that HANDLER_NAME must be defined."""
         # Test with None HANDLER_NAME
-        with pytest.raises(NotImplementedError, match="must define the HANDLER_NAME attribute"):
+        with pytest.raises(
+            NotImplementedError, match="must define the HANDLER_NAME attribute"
+        ):
+
             class InvalidHandler(AbstractParameterHandler):
                 HANDLER_NAME = None
 
@@ -84,7 +87,10 @@ class TestAbstractParameterHandler:
             InvalidHandler(Mock(), {}, Mock(), Mock())
 
         # Test with empty HANDLER_NAME
-        with pytest.raises(NotImplementedError, match="must define the HANDLER_NAME attribute"):
+        with pytest.raises(
+            NotImplementedError, match="must define the HANDLER_NAME attribute"
+        ):
+
             class EmptyHandler(AbstractParameterHandler):
                 HANDLER_NAME = ""
 
@@ -139,11 +145,13 @@ class TestAbstractParameterHandler:
         handler = ConcreteParameterHandler(error_handler, params, Mock(), None)
 
         # Test failure when parameter is required for VM creation but not defined
-        handler._check_if_params_are_defined_by_user("required_param", required_for_vm_creation=True)
+        handler._check_if_params_are_defined_by_user(
+            "required_param", required_for_vm_creation=True
+        )
 
         error_handler.fail_with_parameter_error.assert_called_once_with(
             parameter_name="required_param",
-            message="The required_param parameter is mandatory for VM creation"
+            message="The required_param parameter is mandatory for VM creation",
         )
         assert handler.PARAMS_DEFINED_BY_USER is False
 
@@ -153,7 +161,9 @@ class TestAbstractParameterHandler:
         handler = ConcreteParameterHandler(Mock(), params, Mock(), None)
 
         # Test success when parameter is required for VM creation and is defined
-        handler._check_if_params_are_defined_by_user("required_param", required_for_vm_creation=True)
+        handler._check_if_params_are_defined_by_user(
+            "required_param", required_for_vm_creation=True
+        )
 
         assert handler.PARAMS_DEFINED_BY_USER is True
 
@@ -169,7 +179,9 @@ class TestAbstractDeviceLinkedParameterHandler:
         vm = Mock()
         device_tracker = Mock()
 
-        handler = ConcreteDeviceLinkedHandler(error_handler, params, change_set, vm, device_tracker)
+        handler = ConcreteDeviceLinkedHandler(
+            error_handler, params, change_set, vm, device_tracker
+        )
 
         assert handler.error_handler == error_handler
         assert handler.params == params
@@ -182,6 +194,7 @@ class TestAbstractDeviceLinkedParameterHandler:
 
     def test_device_type_to_sub_class_map_default(self):
         """Test that device_type_to_sub_class_map defaults to empty dict."""
+
         class DefaultDeviceHandler(AbstractDeviceLinkedParameterHandler):
             HANDLER_NAME = "default_device"
 
@@ -218,13 +231,17 @@ class TestAbstractClassInheritance:
 
     def test_abstract_device_linked_inherits_from_abstract_parameter_handler(self):
         """Test that AbstractDeviceLinkedParameterHandler inherits from AbstractParameterHandler."""
-        assert issubclass(AbstractDeviceLinkedParameterHandler, AbstractParameterHandler)
+        assert issubclass(
+            AbstractDeviceLinkedParameterHandler, AbstractParameterHandler
+        )
 
     def test_concrete_implementations_can_be_instantiated(self):
         """Test that concrete implementations can be instantiated."""
         # These should not raise any errors
         concrete_handler = ConcreteParameterHandler(Mock(), {}, Mock(), Mock())
-        concrete_device_handler = ConcreteDeviceLinkedHandler(Mock(), {}, Mock(), Mock(), Mock())
+        concrete_device_handler = ConcreteDeviceLinkedHandler(
+            Mock(), {}, Mock(), Mock(), Mock()
+        )
 
         assert isinstance(concrete_handler, AbstractParameterHandler)
         assert isinstance(concrete_device_handler, AbstractDeviceLinkedParameterHandler)
@@ -272,7 +289,9 @@ class TestMockDependencies:
 
         # Test that we can call error handler methods
         handler.error_handler.fail_with_parameter_error("test", "message")
-        error_handler.fail_with_parameter_error.assert_called_once_with("test", "message")
+        error_handler.fail_with_parameter_error.assert_called_once_with(
+            "test", "message"
+        )
 
     def test_mock_change_set_usage(self):
         """Test that mock change set can be used for testing."""
@@ -285,7 +304,9 @@ class TestMockDependencies:
     def test_mock_device_tracker_usage(self):
         """Test that mock device tracker can be used for testing."""
         device_tracker = Mock()
-        handler = ConcreteDeviceLinkedHandler(Mock(), {}, Mock(), Mock(), device_tracker)
+        handler = ConcreteDeviceLinkedHandler(
+            Mock(), {}, Mock(), Mock(), device_tracker
+        )
 
         # Test that we can access device tracker
         assert handler.device_tracker == device_tracker

@@ -76,7 +76,11 @@ class DeviceTracker(AbstractService):
         """
         return self.spec_id_to_device[device_id - 1]
 
-    def link_vm_devices_to_handler_devices(self, vm_devices, device_linked_handlers: list[AbstractDeviceLinkedParameterHandler]):
+    def link_vm_devices_to_handler_devices(
+        self,
+        vm_devices,
+        device_linked_handlers: list[AbstractDeviceLinkedParameterHandler],
+    ):
         """
         Link existing VM devices to their appropriate handlers.
 
