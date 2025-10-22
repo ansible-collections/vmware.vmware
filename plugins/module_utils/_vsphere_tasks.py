@@ -14,7 +14,7 @@ import time
 import traceback
 from random import randint
 
-from ansible.module_utils._text import to_text
+from ansible.module_utils.common.text.converters import to_text
 
 PYVMOMI_IMP_ERR = None
 try:
