@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 from ansible.module_utils.common.text.converters import to_text
-import ansible.module_utils.common._collections_compat as collections_compat
+from collections.abc import Mapping
 from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import get_folder_path_of_vsphere_object
 
 
@@ -528,8 +528,6 @@ def deepmerge_dicts(d, u):
         https://bit.ly/2EDOs1B (stackoverflow question 3232943)
     License:
         cc-by-sa 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
-    Changes:
-        using collections_compat for compatibility
 
     Args:
         - d (dict): dict to merge into
@@ -539,7 +537,7 @@ def deepmerge_dicts(d, u):
         dict, with u merged into d
     """
     for k, v in u.items():
-        if isinstance(v, collections_compat.Mapping):
+        if isinstance(v, Mapping):
             d[k] = deepmerge_dicts(d.get(k, {}), v)
         else:
             d[k] = v
