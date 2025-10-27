@@ -62,7 +62,12 @@ class Configurator:
         if self.vm is not None:
             self.device_tracker.link_vm_devices_to_handler_devices(
                 self.vm.config.hardware.device,
-                self.controller_handlers + [handler for handler in self.handlers if hasattr(handler, "vim_device_class")]
+                self.controller_handlers
+                + [
+                    handler
+                    for handler in self.handlers
+                    if hasattr(handler, "vim_device_class")
+                ],
             )
 
     def stage_configuration_changes(self):

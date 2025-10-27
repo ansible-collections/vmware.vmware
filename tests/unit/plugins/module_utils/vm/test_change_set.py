@@ -227,16 +227,22 @@ class TestParameterChangeSet:
         change_set2 = ParameterChangeSet(params2, vm, error_handler)
 
         # Set up change sets with different states
-        change_set1._changed_parameters = {'1': {'old': 1, 'new': 2}, '2': {'old': 2, 'new': 3}}
+        change_set1._changed_parameters = {
+            "1": {"old": 1, "new": 2},
+            "2": {"old": 2, "new": 3},
+        }
         change_set1.power_cycle_required = False
-        change_set2._changed_parameters = {'1': {'old': 1, 'new': 3}}
+        change_set2._changed_parameters = {"1": {"old": 1, "new": 3}}
         change_set2.power_cycle_required = True
 
         change_set1.propagate_required_changes_from(change_set2)
 
         assert change_set1.are_changes_required() is True
-        assert change_set1._changed_parameters == {'1': {'old': 1, 'new': 3}, '2': {'old': 2, 'new': 3}}
-        assert change_set2._changed_parameters == {'1': {'old': 1, 'new': 3}}
+        assert change_set1._changed_parameters == {
+            "1": {"old": 1, "new": 3},
+            "2": {"old": 2, "new": 3},
+        }
+        assert change_set2._changed_parameters == {"1": {"old": 1, "new": 3}}
         assert change_set1.power_cycle_required is True
 
     def test_propagate_required_changes_from_invalid_type(self):

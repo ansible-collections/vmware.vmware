@@ -29,6 +29,7 @@ class MetadataParameterHandler(AbstractParameterHandler):
     - name: VM display name
     - guest_id: Guest operating system identifier
     - datastore: Storage location for VM files
+    - hardware_version: Hardware version for VM
 
     Attributes:
         placement: Placement service for VM placement resolution
@@ -59,12 +60,6 @@ class MetadataParameterHandler(AbstractParameterHandler):
         For new VM creation, ensures that essential metadata parameters
         (name, guest_id, datastore) are provided by the user. These are
         fundamental requirements that cannot be inferred or defaulted.
-
-        Raises:
-            Calls error_handler.fail_with_parameter_error() for missing required parameters
-
-        Side Effects:
-            Module execution stops if required parameters are missing for new VMs.
         """
         if self.vm is None:
             for param in ["name", "guest_id", "datastore"]:
@@ -81,9 +76,6 @@ class MetadataParameterHandler(AbstractParameterHandler):
         Checks if the VM's current name and guest ID match the desired
         values specified in the module parameters. Uses the change set
         service to track which properties need updates.
-
-        Side Effects:
-            Updates change_set with detected differences between current and desired state.
         """
         self.change_set.check_if_change_is_required("name", "name")
         self.change_set.check_if_change_is_required("guest_id", "config.guestId")

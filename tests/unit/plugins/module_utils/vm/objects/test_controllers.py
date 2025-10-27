@@ -9,7 +9,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.objects._controll
     AbstractDeviceController,
     ScsiDeviceController,
     BasicDeviceController,
-    ShareableDeviceController
+    ShareableDeviceController,
 )
 
 
@@ -103,7 +103,12 @@ class TestScsiDeviceController:
     @pytest.fixture
     def controller(self):
         """Test controller."""
-        c = ScsiDeviceController(bus_number=0, device_type="paravirtual", vim_device_class=Mock, bus_sharing="noSharing")
+        c = ScsiDeviceController(
+            bus_number=0,
+            device_type="paravirtual",
+            vim_device_class=Mock,
+            bus_sharing="noSharing",
+        )
         return c
 
     def test_init(self, controller):
@@ -122,8 +127,11 @@ class TestScsiDeviceController:
 
 class TestBasicDeviceController:
     """Test cases for SataController class."""
+
     def test_init(self):
-        c = BasicDeviceController(bus_number=1, device_type="scsi", vim_device_class=Mock)
+        c = BasicDeviceController(
+            bus_number=1, device_type="scsi", vim_device_class=Mock
+        )
         assert c.vim_device_class is Mock
 
 
@@ -131,6 +139,11 @@ class TestShareableDeviceController:
     """Test cases for IdeController class."""
 
     def test_init(self):
-        c = ShareableDeviceController(bus_number=1, device_type="scsi", vim_device_class=Mock, bus_sharing="noSharing")
+        c = ShareableDeviceController(
+            bus_number=1,
+            device_type="scsi",
+            vim_device_class=Mock,
+            bus_sharing="noSharing",
+        )
         assert c.bus_sharing == "noSharing"
         assert c.vim_device_class is Mock
