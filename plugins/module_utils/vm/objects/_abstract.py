@@ -252,6 +252,6 @@ class AbstractVsphereObject(ABC):
             raise ValueError("Cannot link a live VM object representation to another live VM object representation.")
 
         if self.has_a_linked_live_vm_device():
-            raise ValueError("Linked device already set, cannot link another one.")
+            raise ValueError("Linked device already set for %s, cannot link another one." % str(self))
 
         self._live_object = abstract_vsphere_object

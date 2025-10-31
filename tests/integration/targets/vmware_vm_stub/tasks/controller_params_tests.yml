@@ -24,6 +24,9 @@
         bus_sharing: noSharing
       - bus_number: 2
         bus_sharing: physicalSharing
+    usb_controllers:
+      - controller_type: usb2
+      - controller_type: usb3
   register: _set_controller_params
 
 - name: Set vm controller settings - idempotence check
@@ -35,7 +38,7 @@
     that:
       - _set_controller_params is ansible.builtin.changed
       - _set_controller_params_idempotent is not ansible.builtin.changed
-      - _set_controller_params.changes.objects_to_add | length == 5
+      - _set_controller_params.changes.objects_to_add | length == 7
       - _set_controller_params.changes.objects_to_remove | length == 0
       - _set_controller_params.changes.objects_to_update | length == 0
 
@@ -78,6 +81,15 @@
   register: _out_of_bounds_bus_number
   ignore_errors: true
 
+- name: Duplicate usb controller - expect failure
+  vmware.vmware._vm_stub:
+    name: "{{ test_vm_name }}"
+    usb_controllers:
+      - controller_type: usb2
+      - controller_type: usb2
+  register: _duplicate_usb_controller
+  ignore_errors: true
+
 - name: Remove controllers
   vmware.vmware._vm_stub: &remove-controller-params
     name: "{{ test_vm_name }}"
@@ -86,6 +98,7 @@
         controller_type: paravirtual
     sata_controllers: []
     nvme_controllers: []
+    usb_controllers: []
   register: _remove_controller_params
 
 - name: Remove controllers - idempotence check
@@ -96,8 +109,9 @@
   ansible.builtin.assert:
     that:
       - _out_of_bounds_bus_number is ansible.builtin.failed
+      - _duplicate_usb_controller is ansible.builtin.failed
       - _remove_controller_params is ansible.builtin.changed
       - _remove_controller_params_idem is not ansible.builtin.changed
       - _remove_controller_params.changes.objects_to_add | length == 0
       - _remove_controller_params.changes.objects_to_update | length == 0
-      - _remove_controller_params.changes.objects_to_remove | length == 5
+      - _remove_controller_params.changes.objects_to_remove | length == 7
