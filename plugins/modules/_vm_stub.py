@@ -565,6 +565,34 @@ options:
                     - If not specified and this is an existing adapter, the MAC address will not be changed.
                 required: false
 
+    nvdimm_remove_unmanaged:
+        description:
+            - Whether to remove NVDIMMs that are not specified in the O(nvdimms) parameter.
+            - If this is set to true, any NVDIMMs that are not specified in the O(nvdimms) parameter will be removed.
+            - If this is set to false, the module will ignore NVDIMMs beyond those listed in the O(nvdimms) parameter.
+        type: bool
+        required: false
+        default: false
+    nvdimms:
+        description:
+            - A list of non-volatile DIMMs to manage on the VM.
+            - Any NVDIMMs in this list that do not exist on the VM will be created.
+            - If any NVDIMMs are specified, the module will automatically add and manage a NVDIMM controller on the VM.
+              If you remove all NVDIMMs, the NVDIMM controller will be removed as well.
+            - You must have a PMem datastore selected for the host that the VM is running on before adding
+              NVDIMMs to the VM.
+        type: list
+        elements: dict
+        required: false
+        suboptions:
+            size_mb:
+                description:
+                    - The amount of memory to add to the VM.
+                    - Memory cannot be changed while the VM is powered on, unless memory hot add is already enabled.
+                    - This parameter is required when creating a new VM.
+                type: int
+                required: true
+
     vm_options:
         description:
             - Advanced and miscellaneous options for the VM, including things like BIOS settings,
@@ -755,6 +783,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     _controllers,
     _network_adapters,
     _cdroms,
+    _nvdimms,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._configuration_builder import (
     ConfigurationRegistry,
@@ -784,6 +813,7 @@ class VmModule(ModulePyvmomiBase):
         self.configuration_registry.register_device_linked_handler(_disks.DiskParameterHandler)
         self.configuration_registry.register_device_linked_handler(_network_adapters.NetworkAdapterParameterHandler)
         self.configuration_registry.register_device_linked_handler(_cdroms.CdromParameterHandler)
+        self.configuration_registry.register_device_linked_handler(_nvdimms.NvdimmParameterHandler)
 
         self.configuration_registry.register_controller_handler(_controllers.ScsiControllerParameterHandler)
         self.configuration_registry.register_controller_handler(_controllers.NvmeControllerParameterHandler)
@@ -934,16 +964,27 @@ class VmModule(ModulePyvmomiBase):
                 timeout=self.params['timeout']
             )
         except TaskError as e:
-            if isinstance(e.parent_error, vim.fault.InvalidVmConfig):
+            if isinstance(e.parent_error, (vim.fault.InvalidVmConfig, vim.fault.NotFound)):
                 self.error_handler.fail_with_vm_config_error(error=e.parent_error, message=str(e))
             elif isinstance(e.parent_error, self._get_invalid_power_state_error_classes()) and action == "update":
                 # We may have missed a power sensitive change. We can retry the update task with the needs_power_cycle
                 # flag set to True, and let those tasks handle any new issues
                 raise e.parent_error
             else:
-                self.module.fail_json(msg="%s %s" % (error_prefix, to_native(e)), exception=e.parent_error)
+                self.module.fail_json(
+                    msg="%s %s" % (error_prefix, to_native(e)),
+                    error_code="TASK_ERROR",
+                    error_type=str(type(e.parent_error)),
+                    error_raw=to_native(e),
+                    exception=e.parent_error,
+                )
         except (vmodl.RuntimeFault, vim.fault.VimFault) as e:
-            self.module.fail_json(msg="%s %s" % (error_prefix, e.msg))
+            self.module.fail_json(
+                msg="%s %s" % (error_prefix, e.msg),
+                error_code="VIM_FAULT",
+                error_type=str(type(e)),
+                error_raw=to_native(e),
+            )
 
         return task_result
 
@@ -1076,6 +1117,13 @@ def main():
                     mutually_exclusive=[
                         ['shares', 'shares_level']
                     ],
+                ),
+
+                nvdimm_remove_unmanaged=dict(type='bool', required=False, default=False),
+                nvdimms=dict(
+                    type='list', elements='dict', required=False, options=dict(
+                        size_mb=dict(type='int', required=True),
+                    )
                 ),
 
                 vm_options=dict(
