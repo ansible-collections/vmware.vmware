@@ -11,6 +11,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     SataControllerParameterHandler,
     NvmeControllerParameterHandler,
     IdeControllerParameterHandler,
+    UsbControllerParameterHandler,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
 
@@ -267,3 +268,47 @@ class TestIdeControllerParameterHandler:
         assert len(mock_handler.controllers) == 2
         assert mock_handler.controllers[0].vim_device_class == mock_handler.vim_device_class
         assert mock_handler.controllers[1].vim_device_class == mock_handler.vim_device_class
+
+
+class TestUsbControllerParameterHandler:
+    @pytest.fixture
+    def mock_handler(self):
+        handler = UsbControllerParameterHandler(
+            error_handler=Mock(),
+            params={},
+            change_set=Mock(),
+            vm=Mock(),
+            device_tracker=Mock(),
+        )
+        handler.error_handler.fail_with_parameter_error = Mock(
+            side_effect=AssertionError()
+        )
+        return handler
+
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._controllers.vim.vm.device.VirtualUSBController"
+    )
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._controllers.vim.vm.device.VirtualUSBXHCIController"
+    )
+    def test_vim_device_class(self, mock_virtual_usb_controller, mock_virtual_usb_xhci_controller, mock_handler):
+        mock_virtual_usb_controller.return_value = Mock()
+        mock_virtual_usb_xhci_controller.return_value = Mock()
+        assert mock_virtual_usb_controller in mock_handler.vim_device_class
+        assert mock_virtual_usb_xhci_controller in mock_handler.vim_device_class
+
+    def test_parse_device_controller_params(self, mock_handler):
+        mock_handler.params = {'usb_controllers': []}
+        mock_handler.verify_parameter_constraints()
+        assert len(mock_handler.controllers) == 0
+
+        mock_handler.params = {
+            "usb_controllers": [
+                {"controller_type": "usb2"},
+                {"controller_type": "usb3"},
+            ]
+        }
+        mock_handler.verify_parameter_constraints()
+        assert len(mock_handler.controllers) == 2
+        assert mock_handler.controllers['usb2'].vim_device_class in mock_handler.vim_device_class
+        assert mock_handler.controllers['usb3'].vim_device_class in mock_handler.vim_device_class
