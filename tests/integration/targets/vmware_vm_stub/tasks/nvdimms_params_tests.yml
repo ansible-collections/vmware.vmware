@@ -7,7 +7,7 @@
     state: powered-off
 
 - name: Set vm nvdimm settings - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     moid: "{{ test_vm_moid }}"
     nvdimms:
       - size_mb: 1024

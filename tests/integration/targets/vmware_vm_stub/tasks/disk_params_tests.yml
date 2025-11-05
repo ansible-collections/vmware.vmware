@@ -6,7 +6,7 @@
     state: powered-off
 
 - name: Set vm disk settings
-  vmware.vmware._vm_stub: &set-disk-params
+  vmware.vmware.vm: &set-disk-params
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -28,7 +28,7 @@
   register: _set_disk_params
 
 - name: Set vm disk settings - idempotence check
-  vmware.vmware._vm_stub: *set-disk-params
+  vmware.vmware.vm: *set-disk-params
   register: _set_disk_params_idempotent
 
 - name: Lookup VM disk Info
@@ -49,7 +49,7 @@
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
 
 - name: Update vm disk settings - ignored settings
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -69,7 +69,7 @@
   register: _update_no_changes
 
 - name: Update vm disk settings
-  vmware.vmware._vm_stub: &update-disk-params
+  vmware.vmware.vm: &update-disk-params
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -85,7 +85,7 @@
   register: _update_disk_params
 
 - name: Update vm disk settings - idempotence check
-  vmware.vmware._vm_stub: *update-disk-params
+  vmware.vmware.vm: *update-disk-params
   register: _update_disk_params_idem
 
 - name: Check update disk params tasks
@@ -101,7 +101,7 @@
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
 
 - name: Decrease vm disk size - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -117,7 +117,7 @@
   ignore_errors: true
 
 - name: Use unknown datastore - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -140,7 +140,7 @@
       - _decrease_disk_size is ansible.builtin.failed
 
 - name: Remove disks
-  vmware.vmware._vm_stub: &remove-disk-params
+  vmware.vmware.vm: &remove-disk-params
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -151,7 +151,7 @@
   register: _remove_disk
 
 - name: Remove disks - idempotence check
-  vmware.vmware._vm_stub: *remove-disk-params
+  vmware.vmware.vm: *remove-disk-params
   register: _remove_disk_idem
 
 - name: Check remove disk tasks

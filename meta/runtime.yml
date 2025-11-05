@@ -36,6 +36,7 @@ action_groups:
         - vm_powerstate
         - vm_resource_info
         - vm_snapshot
+        - vm
 
 plugin_routing:
     modules:

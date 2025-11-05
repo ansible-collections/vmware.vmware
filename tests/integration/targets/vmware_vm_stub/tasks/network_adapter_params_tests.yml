@@ -6,7 +6,7 @@
     state: powered-off
 
 - name: Set vm network settings
-  vmware.vmware._vm_stub: &set-network-params
+  vmware.vmware.vm: &set-network-params
     name: "{{ test_vm_name }}"
     network_adapters:
       - network: "{{ vcenter_vm_network_name }}"
@@ -21,7 +21,7 @@
   register: _set_network_params
 
 - name: Set vm network settings - idempotence check
-  vmware.vmware._vm_stub: *set-network-params
+  vmware.vmware.vm: *set-network-params
   register: _set_network_params_idempotent
 
 - name: Lookup VM Info
@@ -49,7 +49,7 @@
     vm_guest_info: "{{ _lookup_vm_guest_info.guests[0] }}"
 
 - name: Set invalid network name - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     network_adapters:
       - network: Not a real name
@@ -57,7 +57,7 @@
   ignore_errors: true
 
 - name: Change network adapter type - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     network_adapters:
       - network: "{{ vcenter_vm_network_name }}"
@@ -66,7 +66,7 @@
   ignore_errors: true
 
 - name: Remove network adapter - ignore
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     network_adapters_remove_unmanaged: false
     network_adapters:
@@ -74,7 +74,7 @@
   register: _remove_network_adapter_ignore
 
 - name: Remove network adapter - remove unmanaged
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     network_adapters_remove_unmanaged: true
     network_adapters:
@@ -82,7 +82,7 @@
   register: _remove_network_adapter_remove_unmanaged
 
 - name: Remove network adapter - idempotence
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     network_adapters_remove_unmanaged: true
     network_adapters:

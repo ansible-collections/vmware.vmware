@@ -6,7 +6,7 @@
     state: powered-off
 
 - name: Set vm memory settings
-  vmware.vmware._vm_stub: &set-mem-params
+  vmware.vmware.vm: &set-mem-params
     name: "{{ test_vm_name }}"
     memory:
       size_mb: 1024
@@ -17,7 +17,7 @@
   register: _set_mem_params
 
 - name: Set vm memory settings - idempotence check
-  vmware.vmware._vm_stub: *set-mem-params
+  vmware.vmware.vm: *set-mem-params
   register: _set_mem_params_idempotent
 
 - name: Lookup VM memory Info
