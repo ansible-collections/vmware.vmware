@@ -66,21 +66,30 @@ class ParameterChangeSet:
     def changes(self):
         return {
             "changed_parameters": self._changed_parameters,
-            "objects_to_add": [obj.to_change_set_output()['new_value'] for obj in self.objects_to_add],
-            "objects_to_update": [obj.to_change_set_output() for obj in self.objects_to_update],
-            "objects_to_remove": [obj.to_change_set_output()['old_value'] for obj in self.objects_to_remove],
+            "objects_to_add": [
+                obj.to_change_set_output()["new_value"] for obj in self.objects_to_add
+            ],
+            "objects_to_update": [
+                obj.to_change_set_output() for obj in self.objects_to_update
+            ],
+            "objects_to_remove": [
+                obj.to_change_set_output()["old_value"]
+                for obj in self.objects_to_remove
+            ],
         }
 
     def are_changes_required(self):
         if self.vm is None:
             return True
 
-        return any([
-            len(self._changed_parameters) > 0,
-            len(self.objects_to_add) > 0,
-            len(self.objects_to_update) > 0,
-            len(self.objects_to_remove) > 0
-        ])
+        return any(
+            [
+                len(self._changed_parameters) > 0,
+                len(self.objects_to_add) > 0,
+                len(self.objects_to_update) > 0,
+                len(self.objects_to_remove) > 0,
+            ]
+        )
 
     def check_if_change_is_required(
         self, parameter_name, vm_attribute, power_sensitive=False, errors_fatal=True
@@ -201,7 +210,9 @@ class ParameterChangeSet:
             Merges self._changed_parameters using other._changed_parameters.
             Updates power_cycle_required using logical OR with other.power_cycle_required.
         """
-        if not hasattr(other, "_changed_parameters") and not hasattr(other, "power_cycle_required"):
+        if not hasattr(other, "_changed_parameters") and not hasattr(
+            other, "power_cycle_required"
+        ):
             raise ValueError("change_set must be an instance of ParameterChangeSet")
 
         self._changed_parameters.update(other._changed_parameters)

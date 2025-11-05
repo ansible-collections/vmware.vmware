@@ -36,7 +36,7 @@ class TestCdrom:
         )
 
     def test_key(self, cdrom):
-        assert cdrom.key is None
+        assert cdrom.key < 0
 
         cdrom._live_object = Mock()
         cdrom._live_object.key = 1001
@@ -119,7 +119,7 @@ class TestCdrom:
         mock_spec.return_value = Mock()
         cdrom._update_cdrom_spec_with_options = Mock()
         new_spec = cdrom.to_new_spec()
-        assert -45000 < new_spec.device.key < -39999
+        assert new_spec.device.key < 0
         assert new_spec.device.connectable.allowGuestControl is True
         cdrom._update_cdrom_spec_with_options.assert_called_once_with(new_spec)
 

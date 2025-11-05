@@ -15,6 +15,7 @@ Classes:
 """
 
 from abc import ABC, abstractmethod
+from random import randint
 
 try:
     from pyVmomi import vim
@@ -30,6 +31,9 @@ class AbstractVsphereObject(ABC):
     1. Input parameters: An object that represents the desired state of a vSphere object.
     2. Live object: An object that represents the current state of a vSphere object.
 
+    Parameter representations are (potentially) linked to live objects. The live object
+    should have a corresponding raw_object, which is the original VMware object from pyVmomi.
+
     Key Features:
     - Change detection through linked device comparison
     - VMware specification generation for both new and update operations
@@ -37,7 +41,7 @@ class AbstractVsphereObject(ABC):
 
     Attributes:
         _raw_object: Original VMware object from pyVmomi (optional, only makes sense for live objects)
-        _live_object: Corresponding live device for change detection (optional, only makes sense for input parameters)
+        _live_object: AbstractVsphereObject that represents a live VM device
     """
 
     def __init__(self, raw_object=None):
@@ -50,6 +54,7 @@ class AbstractVsphereObject(ABC):
         """
         self._raw_object = raw_object
         self._live_object = None
+        self._new_spec_key = -randint(1, 99999)
 
     @classmethod
     @abstractmethod
@@ -69,7 +74,9 @@ class AbstractVsphereObject(ABC):
         Raises:
             NotImplementedError: Must be implemented by subclasses
         """
-        raise NotImplementedError("from_live_device_spec must be implemented by subclasses")
+        raise NotImplementedError(
+            "from_live_device_spec must be implemented by subclasses"
+        )
 
     @abstractmethod
     def to_new_spec(self):
@@ -106,8 +113,21 @@ class AbstractVsphereObject(ABC):
         raise NotImplementedError("to_update_spec must be implemented by subclasses")
 
     def to_removal_spec(self):
+        """
+        Generate VMware specification for object removal.
+
+        Creates a VMware device specification that can be used to remove
+        an existing object in vSphere.
+
+        Returns:
+            VMware device specification object
+
+        Raises:
+        """
         if not self._raw_object:
-            raise AttributeError("Cannot create a removal spec for a device that has no raw_object attached.")
+            raise AttributeError(
+                "Cannot create a removal spec for a device that has no raw_object attached."
+            )
 
         spec = vim.vm.device.VirtualDeviceSpec()
         spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
@@ -230,7 +250,9 @@ class AbstractVsphereObject(ABC):
             "old_value": old_value,
         }
 
-    def link_corresponding_live_object(self, abstract_vsphere_object: "AbstractVsphereObject"):
+    def link_corresponding_live_object(
+        self, abstract_vsphere_object: "AbstractVsphereObject"
+    ):
         """
         Link this object to its corresponding live device for change detection.
 
@@ -249,9 +271,32 @@ class AbstractVsphereObject(ABC):
             between desired and current object states.
         """
         if self.represents_live_vm_device():
-            raise ValueError("Cannot link a live VM object representation to another live VM object representation.")
+            raise ValueError(
+                "Cannot link a live VM object representation to another live VM object representation."
+            )
 
         if self.has_a_linked_live_vm_device():
             raise ValueError("Linked device already set for %s, cannot link another one." % str(self))
 
         self._live_object = abstract_vsphere_object
+
+    @property
+    def key(self):
+        """
+        Get the VMware device key for this object.
+
+        The device key is VMware's unique identifier for the object. This
+        property returns the key from either the existing device or the
+        generated specification.
+
+        If no object exists in vSphere, the key is a randomly generated negative integer.
+
+        Returns:
+            int or None: VMware object key
+        """
+        if self.represents_live_vm_device():
+            return self._raw_object.key
+        if self.has_a_linked_live_vm_device():
+            return self._live_object.key
+
+        return self._new_spec_key

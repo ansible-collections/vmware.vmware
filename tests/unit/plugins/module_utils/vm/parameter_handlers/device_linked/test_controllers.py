@@ -13,14 +13,23 @@ from ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handler
     IdeControllerParameterHandler,
     UsbControllerParameterHandler,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import ParameterChangeSet
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._change_set import (
+    ParameterChangeSet,
+)
 
 
 class MockDiskControllerParameterHandlerBase(DiskControllerParameterHandlerBase):
     HANDLER_NAME = "mock_controller"
 
     def __init__(
-        self, error_handler, params, change_set, vm, device_tracker, category, max_count=4
+        self,
+        error_handler,
+        params,
+        change_set,
+        vm,
+        device_tracker,
+        category,
+        max_count=4,
     ):
         super().__init__(
             error_handler, params, change_set, vm, device_tracker, category, max_count
@@ -62,7 +71,7 @@ class TestDiskControllerParameterHandlerBase:
         mock_handler._parse_device_controller_params.reset_mock()
 
         mock_handler.max_count = 1
-        mock_handler.controllers = {
+        mock_handler.managed_parameter_objects = {
             0: Mock(),
             3: Mock(),
         }
@@ -72,13 +81,23 @@ class TestDiskControllerParameterHandlerBase:
 
     def test_link_vm_device(self, mock_handler):
         device = Mock(busNumber=0)
-        mock_handler.controllers = {
+        mock_handler.managed_parameter_objects = {
             0: Mock(bus_number=0),
             3: Mock(bus_number=3),
         }
         mock_handler.link_vm_device(device)
-        assert mock_handler.controllers[0].link_corresponding_live_object.call_count == 1
-        assert mock_handler.controllers[3].link_corresponding_live_object.call_count == 0
+        assert (
+            mock_handler.managed_parameter_objects[
+                0
+            ].link_corresponding_live_object.call_count
+            == 1
+        )
+        assert (
+            mock_handler.managed_parameter_objects[
+                3
+            ].link_corresponding_live_object.call_count
+            == 0
+        )
 
     @pytest.mark.parametrize(
         "device",
@@ -89,32 +108,30 @@ class TestDiskControllerParameterHandlerBase:
         ],
     )
     def test_link_vm_device_no_match(self, device, mock_handler):
-        mock_handler.controllers = {
+        mock_handler.managed_parameter_objects = {
             3: Mock(bus_number=3),
         }
-        out = mock_handler.link_vm_device(device)
+        out = mock_handler.link_vm_device(device, remove_unmanaged=True)
         assert out is not None
 
     def test_populate_config_spec_with_parameters(self, mock_handler):
         mock_handler.change_set.objects_to_add = [Mock()]
         mock_handler.change_set.objects_to_update = [Mock()]
         mock_handler.populate_config_spec_with_parameters(Mock())
+        assert mock_handler.change_set.objects_to_add[0].to_new_spec.called is True
         assert (
-            mock_handler.change_set.objects_to_add[0].to_new_spec.called
-            is True
-        )
-        assert (
-            mock_handler.change_set.objects_to_update[0].to_update_spec.called
-            is True
+            mock_handler.change_set.objects_to_update[0].to_update_spec.called is True
         )
         assert mock_handler.device_tracker.track_device_id_from_spec.call_count == 2
 
     def test_compare_live_config_with_desired_config(self, mock_handler):
-        mock_handler.change_set = ParameterChangeSet(mock_handler.params, Mock(), Mock())
+        mock_handler.change_set = ParameterChangeSet(
+            mock_handler.params, Mock(), Mock()
+        )
         mock_handler.compare_live_config_with_desired_config()
         assert mock_handler.change_set.are_changes_required() is False
 
-        mock_handler.controllers = {
+        mock_handler.managed_parameter_objects = {
             0: Mock(has_a_linked_live_vm_device=Mock(return_value=False)),
             1: Mock(
                 has_a_linked_live_vm_device=Mock(return_value=True),
@@ -128,9 +145,13 @@ class TestDiskControllerParameterHandlerBase:
 
         mock_handler.compare_live_config_with_desired_config()
         assert mock_handler.change_set.are_changes_required() is True
-        assert mock_handler.change_set.objects_to_add[0] is mock_handler.controllers[0]
         assert (
-            mock_handler.change_set.objects_to_update[0] is mock_handler.controllers[1]
+            mock_handler.change_set.objects_to_add[0]
+            is mock_handler.managed_parameter_objects[0]
+        )
+        assert (
+            mock_handler.change_set.objects_to_update[0]
+            is mock_handler.managed_parameter_objects[1]
         )
 
 
@@ -165,7 +186,7 @@ class TestScsiControllerParameterHandler:
         }
         mock_handler._parse_device_controller_params()
         assert (
-            mock_handler.controllers[0].vim_device_class
+            mock_handler.managed_parameter_objects[0].vim_device_class
             == mock_handler.device_type_to_sub_class_map["lsilogic"]
         )
 
@@ -201,7 +222,10 @@ class TestSataControllerParameterHandler:
             ],
         }
         mock_handler._parse_device_controller_params()
-        assert mock_handler.controllers[0].vim_device_class == mock_handler.vim_device_class
+        assert (
+            mock_handler.managed_parameter_objects[0].vim_device_class
+            == mock_handler.vim_device_class
+        )
 
 
 class TestNvmeControllerParameterHandler:
@@ -235,7 +259,10 @@ class TestNvmeControllerParameterHandler:
             ]
         }
         mock_handler._parse_device_controller_params()
-        assert mock_handler.controllers[0].vim_device_class == mock_handler.vim_device_class
+        assert (
+            mock_handler.managed_parameter_objects[0].vim_device_class
+            == mock_handler.vim_device_class
+        )
 
 
 class TestIdeControllerParameterHandler:
@@ -265,9 +292,15 @@ class TestIdeControllerParameterHandler:
     def test_parse_device_controller_params(self, mock_handler):
         mock_handler.params = {}
         mock_handler._parse_device_controller_params()
-        assert len(mock_handler.controllers) == 2
-        assert mock_handler.controllers[0].vim_device_class == mock_handler.vim_device_class
-        assert mock_handler.controllers[1].vim_device_class == mock_handler.vim_device_class
+        assert len(mock_handler.managed_parameter_objects) == 2
+        assert (
+            mock_handler.managed_parameter_objects[0].vim_device_class
+            == mock_handler.vim_device_class
+        )
+        assert (
+            mock_handler.managed_parameter_objects[1].vim_device_class
+            == mock_handler.vim_device_class
+        )
 
 
 class TestUsbControllerParameterHandler:

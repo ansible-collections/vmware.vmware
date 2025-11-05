@@ -12,9 +12,9 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: _vm_stub
-short_description: This is a partial implementation of a module. It is not intended for use.
+short_description: Create, update, or delete a virtual machine.
 description:
-    - This module is currently in development. It is not intended for public use.
+    - This module is used to create, update, or delete virtual machines.
     - Although this module will attempt to validate your configuration, it is not feasible
       to validate all possible combinations of parameters. You may encounter errors when
       starting VMs with invalid configurations.
@@ -33,7 +33,7 @@ options:
         type: str
     name:
         description:
-            - Name of the virtual machine to work with.
+            - Name of the virtual machine to manage.
             - Virtual machine names in vCenter are not necessarily unique, which may be problematic, see O(name_match).
             - This is required when the VM does not exist, or if O(moid) or O(uuid) is not supplied.
         type: str
@@ -68,7 +68,7 @@ options:
         required: false
         aliases: [ vm_folder ]
 
-    # placement:
+    # placement
     datacenter:
         description:
             - The datacenter in which to place the VM.
@@ -123,6 +123,16 @@ options:
             - This is required when creating a new VM.
         type: str
         required: false
+
+    delete_from_inventory:
+        description:
+            - Whether to delete the VM from the datastore when removing it, or just remove the VM from the vSphere inventory.
+            - If this is set to true, the VM will be deleted from the datastore when it is removed.
+            - If this is set to false, the VM will remain on the datastore when it is removed.
+            - This parameter is only used when O(state) is set to C(absent).
+        type: bool
+        required: false
+        default: false
 
     hardware_version:
         description:
@@ -188,12 +198,12 @@ options:
                 required: false
             reservation:
                 description:
-                    - The amount of CPU resource that is guaranteed available to the virtual machine.
+                    - The amount of CPU resource (Mhz) that is guaranteed available to the virtual machine.
                 type: int
                 required: false
             limit:
                 description:
-                    - The maximum amount of CPU resources the VM can use.
+                    - The maximum amount of CPU resources (Mhz) the VM can use.
                 type: int
                 required: false
             shares:
@@ -225,7 +235,7 @@ options:
         suboptions:
             size_mb:
                 description:
-                    - The amount of memory to add to the VM.
+                    - The amount of memory in mb to add to the VM.
                     - Memory cannot be changed while the VM is powered on, unless memory hot add is already enabled.
                     - This parameter is required when creating a new VM.
                 type: int
@@ -272,11 +282,27 @@ options:
                 type: int
                 required: false
 
-
+    disks_remove_unmanaged:
+        description:
+            - Whether to remove disks that are not specified in the O(disks) parameter.
+            - If this is set to true, any disks that are not specified in the O(disks) parameter will be removed.
+            - If this is set to false, the module will ignore disks that are not specified in the O(disks) parameter.
+        type: bool
+        required: false
+        default: true
+    disks_detach_only:
+        description:
+            - Whether to detach disks that are to be removed, or delete them entirely.
+            - If this is set to true, any disks that are removed will be detached from the VM but remain on the datastore.
+            - If this is set to false, any disks that are removed will be deleted from the datastore.
+            - This parameter only applies to individual disk removal. If the entire VM is being removed, this parameter is ignored
+              and O(delete_from_inventory) is used instead.
+        type: bool
+        required: false
+        default: false
     disks:
         description:
             - Disks to manage on the VM.
-            - If a disk is not specified, it will be removed from the VM.
             - Reducing disk size is not supported.
             - At least one disk is required when creating a new VM.
             - Controllers (except IDE) referenced by the O(disks[].device_node) parameter must be configured in the corresponding controller section.
@@ -345,15 +371,25 @@ options:
             filename:
                 description:
                     - The filename of an existing disk to attach to the VM. This file must already exist on the datastore.
+                    - This is only used when creating a new disk. If it is specified for an existing disk, it is ignored.
                     - An example filename is '[my-datastore-name] some/folder/path/My.vmdk'.
                     - Only one of O(disks[].datastore) or O(disks[].filename) can be set.
                 type: str
                 required: false
 
+    cdroms_remove_unmanaged:
+        description:
+            - Whether to remove CD-ROMs that are not specified in the O(cdroms) parameter.
+            - If this is set to true, any CD-ROMs that are not specified in the O(cdroms) parameter will be removed.
+            - If this is set to false, the module will ignore CD-ROMs that are not specified in the O(cdroms) parameter.
+        type: bool
+        required: false
+        default: true
     cdroms:
         description:
             - CD-ROMs to manage on the VM.
-            - If a CD-ROM is not specified, it will be removed from the VM.
+            - The order of this list does matter, since you cannot specify the CDROM index number in vSphere. In other words,
+              the first CDROM in this list will always manage the first CDROM on the VM.
         type: list
         elements: dict
         required: false
@@ -393,13 +429,21 @@ options:
                 type: str
                 required: true
 
+    scsi_controllers_remove_unmanaged:
+        description:
+            - Whether to remove SCSI controllers that are not specified in the O(scsi_controllers) parameter.
+            - If this is set to true, any SCSI controllers that are not specified in the O(scsi_controllers) parameter will be removed.
+            - If this is set to false, the module will ignore SCSI controllers that are not specified in the O(scsi_controllers) parameter.
+        type: bool
+        required: false
+        default: true
     scsi_controllers:
         description:
             - SCSI device controllers to manage on the VM.
             - If a controller is not specified, it will be removed from the VM.
             - You may only specify four SCSI controllers per VM.
-            - Controllers are added to the VM in the order they are specified. For example, the first controller specified
-              will be assigned bus 0, the second controller will be assigned bus 1, etc.
+            - The order of this list does not matter, i.e. you may specify bus numbers out of order and do not need to specify all bus numbers
+              (See O(scsi_controllers_remove_unmanaged)).
             - Valid unit numbers for SCSI controllers are 0-15, except for the reserved unit 7.
         type: list
         elements: dict
@@ -427,13 +471,21 @@ options:
                 required: false
                 choices: [ noSharing, virtualSharing, physicalSharing ]
 
+    nvme_controllers_remove_unmanaged:
+        description:
+            - Whether to remove NVMe controllers that are not specified in the O(nvme_controllers) parameter.
+            - If this is set to true, any NVMe controllers that are not specified in the O(nvme_controllers) parameter will be removed.
+            - If this is set to false, the module will ignore NVMe controllers that are not specified in the O(nvme_controllers) parameter.
+        type: bool
+        required: false
+        default: true
     nvme_controllers:
         description:
             - NVMe device controllers to manage on the VM.
             - If a controller is not specified, it will be removed from the VM.
             - You may only specify four NVMe controllers per VM.
-            - Controllers are added to the VM in the order they are specified. For example, the first controller specified
-              will be assigned bus 0, the second controller will be assigned bus 1, etc.
+            - The order of this list does not matter, i.e. you may specify bus numbers out of order and do not need to specify all bus numbers
+              (See O(nvme_controllers_remove_unmanaged)).
             - Valid unit numbers for NVMe controllers are 0-63.
         type: list
         elements: dict
@@ -452,11 +504,21 @@ options:
                 type: str
                 choices: [ noSharing, physicalSharing ]
 
+    sata_controllers_remove_unmanaged:
+        description:
+            - Whether to remove SATA controllers that are not specified in the O(sata_controllers) parameter.
+            - If this is set to true, any SATA controllers that are not specified in the O(sata_controllers) parameter will be removed.
+            - If this is set to false, the module will ignore SATA controllers that are not specified in the O(sata_controllers) parameter.
+        type: bool
+        required: false
+        default: true
     sata_controllers:
         description:
             - SATA controllers to manage on the VM.
             - You may only specify four SATA controllers per VM.
             - Valid unit numbers for SATA controllers are 0-29.
+            - The order of this list does not matter, i.e. you may specify bus numbers out of order and do not need to specify all bus numbers
+              (See O(sata_controllers_remove_unmanaged)).
         type: list
         elements: dict
         required: false
@@ -468,10 +530,20 @@ options:
                 type: int
                 required: true
 
+    usb_controllers_remove_unmanaged:
+        description:
+            - Whether to remove USB controllers that are not specified in the O(usb_controllers) parameter.
+            - If this is set to true, any USB controllers that are not specified in the O(usb_controllers) parameter will be removed.
+            - If this is set to false, the module will ignore USB controllers beyond those listed in the O(usb_controllers) parameter.
+        type: bool
+        required: false
+        default: true
     usb_controllers:
         description:
             - USB device controllers to manage on the VM.
             - You may only specify two USB controllers per VM, and only one of each type.
+            - The order of this list does matter, since you cannot specify the controller/bus number in vSphere. In other words,
+              the first controller in this list will always manage the controller assigned to bus 0.
             - The ESXi host that the VM is running on must have the required hardware and firmware to support the USB controller type.
         type: list
         elements: dict
@@ -484,19 +556,22 @@ options:
                 required: true
                 choices: [ usb2, usb3 ]
 
-    network_adapter_remove_unmanaged:
+    network_adapters_remove_unmanaged:
         description:
             - Whether to remove network adapters that are not specified in the O(network_adapters) parameter.
             - If this is set to true, any network adapters that are not specified in the O(network_adapters) parameter will be removed.
             - If this is set to false, the module will ignore network adapters beyond those listed in the O(network_adapters) parameter.
+            - If you do not specify O(network_adapters) at all, no devices will be removed regardless of the value of this parameter.
         type: bool
         required: false
-        default: false
+        default: true
     network_adapters:
         description:
             - A list of network adapters to manage on the VM.
             - Due to limitations in the VMware API, you cannot change the type of a network adapter once it has been created using
               this module.
+            - The order of this list does matter, since you cannot specify the network adapter index number in vSphere. In other words,
+              the first network adapter in this list will always manage the network adapter assigned to index 0.
             - The network adapter types defined in this parameter must match the types of any existing
               adapters on the VM, in the same order that they are specified. For example, the first adapter in this list
               must have the same type as the first adapter attached to the VM (if one exists).
@@ -565,14 +640,14 @@ options:
                     - If not specified and this is an existing adapter, the MAC address will not be changed.
                 required: false
 
-    nvdimm_remove_unmanaged:
+    nvdimms_remove_unmanaged:
         description:
             - Whether to remove NVDIMMs that are not specified in the O(nvdimms) parameter.
             - If this is set to true, any NVDIMMs that are not specified in the O(nvdimms) parameter will be removed.
             - If this is set to false, the module will ignore NVDIMMs beyond those listed in the O(nvdimms) parameter.
         type: bool
         required: false
-        default: false
+        default: true
     nvdimms:
         description:
             - A list of non-volatile DIMMs to manage on the VM.
@@ -676,6 +751,108 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
+- name: Create a VM
+  vmware.vmware.vm:
+    name: my-new-vm
+    datacenter: DC01
+    cluster: Cluster01
+    datastore: Datastore01
+    guest_id: amazonlinux3_64Guest
+    cpu:
+      cores: 4
+      cores_per_socket: 2
+      enable_hot_add: true
+      enable_hot_remove: true
+    memory:
+      size_mb: 8096
+      enable_hot_add: true
+      reserve_all_memory: true
+    disks:
+      - size: 80gb
+        provisioning: thin
+        device_node: SCSI(0:0)
+      - size: 10gb
+        provisioning: thick
+        device_node: SCSI(0:1)
+      - size: 1tb
+        provisioning: thin
+        device_node: SCSI(1:0)
+        datastore: ArchiveDatastore
+    scsi_controllers:
+      - controller_type: paravirtual
+        bus_number: 0
+      - controller_type: paravirtual
+        bus_number: 1
+        bus_sharing: virtualSharing
+    sata_controllers:
+      - bus_number: 0
+    cdroms:
+      - connect_at_power_on: true
+        iso_media_path: '[ISODS01] OS/Linux/RHEL-9.iso'
+        device_node: SATA(0:0)
+      - client_device_mode: passthrough
+        device_node: IDE(0:0)
+    network_adapters:
+      - network: VM Network
+        adapter_type: vmxnet3
+        connected: true
+        connect_at_power_on: true
+      - network: Management
+        adapter_type: vmxnet3
+        connected: true
+        connect_at_power_on: true
+        mac_address: 11:11:11:11:11:11
+    vm_options:
+      maximum_remote_console_sessions: 10
+      enable_io_mmu: true
+      boot_firmware: efi
+      enable_hardware_assisted_virtualization: true
+  register: _new_vm
+
+- name: Power on VM
+  vmware.vmware.vm_powerstate:
+    moid: "{{ _new_vm.vm.moid }}"
+    datacenter: DC01
+    state: powered-on
+
+
+- name: Add additional network adapter to VM
+  vmware.vmware.vm:
+    moid: "{{ _new_vm.vm.moid }}"
+    network_adapters:
+      - network: VM Network
+        adapter_type: vmxnet3
+      - network: Management
+        adapter_type: vmxnet3
+      - network: Legacy
+        adapter_type: e1000e
+
+- name: Change second adapter shares without removing the new adapter
+  vmware.vmware.vm:
+    moid: "{{ _new_vm.vm.moid }}"
+    network_adapter_remove_unmanaged: false
+    network_adapters:
+      - network: VM Network
+        adapter_type: vmxnet3
+      - network: Management
+        adapter_type: vmxnet3
+        shares: 50
+
+
+- name: Update resources with a reboot, if needed
+  vmware.vmware.vm:
+    moid: "{{ _new_vm.vm.moid }}"
+    allow_power_cycling: true
+    cpu:
+      cores: 16
+    memory:
+      size_mb: 16384
+
+
+- name: Delete VM
+  vmware.vmware.vm:
+    moid: "{{ _new_vm.vm.moid }}"
+    state: absent
 '''
 
 RETURN = r'''
@@ -686,6 +863,7 @@ power_cycled_for_update:
     returned: On success
     type: bool
     sample: true
+
 vm:
     description:
         - Information about the target VM
@@ -694,6 +872,7 @@ vm:
     sample:
         moid: vm-79828,
         name: test-d9c1-vm
+
 changes:
     description:
         - A dictionary showing any changes in settings or devices on the VM
@@ -833,8 +1012,14 @@ class VmModule(ModulePyvmomiBase):
 
         create_spec = vim.vm.ConfigSpec()
         self.configurator.apply_staged_changes_to_config_spec(create_spec)
-        vm = self._deploy_vm(create_spec)
-        self.vm = vm
+        vm_folder = self.placement.get_folder()
+        task_result = self._try_to_run_task(
+            task_func=vm_folder.CreateVM_Task,
+            task_kwargs=dict(config=create_spec, pool=self.placement.get_resource_pool(), host=self.placement.get_esxi_host()),
+            action="create"
+        )
+
+        self.vm = task_result['result']
 
         return self.configurator.change_set
 
@@ -855,21 +1040,12 @@ class VmModule(ModulePyvmomiBase):
             return
 
         self._power_off_vm()
+        task_func = self.vm.UnregisterVM if self.params['delete_from_inventory'] else self.vm.Destroy_Task
 
         try:
-            self._try_to_run_task(task_func=self.vm.Destroy_Task, action="delete")
+            self._try_to_run_task(task_func=task_func, action="delete")
         except Exception as e:
             self.module.fail_json(msg="%s." % to_native(type(e)))
-
-    def _deploy_vm(self, configspec):
-        vm_folder = self.placement.get_folder()
-        task_result = self._try_to_run_task(
-            task_func=vm_folder.CreateVM_Task,
-            task_kwargs=dict(config=configspec, pool=self.placement.get_resource_pool(), host=self.placement.get_esxi_host()),
-            action="create"
-        )
-
-        return task_result['result']
 
     def _apply_update_spec(self, update_spec, needs_power_cycle):
         """
@@ -1015,6 +1191,7 @@ def main():
 
                 guest_id=dict(type='str', required=False),
                 hardware_version=dict(type='int', required=False),
+                delete_from_inventory=dict(type='bool', required=False, default=False),
                 allow_power_cycling=dict(type='bool', default=False),
 
                 cpu=dict(
@@ -1048,6 +1225,7 @@ def main():
                         ['reservation', 'reserve_all_memory'],
                     ],
                 ),
+                cdroms_remove_unmanaged=dict(type='bool', required=False, default=True),
                 cdroms=dict(
                     type='list', elements='dict', required=False, options=dict(
                         device_node=dict(type='str', required=True),
@@ -1059,6 +1237,9 @@ def main():
                         ['iso_media_path', 'client_device_mode'],
                     ],
                 ),
+
+                disks_remove_unmanaged=dict(type='bool', required=False, default=True),
+                disks_detach_only=dict(type='bool', required=False, default=False),
                 disks=dict(
                     type='list', elements='dict', required=False, options=dict(
                         size=dict(type='str', required=True),
@@ -1077,6 +1258,7 @@ def main():
                     ],
                 ),
 
+                scsi_controllers_remove_unmanaged=dict(type='bool', required=False, default=True),
                 scsi_controllers=dict(
                     type='list', elements='dict', required=False, options=dict(
                         bus_number=dict(type='int', required=True),
@@ -1084,24 +1266,27 @@ def main():
                         bus_sharing=dict(type='str', required=False, choices=['noSharing', 'virtualSharing', 'physicalSharing'])
                     )
                 ),
+                nvme_controllers_remove_unmanaged=dict(type='bool', required=False, default=True),
                 nvme_controllers=dict(
                     type='list', elements='dict', required=False, options=dict(
                         bus_number=dict(type='int', required=True),
                         bus_sharing=dict(type='str', required=False, choices=['noSharing', 'physicalSharing']),
                     )
                 ),
+                sata_controllers_remove_unmanaged=dict(type='bool', required=False, default=True),
                 sata_controllers=dict(
                     type='list', elements='dict', required=False, options=dict(
                         bus_number=dict(type='int', required=True),
                     )
                 ),
+                usb_controllers_remove_unmanaged=dict(type='bool', required=False, default=True),
                 usb_controllers=dict(
                     type='list', elements='dict', required=False, options=dict(
                         controller_type=dict(type='str', required=True, choices=['usb2', 'usb3'])
                     )
                 ),
 
-                network_adapter_remove_unmanaged=dict(type='bool', required=False, default=False),
+                network_adapters_remove_unmanaged=dict(type='bool', required=False, default=True),
                 network_adapters=dict(
                     type='list', elements='dict', required=False, options=dict(
                         network=dict(type='str', required=True),
@@ -1119,7 +1304,7 @@ def main():
                     ],
                 ),
 
-                nvdimm_remove_unmanaged=dict(type='bool', required=False, default=False),
+                nvdimms_remove_unmanaged=dict(type='bool', required=False, default=True),
                 nvdimms=dict(
                     type='list', elements='dict', required=False, options=dict(
                         size_mb=dict(type='int', required=True),

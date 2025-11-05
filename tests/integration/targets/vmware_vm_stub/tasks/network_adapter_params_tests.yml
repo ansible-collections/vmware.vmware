@@ -68,7 +68,7 @@
 - name: Remove network adapter - ignore
   vmware.vmware._vm_stub:
     name: "{{ test_vm_name }}"
-    network_adapter_remove_unmanaged: false
+    network_adapters_remove_unmanaged: false
     network_adapters:
       - network: "{{ vcenter_vm_network_name }}"
   register: _remove_network_adapter_ignore
@@ -76,7 +76,7 @@
 - name: Remove network adapter - remove unmanaged
   vmware.vmware._vm_stub:
     name: "{{ test_vm_name }}"
-    network_adapter_remove_unmanaged: true
+    network_adapters_remove_unmanaged: true
     network_adapters:
       - network: "{{ vcenter_vm_network_name }}"
   register: _remove_network_adapter_remove_unmanaged
@@ -84,7 +84,7 @@
 - name: Remove network adapter - idempotence
   vmware.vmware._vm_stub:
     name: "{{ test_vm_name }}"
-    network_adapter_remove_unmanaged: true
+    network_adapters_remove_unmanaged: true
     network_adapters:
       - network: "{{ vcenter_vm_network_name }}"
   register: _remove_network_adapter_remove_unmanaged_idem

@@ -13,8 +13,6 @@ the VM configuration management system to handle cdrom creation, modification,
 and change detection.
 """
 
-from random import randint
-
 try:
     from pyVmomi import vim
 except ImportError:
@@ -72,25 +70,6 @@ class Cdrom(AbstractVsphereObject):
         if not raw_object:
             self.controller.add_device(self)
 
-    @property
-    def key(self):
-        """
-        Get the VMware device key for this cdrom.
-
-        The device key is VMware's unique identifier for the cdrom. This
-        property returns the key from the existing device that is linked to this
-        cdrom object.
-
-        Returns:
-            int or None: VMware device key, or None if no device exists
-        """
-        if self.represents_live_vm_device():
-            return self._raw_object.key
-        if self.has_a_linked_live_vm_device():
-            return self._live_object.key
-
-        return None
-
     @classmethod
     def from_live_device_spec(cls, live_device_spec, controller):
         """
@@ -102,17 +81,26 @@ class Cdrom(AbstractVsphereObject):
         Returns:
             Cdrom: Configured cdrom instance
         """
-        if isinstance(live_device_spec.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
+        if isinstance(
+            live_device_spec.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo
+        ):
             client_device_mode = None
             iso_media_path = live_device_spec.backing.fileName
-        elif isinstance(live_device_spec.backing, vim.vm.device.VirtualCdrom.RemoteAtapiBackingInfo):
+        elif isinstance(
+            live_device_spec.backing, vim.vm.device.VirtualCdrom.RemoteAtapiBackingInfo
+        ):
             client_device_mode = "emulated"
             iso_media_path = None
-        elif isinstance(live_device_spec.backing, vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo):
+        elif isinstance(
+            live_device_spec.backing,
+            vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo,
+        ):
             client_device_mode = "passthrough"
             iso_media_path = None
         else:
-            raise ValueError("Unexpected CDROM backing on VM device, unable to determine client_device_mode and iso_media_path attributes.")
+            raise ValueError(
+                "Unexpected CDROM backing on VM device, unable to determine client_device_mode and iso_media_path attributes."
+            )
 
         return cls(
             controller=controller,
@@ -138,7 +126,9 @@ class Cdrom(AbstractVsphereObject):
             (self.client_device_mode, self._live_object.client_device_mode),
         ]
         if self.iso_media_path is not None:
-            att.append((self.connect_at_power_on, self._live_object.connect_at_power_on))
+            att.append(
+                (self.connect_at_power_on, self._live_object.connect_at_power_on)
+            )
 
         for a in att:
             if self._compare_attributes_for_changes(a[0], a[1]):
@@ -155,14 +145,16 @@ class Cdrom(AbstractVsphereObject):
         cdrom_spec = vim.vm.device.VirtualDeviceSpec()
         cdrom_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
         cdrom_spec.device = vim.vm.device.VirtualCdrom()
-        cdrom_spec.device.key = -randint(40000, 44999)
+        cdrom_spec.device.key = self._new_spec_key
 
         cdrom_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
         cdrom_spec.device.connectable.allowGuestControl = True
 
         # default the backing if the user didn't specify
         if self.client_device_mode is None and self.iso_media_path is None:
-            cdrom_spec.device.backing = vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo()
+            cdrom_spec.device.backing = (
+                vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo()
+            )
 
         self._update_cdrom_spec_with_options(cdrom_spec)
         return cdrom_spec
@@ -176,9 +168,7 @@ class Cdrom(AbstractVsphereObject):
         """
         cdrom_spec = vim.vm.device.VirtualDeviceSpec()
         cdrom_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
-        cdrom_spec.device = (
-            self._raw_object or self._live_object._raw_object
-        )
+        cdrom_spec.device = self._raw_object or self._live_object._raw_object
 
         self._update_cdrom_spec_with_options(cdrom_spec)
         return cdrom_spec
@@ -186,9 +176,6 @@ class Cdrom(AbstractVsphereObject):
     def __str__(self):
         """
         Get a human-readable name for this cdrom.
-
-        Generates a descriptive name including the controller type and unit number
-        for easy identification in error messages and logs.
 
         Returns:
             str: Human-readable cdrom name (e.g., "CD-ROM - SCSI Controller 0 Unit 1")
@@ -215,9 +202,13 @@ class Cdrom(AbstractVsphereObject):
             cdrom_spec.device.backing = vim.vm.device.VirtualCdrom.IsoBackingInfo()
             cdrom_spec.device.backing.fileName = self.iso_media_path
         elif self.client_device_mode == "emulated":
-            cdrom_spec.device.backing = vim.vm.device.VirtualCdrom.RemoteAtapiBackingInfo()
+            cdrom_spec.device.backing = (
+                vim.vm.device.VirtualCdrom.RemoteAtapiBackingInfo()
+            )
         elif self.client_device_mode == "passthrough":
-            cdrom_spec.device.backing = vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo()
+            cdrom_spec.device.backing = (
+                vim.vm.device.VirtualCdrom.RemotePassthroughBackingInfo()
+            )
 
     def _to_module_output(self):
         """

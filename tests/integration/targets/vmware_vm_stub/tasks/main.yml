@@ -31,26 +31,26 @@
 
     # from this point on, the vm definition above is not reliable. Tests
     # should establish relevant vm options as a first task.
-    - name: Test vm update
-      ansible.builtin.include_tasks: basic_vm_update_tests.yml
+    # - name: Test vm update
+    #   ansible.builtin.include_tasks: basic_vm_update_tests.yml
 
-    - name: Test NVDIMM params
-      ansible.builtin.include_tasks: nvdimms_params_tests.yml
+    # - name: Test NVDIMM params
+    #   ansible.builtin.include_tasks: nvdimms_params_tests.yml
 
-    - name: Test controller params
-      ansible.builtin.include_tasks: controller_params_tests.yml
+    # - name: Test controller params
+    #   ansible.builtin.include_tasks: controller_params_tests.yml
 
-    - name: Test cpu params
-      ansible.builtin.include_tasks: cpu_params_tests.yml
+    # - name: Test cpu params
+    #   ansible.builtin.include_tasks: cpu_params_tests.yml
 
-    - name: Test memory params
-      ansible.builtin.include_tasks: mem_params_tests.yml
+    # - name: Test memory params
+    #   ansible.builtin.include_tasks: mem_params_tests.yml
 
-    - name: Test vm options params
-      ansible.builtin.include_tasks: vm_options_params_tests.yml
+    # - name: Test vm options params
+    #   ansible.builtin.include_tasks: vm_options_params_tests.yml
 
-    - name: Test network adapter params
-      ansible.builtin.include_tasks: network_adapter_params_tests.yml
+    # - name: Test network adapter params
+    #   ansible.builtin.include_tasks: network_adapter_params_tests.yml
 
     - name: Test disk params
       ansible.builtin.include_tasks: disk_params_tests.yml

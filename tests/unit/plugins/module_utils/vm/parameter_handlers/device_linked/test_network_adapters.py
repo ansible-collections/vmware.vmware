@@ -28,25 +28,35 @@ class TestNetworkAdapterParameterHandler:
     def test_verify_parameter_constraints(self, parameter_handler):
         """Test verify_parameter_constraints method."""
         parameter_handler._parse_network_adapter_params = Mock()
-        parameter_handler.params = {'network_adapters': []}
+        parameter_handler.params = {"network_adapters": []}
         parameter_handler.verify_parameter_constraints()
         parameter_handler._parse_network_adapter_params.assert_called_once()
-        assert parameter_handler.adapters == []
+        assert parameter_handler.managed_parameter_objects == {}
 
-        parameter_handler._parse_network_adapter_params = Mock(side_effect=ValueError("test"))
-        parameter_handler.error_handler.fail_with_parameter_error = Mock(side_effect=ValueError("test"))
+        parameter_handler._parse_network_adapter_params = Mock(
+            side_effect=ValueError("test")
+        )
+        parameter_handler.error_handler.fail_with_parameter_error = Mock(
+            side_effect=ValueError("test")
+        )
         with pytest.raises(ValueError, match="test"):
             parameter_handler.verify_parameter_constraints()
         parameter_handler.error_handler.fail_with_parameter_error.assert_called_once()
 
     def test_parse_network_adapter_params(self, parameter_handler):
         """Test parse_network_adapter_params method."""
-        parameter_handler.params = {f"{parameter_handler.HANDLER_NAME}": [{"network": "test"}]}
+        parameter_handler.params = {
+            f"{parameter_handler.HANDLER_NAME}": [{"network": "test"}]
+        }
         parameter_handler._parse_network_adapter_params()
-        assert len(parameter_handler.adapters) == 1
+        assert len(parameter_handler.managed_parameter_objects) == 1
 
-        parameter_handler.vsphere_object_cache.get_portgroup = Mock(side_effect=ValueError("test"))
-        parameter_handler.error_handler.fail_with_parameter_error = Mock(side_effect=ValueError("test"))
+        parameter_handler.vsphere_object_cache.get_portgroup = Mock(
+            side_effect=ValueError("test")
+        )
+        parameter_handler.error_handler.fail_with_parameter_error = Mock(
+            side_effect=ValueError("test")
+        )
         with pytest.raises(ValueError, match="test"):
             parameter_handler._parse_network_adapter_params()
         parameter_handler.error_handler.fail_with_parameter_error.assert_called_once()
@@ -64,7 +74,7 @@ class TestNetworkAdapterParameterHandler:
         adapter = Mock()
         adapter.has_a_linked_live_vm_device = Mock(return_value=False)
         adapter.adapter_vim_class = Mock
-        parameter_handler.adapters = [adapter]
+        parameter_handler.managed_parameter_objects = {0: adapter}
         parameter_handler.change_set.objects_to_add = []
         parameter_handler.change_set.objects_to_update = []
         parameter_handler.change_set.objects_in_sync = []
@@ -89,13 +99,15 @@ class TestNetworkAdapterParameterHandler:
         assert len(parameter_handler.change_set.objects_to_add) == 0
         assert len(parameter_handler.change_set.objects_to_update) == 0
 
-    @patch("ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.NetworkAdapter")
+    @patch(
+        "ansible_collections.vmware.vmware.plugins.module_utils.vm.parameter_handlers.device_linked._network_adapters.NetworkAdapter"
+    )
     def test_link_vm_device(self, mock_network_adapter_class, parameter_handler):
         """Test link_vm_device method."""
         adapter = Mock()
         adapter.has_a_linked_live_vm_device = Mock(return_value=False)
         adapter.adapter_vim_class = Mock
-        parameter_handler.adapters = [adapter]
+        parameter_handler.managed_parameter_objects = {0: adapter}
         parameter_handler.link_vm_device(Mock())
         assert mock_network_adapter_class.from_live_device_spec.call_count == 1
 
@@ -104,5 +116,5 @@ class TestNetworkAdapterParameterHandler:
         adapter = Mock()
         adapter._live_object = Mock()
         adapter.adapter_vim_class = Mock
-        parameter_handler.adapters = [adapter]
+        parameter_handler.managed_parameter_objects = {0: adapter}
         parameter_handler.link_vm_device(Mock())
