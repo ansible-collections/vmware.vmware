@@ -196,5 +196,10 @@ class CdromParameterHandler(AbstractDeviceLinkedParameterHandler):
                 )
                 return
 
-        # device is unlinked and should be removed
-        return Cdrom.from_live_device_spec(device, None)
+        if self.params.get("cdroms_remove_unmanaged"):
+            # device is unlinked and should be removed
+            return Cdrom.from_live_device_spec(device, None)
+        else:
+            # the device is not linked to anything, and no DeviceLinkError was raised,
+            # so the module will ignore it
+            return

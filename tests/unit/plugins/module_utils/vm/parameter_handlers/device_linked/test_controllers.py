@@ -111,7 +111,7 @@ class TestDiskControllerParameterHandlerBase:
         mock_handler.managed_parameter_objects = {
             3: Mock(bus_number=3),
         }
-        out = mock_handler.link_vm_device(device)
+        out = mock_handler.link_vm_device(device, remove_unmanaged=True)
         assert out is not None
 
     def test_populate_config_spec_with_parameters(self, mock_handler):

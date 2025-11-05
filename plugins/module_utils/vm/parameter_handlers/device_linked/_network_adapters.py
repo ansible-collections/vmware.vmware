@@ -212,7 +212,7 @@ class NetworkAdapterParameterHandler(AbstractDeviceLinkedParameterHandler):
             )
             return
 
-        if self.params.get("network_adapter_remove_unmanaged"):
+        if self.params.get("network_adapters_remove_unmanaged"):
             # device is unlinked and should be removed
             return NetworkAdapter.from_live_device_spec(device)
         else:

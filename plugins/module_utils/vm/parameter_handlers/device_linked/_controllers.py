@@ -176,7 +176,10 @@ class UsbControllerParameterHandler(AbstractDeviceLinkedParameterHandler):
         except KeyError:
             pass
 
-        return BasicDeviceController.from_live_device_spec(device, device_type)
+        if self.params.get("usb_controllers_remove_unmanaged"):
+            return BasicDeviceController.from_live_device_spec(device, device_type)
+        else:
+            return None
 
 
 class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
@@ -270,7 +273,7 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
         """
         raise NotImplementedError
 
-    def link_vm_device(self, device):
+    def link_vm_device(self, device, remove_unmanaged=False):
         """
         Link a VMware controller device to the appropriate controller object.
 
@@ -294,10 +297,10 @@ class DiskControllerParameterHandlerBase(AbstractDeviceLinkedParameterHandler):
                 )
                 return
 
-        # device is unlinked and should be removed
-        # Since the device is just being removed, the basic controller has enough functionality
-        # to cover all types of controllers.
-        return BasicDeviceController.from_live_device_spec(device, self.category)
+        if remove_unmanaged:
+            return BasicDeviceController.from_live_device_spec(device, self.category)
+        else:
+            return None
 
 
 class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -424,7 +427,10 @@ class ScsiControllerParameterHandler(DiskControllerParameterHandlerBase):
                 return
 
         # device is unlinked and should be removed
-        return ScsiDeviceController.from_live_device_spec(device, device_type)
+        if self.params.get("scsi_controllers_remove_unmanaged"):
+            return ScsiDeviceController.from_live_device_spec(device, device_type)
+        else:
+            return None
 
 
 class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -489,6 +495,15 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
                 device_type=self.category,
                 vim_device_class=self.vim_device_class,
             )
+
+    def link_vm_device(self, device):
+        """
+        Overloaded version of the base class method to handle SATA controller specific logic.
+
+        Args:
+            device: VMware controller device to link
+        """
+        super().link_vm_device(device, remove_unmanaged=self.params.get("sata_controllers_remove_unmanaged"))
 
 
 class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -557,6 +572,15 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
                 vim_device_class=self.vim_device_class,
                 bus_sharing=controller_param_def.get("bus_sharing"),
             )
+
+    def link_vm_device(self, device):
+        """
+        Overloaded version of the base class method to handle NVMe controller specific logic.
+
+        Args:
+            device: VMware controller device to link
+        """
+        super().link_vm_device(device, remove_unmanaged=self.params.get("nvme_controllers_remove_unmanaged"))
 
 
 class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):

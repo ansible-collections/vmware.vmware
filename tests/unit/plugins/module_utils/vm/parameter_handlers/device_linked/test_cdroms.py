@@ -166,6 +166,9 @@ class TestCdromParameterHandler:
             1: mock_cdrom_2,
             2: mock_cdrom_3,
         }
+        parameter_handler.params = {
+            "cdroms_remove_unmanaged": True,
+        }
 
         parameter_handler.link_vm_device(mock_vm_device)
         assert mock_cdrom._live_object is None
@@ -181,6 +184,9 @@ class TestCdromParameterHandler:
         cdrom = Mock()
         cdrom._live_object = Mock()
         parameter_handler.managed_parameter_objects = {0: cdrom}
+        parameter_handler.params = {
+            "cdroms_remove_unmanaged": True,
+        }
         mock_cdrom_class.from_live_device_spec.return_value = 1
         out = parameter_handler.link_vm_device(Mock())
         assert out is not None

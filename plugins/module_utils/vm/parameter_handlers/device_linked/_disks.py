@@ -249,5 +249,10 @@ class DiskParameterHandler(AbstractDeviceLinkedParameterHandler):
                     )
                 return
 
-        # device is unlinked and should be removed
-        return Disk.from_live_device_spec(device, None)
+        if self.params.get("disks_remove_unmanaged"):
+            # device is unlinked and should be removed
+            return Disk.from_live_device_spec(device, None, self.params.get("disks_detach_only"))
+        else:
+            # the device is not linked to anything, and no DeviceLinkError was raised,
+            # so the module will ignore it
+            return

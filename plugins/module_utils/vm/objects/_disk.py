@@ -42,6 +42,9 @@ class Disk(AbstractVsphereObject):
         unit_number (int): Unit number on the controller
         enable_sharing (bool): Whether to enable sharing between multiple VMs
         controller: Controller object this disk is attached to
+
+        _on_removal_detach_only (bool): Whether to detach the disk or delete it from the datastore when removing the disk.
+                                        This is only used for live objects, and is set when creating the object from a live device specification.
     """
 
     def __init__(
@@ -81,12 +84,13 @@ class Disk(AbstractVsphereObject):
         self.datastore = datastore
         self.filename = filename
         self.controller = controller
+        self._on_removal_detach_only = False
         # only connect parameter objects to the controllers
         if raw_object is None:
             self.controller.add_device(self)
 
     @classmethod
-    def from_live_device_spec(cls, live_device_spec, controller):
+    def from_live_device_spec(cls, live_device_spec, controller, on_removal_detach_only=False):
         """
         Create disk instance from VMware device specification.
         Args:
@@ -101,7 +105,7 @@ class Disk(AbstractVsphereObject):
         else:
             provisioning = "thick"
 
-        return cls(
+        obj = cls(
             controller=controller,
             size="%skb" % live_device_spec.capacityInKB,
             provisioning=provisioning,
@@ -112,6 +116,8 @@ class Disk(AbstractVsphereObject):
             unit_number=live_device_spec.unitNumber,
             raw_object=live_device_spec,
         )
+        obj._on_removal_detach_only = on_removal_detach_only
+        return obj
 
     def __str__(self):
         """
@@ -181,7 +187,8 @@ class Disk(AbstractVsphereObject):
         Create a VMware device specification for removing an existing disk.
         """
         disk_spec = super().to_removal_spec()
-        disk_spec.fileOperation = vim.vm.device.VirtualDeviceSpec.FileOperation.destroy
+        if not self.on_removal_detach_only:
+            disk_spec.fileOperation = vim.vm.device.VirtualDeviceSpec.FileOperation.destroy
         return disk_spec
 
     def _update_disk_spec_with_options(self, disk_spec):

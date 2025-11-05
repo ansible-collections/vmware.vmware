@@ -183,7 +183,7 @@ class NvdimmParameterHandler(AbstractDeviceLinkedParameterHandler):
         else:
             raise DeviceLinkError("Unsupported device type %s" % type(device).__name__)
 
-        if self.params.get("nvdimm_remove_unmanaged"):
+        if self.params.get("nvdimms_remove_unmanaged"):
             # return a representation of the unlinked device, so we can remove it
             return output
         else:
