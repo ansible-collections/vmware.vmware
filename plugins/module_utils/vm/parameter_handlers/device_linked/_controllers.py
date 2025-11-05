@@ -503,7 +503,7 @@ class SataControllerParameterHandler(DiskControllerParameterHandlerBase):
         Args:
             device: VMware controller device to link
         """
-        super().link_vm_device(device, remove_unmanaged=self.params.get("sata_controllers_remove_unmanaged"))
+        return super().link_vm_device(device, remove_unmanaged=self.params.get("sata_controllers_remove_unmanaged"))
 
 
 class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
@@ -580,7 +580,7 @@ class NvmeControllerParameterHandler(DiskControllerParameterHandlerBase):
         Args:
             device: VMware controller device to link
         """
-        super().link_vm_device(device, remove_unmanaged=self.params.get("nvme_controllers_remove_unmanaged"))
+        return super().link_vm_device(device, remove_unmanaged=self.params.get("nvme_controllers_remove_unmanaged"))
 
 
 class IdeControllerParameterHandler(DiskControllerParameterHandlerBase):

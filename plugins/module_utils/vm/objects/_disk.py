@@ -187,7 +187,7 @@ class Disk(AbstractVsphereObject):
         Create a VMware device specification for removing an existing disk.
         """
         disk_spec = super().to_removal_spec()
-        if not self.on_removal_detach_only:
+        if not self._on_removal_detach_only:
             disk_spec.fileOperation = vim.vm.device.VirtualDeviceSpec.FileOperation.destroy
         return disk_spec
 
