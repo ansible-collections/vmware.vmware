@@ -416,3 +416,21 @@ releases:
     - 247-add-modules-for-tags.yml.yml
     - 251-add-tag-assoc-module.yml
     release_date: '2025-10-06'
+  2.5.0:
+    changes:
+      bugfixes:
+      - Fix issue where modules that used the proxy_host and proxy_port arguments
+        were ignoring these arguments when initializing clients. (https://github.com/ansible-collections/vmware.vmware/issues/259)
+      major_changes:
+      - Replace ``ansible.module_utils._text`` (https://github.com/ansible-collections/vmware.vmware/issues/268).
+      - Replace ``ansible.module_utils.common._collections_compat`` (https://github.com/ansible-collections/vmware.vmware/issues/271).
+      minor_changes:
+      - content_library_item_info - Add item storage information to item result
+      - vm - Add module to manage virtual machines
+    fragments:
+    - 250-add-storage-data-to-content_library_item_info.yml
+    - 261-fix-ignored-proxy-args.yml
+    - 268-replace_ansible.module_utils._text.yml
+    - 271-replace-ansible.module_utils.common._collections_compat.yml
+    - 273-add-vm-module.yml
+    release_date: '2025-11-06'
