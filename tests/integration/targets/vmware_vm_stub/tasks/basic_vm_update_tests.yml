@@ -1,6 +1,6 @@
 ---
 - name: Create VM again - idempotence check
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     datacenter: "{{ vcenter_datacenter }}"
     cluster: "{{ vcenter_cluster_name }}"
@@ -20,7 +20,7 @@
   register: _create_vm_idempotent
 
 - name: Update VM
-  vmware.vmware._vm_stub: &update-vm
+  vmware.vmware.vm: &update-vm
     name: "{{ test_vm_name }}"
     datacenter: "{{ vcenter_datacenter }}"
     cluster: "{{ vcenter_cluster_name }}"
@@ -40,7 +40,7 @@
   register: _update_vm
 
 - name: Update VM - Idempotent
-  vmware.vmware._vm_stub: *update-vm
+  vmware.vmware.vm: *update-vm
   register: _update_vm_idempotent
 
 - name: Lookup VM Info
@@ -75,13 +75,13 @@
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
 
 - name: Update VM with minimal options
-  vmware.vmware._vm_stub: &update-vm-minimal
+  vmware.vmware.vm: &update-vm-minimal
     name: "{{ test_vm_name }}"
     guest_id: amazonlinux3_64Guest
   register: _update_vm_minimal
 
 - name: Update VM with minimal options - Idempotent
-  vmware.vmware._vm_stub: *update-vm-minimal
+  vmware.vmware.vm: *update-vm-minimal
   register: _update_vm_minimal_idempotent
 
 - name: Lookup VM Info
@@ -110,7 +110,7 @@
     state: powered-on
 
 - name: Change CPU (Power sensitive change) - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     moid: "{{ _update_vm_minimal.vm.moid }}"
     cpu:
       cores: 4
@@ -119,7 +119,7 @@
   ignore_errors: true
 
 - name: Change CPU (Power sensitive change)
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     moid: "{{ _update_vm_minimal.vm.moid }}"
     cpu:
       cores: 4

@@ -6,7 +6,7 @@
     state: powered-off
 
 - name: Set vm options settings
-  vmware.vmware._vm_stub: &set-vm-options-params
+  vmware.vmware.vm: &set-vm-options-params
     name: "{{ test_vm_name }}"
     vm_options:
       maximum_remote_console_sessions: 4
@@ -23,7 +23,7 @@
   register: _set_vm_options_params
 
 - name: Set vm options settings - idempotence check
-  vmware.vmware._vm_stub: *set-vm-options-params
+  vmware.vmware.vm: *set-vm-options-params
   register: _set_vm_options_params_idempotent
 
 - name: Check set vm options params tasks
@@ -33,7 +33,7 @@
       - _set_vm_options_params_idempotent is not ansible.builtin.changed
 
 - name: Update vm options settings
-  vmware.vmware._vm_stub: &update-vm-options-params
+  vmware.vmware.vm: &update-vm-options-params
     name: "{{ test_vm_name }}"
     vm_options:
       encrypted_vmotion: "required"
@@ -45,7 +45,7 @@
   register: _update_vm_options_params
 
 - name: Update vm options settings - idempotence check
-  vmware.vmware._vm_stub: *update-vm-options-params
+  vmware.vmware.vm: *update-vm-options-params
   register: _update_vm_options_params_idempotent
 
 - name: Check update vm options params tasks
@@ -55,7 +55,7 @@
       - _update_vm_options_params_idempotent is not ansible.builtin.changed
 
 - name: Enable encryption - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     memory:
       enable_hot_add: false
@@ -70,7 +70,7 @@
   ignore_errors: true
 
 - name: Disable hot-add/hot-remove for encryption
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     memory:
       enable_hot_add: false
@@ -79,7 +79,7 @@
       enable_hot_remove: false
 
 - name: Enable encryption
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     vm_options:
       enable_encryption: true
@@ -87,7 +87,7 @@
       boot_firmware: efi
 
 - name: Set invalid console session count - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     vm_options:
       maximum_remote_console_sessions: 400
@@ -95,7 +95,7 @@
   ignore_errors: true
 
 - name: Set invalid virtualization based security - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     vm_options:
       enable_virtual_based_security: true
@@ -104,7 +104,7 @@
   ignore_errors: true
 
 - name: Set invalid encryption and secure boot - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     vm_options:
       enable_encryption: true
@@ -113,7 +113,7 @@
   ignore_errors: true
 
 - name: Set invalid encryption and boot firmware - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     vm_options:
       enable_encryption: true

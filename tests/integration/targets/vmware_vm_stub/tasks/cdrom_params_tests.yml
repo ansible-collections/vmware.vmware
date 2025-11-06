@@ -6,7 +6,7 @@
     state: powered-off
 
 - name: Set vm cdroms
-  vmware.vmware._vm_stub: &set-cdrom-params
+  vmware.vmware.vm: &set-cdrom-params
     name: "{{ test_vm_name }}"
     cdroms:
       - device_node: IDE(0:0)
@@ -20,7 +20,7 @@
   register: _set_cdrom_params
 
 - name: Set vm cdroms - idempotence check
-  vmware.vmware._vm_stub: *set-cdrom-params
+  vmware.vmware.vm: *set-cdrom-params
   register: _set_cdrom_params_idempotent
 
 - name: Check set cdrom params tasks
@@ -33,7 +33,7 @@
       - _set_cdrom_params.changes.objects_to_remove | length == 0
 
 - name: Update vm cdroms
-  vmware.vmware._vm_stub: &update-cdrom-params
+  vmware.vmware.vm: &update-cdrom-params
     name: "{{ test_vm_name }}"
     cdroms:
       - device_node: IDE(0:0)
@@ -46,7 +46,7 @@
   register: _update_cdrom_params
 
 - name: Update vm cdroms - idempotence check
-  vmware.vmware._vm_stub: *update-cdrom-params
+  vmware.vmware.vm: *update-cdrom-params
   register: _update_cdrom_params_idempotent
 
 - name: Check set cdrom params tasks
@@ -59,7 +59,7 @@
       - _update_cdrom_params.changes.objects_to_remove | length == 1
 
 - name: Set invalid controller type - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     scsi_controllers:
       - bus_number: 0
@@ -70,7 +70,7 @@
   ignore_errors: true
 
 - name: Set missing controller type - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     cdroms:
       - device_node: SATA(0:0)
@@ -78,18 +78,18 @@
   ignore_errors: true
 
 - name: Ignore cdroms
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
   register: _ignore_cdroms
 
 - name: Remove all cdroms
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     cdroms: []
   register: _remove_cdroms
 
 - name: Remove cdroms - idempotence
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     cdroms: []
   register: _remove_cdroms_idempotent

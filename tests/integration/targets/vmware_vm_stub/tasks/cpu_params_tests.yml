@@ -6,7 +6,7 @@
     state: powered-off
 
 - name: Set vm CPU settings
-  vmware.vmware._vm_stub: &set-cpu-params
+  vmware.vmware.vm: &set-cpu-params
     name: "{{ test_vm_name }}"
     cpu:
       cores: 2
@@ -19,7 +19,7 @@
   register: _set_cpu_params
 
 - name: Set vm CPU settings - idempotence check
-  vmware.vmware._vm_stub: *set-cpu-params
+  vmware.vmware.vm: *set-cpu-params
   register: _set_cpu_params_idempotent
 
 - name: Lookup VM CPU Info
@@ -43,7 +43,7 @@
     vm_resource_info: "{{ _lookup_vm_resource_info.vms[0] }}"
 
 - name: Set invalid socket count - expect failure
-  vmware.vmware._vm_stub:
+  vmware.vmware.vm:
     name: "{{ test_vm_name }}"
     cpu:
       cores: 2

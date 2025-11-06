@@ -11,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: _vm_stub
+module: vm
 short_description: Create, update, or delete a virtual machine.
 description:
     - This module is used to create, update, or delete virtual machines.
