@@ -4,6 +4,26 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.5.0
+======
+
+Major Changes
+-------------
+
+- Replace ``ansible.module_utils._text`` (https://github.com/ansible-collections/vmware.vmware/issues/268).
+- Replace ``ansible.module_utils.common._collections_compat`` (https://github.com/ansible-collections/vmware.vmware/issues/271).
+
+Minor Changes
+-------------
+
+- content_library_item_info - Add item storage information to item result
+- vm - Add module to manage virtual machines
+
+Bugfixes
+--------
+
+- Fix issue where modules that used the proxy_host and proxy_port arguments were ignoring these arguments when initializing clients. (https://github.com/ansible-collections/vmware.vmware/issues/259)
+
 v2.4.0
 ======
 
