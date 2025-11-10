@@ -34,8 +34,8 @@ options:
 
 EXAMPLES = r"""
 # Below are examples of inventory configuration files that can be used with this plugin.
-# To test these and see the resulting inventory, save the snippet in a file named hosts.vmware_esxi.yml and run:
-# ansible-inventory -i hosts.vmware_esxi.yml --list
+# To test these and see the resulting inventory, save the snippet in a file named esxi_hosts.yml and run:
+# ansible-inventory -i esxi_hosts.yml --list
 
 
 # Simple configuration with in-file authentication parameters
