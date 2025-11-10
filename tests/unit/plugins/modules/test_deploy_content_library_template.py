@@ -14,6 +14,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi impo
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import (
     VmwareRestClient
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import VmPlacement
 from ...common.utils import (
     run_module, ModuleTestCase
 )
@@ -33,10 +34,12 @@ class TestDeployContentLibraryTemplate(ModuleTestCase):
         mocker.patch.object(VmwareRestClient, 'connect_to_api', return_value=mocker.Mock())
         self.test_vm = MockVmwareObject(name="test")
 
-        mocker.patch.object(VmwareContentDeployTemplate, 'get_resource_pool_by_name_or_moid', return_value=MockVmwareObject())
-        mocker.patch.object(VmwareContentDeployTemplate, 'get_datastore_by_name_or_moid', return_value=MockVmwareObject())
-        mocker.patch.object(VmwareContentDeployTemplate, 'get_datacenter_by_name_or_moid', return_value=MockVmwareObject())
         mocker.patch.object(VmwareContentDeployTemplate, 'deploy', return_value=self.test_vm._GetMoId())
+
+        mocker.patch.object(VmPlacement, 'get_folder', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_datacenter', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_resource_pool', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_datastore', return_value=MockVmwareObject())
 
     def test_present(self, mocker):
         self.__prepare(mocker)

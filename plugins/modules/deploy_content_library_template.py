@@ -173,10 +173,7 @@ class VmwareContentDeployTemplate(ModuleVmDeployBase):
 
         placement_spec = TemplateLibraryItems.DeployPlacementSpec(folder=self.vm_folder._GetMoId())
         if self.params.get('esxi_host'):
-            placement_spec.host = self.get_esxi_host_by_name_or_moid(
-                self.params['esxi_host'],
-                fail_on_missing=True
-            )._GetMoId()
+            placement_spec.host = self.placement_service.get_esxi_host()._GetMoId()
 
         if self.resource_pool:
             placement_spec.resource_pool = self.resource_pool._GetMoId()

@@ -115,6 +115,19 @@ options:
         type: str
         required: false
 
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        type: bool
+        required: false
+        default: false
+
     guest_id:
         description:
             - The guest ID of the VM.
