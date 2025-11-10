@@ -72,7 +72,7 @@ options:
             - Default storage provisioning type to use for all sections of type vmw:StorageSection in the OVF descriptor.
         type: str
         default: 'thin'
-        choices: [ thin, thick, eagerZeroedThick, eagerzeroedthick ]
+        choices: [ thin, thick, eagerZeroedThick ]
 
     # These are defined in the vmware.vmware.module_deploy_vm_base_options doc frag, so this section is just updating the
     # description of these options as needed
@@ -223,7 +223,7 @@ def main():
         library_id=dict(type='str', required=False),
         library_item_name=dict(type='str', required=False, aliases=['template_name']),
         library_item_id=dict(type='str', required=False, aliases=['template_id']),
-        storage_provisioning=dict(type='str', default='thin', choices=['thin', 'thick', 'eagerZeroedThick', 'eagerzeroedthick']),
+        storage_provisioning=dict(type='str', default='thin', choices=['thin', 'thick', 'eagerZeroedThick']),
     )
     module = AnsibleModule(
         argument_spec=argument_spec,

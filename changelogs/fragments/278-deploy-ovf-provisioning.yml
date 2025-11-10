@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - deploy_content_library_ovf - Remove invalid storage provisioning option 'eagerzeroedthick' from module's argument spec.
+    (Fixes https://github.com/ansible-collections/vmware.vmware/issues/278)
