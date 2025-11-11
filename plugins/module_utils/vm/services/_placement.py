@@ -49,6 +49,7 @@ def vm_placement_argument_spec(omit_params=None):
         datacenter=dict(type="str", required=False, aliases=["datacenter_name"]),
         datastore=dict(type="str", required=False),
         datastore_cluster=dict(type="str", required=False),
+        folder_paths_are_absolute=dict(type='bool', required=False, default=False),
     )
     for param in omit_params:
         if param in arg_spec:
@@ -193,7 +194,7 @@ class VmPlacement(ModulePyvmomiBase, AbstractService):
 
         return self._resource_pool
 
-    def get_folder(self, folder_param="folder", datacenter_param="datacenter"):
+    def get_folder(self, folder_param="folder", datacenter_param="datacenter", folder_paths_are_absolute_param="folder_paths_are_absolute"):
         """
         Get the target folder for VM placement.
 
@@ -217,6 +218,8 @@ class VmPlacement(ModulePyvmomiBase, AbstractService):
             fq_folder = format_folder_path_as_vm_fq_path(
                 "", self.params[datacenter_param]
             )
+        elif self.params.get(folder_paths_are_absolute_param):
+            fq_folder = self.params.get(folder_param)
         else:
             fq_folder = format_folder_path_as_vm_fq_path(
                 self.params.get(folder_param), self.params[datacenter_param]

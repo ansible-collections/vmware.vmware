@@ -10,6 +10,7 @@ from ansible_collections.vmware.vmware.plugins.modules.deploy_folder_template im
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import VmPlacement
 
 from ...common.vmware_object_mocks import (
     MockVmwareObject
@@ -39,25 +40,25 @@ class TestDeployContentLibraryOvf():
         )
 
         mocker.patch.object(VmwareFolderTemplate, 'get_datacenter_by_name_or_moid', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_folder', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_datacenter', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_resource_pool', return_value=MockVmwareObject())
+        mocker.patch.object(VmPlacement, 'get_datastore', return_value=MockVmwareObject())
 
     def test_datastore(self, mocker):
         self.__prepare(mocker)
-        mocker.patch.object(VmwareFolderTemplate, 'get_datastore_by_name_or_moid', return_value=MockVmwareObject())
         test_module = VmwareFolderTemplate(self.mock_module)
         assert test_module.datastore._GetMoId()
 
     def test_resource_pool(self, mocker):
         self.__prepare(mocker)
-        mocker.patch.object(VmwareFolderTemplate, 'get_resource_pool_by_name_or_moid', return_value=MockVmwareObject())
         test_module = VmwareFolderTemplate(self.mock_module)
         assert test_module.resource_pool._GetMoId()
 
     def test_vm_folder(self, mocker):
         self.__prepare(mocker)
-        folder_obj = MockVmwareObject()
-        mocker.patch.object(VmwareFolderTemplate, 'get_folder_by_absolute_path', return_value=folder_obj)
         test_module = VmwareFolderTemplate(self.mock_module)
-        assert test_module.vm_folder is folder_obj
+        assert test_module.vm_folder._GetMoId()
 
     def test_get_deployed_vm(self, mocker):
         self.__prepare(mocker)

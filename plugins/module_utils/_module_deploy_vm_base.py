@@ -6,8 +6,8 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from abc import abstractmethod
-from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import format_folder_path_as_vm_fq_path
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
+from ansible_collections.vmware.vmware.plugins.module_utils.vm.services._placement import VmPlacement, vm_placement_argument_spec
 
 try:
     from pyVmomi import vim
@@ -16,80 +16,32 @@ except ImportError:
 
 
 def vm_deploy_module_argument_spec():
-    return dict(
+    spec = vm_placement_argument_spec(omit_params=['folder', 'esxi_host'])
+    spec.update(dict(
         vm_name=dict(type='str', required=True),
-        vm_folder=dict(type='str', required=False, aliases=['folder']),
-        cluster=dict(type='str', required=False, aliases=['cluster_name']),
-        resource_pool=dict(type='str', required=False),
-        datacenter=dict(type='str', required=True, aliases=['datacenter_name']),
-        datastore=dict(type='str', required=False),
-        datastore_cluster=dict(type='str', required=False),
-        folder_paths_are_absolute=dict(type='bool', required=False, default=False),
-    )
+        vm_folder=dict(type='str', required=False, aliases=['folder'])
+    ))
+    spec['datacenter']['required'] = True
+    return spec
 
 
 class ModuleVmDeployBase(ModulePyvmomiBase):
     def __init__(self, module):
         super().__init__(module)
-        self.datacenter = self.get_datacenter_by_name_or_moid(self.params['datacenter'], fail_on_missing=True)
-        self._vm_folder = None
-        self._datastore = None
-        self._resource_pool = None
+        self.placement_service = VmPlacement(module)
+        self.datacenter = self.placement_service.get_datacenter()
 
     @property
     def datastore(self):
-        if self._datastore:
-            return self._datastore
-
-        if self.params.get('datastore'):
-            self._datastore = self.get_datastore_by_name_or_moid(
-                self.params['datastore'],
-                fail_on_missing=True,
-            )
-        elif self.params.get('datastore_cluster'):
-            dsc = self.get_datastore_cluster_by_name_or_moid(
-                self.params['datastore_cluster'],
-                fail_on_missing=True,
-                datacenter=self.datacenter
-            )
-            datastore = self.get_datastore_with_max_free_space(dsc.childEntity)
-            self._datastore = datastore
-
-        return self._datastore
+        return self.placement_service.get_datastore()
 
     @property
     def resource_pool(self):
-        if self._resource_pool:
-            return self._resource_pool
-
-        if self.params['resource_pool']:
-            self._resource_pool = self.get_resource_pool_by_name_or_moid(
-                self.params['resource_pool'],
-                fail_on_missing=True
-            )
-        elif self.params['cluster']:
-            cluster = self.get_cluster_by_name_or_moid(
-                self.params['cluster'],
-                fail_on_missing=True,
-                datacenter=self.datacenter
-            )
-            self._resource_pool = cluster.resourcePool
-
-        return self._resource_pool
+        return self.placement_service.get_resource_pool()
 
     @property
     def vm_folder(self):
-        if self._vm_folder:
-            return self._vm_folder
-        if not self.params.get('vm_folder'):
-            fq_folder = format_folder_path_as_vm_fq_path('', self.params['datacenter'])
-        elif self.params.get('folder_paths_are_absolute'):
-            fq_folder = self.params.get('vm_folder')
-        else:
-            fq_folder = format_folder_path_as_vm_fq_path(self.params.get('vm_folder'), self.params['datacenter'])
-
-        self._vm_folder = self.get_folder_by_absolute_path(fq_folder, fail_on_missing=True)
-        return self._vm_folder
+        return self.placement_service.get_folder(folder_param='vm_folder')
 
     @property
     def library_item_id(self):
