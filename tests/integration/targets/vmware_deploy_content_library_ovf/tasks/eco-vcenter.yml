@@ -23,7 +23,7 @@
         library_item_name: "{{ rhel9_content_library_ovf }}"
         library_name: "{{ ci_resources_content_library }}"
         vm_name: "{{ test_vm_name }}"
-        resource_pool: "{{ test_resource_pool }}"
+        resource_pool: "{{ _test_rp.id }}" #"{{ test_resource_pool }}"
       register: _deploy
 
     - name: Deploy VM Again - Idempotency

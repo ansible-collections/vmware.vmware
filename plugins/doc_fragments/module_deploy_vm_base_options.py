@@ -17,7 +17,7 @@ class ModuleDocFragment(object):
 options:
     datacenter:
         description:
-            - The name of the datacenter to use when searching for and deploying resources.
+            - The name or MOID of the datacenter to use when searching for and deploying resources.
         type: str
         required: true
         aliases: [datacenter_name]
@@ -53,14 +53,14 @@ options:
         default: false
     resource_pool:
         description:
-            - The name of a resource pool into which the virtual machine should be deployed.
+            - The name or MOID of a resource pool into which the virtual machine should be deployed.
             - Changing this option will not result in the VM being redeployed (it does not affect idempotency).
             - O(resource_pool) and O(cluster) are mutually exclusive.
         type: str
         required: false
     cluster:
         description:
-            - The name of the cluster where the VM should be deployed.
+            - The name or MOID of the cluster where the VM should be deployed.
             - Changing this option will not result in the VM being redeployed (it does not affect idempotency).
             - O(resource_pool) and O(cluster) are mutually exclusive.
         type: str
@@ -68,13 +68,13 @@ options:
         aliases: [cluster_name]
     datastore:
         description:
-            - Name of the datastore to store deployed VM and disk.
+            - Name or MOID of the datastore to store deployed VM and disk.
             - O(datastore) and O(datastore_cluster) are mutually exclusive.
         type: str
         required: false
     datastore_cluster:
         description:
-            - Name of the datastore cluster to store deployed VM and disk.
+            - Name or MOID of the datastore cluster to store deployed VM and disk.
             - Please make sure Storage DRS is active for recommended datastore from the given datastore cluster.
             - If Storage DRS is not enabled, datastore with largest free storage space is selected.
             - O(datastore) and O(datastore_cluster) are mutually exclusive.
