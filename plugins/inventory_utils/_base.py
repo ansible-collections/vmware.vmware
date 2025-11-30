@@ -34,6 +34,9 @@ class VmwareInventoryHost(ABC):
     This is an abstract class. Its meant to be extended by a class more closely rerpresenting a specific
     VMware object, like VM or ESXi host
     """
+    RESERVED_HOST_VARIABLE_PREFIX = 'vmware_inventory_'
+    RESERVED_HOST_VARIABLES = ['name', 'tags']
+
     def __init__(self):
         self.object = None
         self.inventory_hostname = None
@@ -88,6 +91,11 @@ class VmwareInventoryHost(ABC):
 
     def flatten_properties(self):
         self.properties = flatten_dict(self.properties)
+
+    def rename_reserved_variables(self):
+        for variable in self.RESERVED_HOST_VARIABLES:
+            if variable in self.properties:
+                self.properties[f"{self.RESERVED_HOST_VARIABLE_PREFIX}{variable}"] = self.properties.pop(variable)
 
 
 class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
@@ -257,6 +265,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         tags = {}
         tags_by_category = {}
+        property_prefix = 'vmware_inventory_'
         for tag in vmware_host_object.get_tags(self.rest_client):
             tags[tag.id] = tag.name
             try:
@@ -308,6 +317,9 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         if self.get_option("flatten_nested_properties"):
             vmware_host_object.flatten_properties()
+
+        if self.get_option("rename_reserved_variables"):
+            vmware_host_object.rename_reserved_variables()
 
         for k, v in vmware_host_object.properties.items():
             self.inventory.set_variable(vmware_host_object.inventory_hostname, k, v)

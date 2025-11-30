@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vms - Added option to rename reserved variables to avoid potential conflicts with ansible-core and resolve warnings.
+  - esxi_hosts - Added option to rename reserved variables to avoid potential conflicts with ansible-core and resolve warnings.
