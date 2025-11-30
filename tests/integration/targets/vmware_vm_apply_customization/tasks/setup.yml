@@ -1,0 +1,85 @@
+---
+- name: Create Virtual Machine From OVF Template
+  vmware.vmware.deploy_content_library_ovf:
+    library_item_name: "{{ rhel9_content_library_ovf }}"
+    vm_name: "{{ test_vm_name }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ shared_storage_02 }}"
+    cluster: "{{ vcenter_cluster_name }}"
+  register: _create_vm_task
+
+- name: Store VM moid
+  ansible.builtin.set_fact:
+    test_vm_moid: "{{ _create_vm_task.vm.moid }}"
+
+- name: Configure VM
+  vmware.vmware.vm:
+    moid: "{{ test_vm_moid }}"
+    cpu:
+      cores: 4
+    memory:
+      size_mb: 8192
+    network_adapters:
+      - network: "{{ vcenter_vm_network_name }}"
+        connected: true
+        connect_at_power_on: true
+      - network: "{{ vcenter_vm_network_name }}"
+        connected: true
+        connect_at_power_on: true
+
+- name: Power on VM
+  vmware.vmware.vm_powerstate:
+    moid: "{{ test_vm_moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    state: powered-on
+
+- name: Wait For VM To Have IP
+  vmware.vmware.guest_info:
+    moid: "{{ test_vm_moid }}"
+  register: _new_vm_info
+  until: >-
+    _new_vm_info.guests[0].ipv4 is defined and
+    _new_vm_info.guests[0].ipv4 is truthy and
+    not _new_vm_info.guests[0].ipv4.startswith('169.254')
+  retries: 60
+  delay: 5
+
+- name: Make sure test host isn't already in known_hosts
+  ansible.builtin.known_hosts:
+    name: "{{ _new_vm_info.guests[0].ipv4 }}"
+    state: absent
+  retries: 3 # retry to help prevent race condition with other test runs
+
+- name: Add VM host
+  ansible.builtin.add_host:
+    name: "{{ test_vm_name }}"
+    ansible_host: "{{ _new_vm_info.guests[0].ipv4 }}"
+    ansible_user: "{{ test_rhel9_username }}"
+    ansible_ssh_pass: "{{ test_rhel9_password }}"
+    ansible_host_key_checking: false
+    ansible_python_interpreter: /usr/bin/python
+
+# Unreachable errors kill the playbook, so we will handle them specifically
+- name: Check connection
+  ansible.builtin.ping: {}
+  delegate_to: "{{ test_vm_name }}"
+  ignore_unreachable: true
+  register: _ping
+
+- name: Reset cloud init
+  ansible.builtin.command: cloud-init clean --logs --seed -c all
+  delegate_to: "{{ test_vm_name }}"
+  ignore_unreachable: true
+
+- name: Assert connection was reachable
+  ansible.builtin.assert:
+    that:
+      - _ping.ping is defined
+      - _ping is not failed
+    fail_msg: "Failed to connect to new test VM {{ test_vm_name }}"
+
+- name: Power off VM
+  vmware.vmware.vm_powerstate:
+    moid: "{{ test_vm_moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    state: powered-off

@@ -1,0 +1,43 @@
+---
+- name: Test On VCenter
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Setup VM
+      ansible.builtin.include_tasks:
+        file: setup.yml
+
+    - name: Test cloud-init
+      ansible.builtin.include_tasks:
+        file: test_cloud_init.yml
+
+    - name: Power off VM
+      vmware.vmware.vm_powerstate:
+        moid: "{{ test_vm_moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: powered-off
+
+    - name: Test unix prep
+      ansible.builtin.include_tasks:
+        file: test_unix_prep.yml
+
+    - name: Power off VM
+      vmware.vmware.vm_powerstate:
+        moid: "{{ test_vm_moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: powered-off
+
+  always:
+    - name: Delete VM
+      vmware.vmware.vm:
+        moid: "{{ test_vm_moid }}"
+        state: absent
+        allow_power_cycling: true
+      when: test_vm_moid is defined
+    - name: Make sure test host isn't already in known_hosts
+      ansible.builtin.known_hosts:
+        name: "{{ hostvars[test_vm_name].ansible_host }}"
+        state: absent
+      when: hostvars[test_vm_name] is defined
+      retries: 3 # retry to help prevent race condition with other test runs

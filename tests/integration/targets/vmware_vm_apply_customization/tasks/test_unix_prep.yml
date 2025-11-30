@@ -1,0 +1,61 @@
+---
+- name: Apply unix prep customization
+  vmware.vmware.vm_apply_customization:
+    moid: "{{ test_vm_moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    use_dhcpv4_for_all_nics: true
+    unix_prep:
+      domain: unixprep.local
+      hostname: unixprep-vm
+      hardware_clock_utc: true
+      timezone: America/New_York
+      script_string: |
+        #!/bin/sh
+        if [ x$1 == x"precustomization" ]; then
+          echo "PRE" >> /root/unix_prep.pre
+        fi
+
+        if [ x$1 == x"postcustomization" ]; then
+          echo "POST" >> /root/unix_prep.post
+        fi
+    global_dns:
+      servers:
+        - 8.8.8.8
+      resolution_suffixes:
+        - local
+
+- name: Power on VM
+  vmware.vmware.vm_powerstate:
+    moid: "{{ test_vm_moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    state: powered-on
+
+- name: Make sure test host isn't already in known_hosts
+  ansible.builtin.known_hosts:
+    name: "{{ hostvars[test_vm_name].ansible_host }}"
+    state: absent
+  retries: 3 # retry to help prevent race condition with other test runs
+
+- name: Check test VM
+  block:
+    - name: Check for unix_prep.post file
+      ansible.builtin.wait_for:
+        path: /root/unix_prep.post
+        state: present
+      delegate_to: "{{ test_vm_name }}"
+      ignore_unreachable: true
+      register: _unix_prep_post_stat
+
+    - name: Stat unix_prep.pre file
+      ansible.builtin.stat:
+        path: /root/unix_prep.pre
+      register: _unix_prep_pre_stat
+      delegate_to: "{{ test_vm_name }}"
+      ignore_unreachable: true
+
+- name: Assert pre and post files exist
+  ansible.builtin.assert:
+    that:
+      - _unix_prep_post_stat.unreachable is not defined or _unix_prep_post_stat.unreachable is false
+      - _unix_prep_pre_stat.unreachable is not defined or _unix_prep_pre_stat.unreachable is false
+      - _unix_prep_pre_stat.stat.exists
