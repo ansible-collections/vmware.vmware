@@ -34,7 +34,7 @@
         that:
           - __res.changed == False
           - __res.vm_portgroup_info[vm_name] | length == 1
-          - __res.vm_portgroup_info[vm_name][0]['portgroup_name'] == "Management Network"
+          - __res.vm_portgroup_info[vm_name][0]['portgroup_name'] == "vm_traffic"
           - __res.vm_portgroup_info[vm_name][0]['nic_type'] == "VMXNET3"
           - __res.vm_portgroup_info[vm_name][0]['type'] == "DISTRIBUTED_PORTGROUP"
 
