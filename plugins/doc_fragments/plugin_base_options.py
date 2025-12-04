@@ -119,4 +119,13 @@ options:
     elements: list
     default: []
     aliases: ['filters']
+  rename_reserved_variables:
+    description:
+      - If true, the plugin will rename the reserved variables to avoid potential conflicts with ansible-core and resolve warnings.
+        Variables will be prefixed with 'vmware_inventory_'.
+      - Some variables have names that were maintained for backwards compatibility with older versions of the plugins, but are
+        now reserved by ansible-core and cause warnings.
+      - "Affected host variables include: name, and tags."
+    default: false
+    type: bool
 '''
