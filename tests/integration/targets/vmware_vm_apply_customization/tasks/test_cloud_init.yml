@@ -1,0 +1,50 @@
+---
+- name: Apply cloud-init customization
+  vmware.vmware.vm_apply_customization:
+    moid: "{{ test_vm_moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    use_dhcpv4_for_all_nics: true
+    cloud_init:
+      instance_data:
+        instance-id: "{{ test_vm_moid }}"
+        local-hostname: "cloud-init"
+        network:
+          config: disabled
+      user_data_string: |
+        #cloud-config
+        disable_root: 0
+        write_files:
+          - path: /root/cloud-init.out
+            content: |
+              This is a test
+    global_dns:
+      servers:
+        - 8.8.8.8
+      resolution_suffixes:
+        - local
+
+- name: Power on VM
+  vmware.vmware.vm_powerstate:
+    moid: "{{ test_vm_moid }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    state: powered-on
+
+- name: Make sure test host isn't already in known_hosts
+  ansible.builtin.known_hosts:
+    name: "{{ hostvars[test_vm_name].ansible_host }}"
+    state: absent
+  retries: 3 # retry to help prevent race condition with other test runs
+
+- name: Check for cloud-init.out file
+  ansible.builtin.wait_for:
+    path: /root/cloud-init.out
+    state: present
+  delegate_to: "{{ test_vm_name }}"
+  ignore_unreachable: true
+  register: _cloud_init_out_stat
+
+- name: Assert cloud-init.out file exists
+  ansible.builtin.assert:
+    that:
+      - _cloud_init_out_stat.unreachable is not defined or _cloud_init_out_stat.unreachable is false
+      - _cloud_init_out_stat is not ansible.builtin.failed

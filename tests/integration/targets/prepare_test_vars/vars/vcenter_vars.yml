@@ -20,3 +20,6 @@ rhel9_folder_template: rhel9
 
 test_esxi_username: root
 test_esxi_password: "!#%135qEt"
+
+test_rhel9_username: root
+test_rhel9_password: "password"
