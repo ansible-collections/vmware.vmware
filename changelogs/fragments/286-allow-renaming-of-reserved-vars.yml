@@ -1,6 +1,0 @@
----
-minor_changes:
-  - vms - Added option to rename reserved variables to avoid potential conflicts with ansible-core and resolve warnings.
-    fixes https://github.com/ansible-collections/vmware.vmware/issues/273
-  - esxi_hosts - Added option to rename reserved variables to avoid potential conflicts with ansible-core and resolve warnings.
-    fixes https://github.com/ansible-collections/vmware.vmware/issues/273

@@ -4,6 +4,23 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.6.0
+======
+
+Minor Changes
+-------------
+
+- esxi_hosts - Added option to rename reserved variables to avoid potential conflicts with ansible-core and resolve warnings. fixes https://github.com/ansible-collections/vmware.vmware/issues/273
+- module_deploy_vm_base - Removed redundant code by using new vm placement service methods in deploy modules
+- vm_apply_customization - Added module to apply different customization specs to a VM
+- vms - Added option to rename reserved variables to avoid potential conflicts with ansible-core and resolve warnings. fixes https://github.com/ansible-collections/vmware.vmware/issues/273
+
+Bugfixes
+--------
+
+- Updated common VM deployment module docs to mention that name or MOID can be used for the resource pool, cluster, datastore, and datastore cluster parameters. This allows users to work around issues where the name is not unique. Fixes https://github.com/ansible-collections/vmware.vmware/issues/239
+- deploy_content_library_ovf - Remove invalid storage provisioning option 'eagerzeroedthick' from module's argument spec. (Fixes https://github.com/ansible-collections/vmware.vmware/issues/278)
+
 v2.5.0
 ======
 
