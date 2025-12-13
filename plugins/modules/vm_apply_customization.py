@@ -222,23 +222,23 @@ options:
                     - The name may not consists entirely of digits.
                     - Hostname is restricted to 15 characters in length. If the hostname is longer than 15 characters, it will be truncated to 15 characters.
                 type: str
-                required: false
+                required: true
             users_full_name:
                 description:
                     - The full name of the user to be associated with this machine.
                 type: str
-                required: false
+                required: true
             users_org_name:
                 description:
                     - The organization name of the user to be associated with this machine.
                 type: str
-                required: false
+                required: true
             product_id:
                 description:
                     - Microsoft Sysprep requires that a valid serial number be included in the answer file when mini-setup runs.
                     - This serial number is ignored if the original guest operating system was installed using a volume-licensed CD.
                 type: str
-                required: false
+                required: true
 
     unix_prep:
         description:
@@ -796,6 +796,7 @@ class VMCustomizationModule(ModulePyvmomiBase):
             return None
 
         spec = vim.vm.customization.WinOptions()
+        spec.changeSID = True
         spec.reboot = win_sysprep_opts.get('post_customization_action')
         return spec
 
@@ -926,10 +927,10 @@ def main():
                                 ('join_user_name', 'join_user_password'),
                             ],
                         ),
-                        hostname=dict(type='str', required=False),
-                        users_full_name=dict(type='str', required=False),
-                        users_org_name=dict(type='str', required=False),
-                        product_id=dict(type='str', required=False),
+                        hostname=dict(type='str', required=True),
+                        users_full_name=dict(type='str', required=True),
+                        users_org_name=dict(type='str', required=True),
+                        product_id=dict(type='str', required=True),
                     ),
                     mutually_exclusive=[
                         ('workgroup', 'domain'),
