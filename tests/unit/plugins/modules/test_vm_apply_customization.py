@@ -143,7 +143,10 @@ class TestVmApplyCustomization(ModuleTestCase):
         module_args = dict(
             name="vm1",
             global_dns=dict(servers=['1.1.1.1', '1.0.0.1'], resolution_suffixes=['example.com']),
-            windows_sysprep=dict(auto_logon=True, auto_logon_count=1, password='password', timezone=0),
+            windows_sysprep=dict(
+                auto_logon=True, auto_logon_count=1, password='password', timezone=0, hostname='vm1',
+                users_full_name='John Doe', users_org_name='Example Inc.', product_id='1234567890',
+            ),
             use_dhcpv4_for_all_nics=True,
         )
 
@@ -163,7 +166,10 @@ class TestVmApplyCustomization(ModuleTestCase):
         module_args = dict(
             name="vm1",
             global_dns=dict(servers=['1.1.1.1', '1.0.0.1'], resolution_suffixes=['example.com']),
-            windows_sysprep=dict(auto_logon=True, auto_logon_count=1, password='password', timezone=0),
+            windows_sysprep=dict(
+                auto_logon=True, auto_logon_count=1, password='password', timezone=0, hostname='vm1',
+                users_full_name='John Doe', users_org_name='Example Inc.', product_id='1234567890',
+            ),
             use_dhcpv4_for_all_nics=False,
             nic_specific_settings=[
                 dict(
