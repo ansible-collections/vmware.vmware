@@ -246,7 +246,7 @@ class VmwareRemoteOvf(ModuleRestBase):
         file_map = {}
         ovf_dir = os.path.abspath(self.params['src'])
         for file_name in os.listdir(ovf_dir):
-            if file_name.endswith('.ovf') or file_name.endswith('.vmdk'):
+            if file_name.endswith(('.ovf', '.vmdk', '.nvram')):
                 file_map[file_name] = os.path.join(ovf_dir, file_name)
         if len(file_map) < 2:
             self.module.fail_json(msg="Unable to find both .ovf and .vmdk files in %s" % ovf_dir)
@@ -377,7 +377,7 @@ class VmwareRemoteOvf(ModuleRestBase):
             if self.source_is_url:
                 self.__wait_for_upload()
         except Exception as e:
-            self.module.fail_json(msg="Failed to complete upload of OVF to vCenter: %s" % to_native(e))
+            self.module.fail_json(msg="Failed to complete upload of OVF to vCenter: %s" % to_native(e), file_map=file_map)
         finally:
             self.__cleanup_transfer()
 
