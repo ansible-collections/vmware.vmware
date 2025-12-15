@@ -991,12 +991,13 @@ class VmModule(ModulePyvmomiBase):
         except IndexError:
             self.vm = None
 
-        if self.params['state'] == 'present':
-            self._init_configuration_registry()
-            self._init_configuration_builder()
-
-    def _init_configuration_registry(self):
         self.configuration_registry = ConfigurationRegistry()
+        if self.params['state'] == 'present':
+            self._register_handlers_to_configuration_registry()
+
+        self._init_configuration_builder()
+
+    def _register_handlers_to_configuration_registry(self):
         self.configuration_registry.register_vm_aware_handler(_metadata.MetadataParameterHandler)
         self.configuration_registry.register_vm_aware_handler(_cpu.CpuParameterHandler)
         self.configuration_registry.register_vm_aware_handler(_memory.MemoryParameterHandler)
