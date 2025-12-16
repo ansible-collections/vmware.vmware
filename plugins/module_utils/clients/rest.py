@@ -14,6 +14,12 @@ __metaclass__ = type
 import traceback
 
 try:
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
+try:
     import requests
     REQUESTS_IMP_ERR = None
 except ImportError:
