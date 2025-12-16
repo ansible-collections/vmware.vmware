@@ -148,7 +148,15 @@ class VmwareFolderTemplate(ModuleVmDeployBase):
         if self.params['template_folder_id']:
             folder = self.get_folders_by_name_or_moid(self.params['template_folder_id'], fail_on_missing=True)[0]
         else:
+            # Lookup the template folder using the placement service. This service is also used for the vm folder, and
+            # the vm folder property in the ModuleVmDeployBase depends on that result being cached in the placement service.
+            # So we stash the current cached folder, lookup the template folder, and then restore the cached folder to
+            # maintain functionality.
+            cached_folder = self.placement_service._folder
+            self.placement_service._folder = None
             folder = self.placement_service.get_folder(folder_param='template_folder')
+            if cached_folder:
+                self.placement_service._folder = cached_folder
 
         return folder
 
