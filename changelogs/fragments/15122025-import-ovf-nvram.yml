@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - import_content_library_ovf - Fixed issue where OVFs with .nvram files failed to import
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/257
