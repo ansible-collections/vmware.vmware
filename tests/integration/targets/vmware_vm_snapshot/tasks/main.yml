@@ -48,6 +48,20 @@
       vars:
         snapshot_info: "{{ info.guests[0].snapshots[0] }}"
 
+    - name: Create a second snapshot
+      vmware.vmware.vm_snapshot:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: snap1_2
+
+    - name: Revert VM to first snapshot
+      vmware.vmware.vm_snapshot_revert:
+        moid: "{{ _create.vm.moid }}"
+        snapshot_name: snap1
+      register: _revert
+
     - name: Rename Snapshot
       vmware.vmware.vm_snapshot:
         datacenter: "{{ vm_datacenter }}"
@@ -68,6 +82,8 @@
       ansible.builtin.assert:
         that:
           - snapshot_info.name == 'new_name1'
+          - _revert is ansible.builtin.changed
+          - _revert.snapshot.id == info.guests[0].current_snapshot.id
       vars:
         snapshot_info: "{{ info.guests[0].snapshots[0] }}"
 
