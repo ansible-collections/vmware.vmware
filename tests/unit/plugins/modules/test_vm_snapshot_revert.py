@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-from unittest.mock import patch
-
 from ansible_collections.vmware.vmware.plugins.modules.vm_snapshot_revert import (
     VmSnapshotRevertModule,
     main as module_main
@@ -75,4 +73,3 @@ class TestVmSnapshotRevert(ModuleTestCase):
         assert result["snapshot"]["name"] == "snap1"
         assert result["snapshot"]["id"] == 1
         self.snapshot_obj_mock.RevertToSnapshot_Task.assert_called_once()
-

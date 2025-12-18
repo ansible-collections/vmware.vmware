@@ -197,8 +197,8 @@ class VmSnapshotRevertModule(ModulePyvmomiBase):
     def revert_to_snapshot(self):
         task_result = {}
         try:
-            task = self.snapshot.snapshot.RevertToSnapshot_Task(suppressPowerOn=self.params['suppress_power_on'])  # pylint: disable=disallowed-name
-            _, task_result = RunningTaskMonitor(
+            task = self.snapshot.snapshot.RevertToSnapshot_Task(suppressPowerOn=self.params['suppress_power_on'])
+            _, task_result = RunningTaskMonitor(   # pylint: disable=disallowed-name
                 task
             ).wait_for_completion()
         except (vim.fault.FileFault, vim.fault.InsufficientResourcesFault, vim.fault.InvalidPowerState, vim.fault.InvalidState) as e:

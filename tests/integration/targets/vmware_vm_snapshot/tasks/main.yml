@@ -118,7 +118,7 @@
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots | length == 6
+          - info.guests[0].snapshots | length == 7
 
     - name: Remove a single snapshot
       vmware.vmware.vm_snapshot:
@@ -146,7 +146,7 @@
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots | length == 5
+          - info.guests[0].snapshots | length == 6
           - _rm_single_idem is not changed
 
     - name: Remove a snapshot and snapshot subtree
@@ -166,7 +166,7 @@
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots | length == 3
+          - info.guests[0].snapshots | length == 4
           - _rm_single_idem is not changed
 
     - name: Remove all snapshots of a VM
