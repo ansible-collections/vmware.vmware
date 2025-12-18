@@ -62,6 +62,14 @@
         snapshot_name: snap1
       register: _revert
 
+    - name: Remove unused snapshot
+      vmware.vmware.vm_snapshot:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        snapshot_name: snap1_2
+        state: absent
+
     - name: Rename Snapshot
       vmware.vmware.vm_snapshot:
         datacenter: "{{ vm_datacenter }}"
@@ -118,7 +126,7 @@
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots | length == 7
+          - info.guests[0].snapshots | length == 6
 
     - name: Remove a single snapshot
       vmware.vmware.vm_snapshot:
@@ -146,7 +154,7 @@
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots | length == 6
+          - info.guests[0].snapshots | length == 5
           - _rm_single_idem is not changed
 
     - name: Remove a snapshot and snapshot subtree
@@ -166,7 +174,7 @@
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
-          - info.guests[0].snapshots | length == 4
+          - info.guests[0].snapshots | length == 3
           - _rm_single_idem is not changed
 
     - name: Remove all snapshots of a VM
