@@ -62,10 +62,9 @@ class TestMemoryParameterHandler:
             Exception("test")
         )
 
-        # Test memory decrease (should fail)
+        # Test memory decrease (should pass)
         memory_parameter_handler.memory_params = {"size_mb": 1024}
-        with pytest.raises(Exception, match="test"):
-            memory_parameter_handler.verify_parameter_constraints()
+        memory_parameter_handler.verify_parameter_constraints()
 
         # Test memory increase (should pass)
         memory_parameter_handler.memory_params = {"size_mb": 4096}
@@ -153,8 +152,8 @@ class TestMemoryParameterHandler:
         memory_parameter_handler.vm.config.hardware.memoryMB = 2048
         memory_parameter_handler.memory_params = {"size_mb": 1024}
         memory_parameter_handler._check_memory_changes_with_hot_add()
-        # Should not call fail_with_power_cycle_error for memory decrease
-        memory_parameter_handler.error_handler.fail_with_power_cycle_error.assert_not_called()
+        # Should call fail_with_power_cycle_error for memory decrease due to powercyclerequired error
+        memory_parameter_handler.error_handler.fail_with_power_cycle_error.assert_called_once()
 
     def test_check_memory_changes_no_change(self, memory_parameter_handler):
         """Test memory changes when no change is required."""

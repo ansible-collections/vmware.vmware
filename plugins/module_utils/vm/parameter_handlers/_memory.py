@@ -95,19 +95,6 @@ class MemoryParameterHandler(AbstractParameterHandler):
 
             return
 
-        if (
-            memory_size_mb is not None
-            and memory_size_mb < self.vm.config.hardware.memoryMB
-        ):
-            self.error_handler.fail_with_parameter_error(
-                parameter_name="memory.size_mb",
-                message="Memory cannot be decreased once added to a VM.",
-                details={
-                    "size_mb": memory_size_mb,
-                    "current_size_mb": self.vm.config.hardware.memoryMB,
-                },
-            )
-
     def _verify_reservation_parameter_constraints(self):
         if self.memory_params.get("reservation") is None:
             return
@@ -204,7 +191,18 @@ class MemoryParameterHandler(AbstractParameterHandler):
         except PowerCycleRequiredError:
             size_mb = self.memory_params.get("size_mb")
             current_size_mb = self.vm.config.hardware.memoryMB
-            if size_mb > current_size_mb and not self.vm.config.memoryHotAddEnabled:
+            # check if memory is being decreased. This is never allowed while the VM is powered on.
+            if size_mb < current_size_mb:
+                self.error_handler.fail_with_power_cycle_error(
+                    parameter_name="memory.size_mb",
+                    message="Memory cannot be decreased while the VM is powered on.",
+                    details={
+                        "size_mb": size_mb,
+                        "current_size_mb": current_size_mb
+                    },
+                )
+            # Memory is definitely being increased. Check if hot add is enabled.
+            elif not self.vm.config.memoryHotAddEnabled:
                 self.error_handler.fail_with_power_cycle_error(
                     parameter_name="memory.size_mb",
                     message="Memory cannot be increased while the VM is powered on, "
