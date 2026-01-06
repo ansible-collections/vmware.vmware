@@ -4,6 +4,23 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.7.0
+======
+
+Minor Changes
+-------------
+
+- Add module vm_snapshot_revert to revert a virtual machine to a snapshot. Fixes https://github.com/ansible-collections/vmware.vmware/issues/281
+
+Bugfixes
+--------
+
+- deploy_folder_template - Fixed issue where the vm folder was being cached in the placement service, causing the module to skip the template folder lookup and fail. Fixes https://github.com/ansible-collections/vmware.vmware/issues/292
+- import_content_library_ovf - Fixed issue where OVFs with .nvram files failed to import Fixes https://github.com/ansible-collections/vmware.vmware/issues/257
+- vm - Fixed issue where error handling failed when state is absent
+- vm - Remove check that prevents memory from being decreased regardless of power state. Fixes https://github.com/ansible-collections/vmware.vmware/issues/298
+- vm_apply_customization - Fixed issue where the product ID, user name, and user org name were required by the API but not by the module
+
 v2.6.0
 ======
 

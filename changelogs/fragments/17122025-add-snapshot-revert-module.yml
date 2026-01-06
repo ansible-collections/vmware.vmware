@@ -1,4 +1,0 @@
----
-minor_changes:
-  - Add module vm_snapshot_revert to revert a virtual machine to a snapshot.
-    Fixes https://github.com/ansible-collections/vmware.vmware/issues/281

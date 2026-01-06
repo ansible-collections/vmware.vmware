@@ -1,4 +1,0 @@
----
-bugfixes:
-  - vm_apply_customization - Fixed issue where the product ID, user name, and user org name were required by the API but not by the module
-  - vm - Fixed issue where error handling failed when state is absent

@@ -1,4 +1,0 @@
----
-bugfixes:
-  - vm - Remove check that prevents memory from being decreased regardless of power state.
-    Fixes https://github.com/ansible-collections/vmware.vmware/issues/298
