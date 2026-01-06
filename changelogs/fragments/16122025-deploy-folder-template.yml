@@ -1,4 +1,0 @@
----
-bugfixes:
-  - deploy_folder_template - Fixed issue where the vm folder was being cached in the placement service, causing the module to skip the template folder lookup and fail.
-    Fixes https://github.com/ansible-collections/vmware.vmware/issues/292
