@@ -303,9 +303,12 @@ class ClusterFacts():
         }
 
     def identifier_facts(self):
+        parent = self.cluster.parent
+        while parent and not isinstance(parent, vim.Datacenter):
+            parent = parent.parent
         return {
             "moid": self.cluster._moId,
-            "datacenter": self.cluster.parent.parent.name
+            "datacenter": getattr(parent, "name", "")
         }
 
     def host_facts(self):
