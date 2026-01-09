@@ -10,10 +10,14 @@ from abc import ABC, abstractmethod
 from ansible.errors import AnsibleError
 from ansible.errors import AnsibleParserError
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable
-from ansible.parsing.yaml.objects import AnsibleVaultEncryptedUnicode
 from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 from ansible.utils.display import Display
+try:
+    # only available in ansible-core 2.19+. If not available, fake it with AnsibleVaultEncryptedUnicode
+    from ansible.parsing.vault import EncryptedString as VaultEncryptedUnicode
+except ImportError:
+    from ansible.parsing.yaml.objects import AnsibleVaultEncryptedUnicode as VaultEncryptedUnicode
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
@@ -169,13 +173,23 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         if self.templar.is_template(password):
             password = self.templar.template(variable=password, disable_lookups=False)
-        elif isinstance(password, AnsibleVaultEncryptedUnicode):
-            password = password.data
+        elif isinstance(password, VaultEncryptedUnicode):
+            if hasattr(password, 'data'):
+                # this is ansible-core<2.19
+                password = password.data
+            else:
+                # this is ansible-core>=2.19
+                password = password._decrypt()
 
         if self.templar.is_template(username):
             username = self.templar.template(variable=username, disable_lookups=False)
-        elif isinstance(username, AnsibleVaultEncryptedUnicode):
-            username = username.data
+        elif isinstance(username, VaultEncryptedUnicode):
+            if hasattr(username, 'data'):
+                # this is ansible-core<2.19
+                username = username.data
+            else:
+                # this is ansible-core>=2.19
+                username = username._decrypt()
 
         return (username, password)
 
