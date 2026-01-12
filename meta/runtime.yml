@@ -37,6 +37,7 @@ action_groups:
         - vm_powerstate
         - vm_resource_info
         - vm_snapshot
+        - vm_snapshot_revert
         - vm
 
 plugin_routing:
