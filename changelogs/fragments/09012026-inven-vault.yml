@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - inventory plugins - fix handling of encrypted strings in inventory plugin username and password options for ansible-core<=2.19
+    fixes https://github.com/ansible-collections/vmware.vmware/issues/304
