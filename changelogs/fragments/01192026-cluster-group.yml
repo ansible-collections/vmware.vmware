@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vm_list_group_by_clusters_info - Add the ability to use the absolute path for the group name. This
+    can be used to avoid group name collisions. Fixes https://github.com/ansible-collections/vmware.vmware/issues/297
