@@ -128,6 +128,12 @@ options:
         required: false
         default: false
 
+    annotation:
+        description:
+            - A string annotation to attach to the VM. This is essentially a note or description for the VM.
+        type: str
+        required: false
+
     guest_id:
         description:
             - The guest ID of the VM.
@@ -1203,6 +1209,7 @@ def main():
                 moid=dict(type='str'),
                 use_instance_uuid=dict(type='bool', default=False),
 
+                annotation=dict(type='str', required=False),
                 guest_id=dict(type='str', required=False),
                 hardware_version=dict(type='int', required=False),
                 delete_from_inventory=dict(type='bool', required=False, default=False),

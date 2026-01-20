@@ -79,6 +79,7 @@ class MetadataParameterHandler(AbstractParameterHandler):
         """
         self.change_set.check_if_change_is_required("name", "name")
         self.change_set.check_if_change_is_required("guest_id", "config.guestId")
+        self.change_set.check_if_change_is_required("annotation", "config.annotation")
 
     def populate_config_spec_with_parameters(self, configspec):
         """
@@ -115,3 +116,6 @@ class MetadataParameterHandler(AbstractParameterHandler):
         # in this module
         if self.params.get("hardware_version") and self.vm is None:
             configspec.version = "vmx-%02d" % self.params["hardware_version"]
+
+        if self.params.get("annotation"):
+            configspec.annotation = self.params["annotation"]
