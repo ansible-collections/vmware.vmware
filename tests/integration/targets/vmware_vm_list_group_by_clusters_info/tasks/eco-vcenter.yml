@@ -1,0 +1,72 @@
+---
+- name: Test
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: "Test setup: Create VM folder {{ test_folder }}"
+      vmware.vmware.folder:
+        datacenter: "{{ vcenter_datacenter }}"
+        relative_path: "{{ test_folder }}"
+        folder_type: vm
+        state: present
+      register: __create_folder
+
+    - name: "Test setup: Create VM guest {{ test_vm_name }}"
+      vmware.vmware.vm:
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ test_folder }}"
+        state: present
+        name: "{{ test_vm_name }}"
+        datastore: "{{ shared_storage_01 }}"
+        disks:
+          - size: 10gb
+            provisioning: thin
+            device_node: SCSI(0:0)
+        scsi_controllers:
+          - controller_type: paravirtual
+            bus_number: 0
+        guest_id: rhel8_64Guest
+        memory:
+          size_mb: 2000
+        cpu:
+          cores: 2
+      register: __create_vm
+
+    - name: VM list group by clusters and folders with default group name
+      vmware.vmware.vm_list_group_by_clusters_info:
+        detailed_vms: false
+      register: __res
+
+    - name: VM list group by clusters and folders with absolute path for group name
+      vmware.vmware.vm_list_group_by_clusters_info:
+        detailed_vms: false
+        use_absolute_path_for_group_name: true
+      register: __res_abs
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - __res.vm_list_group_by_clusters_info[vcenter_cluster_name][test_folder] | length == 1
+          - __res.vm_list_group_by_clusters_info[vcenter_cluster_name][test_folder][0]['name'] == test_vm_name
+          - __res_abs.changed == False
+          - __res_abs.vm_list_group_by_clusters_info[__cluster_group_name][__folder_group_name] | length == 1
+          - __res_abs.vm_list_group_by_clusters_info[__cluster_group_name][__folder_group_name][0]['name'] == test_vm_name
+      vars:
+        __cluster_group_name: /{{ vcenter_datacenter }}/host/{{ vcenter_cluster_name }}
+        __folder_group_name: /{{ vcenter_datacenter }}/vm/{{ test_folder }}
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ test_vm_name }}"
+      vmware.vmware.vm:
+        moid: "{{ __create_vm.vm.moid }}"
+        state: absent
+      when: __create_vm.vm.moid is defined
+
+    - name: "Test teardown: Remove VM folder {{ test_folder }}"
+      vmware.vmware.folder:
+        datacenter: "{{ vcenter_datacenter }}"
+        relative_path: "{{ test_folder }}"
+        folder_type: vm
+        state: absent

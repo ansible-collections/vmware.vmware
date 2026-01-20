@@ -26,6 +26,14 @@ options:
         description:
         - If I(true) gather detailed information about virtual machines.
         type: bool
+    use_absolute_path_for_group_name:
+        default: false
+        description:
+        - If I(true) use the absolute folder or cluster path for the group name.
+        - If false, only the object name will be used for the group name.
+        - If two or more objects have the same name and this option is set to false,
+          only the most recently found object will be used to determine group membership.
+        type: bool
 attributes:
   check_mode:
     description: The check_mode support.
@@ -116,6 +124,8 @@ vm_list_group_by_clusters_info:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
+from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
+from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import get_folder_path_of_vsphere_object
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
 
 
@@ -125,6 +135,9 @@ class VmwareVMList(ModuleRestBase):
         self.module = module
         self.params = module.params
         self.detailed_vms = self.params['detailed_vms']
+        self.pyvmomi = None
+        if self.params['use_absolute_path_for_group_name']:
+            self.pyvmomi = ModulePyvmomiBase(module)
 
     def get_all_clusters(self):
         return self.api_client.vcenter.Cluster.list()
@@ -170,15 +183,35 @@ class VmwareVMList(ModuleRestBase):
                     vms_detailed.append(self._vvars(vm))
 
                 if vms_detailed:
-                    vm_list_group_by_folder_dict[folder.name] = vms_detailed
+                    group_name = self._determine_group_name_for_object(folder)
+                    vm_list_group_by_folder_dict[group_name] = vms_detailed
 
             if vm_list_group_by_folder_dict:
-                result_dict[cluster.name] = vm_list_group_by_folder_dict
+                group_name = self._determine_group_name_for_object(cluster)
+                result_dict[group_name] = vm_list_group_by_folder_dict
 
         return result_dict
 
     def _vvars(self, vmware_obj):
         return {k: str(v) for k, v in vars(vmware_obj).items() if not k.startswith('_')}
+
+    def _determine_group_name_for_object(self, group_object):
+        """
+        Since object names are not unique but inventory paths are, we let the user decide which they want to
+        use for the group name. The inventory path requires some additional pyvmomi calls to get the full path.
+        """
+        if self.params['use_absolute_path_for_group_name']:
+            if hasattr(group_object, 'cluster'):
+                pyv_object = self.pyvmomi.get_cluster_by_name_or_moid(group_object.cluster, fail_on_missing=True)
+            elif hasattr(group_object, 'folder'):
+                pyv_object = self.pyvmomi.get_folders_by_name_or_moid(group_object.folder, fail_on_missing=True)[0]
+            else:
+                self.module.fail_json(msg="Unable to determine group name for object %s" % group_object)
+
+            return f"{get_folder_path_of_vsphere_object(pyv_object)}/{group_object.name}"
+
+        else:
+            return group_object.name
 
 
 def main():
@@ -186,6 +219,7 @@ def main():
     argument_spec.update(
         dict(
             detailed_vms=dict(type='bool', default=True),
+            use_absolute_path_for_group_name=dict(type='bool', default=False),
         )
     )
     module = AnsibleModule(

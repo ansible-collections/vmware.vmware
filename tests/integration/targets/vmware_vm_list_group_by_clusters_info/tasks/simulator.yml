@@ -1,0 +1,17 @@
+---
+- name: Test on simulator
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: VM list group by clusters and folders
+      vmware.vmware.vm_list_group_by_clusters_info:
+        detailed_vms: false
+      register: __res
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - __res.vm_list_group_by_clusters_info | length == 1
+          - __res.vm_list_group_by_clusters_info['cluster1'] | length == 1
+          - __res.vm_list_group_by_clusters_info['cluster1']['folder1'] | length == 1
