@@ -39,7 +39,7 @@ class TestMetadataParameterHandler:
         metadata_parameter_handler.compare_live_config_with_desired_config()
         assert (
             metadata_parameter_handler.change_set.check_if_change_is_required.call_count
-            == 2
+            == 3
         )
 
     @patch(
