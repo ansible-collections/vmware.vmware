@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - cluster_info - When a user specifies a datacenter name, the module will now fail if that datacenter is not
+    found instead of silently continuing. Fixes https://github.com/ansible-collections/vmware.vmware/issues/303
+  - cluster_info - When a user does not specify a cluster name, the module will now search recursively for
+    clusters in the datacenter. Fixes https://github.com/ansible-collections/vmware.vmware/issues/303

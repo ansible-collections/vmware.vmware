@@ -183,7 +183,7 @@ class ClusterInfo(ModulePyvmomiBase):
         """
         datacenter, search_folder = None, None
         if self.params.get('datacenter'):
-            datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=False)
+            datacenter = self.get_datacenter_by_name_or_moid(self.params.get('datacenter'), fail_on_missing=True)
             search_folder = datacenter.hostFolder
 
         if self.params.get('cluster'):
@@ -193,7 +193,7 @@ class ClusterInfo(ModulePyvmomiBase):
             _clusters = self.get_all_objs_by_type(
                 [vim.ClusterComputeResource],
                 folder=search_folder,
-                recurse=False
+                recurse=True
             )
             return _clusters
 
