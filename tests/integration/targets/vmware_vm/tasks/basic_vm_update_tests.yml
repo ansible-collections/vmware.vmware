@@ -65,7 +65,7 @@
       - vm_info.moid == _update_vm.vm.moid
       - vm_info.hw_name == _update_vm.vm.name
 
-      - (_update_vm.changes.changed_parameters.keys() | length) == 1
+      - (_update_vm.changes.changed_parameters.keys() | length) == 2 # guest_id and annotation
       - _update_vm.changes.objects_to_add == []
       - _update_vm.changes.objects_to_update == []
       - _update_vm.changes.objects_to_remove == []
