@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vm - Add the ability to set the annotation of a VM.
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/310
