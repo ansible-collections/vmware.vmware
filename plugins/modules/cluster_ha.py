@@ -80,7 +80,7 @@ options:
             - Admission control is a policy used by vSphere HA to ensure failover capacity within a cluster.
             - Raising the number of potential host failures will increase the availability constraints and capacity reserved.
         type: str
-        choices: ['vm_slots', 'cluster_resource', 'dedicated_host']
+        choices: ['vm_slots', 'cluster_resource', 'dedicated_host', 'disabled']
         required: False
 
     admission_control_failover_level:
@@ -474,6 +474,12 @@ class VmwareCluster(ModulePyvmomiBase):
         if not self.params.get("admission_control_policy"):
             return False
 
+        if self.params.get("admission_control_policy") == 'disabled':
+            if ha_config.admissionControlEnabled:
+                return True
+            else:
+                return False
+
         try:
             ac_config = ha_config.admissionControlPolicy
         except AttributeError:
@@ -668,6 +674,10 @@ class VmwareCluster(ModulePyvmomiBase):
         if not self.params.get('admission_control_policy'):
             return
 
+        if self.params.get('admission_control_policy') == 'disabled':
+            cluster_config_spec.dasConfig.admissionControlEnabled = False
+            return
+
         cluster_config_spec.dasConfig.admissionControlEnabled = True
         if self.params.get('admission_control_policy') == 'vm_slots':
             ac_policy_spec = vim.cluster.FailoverLevelAdmissionControlPolicy()
@@ -746,7 +756,7 @@ def main():
                 )),
 
                 # HA Admission Control related parameters
-                admission_control_policy=dict(type='str', required=False, choices=['vm_slots', 'cluster_resource', 'dedicated_host']),
+                admission_control_policy=dict(type='str', required=False, choices=['vm_slots', 'cluster_resource', 'dedicated_host', 'disabled']),
                 admission_control_failover_level=dict(type='int'),
                 admission_control_cpu_reserve_percentage=dict(type='int', required=False),
                 admission_control_memory_reserve_percentage=dict(type='int', required=False),
