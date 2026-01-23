@@ -126,6 +126,33 @@
       vars:
         _c: "{{ _cluster_info.clusters[test_cluster] }}"
 
+    - name: Disable Admission Control
+      vmware.vmware.cluster_ha:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        admission_control_policy: disabled
+      register: _disable_ac
+    - name: Disable Admission Control
+      vmware.vmware.cluster_ha:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        admission_control_policy: disabled
+      register: _disable_ac_idem
+    - name: Gather Cluster Settings
+      vmware.vmware.cluster_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster_name: "{{ test_cluster }}"
+      register: _cluster_info
+    - name: Check Tasks
+      ansible.builtin.assert:
+        that:
+          - _disable_ac is ansible.builtin.changed
+          - _disable_ac_idem is not ansible.builtin.changed
+          - _c.ha_enabled
+          - not _c.ha_admission_control_enabled
+      vars:
+        _c: "{{ _cluster_info.clusters[test_cluster] }}"
+
   always:
     - name: Destroy Test Cluster
       vmware.vmware.cluster:

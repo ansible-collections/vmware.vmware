@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - cluster_ha - Add value to allow disabling admission control policy
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/227
