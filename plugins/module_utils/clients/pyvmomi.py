@@ -11,6 +11,12 @@ import atexit
 import traceback
 
 try:
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
+try:
     # requests is required for exception handling of the ConnectionError
     import requests
     REQUESTS_IMP_ERR = None
