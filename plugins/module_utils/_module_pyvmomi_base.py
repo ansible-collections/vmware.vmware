@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from __future__ import absolute_import, division, print_function
+from tkinter import E
 
 __metaclass__ = type
 
@@ -59,6 +60,7 @@ class ModulePyvmomiBase(PyvmomiClient):
         Returns:
             list(object) or list() if no matches are found
         """
+
         identifier = name
         if not search_root_folder:
             search_root_folder = self.content.rootFolder

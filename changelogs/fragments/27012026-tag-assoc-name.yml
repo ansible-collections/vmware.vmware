@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - tag_associations - Fix error when using the object_name parameter to lookup an object
+    Fixes - https://github.com/ansible-collections/vmware.vmware/issues/315
