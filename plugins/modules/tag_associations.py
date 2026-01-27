@@ -252,12 +252,21 @@ class VmwareTagAssociationsModule(ModuleRestBase):
         else:
             folder_object = pyv.content.rootFolder
 
+        object_vim_type = getattr(vim, self.params.get("object_type"))
+        if object_vim_type is None:
+            # This should get caught by the developer, if they add a new type that isn't
+            # supported by pyvmomi/vmware
+            self.module.fail_json(
+                msg="Unsupported vim object type specified: %s" % self.params.get("object_type")
+            )
+
         object_result = pyv.get_objs_by_name_or_moid(
-            vim[self.params.get("object_type")],
+            object_vim_type,
             self.params.get("object_name"),
             return_all=True,
             search_root_folder=folder_object,
         )
+
         if len(object_result) > 1:
             self.module.fail_json(
                 msg="Multiple vSphere objects found with the name %s and type %s. Consider using the object_moid or object_search_folder_path parameters."
