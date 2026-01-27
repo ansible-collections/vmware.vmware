@@ -59,7 +59,6 @@ class ModulePyvmomiBase(PyvmomiClient):
         Returns:
             list(object) or list() if no matches are found
         """
-
         identifier = name
         if not search_root_folder:
             search_root_folder = self.content.rootFolder
