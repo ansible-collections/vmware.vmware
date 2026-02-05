@@ -48,6 +48,12 @@ options:
             - Looking up these values can add time to the inventory process.
         default: false
         type: bool
+    set_ansible_host: 
+        description:
+            - If true, ansible_host will be set
+            - If false, ansible_host will not be set
+        default: true
+        type: bool
 """
 
 EXAMPLES = r"""
@@ -370,7 +376,8 @@ class InventoryModule(VmwareInventoryBase):
             Args:
               vmware_host_object: EsxiInventoryHost, The host object that should be used
         """
-        self.inventory.set_variable(
-            vmware_host_object.inventory_hostname, "ansible_host",
-            vmware_host_object.guest_ip
-        )
+        if self.get_option("set_ansible_host"):
+            self.inventory.set_variable(
+                vmware_host_object.inventory_hostname, "ansible_host",
+                vmware_host_object.guest_ip
+            )
