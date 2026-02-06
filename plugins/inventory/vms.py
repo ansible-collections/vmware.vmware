@@ -48,7 +48,7 @@ options:
             - Looking up these values can add time to the inventory process.
         default: false
         type: bool
-    set_ansible_host: 
+    set_ansible_host:
         description:
             - If true, ansible_host will be set
             - If false, ansible_host will not be set
