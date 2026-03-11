@@ -2,7 +2,7 @@
 - name: Run soap vcSim
   containers.podman.podman_container:
     name: vmwaresoap
-    image: docker.io/vmware/vcsim:latest
+    image: docker.io/vmware/vcsim:{{ prepare_vcsim_tag }}
     state: started
     recreate: yes
     network: "{{ prepare_combined_vcenter_simulator_network | default(omit) }}"
