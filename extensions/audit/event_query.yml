@@ -1,13 +1,249 @@
 ---
-vmware.vmware.guest_info:
+vmware.vmware.appliance_info:
   query: >-
-    .guests[] | {
-      name: .moid,
+    .appliance | select(. != null) | {
+      name: ("appliance_info:" + (.id| tostring)),
       canonical_facts: {
-        instance_uuid: .instance_uuid,
-        bios_uuid: .hw_product_uuid,
-        moid: .moid,
-        esxi: .hw_esxi_host
+            module: "appliance_info",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "vCenter Appliance"
+      }
+    }
+vmware.vmware.cluster:
+  query: >-
+    .cluster | select(. != null) | {
+      name: ("cluster:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.cluster_dpm:
+  query: >-
+    .cluster | select(. != null) | {
+      name: ("cluster_dpm:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster_dpm",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.cluster_drs:
+  query: >-
+    .cluster | select(. != null) | {
+      name: ("cluster_drs:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster_drs",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.cluster_drs_recommendations:
+  query: >-
+    .cluster | select(. != null) | {
+      name: ("cluster_drs_recommendations:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster_drs_recommendations",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.cluster_ha:
+  query: >-
+    .cluster | select(. != null) | {
+      name: ("cluster_ha:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster_ha",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.cluster_info:
+  query: >-
+    .clusters | select(. != null) | {
+      name: ("cluster_info:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster_info",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.cluster_vcls:
+  query: >-
+    .cluster | select(. != null) | {
+      name: ("cluster_vcls:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "cluster_vcls",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Cluster"
+      }
+    }
+vmware.vmware.content_library_item_info:
+  query: >-
+    .library_item_info[] | {
+      name: ("content_library_item_info:" + (.id| tostring)),
+      canonical_facts: {
+            module: "content_library_item_info",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.content_template:
+  query: >-
+    .template_info | select(. != null) | {
+      name: ("content_template:" + (.template_id| tostring)),
+      canonical_facts: {
+            module: "content_template",
+        id: .template_id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.deploy_content_library_ovf:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("deploy_content_library_ovf:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "deploy_content_library_ovf",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.deploy_content_library_template:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("deploy_content_library_template:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "deploy_content_library_template",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.deploy_folder_template:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("deploy_folder_template:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "deploy_folder_template",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Management",
+        device_type: "Folder"
+      }
+    }
+vmware.vmware.esxi_connection:
+  query: >-
+    .host | select(. != null) | {
+      name: ("esxi_connection:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "esxi_connection",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "ESXi"
+      }
+    }
+vmware.vmware.esxi_host:
+  query: >-
+    .host | select(. != null) | {
+      name: ("esxi_host:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "esxi_host",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "ESXi"
+      }
+    }
+vmware.vmware.esxi_maintenance_mode:
+  query: >-
+    .result | select(. != null) | {
+      name: ("esxi_maintenance_mode:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "esxi_maintenance_mode",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "ESXi"
+      }
+    }
+vmware.vmware.folder:
+  query: >-
+    .folder | select(. != null) | {
+      name: ("folder:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "folder",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Management",
+        device_type: "Folder"
+      }
+    }
+vmware.vmware.folder_template_from_vm:
+  query: >-
+    . | select(. != null) | {
+      name: ("folder_template_from_vm:" + (.id| tostring)),
+      canonical_facts: {
+            module: "folder_template_from_vm",
+        id: .id
       },
       facts: {
         infra_type: "PrivateCloud",
@@ -15,28 +251,283 @@ vmware.vmware.guest_info:
         device_type: "VM"
       }
     }
-
-####
-# Catch all query
-####
-vmware.vmware.*:
+vmware.vmware.guest_info:
   query: >-
-    (
-      {"vm": "VM", "host": "ESXi", "vcsa": "vCenter Appliance", "cluster": "Cluster"} as $mapping |
-      . as $data |
-      ($data | with_entries(select(.key | in($mapping))) | keys | first) as $node_type |
-      select(($node_type != null) and ($data[$node_type].name != null) and ($data[$node_type].moid != null)) |
-      {
-        name: $data[$node_type].moid,
-        canonical_facts: {
-          name: $data[$node_type].name,
-          id: $data[$node_type].moid,
-          node_type: $node_type
-        },
-        facts: {
-          infra_type: "PrivateCloud",
-          infra_bucket: "Compute",
-          device_type: ($mapping[$node_type] // "UNKNOWN")
-        }
+    .guests[] | {
+      name: ("guest_info:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "guest_info",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
       }
-    )
+    }
+vmware.vmware.import_content_library_iso:
+  query: >-
+    . | select(. != null) | {
+      name: ("import_content_library_iso:" + (.id| tostring)),
+      canonical_facts: {
+            module: "import_content_library_iso",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.import_content_library_ovf:
+  query: >-
+    . | select(. != null) | {
+      name: ("import_content_library_ovf:" + (.id| tostring)),
+      canonical_facts: {
+            module: "import_content_library_ovf",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.license_info:
+  query: >-
+    .licenses[] | {
+      name: ("license_info:" + (.id| tostring)),
+      canonical_facts: {
+            module: "license_info",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.local_content_library:
+  query: >-
+    .library | select(. != null) | {
+      name: ("local_content_library:" + (.id| tostring)),
+      canonical_facts: {
+            module: "local_content_library",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.subscribed_content_library:
+  query: >-
+    .library | select(. != null) | {
+      name: ("subscribed_content_library:" + (.id| tostring)),
+      canonical_facts: {
+            module: "subscribed_content_library",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.tag_associations:
+  query: >-
+    .added_tags[] | {
+      name: ("tag_associations:" + (.id| tostring)),
+      canonical_facts: {
+            module: "tag_associations",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.tag_categories:
+  query: >-
+    .vsphere_tag_categories | select(. != null) | {
+      name: ("tag_categories:" + (.id| tostring)),
+      canonical_facts: {
+            module: "tag_categories",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.tags:
+  query: >-
+    .vsphere_tags | select(. != null) | {
+      name: ("tags:" + (.id| tostring)),
+      canonical_facts: {
+            module: "tags",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "Resource"
+      }
+    }
+vmware.vmware.vcsa_backup_schedule:
+  query: >-
+    .schedule | select(. != null) | {
+      name: ("vcsa_backup_schedule:" + (.id| tostring)),
+      canonical_facts: {
+            module: "vcsa_backup_schedule",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "vCenter Appliance"
+      }
+    }
+vmware.vmware.vcsa_backup_schedule_info:
+  query: >-
+    .schedules[] | {
+      name: ("vcsa_backup_schedule_info:" + (.id| tostring)),
+      canonical_facts: {
+            module: "vcsa_backup_schedule_info",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "vCenter Appliance"
+      }
+    }
+vmware.vmware.vcsa_settings:
+  query: >-
+    .vcsa_settings | select(. != null) | {
+      name: ("vcsa_settings:" + (.id| tostring)),
+      canonical_facts: {
+            module: "vcsa_settings",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "vCenter Appliance"
+      }
+    }
+vmware.vmware.vm:
+  query: >-
+    .power_cycled_for_update | select(. != null) | {
+      name: ("vm:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "vm",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_advanced_settings:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("vm_advanced_settings:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "vm_advanced_settings",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_apply_customization:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("vm_apply_customization:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "vm_apply_customization",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_list_group_by_clusters_info:
+  query: >-
+    .vm_list_group_by_clusters_info | select(. != null) | {
+      name: ("vm_list_group_by_clusters_info:" + (.id| tostring)),
+      canonical_facts: {
+            module: "vm_list_group_by_clusters_info",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_portgroup_info:
+  query: >-
+    .vm_portgroup_info | select(. != null) | {
+      name: ("vm_portgroup_info:" + (.id| tostring)),
+      canonical_facts: {
+            module: "vm_portgroup_info",
+        id: .id
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_powerstate:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("vm_powerstate:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "vm_powerstate",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_resource_info:
+  query: >-
+    .vms[] | {
+      name: ("vm_resource_info:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "vm_resource_info",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
+vmware.vmware.vm_snapshot:
+  query: >-
+    .vm | select(. != null) | {
+      name: ("vm_snapshot:" + (.moid| tostring)),
+      canonical_facts: {
+            module: "vm_snapshot",
+        moid: .moid
+      },
+      facts: {
+        infra_type: "PrivateCloud",
+        infra_bucket: "Compute",
+        device_type: "VM"
+      }
+    }
