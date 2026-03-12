@@ -59,16 +59,16 @@
     ansible_host_key_checking: false
     ansible_python_interpreter: /usr/bin/python
 
+- name: Pause for 15 seconds to ensure host is ready
+  ansible.builtin.pause:
+    seconds: 15
+
 # Unreachable errors kill the playbook, so we will handle them specifically
 - name: Check connection
   ansible.builtin.ping: {}
   delegate_to: "{{ test_vm_name }}"
+  ignore_unreachable: true
   register: _ping
-  retries: 60
-  delay: 5
-  until:
-    - _ping.ping is defined
-    - _ping is not failed
 
 - name: Reset cloud init
   ansible.builtin.command: cloud-init clean --logs --seed -c all
