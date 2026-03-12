@@ -6,3 +6,5 @@ prepare_rest_port: 1080
 prepare_rest_mock_file_prefix: "{{ role_path }}/../"
 
 prepare_vcsim_port: 8989
+
+prepare_vcsim_tag: v0.52.0

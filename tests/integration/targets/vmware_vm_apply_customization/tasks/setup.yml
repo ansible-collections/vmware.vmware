@@ -63,8 +63,12 @@
 - name: Check connection
   ansible.builtin.ping: {}
   delegate_to: "{{ test_vm_name }}"
-  ignore_unreachable: true
   register: _ping
+  retries: 60
+  delay: 5
+  until:
+    - _ping.ping is defined
+    - _ping is not failed
 
 - name: Reset cloud init
   ansible.builtin.command: cloud-init clean --logs --seed -c all
