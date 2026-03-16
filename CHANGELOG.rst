@@ -4,6 +4,31 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.8.0
+======
+
+Release Summary
+---------------
+
+This is the minor release of the ``vmware.vmware`` collection.
+This changelog contains all changes to the modules and plugins in this collection
+that have been made after the previous release.
+
+Minor Changes
+-------------
+
+- cluster_ha - Add value to allow disabling admission control policy Fixes https://github.com/ansible-collections/vmware.vmware/issues/227
+- vm - Add the ability to set the annotation of a VM. Fixes https://github.com/ansible-collections/vmware.vmware/issues/310
+- vm_list_group_by_clusters_info - Add the ability to use the absolute path for the group name. This can be used to avoid group name collisions. Fixes https://github.com/ansible-collections/vmware.vmware/issues/297
+- vms - Add setting to disable population of ansible_host to the inventory Fixes https://github.com/ansible-collections/vmware.vmware/pull/317
+
+Bugfixes
+--------
+
+- cluster_info - When a user does not specify a cluster name, the module will now search recursively for clusters in the datacenter. Fixes https://github.com/ansible-collections/vmware.vmware/issues/303
+- cluster_info - When a user specifies a datacenter name, the module will now fail if that datacenter is not found instead of silently continuing. Fixes https://github.com/ansible-collections/vmware.vmware/issues/303
+- inventory plugins - fix handling of encrypted strings in inventory plugin username and password options for ansible-core<=2.19 fixes https://github.com/ansible-collections/vmware.vmware/issues/304
+
 v2.7.0
 ======
 
