@@ -1,4 +1,0 @@
----
-minor_changes:
-  - vms - Add setting to disable population of ansible_host to the inventory
-    Fixes https://github.com/ansible-collections/vmware.vmware/pull/317
