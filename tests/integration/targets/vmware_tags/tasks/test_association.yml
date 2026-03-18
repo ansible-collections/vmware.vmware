@@ -25,7 +25,7 @@
 - name: Attach tags to a VM
   vmware.vmware.tag_associations: &tag_associations_present
     state: present
-    object_moid: "{{ _test_association_vm.vm.moid }}"
+    object_name: "{{ _test_association_vm.vm.name }}"
     object_type: VirtualMachine
     tags:
       - "{{ test_tags_association[0] }}"
