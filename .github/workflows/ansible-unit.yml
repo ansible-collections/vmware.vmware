@@ -54,6 +54,8 @@ jobs:
         versions:
           # Testing all ansible and python versions is impractical. Only test the newest and
           # oldest versions of each that we support
+          - { python: 3.14, ansible: stable-2.20 }
+          - { python: 3.12, ansible: stable-2.20 }
           - { python: 3.13, ansible: stable-2.19 }
           - { python: 3.8, ansible: stable-2.19 }
           - { python: 3.12, ansible: stable-2.16 }
