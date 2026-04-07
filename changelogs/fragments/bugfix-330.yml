@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - vm_snapshot_revert - search the snapshot tree fully to find a matching snapshot
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/330
