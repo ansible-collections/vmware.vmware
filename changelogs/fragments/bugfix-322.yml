@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - vm - correct O(delete_from_inventory) documentation for C(state=absent) to match module behavior.
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/322

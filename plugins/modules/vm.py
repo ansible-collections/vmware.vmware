@@ -145,9 +145,9 @@ options:
 
     delete_from_inventory:
         description:
-            - Whether to delete the VM from the datastore when removing it, or just remove the VM from the vSphere inventory.
-            - If this is set to true, the VM will be deleted from the datastore when it is removed.
-            - If this is set to false, the VM will remain on the datastore when it is removed.
+            - Whether to remove the VM from the vSphere inventory only, or to also delete the VM and its files from the datastore.
+            - If this is set to true, the VM will only be removed from the vSphere inventory. Files will remain on the datastore.
+            - If this is set to false, the VM will be deleted from both the inventory and datastore.
             - This parameter is only used when O(state) is set to C(absent).
         type: bool
         required: false
