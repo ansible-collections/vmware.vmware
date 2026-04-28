@@ -22,13 +22,13 @@ class MetadataParameterHandler(AbstractParameterHandler):
     Handler for VM metadata parameters like name, guest ID, and basic file store structure.
 
     This handler manages the basic VM identity and placement properties. It handles
-    validation of required parameters for new VMs and ensures proper datastore
-    configuration.
+    validation of required parameters for new VMs.
 
     Managed Parameters:
     - name: VM display name
     - guest_id: Guest operating system identifier
-    - datastore: Storage location for VM files
+    - datastore: Storage location for VM files, mutually exclusive with datastore_cluster
+    - datastore_cluster: Storage location for VM files, mutually exclusive with datastore
     - hardware_version: Hardware version for VM
 
     Attributes:
@@ -62,12 +62,19 @@ class MetadataParameterHandler(AbstractParameterHandler):
         fundamental requirements that cannot be inferred or defaulted.
         """
         if self.vm is None:
-            for param in ["name", "guest_id", "datastore"]:
+            for param in ["name", "guest_id"]:
                 if not self.params.get(param):
                     self.error_handler.fail_with_parameter_error(
                         parameter_name=param,
                         message="%s is a required parameter for VM creation." % param,
                     )
+            if not self.params.get("datastore") and not self.params.get(
+                "datastore_cluster"
+            ):
+                self.error_handler.fail_with_parameter_error(
+                    parameter_name=param,
+                    message="Either the datastore or datastore_cluster parameter must be provided for VM creation.",
+                )
 
     def compare_live_config_with_desired_config(self):
         """

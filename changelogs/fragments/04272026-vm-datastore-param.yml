@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - vm - Fix issue where datastore was always a required parameter for creating new vms.
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/334
