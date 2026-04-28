@@ -73,8 +73,7 @@ class MetadataParameterHandler(AbstractParameterHandler):
             ):
                 self.error_handler.fail_with_parameter_error(
                     parameter_name=param,
-                    message="Either the datastore or datastore_cluster parameter must be provided for VM creation."
-                    % param,
+                    message="Either the datastore or datastore_cluster parameter must be provided for VM creation.",
                 )
 
     def compare_live_config_with_desired_config(self):
