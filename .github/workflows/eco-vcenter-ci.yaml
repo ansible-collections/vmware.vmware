@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   prepare_matrix:
-    runs-on: [ "self-hosted", linux, X64 ]
+    runs-on: [ "unbuntu-latest" ]
     outputs:
       groups: ${{ steps.set-matrix.outputs.groups }}
     steps:
