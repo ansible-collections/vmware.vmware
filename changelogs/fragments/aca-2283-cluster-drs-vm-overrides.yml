@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - cluster_drs_vm_overrides - add module to manage DRS VM override settings on vSphere clusters
+  - cluster_drs_vm_overrides_info - add module to gather DRS VM override settings for a cluster
