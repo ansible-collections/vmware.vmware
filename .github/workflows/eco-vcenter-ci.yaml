@@ -97,3 +97,17 @@ jobs:
         if: always()
         run: |
           rm -rf ./*
+
+  # This job does nothing and is only used for the branch protection
+  # or multi-stage CI jobs, like making sure that all tests pass before
+  # a publishing job is started.
+  eco-ci-integration-check:
+    if: always()
+    needs:
+      - ansible_integration_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
