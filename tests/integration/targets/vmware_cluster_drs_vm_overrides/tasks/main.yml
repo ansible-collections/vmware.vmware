@@ -1,0 +1,202 @@
+---
+- name: Test On VCenter
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Get vm overrides info
+      vmware.vmware.cluster_drs_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+      register: _starting_info
+
+    - name: Remap vm overrides
+      ansible.builtin.set_fact:
+        _starting_overrides: >-
+          {{ _starting_overrides | default([]) + [
+            {
+              'virtual_machine': item.virtual_machine_moid,
+              'drs_behavior': item.behavior,
+              'enable': item.enabled
+            }
+          ] }}
+      loop: "{{ _starting_info.vm_overrides }}"
+
+    # do this first so if it fails, we havnt broken the existing config
+    - name: Try to set vm overrides
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        append: false
+        vm_overrides: "{{ _starting_overrides }}"
+      register: _set_idem
+
+    - name: Check set idempotence
+      ansible.builtin.assert:
+        that:
+          - _set_idem is not changed
+
+    - name: Create Virtual Machine From OVF Template
+      vmware.vmware.deploy_content_library_ovf:
+        library_item_name: "{{ rhel9_content_library_ovf }}"
+        vm_name: "{{ test_vm }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ shared_storage_02 }}"
+        cluster: "{{ vcenter_cluster_name }}"
+      register: _create_vm
+
+    - name: Apply a vm override
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        append: true
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.name }}"
+            drs_behavior: fullyAutomated
+            enable: true
+      register: _present
+
+    - name: Apply a vm override - idempotence
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        append: true
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.moid }}"
+            drs_behavior: fullyAutomated
+            enable: true
+      register: _present_idem
+
+    - name: Get vm overrides
+      vmware.vmware.cluster_drs_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+      register: _info
+
+    - name: Check vm overrides
+      ansible.builtin.assert:
+        that:
+          - _present is changed
+          - (_present.overrides_added | length) == 1
+          - _present_idem is not changed
+          - _override_info.behavior == 'fullyAutomated'
+          - _override_info.enabled == true
+      vars:
+        _override_info: "{{ _info.vm_overrides | selectattr('virtual_machine_name',
+          'equalto', _create_vm.vm.name) | first }}"
+
+    - name: Update vm override
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.moid }}"
+            drs_behavior: manual
+      register: _update
+
+    - name: Update vm override - idempotence
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.moid }}"
+            drs_behavior: manual
+      register: _update_idem
+
+    - name: Get vm overrides info
+      vmware.vmware.cluster_drs_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+      register: _info
+
+    - name: Check vm override updates
+      ansible.builtin.assert:
+        that:
+          - _update is changed
+          - (_update.overrides_updated | length) == 1
+          - _update_idem is not changed
+          - _override_info.behavior == 'manual'
+          - _override_info.enabled == true
+      vars:
+        _override_info: "{{ _info.vm_overrides | selectattr('virtual_machine_name',
+          'equalto', _create_vm.vm.name) | first }}"
+
+    - name: Remove vm override
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: absent
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.moid }}"
+      register: _remove
+
+    - name: Remove vm override - idempotence
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: absent
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.moid }}"
+      register: _remove_idem
+
+    - name: Get vm overrides info
+      vmware.vmware.cluster_drs_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+      register: _info
+
+    - name: Check vm override removal
+      ansible.builtin.assert:
+        that:
+          - _remove is changed
+          - (_remove.overrides_removed | length) == 1
+          - _remove_idem is not changed
+          - _info.vm_overrides | selectattr('virtual_machine_name', 'equalto',
+            _create_vm.vm.name) | length == 0
+
+    - name: Apply a vm override
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        append: true
+        vm_overrides:
+          - virtual_machine: "{{ _create_vm.vm.name }}"
+            drs_behavior: fullyAutomated
+            enable: true
+
+    - name: Set the vm overrides
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        append: false
+        vm_overrides: "{{ _starting_overrides }}"
+      register: _set
+
+    - name: Check set changed
+      ansible.builtin.assert:
+        that:
+          - _set is changed
+          - (_set.overrides_removed | length) == 1
+
+  always:
+    - name: Destroy VM
+      vmware.vmware.vm:
+        moid: "{{ _create_vm.vm.moid }}"
+        state: absent
+      when: _create_vm.vm.moid is defined
+
+    - name: Correct vm overrides
+      vmware.vmware.cluster_drs_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        state: present
+        append: false
+        vm_overrides: "{{ _starting_overrides }}"
+      when: _starting_overrides is defined
