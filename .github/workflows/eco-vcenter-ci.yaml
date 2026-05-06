@@ -2,19 +2,65 @@
 name: Ansible Eco vCenter Integration Test
 on:
   pull_request_target:
-    types: [opened, synchronize]
+    types: [ opened, synchronize ]
   push:
     branches:
       - main
-      - 'release-\d.\d'
+      - "release-\\d.\\d"
 
 permissions:
   contents: read
 
 jobs:
+  prepare_matrix:
+    runs-on: [ "unbuntu-latest" ]
+    outputs:
+      groups: ${{ steps.set-matrix.outputs.groups }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Build target groups matrix
+        id: set-matrix
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path("tests/integration/targets")
+          targets = sorted(
+              p.name
+              for p in root.iterdir()
+              if p.is_dir() and p.name.startswith("vmware_")
+          )
+          chunk = 5
+          groups = [
+              {"group": i // chunk, "targets": " ".join(targets[i : i + chunk])}
+              for i in range(0, len(targets), chunk)
+          ]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as gh_out:
+              gh_out.write(
+                  "groups<<JSON_GROUPS_EOF\n"
+                  f"{json.dumps(groups)}\n"
+                  "JSON_GROUPS_EOF\n"
+              )
+          PY
+        env:
+          PYTHONIOENCODING: utf-8
+
   ansible_integration_test:
-    runs-on: ["self-hosted", linux, X64]
+    runs-on: [ "self-hosted", linux, X64 ]
+    needs: prepare_matrix
+    if: needs.prepare_matrix.outputs.groups != '[]'
     environment: eco-vcenter
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.prepare_matrix.outputs.groups) }}
     steps:
       - name: Update pip, git
         if: runner.os == 'Linux' && startsWith(runner.name, 'ubuntu')
@@ -26,7 +72,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Generate integration config
         run: |
@@ -36,11 +82,11 @@ jobs:
           VCENTER_USERNAME: ${{ secrets.VCENTER_USERNAME }}
           VCENTER_PASSWORD: ${{ secrets.VCENTER_PASSWORD }}
 
-      - name: Run integration tests
+      - name: Run integration tests (group ${{ matrix.group }})
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
-          make eco-vcenter-ci
+          make eco-vcenter-ci ECO_VCENTER_CI_TARGETS='${{ matrix.targets }}'
         env:
           ANSIBLE_COLLECTIONS_PATH: "${{ github.workspace }}"
           VCENTER_HOSTNAME: ${{ secrets.VCENTER_HOSTNAME }}

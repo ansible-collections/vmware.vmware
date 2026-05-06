@@ -49,4 +49,4 @@ eco-vcenter-ci: tests/integration/integration_config.yml install-integration-req
 	chmod +x tests/integration/run_eco_vcenter_ci.sh; \
 	ANSIBLE_ROLES_PATH=~/.ansible/collections/ansible_collections/vmware/vmware/tests/integration/targets \
 		ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections \
-		./tests/integration/run_eco_vcenter_ci.sh
+		./tests/integration/run_eco_vcenter_ci.sh "$(ECO_VCENTER_CI_TARGETS)"
