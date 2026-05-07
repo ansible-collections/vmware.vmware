@@ -35,6 +35,10 @@
     state: absent
   retries: 3 # retry to help prevent race condition with other test runs
 
+- name: Wait for host to be ready
+  ansible.builtin.wait_for_connection:
+  delegate_to: "{{ test_vm_name }}"
+
 - name: Check for cloud-init.out file
   ansible.builtin.wait_for:
     path: /root/cloud-init.out
@@ -46,5 +50,6 @@
 - name: Assert cloud-init.out file exists
   ansible.builtin.assert:
     that:
-      - _cloud_init_out_stat.unreachable is not defined or _cloud_init_out_stat.unreachable is false
+      - _cloud_init_out_stat.unreachable is not defined or
+        _cloud_init_out_stat.unreachable is false
       - _cloud_init_out_stat is not ansible.builtin.failed

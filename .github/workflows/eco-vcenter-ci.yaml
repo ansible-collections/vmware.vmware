@@ -14,6 +14,10 @@ permissions:
 jobs:
   prepare_matrix:
     runs-on: ubuntu-latest
+    # this environment requires approval to prevent abuse of the vCenter lab. It is used on this stage so you
+    # only need to approve the workflow once, and then can re-run the jobs if there are failures. If new changes
+    # are pushed, approval is required again.
+    environment: eco-vcenter-ci
     outputs:
       groups: ${{ steps.set-matrix.outputs.groups }}
     steps:
@@ -56,7 +60,6 @@ jobs:
     runs-on: [ "self-hosted", linux, X64 ]
     needs: prepare_matrix
     if: needs.prepare_matrix.outputs.groups != '[]'
-    environment: eco-vcenter
     strategy:
       fail-fast: false
       matrix:

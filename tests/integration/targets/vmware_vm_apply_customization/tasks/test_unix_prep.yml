@@ -36,6 +36,10 @@
     state: absent
   retries: 3 # retry to help prevent race condition with other test runs
 
+- name: Wait for host to be ready
+  ansible.builtin.wait_for_connection:
+  delegate_to: "{{ test_vm_name }}"
+
 - name: Check test VM
   block:
     - name: Check for unix_prep.post file
@@ -56,6 +60,8 @@
 - name: Assert pre and post files exist
   ansible.builtin.assert:
     that:
-      - _unix_prep_post_stat.unreachable is not defined or _unix_prep_post_stat.unreachable is false
-      - _unix_prep_pre_stat.unreachable is not defined or _unix_prep_pre_stat.unreachable is false
+      - _unix_prep_post_stat.unreachable is not defined or
+        _unix_prep_post_stat.unreachable is false
+      - _unix_prep_pre_stat.unreachable is not defined or
+        _unix_prep_pre_stat.unreachable is false
       - _unix_prep_pre_stat.stat.exists
