@@ -2,8 +2,8 @@
 - name: Lookup Root Resource Pool ID
   ansible.builtin.set_fact:
     vcenter_rp_id: >-
-      {{ lookup('vmware.vmware.moid_from_path',
-      '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      {{ lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter +
+      '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
       **vmware_rest_auth_vars) }}
 
 - name: Test
@@ -171,7 +171,7 @@
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-off
-        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime((ansible_date_time.epoch | int) + 180)}}"
+        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime(now().strftime('%s') + 180)}}"
         scheduled_task_name: "task_001"
         scheduled_task_description: "Sample task to poweroff VM"
         scheduled_task_enabled: true
