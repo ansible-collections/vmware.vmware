@@ -171,7 +171,7 @@
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-off
-        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime(now().strftime('%s') + 180)}}"
+        scheduled_at: "{{ '%d/%m/%Y %H:%M' | strftime((now().strftime('%s') | int) + 180) }}"
         scheduled_task_name: "task_001"
         scheduled_task_description: "Sample task to poweroff VM"
         scheduled_task_enabled: true
