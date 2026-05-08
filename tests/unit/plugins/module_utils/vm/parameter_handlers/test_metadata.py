@@ -35,6 +35,28 @@ class TestMetadataParameterHandler:
         metadata_parameter_handler.verify_parameter_constraints()
         metadata_parameter_handler.error_handler.fail_with_parameter_error.assert_not_called()
 
+    def test_verify_parameter_constraints_datastore_cluster(self, metadata_parameter_handler):
+        metadata_parameter_handler.vm = None
+        metadata_parameter_handler.params = {
+            "name": "test",
+            "guest_id": "test",
+            "datastore_cluster": "test-cluster",
+        }
+        metadata_parameter_handler.verify_parameter_constraints()
+        metadata_parameter_handler.error_handler.fail_with_parameter_error.assert_not_called()
+
+    def test_verify_parameter_constraints_no_storage_reports_datastore(self, metadata_parameter_handler):
+        metadata_parameter_handler.vm = None
+        metadata_parameter_handler.params = {
+            "name": "test",
+            "guest_id": "test",
+        }
+        metadata_parameter_handler.verify_parameter_constraints()
+        metadata_parameter_handler.error_handler.fail_with_parameter_error.assert_called_once_with(
+            parameter_name="datastore",
+            message="Either the datastore or datastore_cluster parameter must be provided for VM creation.",
+        )
+
     def test_compare_live_config_with_desired_config(self, metadata_parameter_handler):
         metadata_parameter_handler.compare_live_config_with_desired_config()
         assert (

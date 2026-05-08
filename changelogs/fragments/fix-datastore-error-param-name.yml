@@ -1,0 +1,4 @@
+bugfixes:
+  - vm - Fix incorrect parameter name in error when neither datastore nor
+    datastore_cluster is provided for VM creation.
+    Follow-up to https://github.com/ansible-collections/vmware.vmware/issues/334.

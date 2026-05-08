@@ -72,7 +72,7 @@ class MetadataParameterHandler(AbstractParameterHandler):
                 "datastore_cluster"
             ):
                 self.error_handler.fail_with_parameter_error(
-                    parameter_name=param,
+                    parameter_name="datastore",
                     message="Either the datastore or datastore_cluster parameter must be provided for VM creation.",
                 )
 
