@@ -17,7 +17,7 @@ jobs:
     # this environment requires approval to prevent abuse of the vCenter lab. It is used on this stage so you
     # only need to approve the workflow once, and then can re-run the jobs if there are failures. If new changes
     # are pushed, approval is required again.
-    environment: eco-vcenter-ci
+    environment: eco-vcenter
     outputs:
       groups: ${{ steps.set-matrix.outputs.groups }}
     steps:
@@ -89,7 +89,7 @@ jobs:
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
-          make eco-vcenter-ci ECO_VCENTER_CI_TARGETS='${{ matrix.targets }}'
+          make eco-vcenter-ci INTEGRATION_TARGETS='${{ matrix.targets }}'
         env:
           ANSIBLE_COLLECTIONS_PATH: "${{ github.workspace }}"
           VCENTER_HOSTNAME: ${{ secrets.VCENTER_HOSTNAME }}
