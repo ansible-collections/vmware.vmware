@@ -1,3 +1,8 @@
+# Optional extra args for ansible-test (leave unset for full suite)
+SANITY_TARGETS ?=
+INTEGRATION_TARGETS ?=
+UNIT_TARGETS ?=
+
 # setup commands
 .PHONY: upgrade-collections
 upgrade-collections:
@@ -20,12 +25,12 @@ tests/integration/integration_config.yml:
 .PHONY: sanity
 sanity: upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
-	ansible-test sanity -v --color --coverage --junit --docker default
+	ansible-test sanity -v --color --coverage --junit --docker default $(SANITY_TARGETS)
 
 .PHONY: units
 units: upgrade-collections
 	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
-	ansible-test units --docker --python 3.12 --coverage; \
+	ansible-test units --docker --python 3.12 --coverage $(UNIT_TARGETS); \
 	ansible-test coverage combine --export tests/output/coverage/; \
 	ansible-test coverage report --docker --omit 'tests/*' --show-missing
 
@@ -49,4 +54,4 @@ eco-vcenter-ci: tests/integration/integration_config.yml install-integration-req
 	chmod +x tests/integration/run_eco_vcenter_ci.sh; \
 	ANSIBLE_ROLES_PATH=~/.ansible/collections/ansible_collections/vmware/vmware/tests/integration/targets \
 		ANSIBLE_COLLECTIONS_PATH=~/.ansible/collections/ansible_collections \
-		./tests/integration/run_eco_vcenter_ci.sh "$(ECO_VCENTER_CI_TARGETS)"
+		./tests/integration/run_eco_vcenter_ci.sh "$(INTEGRATION_TARGETS)"

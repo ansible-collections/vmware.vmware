@@ -1,6 +1,15 @@
 /tests/output/
 /changelogs/.plugin-cache.yaml
+
+# AI
+.agents/skills/shared
+.agents/skills/shared/
+.agents/rules/SHARED.md
+
+# Ansible test/sanity
+.tmp/
 .ansible/
+.tmp-run/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
