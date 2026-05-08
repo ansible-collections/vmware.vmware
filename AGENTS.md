@@ -38,4 +38,4 @@ Subagent definitions live in `.agents/subagents/`. When a task matches a subagen
 
 ## Agent Skills
 
-Skills live in `.agents/skills/*/SKILL.md` (YAML frontmatter + instructions). At session start, scan and register all skills. When a request matches a skill's trigger, load and apply it.
+Skills live in `.agents/skills/**/SKILL.md` (YAML frontmatter + instructions). They may be stored in subdirectories or symlinks in `.agents/skills/**`. Search for any files in those directories named `SKILL.md`. At session start, scan and register all skills in that directory recursively. When a request matches a skill's trigger, load and apply it.
