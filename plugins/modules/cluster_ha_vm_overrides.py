@@ -47,7 +47,7 @@ options:
     state:
         description:
             - The state of the VM override settings.
-            - If set to V(present) and O(append) is true, the VM override settings are added or updatedif needed.
+            - If set to V(present) and O(append) is true, the VM override settings are added or updated if needed.
             - If set to V(present) and O(append) is false, the VM override settings in the cluster will be updated to match the desired configuration exactly.
               Any existing VM (HA) override settings that are not present in the desired configuration will be reset to the vCenter default values.
             - If set to V(absent), the VM override settings are removed from the cluster if they exist.
@@ -134,7 +134,7 @@ options:
                         type: int
                     maximum_resets_window:
                         description:
-                            - The number of seconds during in which O(vm_overrides[].vm_monitoring.maximum_resets) resets
+                            - The number of seconds during which O(vm_overrides[].vm_monitoring.maximum_resets) resets
                               can occur before automated responses stop.
                             - Valid only when O(vm_overrides[].vm_monitoring.mode) is V(vmAndAppMonitoring) or V(vmMonitoringOnly).
                             - The value of -1 specifies no window.
@@ -150,7 +150,7 @@ options:
                             - APD differs from PDL, in that APD is assumed to be a transient outage and PDL is permanent.
                             - V(disabled) means no action will be taken
                             - V(warning) means no action will be taken, but events will be generated for logging purposes.
-                            - V(restartConservative) means VMs will be powered off if  HA determines another host can support the VM.
+                            - V(restartConservative) means VMs will be powered off if HA determines another host can support the VM.
                             - V(restartAggressive) means VMs will be powered off if HA determines the VM can be restarted on a different host,
                               or if HA cannot detect the resources on other hosts because of network connectivity loss.
                         type: str
@@ -163,7 +163,7 @@ options:
                     restart_vms:
                         description:
                             - If true, VMs will be restarted when possible if storage is in an APD failure state.
-                            - This is only used if O(vm_overrides[].storage_apd_response.mode) is V(restartConservative) V(restartAggressive).
+                            - This is only used if O(vm_overrides[].storage_apd_response.mode) is V(restartConservative) or V(restartAggressive).
                         type: bool
             storage_pdl_response_mode:
                 description:
@@ -355,6 +355,9 @@ class HaVmOverrideChangeTracker(BaseVmOverrideChangeTracker):
         if not getattr(desired, "vmToolsMonitoringSettings"):
             return False
 
+        if not getattr(current, "vmToolsMonitoringSettings"):
+            return True
+
         desired = desired.vmToolsMonitoringSettings
         current = current.vmToolsMonitoringSettings
         if (
@@ -376,9 +379,14 @@ class HaVmOverrideChangeTracker(BaseVmOverrideChangeTracker):
         ):
             return True
 
+        return False
+
     def _component_protection_settings_differ(self, desired, current):
         if not getattr(desired, "vmComponentProtectionSettings"):
             return False
+
+        if not getattr(current, "vmComponentProtectionSettings"):
+            return True
 
         desired = desired.vmComponentProtectionSettings
         current = current.vmComponentProtectionSettings
@@ -503,6 +511,7 @@ class VMwareHaVmOverrides(ModulePyvmomiBase):
             set_if_defined_and_not_none(
                 spec, "vmTerminateDelayForAPDSec", apd.get("delay")
             )
+
             set_if_defined_and_not_none(
                 spec,
                 "vmReactionOnAPDCleared",
