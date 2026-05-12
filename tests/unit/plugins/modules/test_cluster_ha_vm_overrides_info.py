@@ -64,7 +64,7 @@ class TestVMwareHaVmOverridesInfo(ModuleTestCase):
         )
         mock_das_settings.vmComponentProtectionSettings.vmTerminateDelayForAPDSec = 180
         mock_das_settings.vmComponentProtectionSettings.vmReactionOnAPDCleared = (
-            "restart"
+            "reset"
         )
         mock_das_settings.vmComponentProtectionSettings.vmStorageProtectionForPDL = (
             "warning"
