@@ -106,8 +106,9 @@ options:
                     use_cluster_settings:
                         description:
                             - If true, use cluster-wide monitoring settings; other keys in this section are ignored.
+                            - If this is not set but the vm_monitoring dictionary is defined, the module will default it to false
+                              (meaning custom VM settings will be used).
                         type: bool
-                        default: true
                     mode:
                         description:
                             - Sets the state of the virtual machine health monitoring service.
@@ -462,7 +463,7 @@ class VMwareHaVmOverrides(ModulePyvmomiBase):
             )
         if (
             override_params.get("storage_apd_response") is not None
-            or override_params.get("storage_pdl_response") is not None
+            or override_params.get("storage_pdl_response_mode") is not None
         ):
             das_settings.vmComponentProtectionSettings = (
                 self._create_vm_component_protection_settings_spec(override_params)
@@ -618,7 +619,7 @@ def main():
                                 minimum_uptime=dict(type="int"),
                                 maximum_resets=dict(type="int"),
                                 maximum_resets_window=dict(type="int"),
-                                use_cluster_settings=dict(type="bool", default=True),
+                                use_cluster_settings=dict(type="bool"),
                             ),
                         ),
                         storage_apd_response=dict(

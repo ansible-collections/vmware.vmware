@@ -6,21 +6,14 @@ import sys
 import pytest
 from unittest.mock import Mock, patch
 
-from pyVmomi import vmodl
-
 from ansible_collections.vmware.vmware.plugins.modules.cluster_ha_vm_overrides import (
-    HaVmOverrideChangeTracker,
     VMwareHaVmOverrides,
     main as module_main,
-    set_if_defined_and_not_none,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import (
     PyvmomiClient,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
-    TaskError,
-)
-from ...common.utils import run_module, ModuleTestCase, AnsibleFailJson
+from ...common.utils import run_module, ModuleTestCase
 from ...common.vmware_object_mocks import MockCluster, create_mock_vsphere_object
 
 pytestmark = pytest.mark.skipif(

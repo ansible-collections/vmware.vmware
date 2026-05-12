@@ -113,7 +113,7 @@ class VMwareHaVmOverridesInfo(ModulePyvmomiBase):
             delay=vm_component_protection_settings.vmTerminateDelayForAPDSec,
             restart_vms=(
                 True
-                if vm_component_protection_settings.vmReactionOnAPDCleared == "restart"
+                if vm_component_protection_settings.vmReactionOnAPDCleared == "reset"
                 else False
             ),
         )
@@ -153,14 +153,14 @@ class VMwareHaVmOverridesInfo(ModulePyvmomiBase):
                     das_settings, "restartPriorityTimeout", None
                 )
 
-                if hasattr(das_settings, "vmComponentProtectionSettings"):
+                if getattr(das_settings, "vmComponentProtectionSettings"):
                     data["storage_apd_response"] = self._get_apd_response_settings(
                         das_settings.vmComponentProtectionSettings
                     )
                     data["storage_pdl_response"] = self._get_pdl_response_settings(
                         das_settings.vmComponentProtectionSettings
                     )
-                if hasattr(das_settings, "vmToolsMonitoringSettings"):
+                if getattr(das_settings, "vmToolsMonitoringSettings"):
                     data["vm_monitoring"] = self._get_vm_tools_monitoring_settings(
                         das_settings.vmToolsMonitoringSettings
                     )
