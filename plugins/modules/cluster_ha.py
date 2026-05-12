@@ -306,6 +306,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
 from ansible_collections.vmware.vmware.plugins.module_utils._advanced_settings import (
     AdvancedSettings
 )
+from ansible_collections.vmware.vmware.plugins.module_utils._cluster_settings import (
+    ClusterSettingsRemapper
+)
 from ansible.module_utils.common.text.converters import to_native
 
 
@@ -323,9 +326,7 @@ class VmwareCluster(ModulePyvmomiBase):
 
     @property
     def storage_pdl_response_mode(self):
-        if self.params['storage_pdl_response_mode'] == 'restart':
-            return 'restartAggressive'
-        return self.params['storage_pdl_response_mode']
+        return ClusterSettingsRemapper.storage_pdl_response_mode(self.params['storage_pdl_response_mode'])
 
     @property
     def host_failure_response_restart_vms(self):
@@ -335,9 +336,7 @@ class VmwareCluster(ModulePyvmomiBase):
 
     @property
     def storage_apd_restart_vms(self):
-        if self.params['storage_apd_response']['restart_vms']:
-            return 'reset'
-        return 'none'
+        return ClusterSettingsRemapper.storage_apd_restart_vms(self.params['storage_apd_response']['restart_vms'])
 
     @property
     def ac_failover_hosts(self):
