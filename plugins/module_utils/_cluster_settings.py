@@ -37,10 +37,16 @@ class ClusterSettingsRemapper:
             param_value: Truthy to restart VMs after APD clears; falsy to take no reaction.
 
         Returns:
-            ``reset`` if ``param_value`` is true, else ``none``.
+            ``reset`` if ``param_value`` is true, ``none`` if false, or ``None`` if unset
+            (caller should omit the API field when ``None``).
         """
+        # return None if the param was not set, to preserve user input
+        if param_value is None:
+            return None
+
         if param_value:
             return "reset"
+
         return "none"
 
 
@@ -80,6 +86,7 @@ class BaseVmOverrideChangeTracker(ABC):
         """
         if getattr(desired_spec, attribute_name) is None:
             return False
+
         return getattr(desired_spec, attribute_name) != getattr(
             current_spec, attribute_name
         )

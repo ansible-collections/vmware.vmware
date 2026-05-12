@@ -76,7 +76,7 @@ vm_overrides:
           storage_apd_response:
             mode: restartConservative
             delay: 180
-            restart_vms: reset
+            restart_vms: true
           storage_pdl_response: warning
           vm_monitoring:
             mode: vmAndAppMonitoring

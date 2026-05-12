@@ -44,7 +44,9 @@ class TestClusterSettingsRemapper:
 
     def test_storage_apd_restart_vms_falsey(self):
         assert ClusterSettingsRemapper.storage_apd_restart_vms(False) == "none"
-        assert ClusterSettingsRemapper.storage_apd_restart_vms(None) == "none"
+
+    def test_storage_apd_restart_vms_none_unchanged(self):
+        assert ClusterSettingsRemapper.storage_apd_restart_vms(None) is None
 
 
 class TestBaseVmOverrideChangeTrackerStatic:
