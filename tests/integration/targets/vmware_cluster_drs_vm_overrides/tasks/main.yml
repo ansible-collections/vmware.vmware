@@ -15,9 +15,9 @@
         _starting_overrides: >-
           {{ _starting_overrides | default([]) + [
             {
-              'virtual_machine': item.virtual_machine_moid,
-              'drs_behavior': item.behavior,
-              'enable': item.enabled
+              'virtual_machine': item.vm_moid,
+              'behavior': item.behavior,
+              'enabled': item.enabled
             }
           ] }}
       loop: "{{ _starting_info.vm_overrides }}"
@@ -54,8 +54,8 @@
         append: true
         vm_overrides:
           - virtual_machine: "{{ _create_vm.vm.name }}"
-            drs_behavior: fullyAutomated
-            enable: true
+            behavior: fullyAutomated
+            enabled: true
       register: _present
 
     - name: Apply a vm override - idempotence
@@ -66,8 +66,8 @@
         append: true
         vm_overrides:
           - virtual_machine: "{{ _create_vm.vm.moid }}"
-            drs_behavior: fullyAutomated
-            enable: true
+            behavior: fullyAutomated
+            enabled: true
       register: _present_idem
 
     - name: Get vm overrides
@@ -85,8 +85,8 @@
           - _override_info.behavior == 'fullyAutomated'
           - _override_info.enabled == true
       vars:
-        _override_info: "{{ _info.vm_overrides | selectattr('virtual_machine_name',
-          'equalto', _create_vm.vm.name) | first }}"
+        _override_info: "{{ _info.vm_overrides | selectattr('vm_name', 'equalto',
+          _create_vm.vm.name) | first }}"
 
     - name: Update vm override
       vmware.vmware.cluster_drs_vm_overrides:
@@ -95,7 +95,7 @@
         state: present
         vm_overrides:
           - virtual_machine: "{{ _create_vm.vm.moid }}"
-            drs_behavior: manual
+            behavior: manual
       register: _update
 
     - name: Update vm override - idempotence
@@ -105,7 +105,7 @@
         state: present
         vm_overrides:
           - virtual_machine: "{{ _create_vm.vm.moid }}"
-            drs_behavior: manual
+            behavior: manual
       register: _update_idem
 
     - name: Get vm overrides info
@@ -123,8 +123,8 @@
           - _override_info.behavior == 'manual'
           - _override_info.enabled == true
       vars:
-        _override_info: "{{ _info.vm_overrides | selectattr('virtual_machine_name',
-          'equalto', _create_vm.vm.name) | first }}"
+        _override_info: "{{ _info.vm_overrides | selectattr('vm_name', 'equalto',
+          _create_vm.vm.name) | first }}"
 
     - name: Remove vm override
       vmware.vmware.cluster_drs_vm_overrides:
@@ -156,7 +156,7 @@
           - _remove is changed
           - (_remove.overrides_removed | length) == 1
           - _remove_idem is not changed
-          - _info.vm_overrides | selectattr('virtual_machine_name', 'equalto',
+          - _info.vm_overrides | selectattr('vm_name', 'equalto',
             _create_vm.vm.name) | length == 0
 
     - name: Apply a vm override
@@ -167,8 +167,8 @@
         append: true
         vm_overrides:
           - virtual_machine: "{{ _create_vm.vm.name }}"
-            drs_behavior: fullyAutomated
-            enable: true
+            behavior: fullyAutomated
+            enabled: true
 
     - name: Set the vm overrides
       vmware.vmware.cluster_drs_vm_overrides:
