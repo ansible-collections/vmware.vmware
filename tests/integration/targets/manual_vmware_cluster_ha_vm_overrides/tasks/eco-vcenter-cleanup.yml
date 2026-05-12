@@ -1,0 +1,31 @@
+---
+- name: Cleanup test cluster
+  environment: "{{ environment_auth_vars }}"
+  block:
+    - name: Remove test vm
+      vmware.vmware.vm:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        name: "{{ test_vm }}"
+        state: absent
+        allow_power_cycling: true
+
+    - name: Remove test cluster
+      vmware.vmware.cluster:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: absent
+
+    - name: Remove esxi host
+      vmware.vmware.vm:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        name: "{{ test_esxi_hostname }}"
+        state: absent
+        allow_power_cycling: true
+
+    - name: Remove resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent
+      when: _test_rp.id is defined

@@ -1,0 +1,5 @@
+---
+test_vm: "{{ tiny_prefix }}_cluster_ha_vm_overrides_vm"
+test_cluster: "{{ tiny_prefix }}_cluster_ha_vm_overrides"
+test_esxi_hostname: "{{ tiny_prefix }}_cluster_ha_vm_overrides_esxi"
+test_resource_pool: "{{ tiny_prefix }}_cluster_ha_vm_overrides_rp"
