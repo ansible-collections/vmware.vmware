@@ -58,8 +58,8 @@ class TestVMwareDrsVmOverrides(ModuleTestCase):
             vm_overrides=[
                 {
                     "virtual_machine": "vm-1234567890",
-                    "drs_behavior": "fullyAutomated",
-                    "enable": True,
+                    "behavior": "fullyAutomated",
+                    "enabled": True,
                 }
             ],
         )
@@ -136,8 +136,8 @@ class TestVMwareDrsVmOverrides(ModuleTestCase):
                 "vm_overrides": [
                     {
                         "virtual_machine": existing_vm._GetMoId(),
-                        "drs_behavior": "fullyAutomated",
-                        "enable": True,
+                        "behavior": "fullyAutomated",
+                        "enabled": True,
                     }
                 ]
             },
