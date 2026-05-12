@@ -1,6 +1,6 @@
 ansible-core
 
 aiohttp
-pyVmomi==9.1.0.0
-vmware-vcenter==9.1.0.0
-setuptools >= 82
+pyVmomi>=8.0.3.0.1
+vmware-vcenter
+setuptools < 82
