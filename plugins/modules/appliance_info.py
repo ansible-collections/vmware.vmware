@@ -183,6 +183,8 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base im
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
 
 
+# Meaningless diff with no code changes to trigger CI
+
 class VmwareApplianceInfo(ModuleRestBase):
     def __init__(self, module):
         super(VmwareApplianceInfo, self).__init__(module)
