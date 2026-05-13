@@ -139,8 +139,8 @@ class VmwareRestClient():
         if all([self.proxy_host, self.proxy_port, self.proxy_protocol]):
             http_proxies = {
                 self.proxy_protocol: (
-                    "{%s}://{%s}:{%s}" %
-                    self.proxy_protocol, self.proxy_host, self.proxy_port
+                    "%s://%s:%s" %
+                    (self.proxy_protocol, self.proxy_host, self.proxy_port)
                 )
             }
 
