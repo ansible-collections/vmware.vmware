@@ -328,6 +328,12 @@ class HaVmOverrideChangeTracker(BaseVmOverrideChangeTracker):
         super().__init__(current_vm_overrides, param_vm_overrides)
 
     def _overrides_differ(self, desired, current):
+        if not getattr(desired, "dasSettings"):
+            return False
+
+        if not getattr(current, "dasSettings"):
+            return True
+
         desired = desired.dasSettings
         current = current.dasSettings
         if (
@@ -405,6 +411,8 @@ class HaVmOverrideChangeTracker(BaseVmOverrideChangeTracker):
             )
         ):
             return True
+
+        return False
 
 
 class VMwareHaVmOverrides(ModulePyvmomiBase):

@@ -86,14 +86,12 @@ options:
                         for the placement with a host, then automatically implements placement recommendations at power on.
                 type: str
                 required: false
-                default: fullyAutomated
                 choices: [ fullyAutomated, manual, partiallyAutomated ]
             enabled:
                 description:
                     - Whether the override settings are enabled for the virtual machine.
                 type: bool
                 required: false
-                default: true
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
@@ -385,10 +383,9 @@ def main():
                         behavior=dict(
                             type="str",
                             required=False,
-                            default="fullyAutomated",
                             choices=["fullyAutomated", "manual", "partiallyAutomated"],
                         ),
-                        enabled=dict(type="bool", required=False, default=True),
+                        enabled=dict(type="bool", required=False),
                     ),
                 ),
             ),
