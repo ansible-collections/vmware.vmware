@@ -93,13 +93,22 @@ EXAMPLES = r"""
     tpm_required: true
     default_provider: false
 
-- name: Create a native key provider and return export details for backup
-  vmware.vmware.key_provider_native:
-    provider_name: my-native-key-provider
-    state: present
-    tpm_required: true
-    export_password: backup-password
-  register: native_key_provider
+- name: Create a key provider and back it up to activate it
+  block:
+    - name: Create a native key provider and return export details for backup
+      vmware.vmware.key_provider_native:
+        provider_name: my-native-key-provider
+        state: present
+        tpm_required: true
+        export_password: backup-password
+      register: native_key_provider
+    - name: Backup and activate the native key provider
+      ansible.builtin.get_url:
+        url: "{{ native_key_provider.export_info.url }}"
+        dest: "/tmp/native_key_provider.p12"
+        headers:
+        Authorization: "Bearer {{ native_key_provider.export_info.token }}"
+      when: native_key_provider is ansible.builtin.changed
 
 - name: Set a native key provider as the default and do not log export information
   vmware.vmware.key_provider_native:
