@@ -31,12 +31,8 @@ class TestKeyProviderNative(ModuleTestCase):
         )
         self.providers_service = self.rest_client.vcenter.crypto_manager.kms.Providers
         self.providers_service.CreateSpec = mock.Mock(side_effect=self._create_spec)
-        self.providers_service.ConstraintsSpec = mock.Mock(
-            side_effect=lambda **kwargs: mock.Mock(**kwargs)
-        )
-        self.providers_service.ExportSpec = mock.Mock(
-            side_effect=lambda **kwargs: mock.Mock(**kwargs)
-        )
+        self.providers_service.ConstraintsSpec = mock.Mock(side_effect=mock.Mock)
+        self.providers_service.ExportSpec = mock.Mock(side_effect=mock.Mock)
 
         crypto_manager = mocker.Mock()
         default_id = mocker.Mock()
