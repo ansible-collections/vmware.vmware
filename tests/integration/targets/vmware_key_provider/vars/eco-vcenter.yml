@@ -1,0 +1,12 @@
+---
+test_native_provider_name: "{{ tiny_prefix }}-vmware-key-provider-native"
+test_standard_provider_name: "{{ tiny_prefix }}-vmware-key-provider-standard"
+test_kms_server_1_id: "{{ tiny_prefix }}-kms-server-1"
+test_kms_server_2_id: "{{ tiny_prefix }}-kms-server-2"
+test_kms_address_1: "192.0.2.1"
+test_kms_address_2: "192.0.2.2"
+test_kms_proxy_address: "192.0.2.3"
+test_kms_port: 5696
+test_kms_proxy_port: 5697
+test_kms_username: kmsuser
+test_kms_password: kms-password
