@@ -1,0 +1,3 @@
+---
+bugfixes:
+  - fix syntax errors when setting the http proxy in rest api modules
