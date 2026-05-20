@@ -154,20 +154,32 @@ class TestVmwareInventoryHost():
     def __prepare(self, mocker):
         self.test_host = self.TestHost()
 
-    def test_get_properties_from_pyvmomi(self, mocker):
+    def test_create_from_vcenter_object_adds_inventory_metadata(self, mocker):
         self.__prepare(mocker)
-        self.test_host.object = create_mock_vsphere_object()
+        vmware_object = create_mock_vsphere_object()
         cust_val = mocker.Mock()
         cust_val.key, cust_val.value = "foo", "bar"
-        self.test_host.object.customValue = [cust_val]
+        vmware_object.customValue = [cust_val]
 
         pyvmomi_client = mocker.Mock()
         field = mocker.Mock()
         field.name, field.key = "bizz", "foo"
         pyvmomi_client.custom_field_mgr = [field]
-        mocker.patch('ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json', return_value={})
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+            return_value='/dc/vm/folder',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
 
-        properties = self.test_host.get_properties_from_pyvmomi([], pyvmomi_client)
-        print(properties)
-        assert properties['moid'] == self.test_host.object._GetMoId()
-        assert properties['customValue']['bizz'] == "bar"
+        host = self.TestHost.create_from_vcenter_object(
+            vmware_object,
+            ['customValue'],
+            pyvmomi_client,
+        )
+
+        assert host.properties['path'] == '/dc/vm/folder'
+        assert host.properties['moid'] == vmware_object._GetMoId()
+        assert host.properties['customValue']['bizz'] == "bar"
