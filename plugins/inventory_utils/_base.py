@@ -73,7 +73,6 @@ class VmwareInventoryHost(ABC):
         host._set_inventory_properties(properties_to_gather, pyvmomi_client, prop_set)
         return host
 
-
     @abstractmethod
     def get_tags(self, rest_client):
         pass
@@ -88,7 +87,7 @@ class VmwareInventoryHost(ABC):
         self._add_custom_values_to_properties(properties_to_gather, pyvmomi_client)
 
     def _add_custom_values_to_properties(self, properties_to_gather, pyvmomi_client):
-        if 'customValue' not in properties_to_gather:
+        if properties_to_gather and 'customValue' not in properties_to_gather:
             return
 
         if not hasattr(self.object, "customValue"):
