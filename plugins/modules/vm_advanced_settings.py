@@ -95,7 +95,7 @@ extends_documentation_fragment:
     - vmware.vmware.base_options
 '''
 
-EXAMPLES = fr'''
+EXAMPLES = r'''
 - name: Make Sure The Following Advanced Settings Are Present
   vmware.vmware.vm_advanced_settings:
     hostname: "{{ vcenter_hostname }}"
