@@ -123,7 +123,7 @@ options:
         type: str
     timeout:
         description:
-        - The value sets a timeout in seconds for the module to wait for the task to finish.
+        - The timeout value in seconds for the module to wait for the task to finish.
         default: 3600
         type: int
 
