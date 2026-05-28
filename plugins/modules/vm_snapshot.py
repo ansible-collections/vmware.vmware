@@ -121,6 +121,11 @@ options:
         description:
         - If the snapshot already exists, it will be renamed to this value.
         type: str
+    timeout:
+        description:
+        - The timeout value in seconds for the module to wait for the task to finish.
+        default: 3600
+        type: int
 
 
 
@@ -377,7 +382,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
                 task = None
 
             if task:
-                success, task_result = RunningTaskMonitor(task).wait_for_completion()
+                success, task_result = RunningTaskMonitor(task).wait_for_completion(timeout=self.params['timeout'])
                 del task_result['result']
                 self.result['result'] = task_result
 
@@ -414,6 +419,7 @@ def main():
                 memory_dump=dict(type='bool', default=False),
                 remove_children=dict(type='bool', default=False),
                 new_snapshot_name=dict(type='str'),
+                timeout=dict(type='int', default=3600),
             )
         },
         supports_check_mode=True,
