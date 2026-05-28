@@ -1,0 +1,3 @@
+minor_changes:
+  - vm_snapshot - Add a timeout parameter to define how long the module will wait for the task to finish
+    (https://github.com/ansible-collections/vmware.vmware/issues/361).
