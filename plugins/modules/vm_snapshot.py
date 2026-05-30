@@ -152,7 +152,7 @@ EXAMPLES = r'''
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     datacenter: "{{ datacenter_name }}"
-    folder: "/{{ datacenter_name }}/vm/"
+    folder: "/{{ datacenter_name }}/vm/nested/folder/path"
     name: "{{ guest_name }}"
     state: absent
     snapshot_name: snap1
@@ -174,7 +174,7 @@ EXAMPLES = r'''
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     datacenter: "{{ datacenter_name }}"
-    folder: "/{{ datacenter_name }}/vm/"
+    folder: "/{{ datacenter_name }}/vm/nested/folder/path"
     moid: vm-42
     state: absent
     remove_all: true
@@ -185,7 +185,7 @@ EXAMPLES = r'''
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     datacenter: "{{ datacenter_name }}"
-    folder: "/{{ datacenter_name }}/vm/"
+    folder: "nested/folder/path"
     name: "{{ guest_name }}"
     state: present
     snapshot_name: dummy_vm_snap_0001
@@ -210,7 +210,7 @@ EXAMPLES = r'''
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     datacenter: "{{ datacenter_name }}"
-    folder: "/{{ datacenter_name }}/vm/"
+    folder: "/{{ datacenter_name }}/vm/nested/folder/path"
     name: "{{ guest_name }}"
     snapshot_id: 10
     state: absent
@@ -221,7 +221,7 @@ EXAMPLES = r'''
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     datacenter: "{{ datacenter_name }}"
-    folder: "/{{ datacenter_name }}/vm/"
+    folder: "nested/folder/path"
     name: "{{ guest_name }}"
     state: present
     snapshot_name: current_snap_name
