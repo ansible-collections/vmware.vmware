@@ -123,7 +123,7 @@ EXAMPLES = r'''
     password: "password"
     datacenter: "my-datacenter"
     vm_uuid: "11111111-11111111-11111111"
-    template_folder: "my-datacenter/vm/netsted/folder/path/templates"
+    template_folder: "my-datacenter/vm/nested/folder/path/templates"
     template_name: "my_template"
 
 - name: Create A New Template Using VM Name
