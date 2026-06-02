@@ -23,15 +23,7 @@ jobs:
   scan:
     name: SonarCloud scan
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
     steps:
-      - name: Require Sonar token
-        if: env.SONAR_TOKEN == ''
-        run: |
-          echo "::error::ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT is not configured"
-          exit 1
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -72,5 +64,7 @@ jobs:
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
+        env:
+          SONAR_TOKEN: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
         with:
           args: ${{ env.SONAR_ARGS }}

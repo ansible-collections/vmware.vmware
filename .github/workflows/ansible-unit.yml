@@ -47,8 +47,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  fail:
+    env:
+      TEST: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
+    if: env.TEST == ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail
+        run: |
+          echo "::error::ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT is not configured"
+          exit 1
+
   units:
     name: Units (Ⓐ${{ matrix.versions.ansible }} - ${{ matrix.versions.python }})
+    needs: fail
     strategy:
       matrix:
         versions:
@@ -74,13 +86,7 @@ jobs:
           testing-type: units
           target-python-version: ${{ matrix.versions.python }}
           pull-request-change-detection: false
-          coverage: >-
-            ${{
-              matrix.versions.python == 3.12
-              && matrix.versions.ansible == 'stable-2.20'
-              && 'always'
-              || 'never'
-            }}
+          coverage: auto
 
       - name: Prepare coverage.xml for SonarCloud
         if: >-
