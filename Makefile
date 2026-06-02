@@ -44,16 +44,9 @@ sanity: upgrade-collections
 .PHONY: units
 units: upgrade-collections
 	cd $(COLLECTION_ROOT); \
-	ansible-test units --docker --python 3.12 --coverage $(UNIT_TARGETS); \
+	ansible-test units --docker --python default --coverage $(UNIT_TARGETS); \
 	ansible-test coverage combine --requirements --export tests/output/coverage/; \
 	ansible-test coverage report --requirements --docker --omit 'tests/*' --show-missing;
-
-.PHONY: units-coverage
-units-coverage: units
-	cd $(COLLECTION_ROOT); \
-	ansible-test coverage report --requirements --docker --omit 'tests/*' --show-missing;
-	ansible-test coverage xml --requirements;
-	cp tests/output/reports/coverage.xml $(CURDIR)/coverage-units.xml;
 
 .PHONY: integration
 integration: install-integration-reqs upgrade-collections
