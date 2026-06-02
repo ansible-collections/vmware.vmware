@@ -27,11 +27,10 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Download coverage artifacts
-        uses: dawidd6/action-download-artifact@v21
+        uses: actions/download-artifact@v8
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: Units
-          run_id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
           name: units-coverage
 
       - name: Set coverage report paths
