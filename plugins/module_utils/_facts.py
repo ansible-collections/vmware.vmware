@@ -696,7 +696,7 @@ def vmware_obj_to_json(obj, properties=None):
     if not properties:
         return _jsonify_vmware_object(obj)
 
-    result = dict()
+    result = {}
     jsonified_parents = {}
 
     for prop in properties:

@@ -93,7 +93,7 @@ class VmwareInventoryHost(ABC):
         if not hasattr(self.object, "customValue"):
             return
 
-        self.properties['customValue'] = dict()
+        self.properties['customValue'] = {}
         field_mgr = pyvmomi_client.custom_field_mgr
         for cust_value in self.object.customValue:
             self.properties['customValue'][
@@ -287,30 +287,23 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
             List of vmodl query ObjectContent results (obj + propSet), deduplicated by MOID.
         """
         query_paths = [prop for prop in properties_to_gather if prop != 'customValue']
-        seen_moids = set()
-        results = []
-
-        def _collect_from_folder(folder):
-            for obj_content in self.pyvmomi_client.get_managed_object_references(
+        if not self.get_option('search_paths'):
+            return self.pyvmomi_client.get_managed_object_references(
                 vimtype=vim_type,
                 properties=query_paths,
-                folder=folder,
-            ):
-                moid = obj_content.obj._GetMoId()
-                if moid in seen_moids:
-                    continue
-                seen_moids.add(moid)
-                results.append(obj_content)
+                folder=None,
+            )
 
-        if not self.get_option('search_paths'):
-            _collect_from_folder(folder=None)
-            return results
-
+        results = []
         for search_path in self.get_option('search_paths'):
             folder = self.pyvmomi_client.si.content.searchIndex.FindByInventoryPath(search_path)
             if not folder:
                 continue
-            _collect_from_folder(folder=folder)
+            results.extend(self.pyvmomi_client.get_managed_object_references(
+                vimtype=vim_type,
+                properties=query_paths,
+                folder=folder,
+            ))
 
         return results
 
