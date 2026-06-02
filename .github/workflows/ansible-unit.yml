@@ -54,47 +54,61 @@ jobs:
         versions:
           # Testing all ansible and python versions is impractical. Only test the newest and
           # oldest versions of each that we support
-          - { python: 3.14, ansible: stable-2.20, publish_coverage: true }
-          - { python: 3.12, ansible: stable-2.20, publish_coverage: false }
-          - { python: 3.13, ansible: stable-2.19, publish_coverage: false }
-          - { python: 3.8, ansible: stable-2.19, publish_coverage: false }
-          - { python: 3.12, ansible: stable-2.16, publish_coverage: false }
-          - { python: 3.6, ansible: stable-2.16, publish_coverage: false }
-          - { python: 2.7, ansible: stable-2.16, publish_coverage: false }
+          - { python: 3.14, ansible: stable-2.20 }
+          - { python: 3.12, ansible: stable-2.20 }
+          - { python: 3.13, ansible: stable-2.19 }
+          - { python: 3.8, ansible: stable-2.19 }
+          - { python: 3.12, ansible: stable-2.16 }
+          - { python: 3.6, ansible: stable-2.16 }
+          - { python: 2.7, ansible: stable-2.16 }
 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Perform unit testing
+        id: unit-test
+        # See the documentation for the following GitHub action on
+        # https://github.com/ansible-community/ansible-test-gh-action/blob/main/README.md
+        uses: ansible-community/ansible-test-gh-action@release/v1
+        with:
+          ansible-core-version: ${{ matrix.versions.ansible }}
+          testing-type: units
+          target-python-version: ${{ matrix.versions.python }}
+          pull-request-change-detection: false
+
+  # This job does nothing and is only used for the branch protection
+  # or multi-stage CI jobs, like making sure that all tests pass before
+  # a publishing job is started.
+  unit-check:
+    if: always()
+    needs:
+      - units
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+
+  # the version of ansible we use for this test doesnt really matter, coverage is coverage.
+  units-coverage:
+    name: Generate units coverage report
+    needs: [unit-check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.versions.python }}
-
       - name: Install ansible-core
         run: |
-          python -m pip install https://github.com/ansible/ansible-core/archive/refs/tags/${{ matrix.versions.ansible }}.tar.gz --user;
+          python -m pip install ansible-core;
 
       - name: Install collection and python requirements
         run: |
           ansible-galaxy collection install . --force;
-          pip install -r requirements.txt;
-
-      - name: Debug installed packages
-        run: |
-          echo "Python version:";
-          python --version;
-          echo "Ansible version:";
-          ansible --version;
-          echo "Collections:";
-          ansible-galaxy collection list;
-          echo "Pip packages:";
-          pip freeze;
 
       - name: Perform unit tests
         run: |
-          ansible-test units --local --requirements;
+          ansible-test units --docker --requirements;
         working-directory: ~/.ansible/collections/ansible_collections/vmware/vmware;
 
       - name: Publish coverage report
@@ -110,17 +124,3 @@ jobs:
         with:
           name: units-coverage
           path: ${{ github.workspace }}/coverage-units.xml
-
-  # This job does nothing and is only used for the branch protection
-  # or multi-stage CI jobs, like making sure that all tests pass before
-  # a publishing job is started.
-  unit-check:
-    if: always()
-    needs:
-      - units
-    runs-on: ubuntu-latest
-    steps:
-      - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
-        with:
-          jobs: ${{ toJSON(needs) }}
