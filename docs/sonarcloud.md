@@ -7,15 +7,14 @@ Project: [ansible-collections_vmware.vmware](https://sonarcloud.io/project/overv
 ## Configuration
 
 - **`sonar-project.properties`** at the repository root defines project keys, source paths, and coverage report location.
-- **`.github/workflows/ansible-unit.yml`** (`name: Units`) — unit matrix, **`coverage`** job (artifact **`coverage`**), **`unit-check`** gate.
-- **`.github/workflows/sonarcloud.yml`** ([amazon.aws-style](https://github.com/ansible-collections/amazon.aws/blob/main/.github/workflows/sonarcloud.yml) **`workflow_run`**): triggered when **Units** completes successfully; downloads **`coverage*`** artifacts and runs the SonarScanner.
+- **`.github/workflows/sonarcloud.yml`** — reusable **`workflow_call`** workflow ([kubernetes.core](https://github.com/ansible-collections/kubernetes.core/blob/main/.github/workflows/sonarcloud.yml) pattern).
+- **`.github/workflows/ansible-unit.yml`** — unit matrix; **`ansible-test-gh-action`** emits Cobertura XML (`coverage-report-files`) on the primary cell (Python 3.12 / ansible-core 2.20); uploads artifact **`coverage`** for Sonar; then **`sonarcloud`** caller.
 
-Flow:
+Flow (single **Units** workflow run):
 
-1. **Units** workflow (`ansible-unit.yml`) — units → unit-check → coverage (uploads `coverage.xml`).
-2. **SonarCloud** workflow — runs after **Units** succeeds; separate trusted job with org `SONAR_TOKEN`.
-
-`workflow_run` listens for the workflow display name **`Units`**, not the file name `ansible-unit.yml`.
+1. **units** (matrix) — `coverage: always` on one cell only; action runs tests and produces XML; that cell uploads `coverage.xml`.
+2. **unit-check** — all matrix jobs must pass.
+3. **sonarcloud** — calls `sonarcloud.yml`; downloads artifact; runs SonarScanner.
 
 ## Org secret
 
@@ -23,11 +22,11 @@ CI uses the **ansible-collections** organization secret:
 
 `ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT`
 
-Workflows reference it as `${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}`. Do not commit tokens to the repository.
+The caller passes it explicitly (`secrets:` mapping, not `secrets: inherit`). Do not commit tokens to the repository.
 
 ## Fork pull requests
 
-Sonar runs in a follow-up workflow after **Units** (`ansible-unit.yml`) completes. Fork PR behavior follows GitHub org secret and `workflow_run` trust rules; fork PRs may not receive Sonar results until changes are merged or workflow runs are approved.
+The **sonarcloud** job is skipped when `github.event.pull_request.head.repo.full_name != github.repository` (fork PRs). Same-repository PRs and pushes to protected branches run Sonar when the secret is configured. This avoids checking out untrusted fork code in a privileged context (SonarCloud S7631 / `workflow_run` fork risk).
 
 ## Coverage
 
@@ -48,3 +47,4 @@ SonarCloud expects **`coverage.xml`** (see `sonar.python.coverage.reportPaths` i
 
 - [SonarQube Cloud — CI-based analysis](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/ci-based-analysis)
 - [Analysis parameters](https://docs.sonarqube.org/latest/analysis/analysis-parameters/)
+- [kubernetes.core Sonar onboarding (PR #1124)](https://github.com/ansible-collections/kubernetes.core/pull/1124)

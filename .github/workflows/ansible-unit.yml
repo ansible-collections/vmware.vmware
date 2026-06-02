@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Perform unit testing
+        id: unit-test
         # See the documentation for the following GitHub action on
         # https://github.com/ansible-community/ansible-test-gh-action/blob/main/README.md
         uses: ansible-community/ansible-test-gh-action@release/v1
@@ -73,6 +74,36 @@ jobs:
           testing-type: units
           target-python-version: ${{ matrix.versions.python }}
           pull-request-change-detection: false
+          coverage: >-
+            ${{
+              matrix.versions.python == 3.12
+              && matrix.versions.ansible == 'stable-2.20'
+              && 'always'
+              || 'never'
+            }}
+
+      - name: Prepare coverage.xml for SonarCloud
+        if: >-
+          matrix.versions.python == 3.12
+          && matrix.versions.ansible == 'stable-2.20'
+          && steps.unit-test.outputs.coverage-report-files != ''
+        run: |
+          set -euo pipefail
+          xml="${{ steps.unit-test.outputs.coverage-report-files }}"
+          xml="${xml%%,*}"
+          test -n "${xml}"
+          cp "${xml}" "${GITHUB_WORKSPACE}/coverage.xml"
+          sed -i "s#${GITHUB_WORKSPACE}/##g" "${GITHUB_WORKSPACE}/coverage.xml"
+
+      - name: Upload coverage artifact
+        if: >-
+          matrix.versions.python == 3.12
+          && matrix.versions.ansible == 'stable-2.20'
+          && steps.unit-test.outputs.coverage-report-files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: ${{ github.workspace }}/coverage.xml
 
   # This job does nothing and is only used for the branch protection
   # or multi-stage CI jobs, like making sure that all tests pass before
@@ -88,46 +119,16 @@ jobs:
         with:
           jobs: ${{ toJSON(needs) }}
 
-  coverage:
-    name: Unit test coverage
+  sonarcloud:
+    name: SonarCloud scan
     needs:
       - unit-check
-    runs-on: ubuntu-latest
-    env:
-      ANSIBLE_CORE_VERSION: "2.20.0"
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Ansible (ansible-test)
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "ansible-core==${ANSIBLE_CORE_VERSION}"
-
-      - name: Run unit tests with coverage
-        run: ansible-test units --venv --coverage --python 3.12 --requirements
-
-      - name: Combine and emit coverage XML
-        run: |
-          ansible-test coverage combine --venv --python 3.12 --requirements
-          ansible-test coverage xml --venv --python 3.12 --requirements
-
-      - name: Prepare coverage.xml for SonarCloud
-        run: |
-          set -euo pipefail
-          mkdir -p "${GITHUB_WORKSPACE}"
-          xml=$(find tests/output/reports -maxdepth 1 -name '*.xml' ! -name '*powershell*' | head -1)
-          test -n "${xml}"
-          cp "${xml}" "${GITHUB_WORKSPACE}/coverage.xml"
-          sed -i "s#${GITHUB_WORKSPACE}/##g" "${GITHUB_WORKSPACE}/coverage.xml"
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: ${{ github.workspace }}/coverage.xml
+    if: >-
+      ${{ needs.unit-check.result == 'success'
+      && secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT != ''
+      && (github.event_name == 'push'
+      || (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    uses: ./.github/workflows/sonarcloud.yml
+    secrets:
+      ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
