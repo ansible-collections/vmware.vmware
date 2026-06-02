@@ -55,7 +55,6 @@ units-coverage: units
 	ansible-test coverage xml --requirements;
 	cp tests/output/reports/coverage.xml $(CURDIR)/coverage-units.xml;
 
-
 .PHONY: integration
 integration: install-integration-reqs upgrade-collections
 	cd $(COLLECTION_ROOT); \

@@ -94,11 +94,15 @@ jobs:
     needs:
       - unit-check
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
       - name: Generate coverage XML
         run: |
           make units-coverage;
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: units-coverage
-          path: ${{ github.workspace }}/units-coverage.xml
+          path: ${{ github.workspace }}/coverage-units.xml
