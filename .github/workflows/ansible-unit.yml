@@ -124,11 +124,11 @@ jobs:
     needs:
       - unit-check
     if: >-
-      ${{ needs.unit-check.result == 'success'
+      needs.unit-check.result == 'success'
       && secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT != ''
       && (github.event_name == 'push'
       || (github.event_name == 'pull_request'
-      && github.event.pull_request.head.repo.full_name == github.repository)) }}
+      && github.event.pull_request.head.repo.full_name == github.repository))
     uses: ./.github/workflows/sonarcloud.yml
     secrets:
       ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
