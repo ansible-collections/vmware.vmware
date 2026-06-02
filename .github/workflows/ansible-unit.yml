@@ -109,14 +109,14 @@ jobs:
       - name: Perform unit tests
         run: |
           ansible-test units --docker --requirements;
-        working-directory: /home/runner/.ansible/collections/ansible_collections/vmware/vmware;
+        working-directory: /home/runner/.ansible/collections/ansible_collections/vmware/vmware
 
       - name: Publish coverage report
         if: ${{ matrix.versions.publish_coverage }}
         run: |
           ansible-test coverage xml --requirements;
           cp tests/output/reports/coverage.xml ${{ github.workspace }}/coverage-units.xml;
-        working-directory: /home/runner/.ansible/collections/ansible_collections/vmware/vmware;
+        working-directory: /home/runner/.ansible/collections/ansible_collections/vmware/vmware
 
       - name: Upload coverage artifact
         if: ${{ matrix.versions.publish_coverage }}
