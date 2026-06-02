@@ -23,16 +23,17 @@ jobs:
   scan:
     name: SonarCloud scan
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
     steps:
       - name: Require Sonar token
+        if: env.SONAR_TOKEN == ''
         run: |
-          if [[ -z "${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}" ]]; then
-            echo "::error::ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT is not configured"
-            exit 1
-          fi
+          echo "::error::ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT is not configured"
+          exit 1
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
@@ -71,7 +72,5 @@ jobs:
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
-        env:
-          SONAR_TOKEN: ${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}
         with:
           args: ${{ env.SONAR_ARGS }}
