@@ -24,6 +24,13 @@ jobs:
     name: SonarCloud scan
     runs-on: ubuntu-latest
     steps:
+      - name: Require Sonar token
+        run: |
+          if [[ -z "${{ secrets.ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT }}" ]]; then
+            echo "::error::ANSIBLE_COLLECTIONS_ORG_SONAR_TOKEN_CICD_BOT is not configured"
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
