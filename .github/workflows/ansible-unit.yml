@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Perform unit testing
+        id: unit-test
         # See the documentation for the following GitHub action on
         # https://github.com/ansible-community/ansible-test-gh-action/blob/main/README.md
         uses: ansible-community/ansible-test-gh-action@release/v1
@@ -73,6 +74,30 @@ jobs:
           testing-type: units
           target-python-version: ${{ matrix.versions.python }}
           pull-request-change-detection: false
+          coverage: auto
+
+      - name: Prepare coverage.xml for SonarCloud
+        if: >-
+          matrix.versions.python == 3.12
+          && matrix.versions.ansible == 'stable-2.20'
+          && steps.unit-test.outputs.coverage-report-files != ''
+        run: |
+          set -euo pipefail
+          xml="${{ steps.unit-test.outputs.coverage-report-files }}"
+          xml="${xml%%,*}"
+          test -n "${xml}"
+          cp "${xml}" "${GITHUB_WORKSPACE}/coverage.xml"
+          sed -i "s#${GITHUB_WORKSPACE}/##g" "${GITHUB_WORKSPACE}/coverage.xml"
+
+      - name: Upload coverage artifact
+        if: >-
+          matrix.versions.python == 3.12
+          && matrix.versions.ansible == 'stable-2.20'
+          && steps.unit-test.outputs.coverage-report-files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: ${{ github.workspace }}/coverage.xml
 
   # This job does nothing and is only used for the branch protection
   # or multi-stage CI jobs, like making sure that all tests pass before
