@@ -5,6 +5,14 @@
 .agents/skills/shared
 .agents/skills/shared/
 .agents/rules/SHARED.md
+.claude/
+.cursor/
+.gemini/
+.lola/
+.opencode/
+skills/
+CLAUDE.md
+GEMINI.md
 
 # Ansible test/sanity
 .tmp/

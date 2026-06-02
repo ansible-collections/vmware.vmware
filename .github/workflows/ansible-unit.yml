@@ -87,3 +87,47 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
+
+  coverage:
+    name: Unit test coverage
+    needs:
+      - unit-check
+    runs-on: ubuntu-latest
+    env:
+      ANSIBLE_CORE_VERSION: "2.20.0"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible (ansible-test)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "ansible-core==${ANSIBLE_CORE_VERSION}"
+
+      - name: Run unit tests with coverage
+        run: ansible-test units --venv --coverage --python 3.12 --requirements
+
+      - name: Combine and emit coverage XML
+        run: |
+          ansible-test coverage combine --venv --python 3.12 --requirements
+          ansible-test coverage xml --venv --python 3.12 --requirements
+
+      - name: Prepare coverage.xml for SonarCloud
+        run: |
+          set -euo pipefail
+          mkdir -p "${GITHUB_WORKSPACE}"
+          xml=$(find tests/output/reports -maxdepth 1 -name '*.xml' ! -name '*powershell*' | head -1)
+          test -n "${xml}"
+          cp "${xml}" "${GITHUB_WORKSPACE}/coverage.xml"
+          sed -i "s#${GITHUB_WORKSPACE}/##g" "${GITHUB_WORKSPACE}/coverage.xml"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: ${{ github.workspace }}/coverage.xml
