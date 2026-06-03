@@ -75,7 +75,7 @@ jobs:
 
       - name: Install ansible-core
         run: |
-          python -m pip install https://github.com/ansible/ansible-core/archive/refs/tags/${{ matrix.versions.ansible }}.tar.gz;
+          python -m pip install https://github.com/ansible/ansible/archive/${{ matrix.versions.ansible }}.tar.gz;
 
       - name: Install collection and python requirements
         run: |
