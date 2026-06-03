@@ -26,6 +26,10 @@ upgrade-collections:
 install-collection-python-reqs:
 	pip install -r requirements.txt
 
+.PHONY: install-linters-python-reqs
+install-linters-python-reqs:
+	pip install -r linters.requirements.txt
+
 .PHONY: install-integration-reqs
 install-integration-reqs: install-collection-python-reqs
 	pip install -r tests/integration/requirements.txt; \
@@ -36,6 +40,10 @@ tests/integration/integration_config.yml:
 	./tests/integration/generate_integration_config.sh
 
 # test commands
+.PHONY: linters
+linters: install-linters-python-reqs
+	ansible-lint;
+
 .PHONY: sanity
 sanity: upgrade-collections
 	cd $(COLLECTION_ROOT); \

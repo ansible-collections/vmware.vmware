@@ -31,3 +31,4 @@ build_ignore:
   - .cursor/
   - .gemini/
   - .claude/
+  - .ansible-lint
