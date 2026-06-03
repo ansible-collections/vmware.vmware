@@ -53,7 +53,9 @@ units: upgrade-collections
 .PHONY: units-coverage
 units-coverage: units
 	cd $(COLLECTION_ROOT); \
-	ansible-test coverage xml --requirements;
+	ansible-test coverage xml --requirements; \
+	pwd; \
+	stat /home/runner/.ansible/collections/ansible_collections/vmware/vmware/tests/output/reports/coverage.xml; \
 	cp tests/output/reports/coverage.xml $(CURDIR)/coverage-units.xml;
 
 .PHONY: integration
