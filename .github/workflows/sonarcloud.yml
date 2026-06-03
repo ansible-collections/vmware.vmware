@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
     steps:
+      # WARNING: Checking out the workflow_run.head_sha is potentially dangerous, as it may contain untrusted code.
+      # Be careful when making changes to this workflow to ensure that code is not executed from the checkout.
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
