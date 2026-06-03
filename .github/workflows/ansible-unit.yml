@@ -52,57 +52,43 @@ jobs:
     strategy:
       matrix:
         versions:
-          # Testing all ansible and python versions is impractical. Only test the newest and
-          # oldest versions of each that we support
-          - { python: 3.14, ansible: stable-2.20, publish_coverage: true }
-          - { python: 3.12, ansible: stable-2.20, publish_coverage: false }
-          - { python: 3.13, ansible: stable-2.19, publish_coverage: false }
-          - { python: 3.8, ansible: stable-2.19, publish_coverage: false }
-          - { python: 3.12, ansible: stable-2.16, publish_coverage: false }
-          - { python: 3.6, ansible: stable-2.16, publish_coverage: false }
-          - { python: 2.7, ansible: stable-2.16, publish_coverage: false }
+          # Testing all ansible-core and controller Python versions is impractical. Only test the
+          # newest and oldest controller Python versions supported by each ansible-core we support.
+          # https://endoflife.date/ansible-core (Control node Python column)
+          # Add publish_coverage: true to the version you want to publish coverage for, usually latest.
+          - { python: "3.14", ansible: stable-2.20, publish_coverage: true }
+          - { python: "3.12", ansible: stable-2.20 }
+          - { python: "3.13", ansible: stable-2.19 }
+          - { python: "3.11", ansible: stable-2.19 }
+          - { python: "3.12", ansible: stable-2.16 }
+          - { python: "3.10", ansible: stable-2.16 }
 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Install python
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.versions.python }}
 
       - name: Install ansible-core
         run: |
-          python -m pip install https://github.com/ansible/ansible-core/archive/refs/tags/${{ matrix.versions.ansible }}.tar.gz --user;
+          python -m pip install https://github.com/ansible/ansible/archive/${{ matrix.versions.ansible }}.tar.gz;
 
       - name: Install collection and python requirements
         run: |
           ansible-galaxy collection install . --force;
-          pip install -r requirements.txt;
-
-      - name: Debug installed packages
-        run: |
-          echo "Python version:";
-          python --version;
-          echo "Ansible version:";
-          ansible --version;
-          echo "Collections:";
-          ansible-galaxy collection list;
-          echo "Pip packages:";
-          pip freeze;
 
       - name: Perform unit tests
         run: |
-          ansible-test units --local --requirements;
-        working-directory: ~/.ansible/collections/ansible_collections/vmware/vmware;
+          make units UNIT_PYTHON_VERSION=${{ matrix.versions.python }};
 
       - name: Publish coverage report
         if: ${{ matrix.versions.publish_coverage }}
         run: |
-          ansible-test coverage xml --requirements;
-          cp tests/output/reports/coverage.xml ${{ github.workspace }}/coverage-units.xml;
-        working-directory: ~/.ansible/collections/ansible_collections/vmware/vmware;
+          make units-coverage UNIT_PYTHON_VERSION=${{ matrix.versions.python }};
 
       - name: Upload coverage artifact
         if: ${{ matrix.versions.publish_coverage }}

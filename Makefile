@@ -3,6 +3,8 @@ SANITY_TARGETS ?=
 INTEGRATION_TARGETS ?=
 UNIT_TARGETS ?=
 
+UNIT_PYTHON_VERSION ?= 3.14
+
 # galaxy.yml is not included in the installed collection artifact; read it from the source tree.
 GALAXY_YML ?= $(CURDIR)/galaxy.yml
 COLLECTION_ROOT ?= $(HOME)/.ansible/collections/ansible_collections/vmware/vmware
@@ -44,9 +46,15 @@ sanity: upgrade-collections
 .PHONY: units
 units: upgrade-collections
 	cd $(COLLECTION_ROOT); \
-	ansible-test units --docker --python default --coverage $(UNIT_TARGETS); \
+	ansible-test units --docker --python $(UNIT_PYTHON_VERSION) --coverage $(UNIT_TARGETS); \
 	ansible-test coverage combine --requirements --export tests/output/coverage/; \
 	ansible-test coverage report --requirements --docker --omit 'tests/*' --show-missing;
+
+.PHONY: units-coverage
+units-coverage: units
+	cd $(COLLECTION_ROOT); \
+	ansible-test coverage xml --requirements; \
+	cp tests/output/reports/coverage.xml $(CURDIR)/coverage-units.xml;
 
 .PHONY: integration
 integration: install-integration-reqs upgrade-collections
