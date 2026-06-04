@@ -67,9 +67,14 @@
         esxi_password: "!#%135qEt"
         state: present
 
-    - name: Disable Maintenance Mode For Host That Is Not In Maintenance Mode
+    - name: Disable Maintenance Mode For Host
       vmware.vmware.esxi_maintenance_mode:
-        enable_maintenance_mode: False
+        enable_maintenance_mode: false
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+
+    - name: Disable Maintenance Mode For Host - Idempotence
+      vmware.vmware.esxi_maintenance_mode:
+        enable_maintenance_mode: false
         name: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _set
 
