@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+# Copyright: (c) 2026, Ansible Cloud Team (@ansible-collections)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Note: This utility is considered private, and can only be referenced from inside the vmware.vmware collection.
+#       It may be made public at a later date
 """
 Helpers for cluster HA and HA/DRS VM override modules: value remapping for the vSphere API
 and a shared change tracker for desired vs current per-VM override specs.
@@ -64,6 +72,12 @@ class BaseVmOverrideChangeTracker(ABC):
         """
         self.current_vm_overrides = current_vm_override_specs
         self.param_vm_overrides = param_vm_override_specs
+        self._initialize_tracking_attributes()
+
+    def _initialize_tracking_attributes(self):
+        """
+        Initialize the tracking attributes.
+        """
         self.to_add = {}
         self.to_update = {}
         self.to_remove = {}
@@ -105,9 +119,13 @@ class BaseVmOverrideChangeTracker(ABC):
     def process_absent_changes(self):
         """
         Populate ``to_remove`` for VMs listed in ``param_vm_overrides`` that still have overrides on the cluster.
+        Call exactly one of ``process_absent_changes`` or ``process_present_changes`` per tracker instance.
+        Tracking attributes are reset at the start of each call; a second call replaces rather than merges
+        results from a prior call.
 
         Tracks ``_final_override_moids`` as current MoIDs minus those removed.
         """
+        self._initialize_tracking_attributes()
         self._final_override_moids = set(self.current_vm_overrides.keys())
         for moid in self.param_vm_overrides.keys():
             if moid in self.current_vm_overrides:
@@ -117,6 +135,9 @@ class BaseVmOverrideChangeTracker(ABC):
     def process_present_changes(self, append=True):
         """
         Classify desired overrides into ``to_add``, ``to_update``, and optionally ``to_remove``.
+        Call exactly one of ``process_absent_changes`` or ``process_present_changes`` per tracker instance.
+        Tracking attributes are reset at the start of each call; a second call replaces rather than merges
+        results from a prior call.
 
         With ``append`` true, existing cluster overrides not mentioned in the desired set are left unchanged.
         With ``append`` false, any current override whose MoID is not in the desired set is marked for removal.
@@ -124,6 +145,7 @@ class BaseVmOverrideChangeTracker(ABC):
         Args:
             append: If false, enforce an exact match: remove cluster overrides not in ``param_vm_overrides``.
         """
+        self._initialize_tracking_attributes()
         if append:
             self._final_override_moids = set(self.current_vm_overrides.keys())
 
