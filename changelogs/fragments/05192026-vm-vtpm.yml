@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - vm - Add enable_vtpm parameter to enable or disable virtual Trusted Platform Module (vTPM) on virtual machines.

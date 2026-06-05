@@ -38,6 +38,9 @@
     scsi_controllers:
       - controller_type: paravirtual
         bus_number: 0
+    enable_vtpm: true
+    vm_options:
+      boot_firmware: efi
   register: _update_vm
 
 - name: Update VM - Idempotent
@@ -65,8 +68,8 @@
       - vm_info.moid == _update_vm.vm.moid
       - vm_info.hw_name == _update_vm.vm.name
 
-      - (_update_vm.changes.changed_parameters.keys() | length) == 2 # guest_id and annotation
-      - _update_vm.changes.objects_to_add == []
+      - (_update_vm.changes.changed_parameters.keys() | length) == 3 # guest_id, annotation, and boot firmware
+      - _update_vm.changes.objects_to_add[0].object_type == 'vtpm'
       - _update_vm.changes.objects_to_update == []
       - _update_vm.changes.objects_to_remove == []
       - _update_vm.changes.changed_parameters['guest_id'] is defined
@@ -79,6 +82,7 @@
   vmware.vmware.vm: &update-vm-minimal
     name: "{{ test_vm_name }}"
     guest_id: amazonlinux3_64Guest
+    enable_vtpm: false
   register: _update_vm_minimal
 
 - name: Update VM with minimal options - Idempotent
@@ -98,9 +102,9 @@
       - vm_info.moid == _update_vm_minimal.vm.moid
       - vm_info.hw_name == _update_vm_minimal.vm.name
       - (_update_vm_minimal.changes.changed_parameters.keys() | length) == 1
-      - _update_vm.changes.objects_to_add == []
-      - _update_vm.changes.objects_to_update == []
-      - _update_vm.changes.objects_to_remove == []
+      - _update_vm_minimal.changes.objects_to_add == []
+      - _update_vm_minimal.changes.objects_to_update == []
+      - _update_vm_minimal.changes.objects_to_remove[0].object_type == 'vtpm'
   vars:
     vm_info: "{{ _lookup_vm_info.guests[0] }}"
 
