@@ -335,6 +335,7 @@ def do_present_state(module, provider_module, result):
         if not module.check_mode:
             provider_module.set_default_key_provider()
 
+
 def main():
     argument_spec = base_argument_spec()
     argument_spec.update(
