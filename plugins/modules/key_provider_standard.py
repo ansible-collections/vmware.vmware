@@ -316,6 +316,25 @@ def update_cluster_servers_if_needed(provider_module, result, module):
                 provider_module.remove_kmip_server(param_server_id)
 
 
+def do_present_state(module, provider_module, result):
+    result["modified_kms_servers"] = list()
+    if provider_module.cluster_provider_obj is None:
+        result["changed"] = True
+        result["modified_kms_servers"] = [
+            s["id"] for s in module.params.get("kms_servers")
+        ]
+        if not module.check_mode:
+            provider_module.create_key_provider()
+    else:
+        update_cluster_servers_if_needed(provider_module, result, module)
+
+    if module.params.get("default_provider") and not getattr(
+        provider_module.cluster_provider_obj, "useAsDefault", False
+    ):
+        result["changed"] = True
+        if not module.check_mode:
+            provider_module.set_default_key_provider()
+
 def main():
     argument_spec = base_argument_spec()
     argument_spec.update(
@@ -368,29 +387,12 @@ def main():
 
     provider_module = StandardKeyProviderModule(module)
     if module.params.get("state") == "present":
-        result["modified_kms_servers"] = list()
-        if provider_module.cluster_provider_obj is None:
-            result["changed"] = True
-            result["modified_kms_servers"] = [
-                s["id"] for s in module.params.get("kms_servers")
-            ]
-            if not module.check_mode:
-                provider_module.create_key_provider()
-        else:
-            update_cluster_servers_if_needed(provider_module, result, module)
+        do_present_state(module, provider_module, result)
 
-        if module.params.get("default_provider") and not getattr(
-            provider_module.cluster_provider_obj, "useAsDefault", False
-        ):
-            result["changed"] = True
-            if not module.check_mode:
-                provider_module.set_default_key_provider()
-
-    elif module.params.get("state") == "absent":
-        if provider_module.cluster_provider_obj is not None:
-            result["changed"] = True
-            if not module.check_mode:
-                provider_module.delete_key_provider()
+    elif module.params.get("state") == "absent" and provider_module.cluster_provider_obj is not None:
+        result["changed"] = True
+        if not module.check_mode:
+            provider_module.delete_key_provider()
 
     module.exit_json(**result)
 

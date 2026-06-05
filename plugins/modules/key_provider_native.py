@@ -216,6 +216,25 @@ class NativeKeyProviderModule(ModuleRestBase):
         self.providers_service.delete(self.provider_name)
 
 
+def do_present_state(module, provider_module, provider, result):
+    if provider is None:
+        result["changed"] = True
+        if not module.check_mode:
+            provider_module.create_key_provider()
+            if not module.params.get("disable_export_outputs"):
+                result["export_info"] = (
+                    provider_module.prepare_key_provider_export()
+                )
+
+    if (
+        module.params.get("default_provider")
+        and not provider_module.is_provider_cluster_default()
+    ):
+        result["changed"] = True
+        if not module.check_mode:
+            provider_module.set_default_key_provider()
+
+
 def main():
     argument_spec = rest_compatible_argument_spec()
     argument_spec.update(
@@ -236,28 +255,12 @@ def main():
     provider_module = NativeKeyProviderModule(module)
     provider = provider_module.get_key_provider()
     if module.params.get("state") == "present":
-        if provider is None:
-            result["changed"] = True
-            if not module.check_mode:
-                provider = provider_module.create_key_provider()
-                if not module.params.get("disable_export_outputs"):
-                    result["export_info"] = (
-                        provider_module.prepare_key_provider_export()
-                    )
+        do_present_state(module, provider_module, provider, result)
 
-        if (
-            module.params.get("default_provider")
-            and not provider_module.is_provider_cluster_default()
-        ):
-            result["changed"] = True
-            if not module.check_mode:
-                provider_module.set_default_key_provider()
-
-    elif module.params.get("state") == "absent":
-        if provider is not None:
-            result["changed"] = True
-            if not module.check_mode:
-                provider_module.delete_key_provider()
+    elif module.params.get("state") == "absent" and provider is not None:
+        result["changed"] = True
+        if not module.check_mode:
+            provider_module.delete_key_provider()
 
     module.exit_json(**result)
 
