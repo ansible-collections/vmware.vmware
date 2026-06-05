@@ -1,0 +1,200 @@
+---
+# Unable to test this module on the vCenter lab without some manual setup, since a datastore is required to create a VM
+# in the test cluster. This test is not run as part of the CI/CD pipeline.
+# We need a way to create a datastore on the esxi host that is created for the test cluster. Then this can be automated.
+- name: Test On VCenter
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    # - name: Setup test cluster
+    #   ansible.builtin.include_tasks:
+    #     file: eco-vcenter-setup.yml
+
+    # change these to whatever you set up
+    - name: Set manual test facts
+      ansible.builtin.set_fact:
+        test_vm: "mmtest-ha-override"
+        test_cluster: "mmtest-ha-override"
+
+    - name: Apply a vm override
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: present
+        append: true
+        vm_overrides:
+          - virtual_machine: "{{ test_vm }}"
+            restart_priority: low
+            host_isolation_response: powerOff
+            restart_priority_timeout: 120
+            vm_monitoring:
+              mode: vmAndAppMonitoring
+              failure_interval: 30
+              minimum_uptime: 120
+              maximum_resets: 3
+              maximum_resets_window: 180
+              use_cluster_settings: false
+            storage_apd_response:
+              mode: restartConservative
+              delay: 180
+              restart_vms: true
+            storage_pdl_response_mode: warning
+      register: _present
+
+    - name: Apply a vm override - idempotence
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: present
+        append: true
+        vm_overrides:
+          - virtual_machine: "{{ test_vm }}"
+            restart_priority: low
+            host_isolation_response: powerOff
+            restart_priority_timeout: 120
+            vm_monitoring:
+              mode: vmAndAppMonitoring
+              failure_interval: 30
+              minimum_uptime: 120
+              maximum_resets: 3
+              maximum_resets_window: 180
+              use_cluster_settings: false
+            storage_apd_response:
+              mode: restartConservative
+              delay: 180
+              restart_vms: true
+            storage_pdl_response_mode: warning
+      register: _present_idem
+
+    - name: Get vm overrides
+      vmware.vmware.cluster_ha_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+      register: _info
+
+    - name: Check vm overrides
+      ansible.builtin.assert:
+        that:
+          - _present is changed
+          - (_present.overrides_added | length) == 1
+          - _present_idem is not changed
+          - _override_info.storage_apd_response.delay == 180
+          - _override_info.storage_apd_response.mode == 'restartConservative'
+          - _override_info.storage_pdl_response_mode == 'warning'
+          - _override_info.vm_monitoring.mode == 'vmAndAppMonitoring'
+          - _override_info.vm_monitoring.failure_interval == 30
+          - _override_info.vm_monitoring.minimum_uptime == 120
+          - _override_info.vm_monitoring.maximum_resets == 3
+          - _override_info.vm_monitoring.maximum_resets_window == 180
+          - _override_info.vm_monitoring.use_cluster_settings == false
+      vars:
+        _override_info: "{{ _info.vm_overrides | selectattr('vm_name', 'equalto',
+          test_vm) | first }}"
+
+    - name: Update vm override
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: present
+        vm_overrides:
+          - virtual_machine: "{{ test_vm }}"
+            restart_priority_timeout: 240
+            vm_monitoring:
+              use_cluster_settings: true
+      register: _update
+
+    - name: Update vm override - idempotence
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: present
+        vm_overrides:
+          - virtual_machine: "{{ test_vm }}"
+            restart_priority_timeout: 240
+            vm_monitoring:
+              use_cluster_settings: true
+      register: _update_idem
+
+    - name: Get vm overrides info
+      vmware.vmware.cluster_ha_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+      register: _info
+
+    - name: Check vm override updates
+      ansible.builtin.assert:
+        that:
+          - _update is changed
+          - (_update.overrides_updated | length) == 1
+          - _update_idem is not changed
+          - _override_info.vm_monitoring.use_cluster_settings == true
+          - _override_info.restart_priority_timeout == 240
+      vars:
+        _override_info: "{{ _info.vm_overrides | selectattr('vm_name', 'equalto',
+          test_vm) | first }}"
+
+    - name: Remove vm override
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: absent
+        vm_overrides:
+          - virtual_machine: "{{ test_vm }}"
+      register: _remove
+
+    - name: Remove vm override - idempotence
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: absent
+        vm_overrides:
+          - virtual_machine: "{{ (_info.vm_overrides | selectattr('vm_name', 'equalto',
+              test_vm) | first).vm_moid }}"
+      register: _remove_idem
+
+    - name: Get vm overrides info
+      vmware.vmware.cluster_ha_vm_overrides_info:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+      register: _info
+
+    - name: Check vm override removal
+      ansible.builtin.assert:
+        that:
+          - _remove is changed
+          - (_remove.overrides_removed | length) == 1
+          - _remove_idem is not changed
+          - _info.vm_overrides | selectattr('vm_name', 'equalto', test_vm) |
+            length == 0
+
+    - name: Apply a vm override
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: present
+        append: true
+        vm_overrides:
+          - virtual_machine: "{{ test_vm }}"
+            restart_priority_timeout: 240
+            vm_monitoring:
+              use_cluster_settings: true
+
+    - name: Set the vm overrides
+      vmware.vmware.cluster_ha_vm_overrides:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ test_cluster }}"
+        state: present
+        append: false
+        vm_overrides: []
+      register: _set
+
+    - name: Check set changed
+      ansible.builtin.assert:
+        that:
+          - _set is changed
+          - (_set.overrides_removed | length) == 1
+  # always:
+  #   - name: Teardown test cluster
+  #     ansible.builtin.include_tasks:
+  #       file: eco-vcenter-cleanup.yml
