@@ -79,8 +79,8 @@ key_providers:
             "backed_up": true,
             "default": true,
             "id": "default-native-key-provider",
-            "type": "native"
-            "tpm_required": true,
+            "type": "native",
+            "tpm_required": true
         },
         "my-native-key-provider": {
             "backed_up": false,
