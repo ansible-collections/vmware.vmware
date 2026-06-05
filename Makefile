@@ -53,17 +53,10 @@ sanity: upgrade-collections
 
 .PHONY: units
 units: upgrade-collections
-<<<<<<< HEAD
 	cd $(COLLECTION_ROOT); \
 	ansible-test units --docker --python $(UNIT_PYTHON_VERSION) --coverage $(UNIT_TARGETS); \
 	ansible-test coverage combine --requirements --export tests/output/coverage/; \
 	ansible-test coverage report --requirements --docker --omit 'tests/*' --show-missing;
-=======
-	cd ~/.ansible/collections/ansible_collections/vmware/vmware; \
-	ansible-test units --docker --python 3.12 --coverage $(UNIT_TARGETS); \
-	ansible-test coverage combine --requirements --export tests/output/coverage/; \
-	ansible-test coverage report --requirements --docker --omit 'tests/*' --show-missing
->>>>>>> c9d42de (add vtpm support to vm module)
 
 .PHONY: units-coverage
 units-coverage: units
