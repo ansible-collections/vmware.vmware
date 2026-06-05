@@ -89,8 +89,6 @@ class VtpmParameterHandler(AbstractDeviceLinkedParameterHandler):
                 details={"firmware": boot_firmware},
             )
 
-        return
-
     def link_vm_device(self, device):
         """
         Link a VMware vTPM device to the handler's managed object.
@@ -120,4 +118,3 @@ class VtpmParameterHandler(AbstractDeviceLinkedParameterHandler):
         vtpm.link_corresponding_live_object(
             Vtpm.from_live_device_spec(device)
         )
-        return
