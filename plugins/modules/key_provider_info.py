@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2026, Ansible Cloud Team (@ansible-collections)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -80,8 +80,10 @@ key_providers:
             "default": true,
             "id": "default-native-key-provider",
             "type": "native"
+            "tpm_required": true,
         },
         "my-native-key-provider": {
+            "backed_up": false,
             "default": false,
             "id": "my-native-key-provider",
             "tpm_required": true,

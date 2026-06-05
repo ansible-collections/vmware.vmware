@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2026, Ansible Cloud Team (@ansible-collections)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -23,10 +23,13 @@ description:
 author:
     - Ansible Cloud Team (@ansible-collections)
 
+requirements:
+    - vSphere Automation SDK
+
 options:
     provider_name:
         description:
-            - The name or ID of the key provider to manage.
+            - The name or ID of the key provider to manage. The name and ID are interchangeable.
             - This is used as a unique identifier for the key provider in vSphere.
         type: str
         required: true

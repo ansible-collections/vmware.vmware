@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2026, Ansible Cloud Team (@ansible-collections)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -18,6 +18,9 @@ description:
     - This module allows you to create, update, and delete a standard key provider in a vCenter instance.
     - Standard key providers leverage a third-party key management service (KMS) to encrypt and decrypt data.
     - You define a provider 'cluster' that contains one or more external KMS servers.
+    - When adding a new KMS server to a provider 'cluster', vCenter will attempt to connect to the server
+      and verify its certificate chain. You can view the status of the connection and retry the validation
+      via the vCenter UI.
 
 author:
     - Ansible Cloud Team (@ansible-collections)
@@ -25,7 +28,7 @@ author:
 options:
     provider_name:
         description:
-            - The name or ID of the key provider to manage.
+            - The name or ID of the key provider to manage. The name and ID are interchangeable.
             - This is used as a unique identifier for the key provider cluster in vSphere.
             - Each provider has one or more member KMS servers.
         type: str
