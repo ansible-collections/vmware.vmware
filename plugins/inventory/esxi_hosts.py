@@ -137,12 +137,13 @@ class EsxiInventoryHost(VmwareInventoryHost):
         self._management_ip = None
 
     @classmethod
-    def create_from_object(cls, vmware_object, properties_to_gather, pyvmomi_client):
-        """
-        Create the class from a host object that we got from pyvmomi. The host properties will be populated
-        from the object and additional calls to vCenter
-        """
-        host = super().create_from_object(vmware_object, properties_to_gather, pyvmomi_client)
+    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None):
+        host = super().create_from_vcenter_object(
+            vmware_object,
+            properties_to_gather,
+            pyvmomi_client,
+            prop_set=prop_set,
+        )
         host.properties['management_ip'] = host.management_ip
         return host
 
@@ -242,6 +243,12 @@ class InventoryModule(VmwareInventoryBase):
             )
             self.add_host_object_from_vcenter_to_inventory(esxi_host, hostvars)
 
+    def _host_connection_state(self, esxi_host):
+        try:
+            return esxi_host.properties['summary']['runtime']['connectionState']
+        except KeyError:
+            return esxi_host.object.summary.runtime.connectionState
+
     def populate_from_vcenter(self):
         """
         Populate inventory data from vCenter
@@ -252,15 +259,19 @@ class InventoryModule(VmwareInventoryBase):
         if self.get_option("gather_tags"):
             self.initialize_rest_client()
 
-        for host_object in self.get_objects_by_type(vim_type=[vim.HostSystem]):
-            if host_object.runtime.connectionState in ("disconnected", "notResponding"):
-                continue
-
-            esxi_host = EsxiInventoryHost.create_from_object(
-                vmware_object=host_object,
+        for vmware_object, prop_set in self.iter_inventory_sources(
+            vim.HostSystem,
+            properties_to_gather,
+        ):
+            esxi_host = EsxiInventoryHost.create_from_vcenter_object(
+                vmware_object=vmware_object,
                 properties_to_gather=properties_to_gather,
-                pyvmomi_client=self.pyvmomi_client
+                pyvmomi_client=self.pyvmomi_client,
+                prop_set=prop_set,
             )
+
+            if self._host_connection_state(esxi_host) in ("disconnected", "notResponding"):
+                continue
 
             if self.get_option("gather_tags"):
                 self.add_tags_to_object_properties(esxi_host)

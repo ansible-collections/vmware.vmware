@@ -10,6 +10,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
+import base64
 import json
 import os
 
@@ -604,12 +605,83 @@ def _jsonify_vmware_object(obj):
                                  sort_keys=True, strip_dynamic=True))
 
 
+def _normalize_property_name(prop):
+    if prop.lower() == '_moid':
+        return 'moid'
+    if prop.lower() == '_vimref':
+        return 'vimref'
+    return prop
+
+
+def _jsonify_vmware_value(vim_prop):
+    """
+    Convert a single pyVmomi property value to JSON-compatible Python types.
+    Uses _jsonify_vmware_object for vim DataObject values; scalars and enums are converted directly.
+    """
+    if vim_prop is None:
+        return None
+
+    prop_type = type(vim_prop).__name__
+    if prop_type in ('bool', 'int', 'float', 'str', 'NoneType'):
+        return vim_prop
+
+    if prop_type == 'datetime':
+        from pyVmomi import Iso8601
+        return Iso8601.ISO8601Format(vim_prop)
+
+    if prop_type == 'long':
+        return int(vim_prop)
+
+    if prop_type == 'long[]':
+        return [int(x) for x in vim_prop]
+
+    if isinstance(vim_prop, (list, tuple)):
+        return [_jsonify_vmware_value(item) for item in vim_prop]
+
+    if isinstance(vim_prop, Mapping):
+        return {key: _jsonify_vmware_value(value) for key, value in vim_prop.items()}
+
+    if prop_type.startswith(("vim", "vmodl", "Link")):
+        try:
+            from pyVmomi.VmomiSupport import DataObject
+        except ImportError:
+            return _jsonify_vmware_object(vim_prop)
+        if isinstance(vim_prop, DataObject):
+            return _jsonify_vmware_object(vim_prop)
+        return str(vim_prop)
+
+    if prop_type == 'binary':
+        return to_text(base64.b64encode(vim_prop))
+
+    return to_text(vim_prop)
+
+
+def _merge_dotted_property(result, prop_name, value):
+    prop_dict = _jsonify_vmware_value(value)
+    for key in reversed(prop_name.split('.')):
+        prop_dict = {key: prop_dict}
+    deepmerge_dicts(result, prop_dict)
+
+
+def properties_from_collector(prop_set):
+    """
+    Convert a PropertyCollector propSet into the nested dict used by inventory hostvars.
+    """
+    result = dict()
+    for prop in prop_set:
+        _merge_dotted_property(result, prop.name, prop.val)
+    return result
+
+
 def vmware_obj_to_json(obj, properties=None):
     """
     Convert a vSphere (pyVmomi) Object into JSON.  This is a deep
     transformation.  The list of properties is optional - if not
     provided then all properties are deeply converted.  The resulting
     JSON is sorted to improve human readability.
+
+    Dotted properties under the same top-level name share one parent fetch
+    and JSON conversion per top-level key.
 
     Args:
         - obj (object): vim object
@@ -621,28 +693,26 @@ def vmware_obj_to_json(obj, properties=None):
     Return:
         dict
     """
-    result = dict()
-    if properties:
-        for prop in properties:
-            try:
-                if '.' in prop:
-                    key, remainder = prop.split('.', 1)
-                    tmp = dict()
-                    tmp[key] = extract_dotted_property_to_dict(_jsonify_vmware_object(getattr(obj, key)), remainder)
-                    deepmerge_dicts(result, tmp)
-                else:
-                    result[prop] = _jsonify_vmware_object(getattr(obj, prop))
-                    # To match gather_vm_facts output
-                    prop_name = prop
-                    if prop.lower() == '_moid':
-                        prop_name = 'moid'
-                    elif prop.lower() == '_vimref':
-                        prop_name = 'vimref'
-                    result[prop_name] = result[prop]
-            except (AttributeError, KeyError):
-                raise AttributeError("Property '%s' not found." % prop)
-    else:
-        result = _jsonify_vmware_object(obj)
+    if not properties:
+        return _jsonify_vmware_object(obj)
+
+    result = {}
+    jsonified_parents = {}
+
+    for prop in properties:
+        try:
+            if '.' in prop:
+                key, remainder = prop.split('.', 1)
+                if key not in jsonified_parents:
+                    jsonified_parents[key] = _jsonify_vmware_object(getattr(obj, key))
+                tmp = {key: extract_dotted_property_to_dict(jsonified_parents[key], remainder)}
+                deepmerge_dicts(result, tmp)
+            else:
+                prop_name = _normalize_property_name(prop)
+                result[prop_name] = _jsonify_vmware_object(getattr(obj, prop))
+        except (AttributeError, KeyError) as exc:
+            raise AttributeError("Property '%s' not found." % prop) from exc
+
     return result
 
 

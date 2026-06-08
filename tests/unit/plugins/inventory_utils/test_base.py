@@ -154,20 +154,184 @@ class TestVmwareInventoryHost():
     def __prepare(self, mocker):
         self.test_host = self.TestHost()
 
-    def test_get_properties_from_pyvmomi(self, mocker):
+    def test_create_from_vcenter_object_adds_inventory_metadata(self, mocker):
         self.__prepare(mocker)
-        self.test_host.object = create_mock_vsphere_object()
+        vmware_object = create_mock_vsphere_object()
         cust_val = mocker.Mock()
         cust_val.key, cust_val.value = "foo", "bar"
-        self.test_host.object.customValue = [cust_val]
+        vmware_object.customValue = [cust_val]
 
         pyvmomi_client = mocker.Mock()
         field = mocker.Mock()
         field.name, field.key = "bizz", "foo"
         pyvmomi_client.custom_field_mgr = [field]
-        mocker.patch('ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json', return_value={})
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+            return_value='/dc/vm/folder',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
 
-        properties = self.test_host.get_properties_from_pyvmomi([], pyvmomi_client)
-        print(properties)
-        assert properties['moid'] == self.test_host.object._GetMoId()
-        assert properties['customValue']['bizz'] == "bar"
+        host = self.TestHost.create_from_vcenter_object(
+            vmware_object,
+            ['customValue'],
+            pyvmomi_client,
+        )
+
+        assert host.properties['path'] == '/dc/vm/folder'
+        assert host.properties['moid'] == vmware_object._GetMoId()
+        assert host.properties['customValue']['bizz'] == "bar"
+
+    def test_create_from_vcenter_object_uses_prop_set(self, mocker):
+        self.__prepare(mocker)
+        vmware_object = create_mock_vsphere_object()
+        prop_set = [mocker.Mock(name='name', val='host-one')]
+
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+            return_value='/dc/host/folder',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.properties_from_collector',
+            return_value={'name': 'host-one'},
+        )
+
+        host = self.TestHost.create_from_vcenter_object(
+            vmware_object,
+            ['name'],
+            mocker.Mock(),
+            prop_set=prop_set,
+        )
+
+        assert host.properties['name'] == 'host-one'
+        assert host.properties['path'] == '/dc/host/folder'
+        assert host.properties['moid'] == vmware_object._GetMoId()
+
+    def test_create_from_vcenter_object_skips_custom_values_when_not_requested(self, mocker):
+        self.__prepare(mocker)
+        vmware_object = create_mock_vsphere_object()
+        vmware_object.customValue = [mocker.Mock(key='foo', value='bar')]
+
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+            return_value='/dc/host/folder',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
+
+        host = self.TestHost.create_from_vcenter_object(
+            vmware_object,
+            ['name'],
+            mocker.Mock(),
+        )
+
+        assert 'customValue' not in host.properties
+
+    def test_create_from_vcenter_object_skips_custom_values_without_attribute(self, mocker):
+        self.__prepare(mocker)
+        vmware_object = create_mock_vsphere_object()
+        del vmware_object.customValue
+
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+            return_value='/dc/host/folder',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
+
+        host = self.TestHost.create_from_vcenter_object(
+            vmware_object,
+            ['customValue'],
+            mocker.Mock(),
+        )
+
+        assert 'customValue' not in host.properties
+
+
+class TestInventoryPropertyCollector():
+    def __prepare(self, mocker):
+        mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
+        mocker.patch.object(VmwareRestClient, 'connect_to_api', return_value=mocker.Mock())
+        mocker.patch.object(VmwareInventoryBase, 'get_option', side_effect=get_option)
+        mocker.patch.object(VmwareInventoryBase, '_consume_options')
+        self.test_base = VmwareInventoryBase()
+        self.test_base.templar = mocker.Mock()
+        self.test_base.pyvmomi_client = mocker.Mock()
+
+    def test_get_property_collector_results_without_search_paths(self, mocker):
+        self.__prepare(mocker)
+        obj_content = mocker.Mock()
+        self.test_base.pyvmomi_client.get_managed_object_references.return_value = [obj_content]
+
+        results = self.test_base.get_property_collector_results_by_type(
+            mocker.sentinel.vim_type,
+            ['name', 'customValue', 'summary.runtime.powerState'],
+        )
+
+        assert results == [obj_content]
+        self.test_base.pyvmomi_client.get_managed_object_references.assert_called_once_with(
+            vimtype=mocker.sentinel.vim_type,
+            properties=['name', 'summary.runtime.powerState'],
+            folder=None,
+        )
+
+    def test_get_property_collector_results_with_search_paths(self, mocker):
+        self.__prepare(mocker)
+        options = {'search_paths': ['/dc1/host', '/missing/path']}
+        mocker.patch.object(self.test_base, 'get_option', side_effect=options.get)
+
+        folder = mocker.Mock()
+        first_result = mocker.Mock()
+        second_result = mocker.Mock()
+        self.test_base.pyvmomi_client.si.content.searchIndex.FindByInventoryPath.side_effect = [
+            folder,
+            None,
+        ]
+        self.test_base.pyvmomi_client.get_managed_object_references.return_value = [first_result]
+
+        results = self.test_base.get_property_collector_results_by_type(
+            mocker.sentinel.vim_type,
+            ['name'],
+        )
+
+        assert results == [first_result]
+        self.test_base.pyvmomi_client.get_managed_object_references.assert_called_once_with(
+            vimtype=mocker.sentinel.vim_type,
+            properties=['name'],
+            folder=folder,
+        )
+
+    def test_iter_inventory_sources_with_properties(self, mocker):
+        self.__prepare(mocker)
+        obj_content = mocker.Mock()
+        obj_content.obj = mocker.Mock()
+        obj_content.propSet = [mocker.Mock()]
+        mocker.patch.object(
+            self.test_base,
+            'get_property_collector_results_by_type',
+            return_value=[obj_content],
+        )
+
+        sources = list(self.test_base.iter_inventory_sources(mocker.sentinel.vim_type, ['name']))
+
+        assert sources == [(obj_content.obj, obj_content.propSet)]
+
+    def test_iter_inventory_sources_without_properties(self, mocker):
+        self.__prepare(mocker)
+        vmware_object = mocker.Mock()
+        mocker.patch.object(
+            self.test_base,
+            'get_objects_by_type',
+            return_value=[vmware_object],
+        )
+
+        sources = list(self.test_base.iter_inventory_sources(mocker.sentinel.vim_type, []))
+
+        assert sources == [(vmware_object, None)]
+        self.test_base.get_objects_by_type.assert_called_once_with(vim_type=[mocker.sentinel.vim_type])

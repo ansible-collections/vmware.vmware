@@ -1,0 +1,6 @@
+---
+minor_changes:
+  - inventory plugins - Improve how properties are gathered to decrease execution time (https://github.com/ansible-collections/vmware.vmware/issues/318).
+
+bugfixes:
+  - inventory plugins - Fix a bug where the customValue property was always gathered, even when not requested

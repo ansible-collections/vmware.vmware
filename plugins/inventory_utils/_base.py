@@ -26,6 +26,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
     vmware_obj_to_json,
+    properties_from_collector,
     flatten_dict
 )
 
@@ -59,36 +60,45 @@ class VmwareInventoryHost(ABC):
         return host
 
     @classmethod
-    def create_from_object(cls, vmware_object, properties_to_gather, pyvmomi_client):
+    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None):
         """
-        Create the class from a host object that we got from pyvmomi. The host properties will be populated
-        from the object and additional calls to vCenter
+        Create the class from a vCenter object reference.
+
+        When prop_set is provided, properties come from a PropertyCollector result.
+        Otherwise properties are read from the object via vmware_obj_to_json().
         """
         host = cls()
         host.object = vmware_object
         host.path = get_folder_path_of_vsphere_object(vmware_object)
-        host.properties = host.get_properties_from_pyvmomi(properties_to_gather, pyvmomi_client)
+        host._set_inventory_properties(properties_to_gather, pyvmomi_client, prop_set)
         return host
 
     @abstractmethod
     def get_tags(self, rest_client):
         pass
 
-    def get_properties_from_pyvmomi(self, properties_to_gather, pyvmomi_client):
-        properties = vmware_obj_to_json(self.object, properties_to_gather)
-        properties['path'] = self.path
-        properties['moid'] = self.object._GetMoId()
+    def _set_inventory_properties(self, properties_to_gather, pyvmomi_client, prop_set=None):
+        if prop_set is not None:
+            self.properties = properties_from_collector(prop_set)
+        else:
+            self.properties = vmware_obj_to_json(self.object, properties_to_gather)
+        self.properties['path'] = self.path
+        self.properties['moid'] = self.object._GetMoId()
+        self._add_custom_values_to_properties(properties_to_gather, pyvmomi_client)
 
-        # Custom values
-        if hasattr(self.object, "customValue"):
-            properties['customValue'] = dict()
-            field_mgr = pyvmomi_client.custom_field_mgr
-            for cust_value in self.object.customValue:
-                properties['customValue'][
-                    [y.name for y in field_mgr if y.key == cust_value.key][0]
-                ] = cust_value.value
+    def _add_custom_values_to_properties(self, properties_to_gather, pyvmomi_client):
+        if properties_to_gather and 'customValue' not in properties_to_gather:
+            return
 
-        return properties
+        if not hasattr(self.object, "customValue"):
+            return
+
+        self.properties['customValue'] = {}
+        field_mgr = pyvmomi_client.custom_field_mgr
+        for cust_value in self.object.customValue:
+            self.properties['customValue'][
+                [y.name for y in field_mgr if y.key == cust_value.key][0]
+            ] = cust_value.value
 
     def sanitize_properties(self):
         self.properties = camel_dict_to_snake_dict(self.properties)
@@ -264,6 +274,52 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
             objects += self.pyvmomi_client.get_all_objs_by_type(vimtype=vim_type, folder=folder)
 
         return objects
+
+    def get_property_collector_results_by_type(self, vim_type, properties_to_gather):
+        """
+        Use the PropertyCollector to retrieve objects and only the requested properties.
+
+        Args:
+            vim_type: A single vim type, for example vim.VirtualMachine
+            properties_to_gather: List of property paths. An empty list is not supported here.
+
+        Returns:
+            List of vmodl query ObjectContent results (obj + propSet)
+        """
+        query_paths = [prop for prop in properties_to_gather if prop != 'customValue']
+        if not self.get_option('search_paths'):
+            return self.pyvmomi_client.get_managed_object_references(
+                vimtype=vim_type,
+                properties=query_paths,
+                folder=None,
+            )
+
+        results = []
+        for search_path in self.get_option('search_paths'):
+            folder = self.pyvmomi_client.si.content.searchIndex.FindByInventoryPath(search_path)
+            if not folder:
+                continue
+            results.extend(self.pyvmomi_client.get_managed_object_references(
+                vimtype=vim_type,
+                properties=query_paths,
+                folder=folder,
+            ))
+
+        return results
+
+    def iter_inventory_sources(self, vim_type, properties_to_gather):
+        """
+        Yield (vmware_object, prop_set) pairs for inventory construction.
+
+        prop_set is None when all properties should be read from the object.
+        """
+        if properties_to_gather:
+            for obj_content in self.get_property_collector_results_by_type(vim_type, properties_to_gather):
+                yield obj_content.obj, obj_content.propSet
+            return
+
+        for vmware_object in self.get_objects_by_type(vim_type=[vim_type]):
+            yield vmware_object, None
 
     def add_tags_to_object_properties(self, vmware_host_object):
         """

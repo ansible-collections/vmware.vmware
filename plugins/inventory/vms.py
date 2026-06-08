@@ -342,7 +342,7 @@ class InventoryModule(VmwareInventoryBase):
 
     def populate_from_vcenter(self):
         """
-        Populate inventory data from vCenter
+        Populate inventory data from vCenter.
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
@@ -350,11 +350,15 @@ class InventoryModule(VmwareInventoryBase):
         if self.get_option("gather_tags"):
             self.initialize_rest_client()
 
-        for vm_object in self.get_objects_by_type(vim_type=[vim.VirtualMachine]):
-            vm = VmInventoryHost.create_from_object(
-                vmware_object=vm_object,
+        for vmware_object, prop_set in self.iter_inventory_sources(
+            vim.VirtualMachine,
+            properties_to_gather,
+        ):
+            vm = VmInventoryHost.create_from_vcenter_object(
+                vmware_object=vmware_object,
                 properties_to_gather=properties_to_gather,
-                pyvmomi_client=self.pyvmomi_client
+                pyvmomi_client=self.pyvmomi_client,
+                prop_set=prop_set,
             )
 
             if self.get_option("gather_tags"):
