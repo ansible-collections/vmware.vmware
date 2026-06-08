@@ -91,3 +91,90 @@ class TestEsxiInventoryModule(object):
 
         assert inventory_module.iter_inventory_sources.call_count == 1
         assert EsxiInventoryHost.create_from_vcenter_object.call_count == 1
+
+    def test_host_connection_state_from_properties(self):
+        inventory_module = InventoryModule()
+        esxi_host = EsxiInventoryHost()
+        esxi_host.properties = {
+            'summary': {
+                'runtime': {
+                    'connectionState': 'connected',
+                },
+            },
+        }
+
+        assert inventory_module._host_connection_state(esxi_host) == 'connected'
+
+    def test_host_connection_state_from_object_fallback(self, mocker):
+        inventory_module = InventoryModule()
+        esxi_host = EsxiInventoryHost()
+        esxi_host.properties = {}
+        esxi_host.object = mocker.Mock()
+        esxi_host.object.summary.runtime.connectionState = 'disconnected'
+
+        assert inventory_module._host_connection_state(esxi_host) == 'disconnected'
+
+    def test_populate_from_vcenter_skips_disconnected_hosts(self, mocker):
+        inventory_module = InventoryModule()
+        mocker.patch.object(inventory_module, 'parse_properties_param', return_value=['name'])
+        mocker.patch.object(
+            inventory_module,
+            'initialize_pyvmomi_client',
+            side_effect=setattr(inventory_module, 'pyvmomi_client', mocker.Mock()),
+        )
+        mocker.patch.object(
+            inventory_module,
+            'iter_inventory_sources',
+            return_value=[
+                (mocker.Mock(), mocker.Mock()),
+                (mocker.Mock(), mocker.Mock()),
+            ],
+        )
+        mocker.patch.object(
+            EsxiInventoryHost,
+            'create_from_vcenter_object',
+            side_effect=[EsxiInventoryHost(), EsxiInventoryHost()],
+        )
+        mocker.patch.object(
+            inventory_module,
+            '_host_connection_state',
+            side_effect=['disconnected', 'connected'],
+        )
+        mocker.patch.object(inventory_module, 'set_inventory_hostname')
+        mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
+        inventory_module.get_option = mocker.Mock(return_value=False)
+
+        inventory_module.populate_from_vcenter()
+
+        assert EsxiInventoryHost.create_from_vcenter_object.call_count == 2
+        inventory_module.add_host_object_from_vcenter_to_inventory.assert_called_once()
+
+    def test_populate_from_vcenter_with_gather_tags(self, mocker):
+        inventory_module = InventoryModule()
+        mocker.patch.object(inventory_module, 'parse_properties_param', return_value=['name'])
+        mocker.patch.object(
+            inventory_module,
+            'initialize_pyvmomi_client',
+            side_effect=setattr(inventory_module, 'pyvmomi_client', mocker.Mock()),
+        )
+        mocker.patch.object(inventory_module, 'initialize_rest_client')
+        mocker.patch.object(
+            inventory_module,
+            'iter_inventory_sources',
+            return_value=[(mocker.Mock(), mocker.Mock())],
+        )
+        mocker.patch.object(
+            EsxiInventoryHost,
+            'create_from_vcenter_object',
+            return_value=EsxiInventoryHost(),
+        )
+        mocker.patch.object(inventory_module, '_host_connection_state', return_value='connected')
+        mocker.patch.object(inventory_module, 'add_tags_to_object_properties')
+        mocker.patch.object(inventory_module, 'set_inventory_hostname')
+        mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
+        inventory_module.get_option = mocker.Mock(side_effect=lambda key: key == 'gather_tags')
+
+        inventory_module.populate_from_vcenter()
+
+        inventory_module.initialize_rest_client.assert_called_once()
+        inventory_module.add_tags_to_object_properties.assert_called_once()
