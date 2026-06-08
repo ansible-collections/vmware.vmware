@@ -1,0 +1,158 @@
+---
+- name: Test key provider modules on vCenter
+  when: run_on_vcenter
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Include Eco vCenter test vars
+      ansible.builtin.include_vars:
+        file: eco-vcenter.yml
+
+    - name: Create native key provider
+      vmware.vmware.key_provider_native:
+        provider_name: "{{ test_native_provider_name }}"
+        state: present
+        tpm_required: false
+        disable_export_outputs: true
+      register: _create_native
+
+    - name: Create native key provider - idempotency
+      vmware.vmware.key_provider_native:
+        provider_name: "{{ test_native_provider_name }}"
+        state: present
+        tpm_required: false
+        disable_export_outputs: true
+      register: _create_native_idem
+
+    - name: Create standard key provider with a KMS server
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: present
+        kms_servers:
+          - id: "{{ test_kms_server_1_id }}"
+            address: "{{ test_kms_address_1 }}"
+            port: "{{ test_kms_port }}"
+            proxy_address: "{{ test_kms_proxy_address }}"
+            proxy_port: "{{ test_kms_proxy_port }}"
+            username: "{{ test_kms_username }}"
+            password: "{{ test_kms_password }}"
+      register: _create_standard
+
+    - name: Create standard key provider with a KMS server - idempotency
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: present
+        always_update_password: false
+        kms_servers:
+          - id: "{{ test_kms_server_1_id }}"
+            address: "{{ test_kms_address_1 }}"
+            port: "{{ test_kms_port }}"
+            proxy_address: "{{ test_kms_proxy_address }}"
+            proxy_port: "{{ test_kms_proxy_port }}"
+            username: "{{ test_kms_username }}"
+            password: "{{ test_kms_password }}"
+      register: _create_standard_idem
+
+    - name: Add a second KMS server to the standard key provider
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: present
+        kms_servers:
+          - id: "{{ test_kms_server_2_id }}"
+            address: "{{ test_kms_address_2 }}"
+            port: "{{ test_kms_port }}"
+      register: _add_kms_server_2
+
+    - name: Add a second KMS server - idempotency
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: present
+        kms_servers:
+          - id: "{{ test_kms_server_2_id }}"
+            address: "{{ test_kms_address_2 }}"
+            port: "{{ test_kms_port }}"
+      register: _add_kms_server_2_idem
+
+    - name: Gather information about all key providers
+      vmware.vmware.key_provider_info: {}
+      register: _all_key_providers
+
+    - name: Gather information about the test standard key provider
+      vmware.vmware.key_provider_info:
+        provider_name: "{{ test_standard_provider_name }}"
+      register: _standard_key_provider_info
+
+    - name: Gather information about native key providers
+      vmware.vmware.key_provider_info:
+        type: native
+      register: _native_key_providers_info
+
+    - name: Gather information about standard key providers
+      vmware.vmware.key_provider_info:
+        type: standard
+      register: _standard_key_providers_info
+
+    - name: Remove a KMS server from the standard key provider
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: present
+        kms_servers_state: absent
+        kms_servers:
+          - id: "{{ test_kms_server_1_id }}"
+      register: _remove_kms_server_1
+
+    - name: Remove a KMS server from the standard key provider - idempotency
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: present
+        kms_servers_state: absent
+        kms_servers:
+          - id: "{{ test_kms_server_1_id }}"
+      register: _remove_kms_server_1_idem
+
+    - name: Gather standard key provider info after KMS server removal
+      vmware.vmware.key_provider_info:
+        provider_name: "{{ test_standard_provider_name }}"
+      register: _standard_key_provider_after_remove
+
+    - name: Check module results
+      ansible.builtin.assert:
+        that:
+          - _create_native is changed
+          - _create_native.export_info is not defined
+          - _create_native_idem is not changed
+          - _create_standard is changed
+          - test_kms_server_1_id in _create_standard.modified_kms_servers
+          - _create_standard_idem is not changed
+          - _create_standard_idem.modified_kms_servers | length == 0
+          - _add_kms_server_2 is changed
+          - test_kms_server_2_id in _add_kms_server_2.modified_kms_servers
+          - _add_kms_server_2_idem is not changed
+          - _remove_kms_server_1 is changed
+          - test_kms_server_1_id in _remove_kms_server_1.modified_kms_servers
+          - test_native_provider_name in _all_key_providers.key_providers
+          - test_standard_provider_name in _all_key_providers.key_providers
+          - _all_key_providers.key_providers[test_native_provider_name].type == 'native'
+          - _all_key_providers.key_providers[test_standard_provider_name].type == 'standard'
+          - test_standard_provider_name in _standard_key_provider_info.key_providers
+          - _standard_key_provider_info.key_providers | length == 1
+          - test_native_provider_name in _native_key_providers_info.key_providers
+          - test_standard_provider_name in _standard_key_providers_info.key_providers
+          - _standard_key_provider_info.key_providers[test_standard_provider_name].servers | length == 2
+          - _standard_key_provider_after_remove.key_providers[test_standard_provider_name].servers | length == 1
+          - _standard_key_provider_after_remove.key_providers[test_standard_provider_name].servers[0].id == test_kms_server_2_id
+          - _remove_kms_server_1 is changed
+          - _remove_kms_server_1_idem is not changed
+          - _remove_kms_server_1.modified_kms_servers | length == 1
+          - _remove_kms_server_1.modified_kms_servers[0] == test_kms_server_1_id
+
+  always:
+    - name: Remove test standard key provider
+      vmware.vmware.key_provider_standard:
+        provider_name: "{{ test_standard_provider_name }}"
+        state: absent
+
+    - name: Remove test native key provider
+      vmware.vmware.key_provider_native:
+        provider_name: "{{ test_native_provider_name }}"
+        state: absent
