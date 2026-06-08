@@ -284,7 +284,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
             properties_to_gather: List of property paths. An empty list is not supported here.
 
         Returns:
-            List of vmodl query ObjectContent results (obj + propSet), deduplicated by MOID.
+            List of vmodl query ObjectContent results (obj + propSet)
         """
         query_paths = [prop for prop in properties_to_gather if prop != 'customValue']
         if not self.get_option('search_paths'):

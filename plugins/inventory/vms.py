@@ -343,8 +343,6 @@ class InventoryModule(VmwareInventoryBase):
     def populate_from_vcenter(self):
         """
         Populate inventory data from vCenter.
-        If there are specific properties to gather, use the PropertyCollector to retrieve the objects and only the requested properties.
-        Otherwise,
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
