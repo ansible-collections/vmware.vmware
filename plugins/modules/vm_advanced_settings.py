@@ -120,6 +120,15 @@ EXAMPLES = r'''
       one: 1    # remove advanced setting if it has both key == 'one' and value == 1
       two: ""   # remove any advanced setting with the key 'two', regardless of value
     state: absent
+
+- name: Configure Guest OS Isolation Settings
+  vmware.vmware.vm_advanced_settings:
+    name: "{{ vm }}"
+    state: present
+    settings:
+      'isolation.tools.copy.disable': 'TRUE'    # disable copy
+      'isolation.tools.paste.disable': 'TRUE'   # disable paste
+      'isolation.tools.dnd.disable': 'TRUE'     # disable drag and drop
 '''
 
 RETURN = r'''
