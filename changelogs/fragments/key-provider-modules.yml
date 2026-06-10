@@ -1,5 +1,0 @@
----
-minor_changes:
-  - key_provider_native - add module to manage native key providers in vCenter
-  - key_provider_standard - add module to manage standard key providers and KMS servers in vCenter
-  - key_provider_info - add module to gather information about key providers in vCenter

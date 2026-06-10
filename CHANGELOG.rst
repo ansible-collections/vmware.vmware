@@ -4,6 +4,34 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.9.0
+======
+
+Minor Changes
+-------------
+
+- cluster_drs_vm_overrides - add module to manage DRS VM override settings on vSphere clusters
+- cluster_drs_vm_overrides_info - add module to gather DRS VM override settings for a cluster
+- cluster_ha_vm_overrides - add module to manage HA VM override settings on vSphere clusters
+- cluster_ha_vm_overrides_info - add module to gather HA VM override settings for a cluster
+- inventory plugins - Improve how properties are gathered to decrease execution time (https://github.com/ansible-collections/vmware.vmware/issues/318).
+- key_provider_info - add module to gather information about key providers in vCenter
+- key_provider_native - add module to manage native key providers in vCenter
+- key_provider_standard - add module to manage standard key providers and KMS servers in vCenter
+- vm - Add enable_vtpm parameter to enable or disable virtual Trusted Platform Module (vTPM) on virtual machines.
+- vm_snapshot - Add a timeout parameter to define how long the module will wait for the task to finish (https://github.com/ansible-collections/vmware.vmware/issues/361).
+
+Bugfixes
+--------
+
+- inventory plugins - Fix a bug where the customValue property was always gathered, even when not requested
+- module_utils/vmware_rest_client - correct python syntax and proxy url syntax.
+- tag_associations - Fix error when using the object_name parameter to lookup an object Fixes - https://github.com/ansible-collections/vmware.vmware/issues/315
+- vm - Fix incorrect parameter name in error when neither datastore nor datastore_cluster is provided for VM creation. Follow-up to https://github.com/ansible-collections/vmware.vmware/issues/334.
+- vm - Fix issue where datastore was always a required parameter for creating new vms. Fixes https://github.com/ansible-collections/vmware.vmware/issues/334
+- vm - correct O(delete_from_inventory) documentation for C(state=absent) to match module behavior. Fixes https://github.com/ansible-collections/vmware.vmware/issues/322
+- vm_snapshot_revert - search the snapshot tree fully to find a matching snapshot Fixes https://github.com/ansible-collections/vmware.vmware/issues/330
+
 v2.8.0
 ======
 
