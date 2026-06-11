@@ -1,3 +1,0 @@
----
-bugfixes:
-  - module_utils/vmware_rest_client - correct python syntax and proxy url syntax.
