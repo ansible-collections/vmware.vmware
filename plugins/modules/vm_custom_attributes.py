@@ -165,7 +165,6 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
     def __init__(self, module):
         super().__init__(module)
         self.diff_config = dict(before={}, after={})
-        self.result_fields = {}
         self.update_custom_attributes = []
         self.changed = False
 
@@ -183,9 +182,13 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         return existing_attributes
 
     def _populate_current_values(self, existing_attributes, vm):
+        key_to_name = {
+            attrs["key"]: name
+            for name, attrs in existing_attributes.items()
+        }
         for vm_custom_value in vm.customValue:
-            if vm_custom_value.name in existing_attributes:
-                existing_attributes[vm_custom_value.name]["value"] = vm_custom_value.value
+            if vm_custom_value.key in key_to_name:
+                existing_attributes[key_to_name[vm_custom_value.key]]["value"] = vm_custom_value.value
 
     def _compute_changes(self, existing_attributes, user_attributes):
         update_attributes = []
@@ -243,9 +246,7 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
                 )
                 self.content.customFieldsManager.SetField(entity=vm, key=field_key.key, value=field['value'])
 
-            self.result_fields[field['name']] = field['value']
-
-        return {'changed': self.changed, 'custom_attributes': self.result_fields}
+        return {'changed': self.changed, 'custom_attributes': dict(user_attributes)}
 
     def remove_custom_field(self, vm, user_attributes):
         empty_attributes = dict.fromkeys(user_attributes, "")
@@ -255,9 +256,8 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
 
         for field in self.update_custom_attributes:
             self.content.customFieldsManager.SetField(entity=vm, key=field['key'], value=field['value'])
-            self.result_fields[field['name']] = field['value']
 
-        return {'changed': self.changed, 'custom_attributes': self.result_fields}
+        return {'changed': self.changed, 'custom_attributes': empty_attributes}
 
 
 def main():
@@ -294,7 +294,11 @@ def main():
         str(name): str(value)
         for name, value in module.params['attributes'].items()
     }
-    vm = pyv.get_vms_using_params(fail_on_missing=True)[0]
+    vms = pyv.get_vms_using_params(fail_on_missing=True)
+    if not vms:
+        vm_id = (module.params.get('name') or module.params.get('uuid') or module.params.get('moid'))
+        module.fail_json(msg="Unable to manage custom attributes for non-existing virtual machine %s" % vm_id)
+    vm = vms[0]
     if module.params['state'] == "present":
         results = pyv.set_custom_field(vm, attributes)
     elif module.params['state'] == "absent":
