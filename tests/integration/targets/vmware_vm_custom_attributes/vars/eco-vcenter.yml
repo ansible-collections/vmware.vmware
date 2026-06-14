@@ -1,0 +1,2 @@
+---
+vm: "{{ tiny_prefix }}-vm_custom_attributes"

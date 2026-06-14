@@ -16,7 +16,7 @@
 
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:
-        name: "{{ tiny_prefix }}-guest_custom_attributes"
+        name: "{{ tiny_prefix }}-vm_custom_attributes"
         parent: "{{ vcenter_rp_id }}"
       register: _test_rp
 
@@ -29,7 +29,7 @@
         cluster: "{{ vcenter_cluster_name }}"
 
     - name: Add custom attribute to VM
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
@@ -37,7 +37,7 @@
       register: _add
 
     - name: Add custom attribute - Idempotence
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
@@ -45,7 +45,7 @@
       register: _add_idem
 
     - name: Add multiple custom attributes
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
@@ -54,7 +54,7 @@
       register: _add_multi
 
     - name: Add multiple custom attributes - Idempotence
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
@@ -73,7 +73,7 @@
           - _add_multi.custom_attributes.MyAttribute2 == 'MyValue2'
 
     - name: Update an existing custom attribute
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
@@ -81,7 +81,7 @@
       register: _update
 
     - name: Update custom attribute - Idempotence
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
@@ -96,7 +96,7 @@
           - _update.custom_attributes.MyAttribute == 'MyUpdatedValue'
 
     - name: Remove a custom attribute value
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: absent
         attributes:
@@ -104,7 +104,7 @@
       register: _rm
 
     - name: Remove a custom attribute - Idempotence
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: absent
         attributes:

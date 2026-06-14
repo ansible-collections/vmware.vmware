@@ -1,2 +1,0 @@
----
-vm: "{{ tiny_prefix }}-guest_custom_attributes"

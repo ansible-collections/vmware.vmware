@@ -11,7 +11,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: guest_custom_attributes
+module: vm_custom_attributes
 short_description: Manage custom attributes from VMware for the given virtual machine
 description:
     - This module can be used to add, remove and update custom attributes for the given virtual machine.
@@ -83,7 +83,7 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Add virtual machine custom attributes
-  vmware.vmware.guest_custom_attributes:
+  vmware.vmware.vm_custom_attributes:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -95,7 +95,7 @@ EXAMPLES = r'''
   register: attributes
 
 - name: Add multiple virtual machine custom attributes
-  vmware.vmware.guest_custom_attributes:
+  vmware.vmware.vm_custom_attributes:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -108,7 +108,7 @@ EXAMPLES = r'''
   register: attributes
 
 - name: Remove virtual machine custom attribute
-  vmware.vmware.guest_custom_attributes:
+  vmware.vmware.vm_custom_attributes:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -120,7 +120,7 @@ EXAMPLES = r'''
   register: attributes
 
 - name: Remove virtual machine custom attribute using Virtual Machine MoID
-  vmware.vmware.guest_custom_attributes:
+  vmware.vmware.vm_custom_attributes:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"

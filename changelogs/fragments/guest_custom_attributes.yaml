@@ -1,3 +1,0 @@
----
-minor_changes:
-  - guest_custom_attributes - add module to manage custom attributes for the given virtual machine (https://github.com/ansible-collections/vmware.vmware/pull/381).

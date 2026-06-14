@@ -7,7 +7,7 @@
 
   block:
     - name: Add custom attribute to VM
-      vmware.vmware.guest_custom_attributes:
+      vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: present
         attributes:
