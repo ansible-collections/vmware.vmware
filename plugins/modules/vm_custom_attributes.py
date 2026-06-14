@@ -288,11 +288,17 @@ def main():
     pyv = VmCustomAttributesModule(module)
     results = {'changed': False}
 
+    # Convert all values to strings to ensure idempotent comparison against
+    # string values returned by the vCenter API
+    attributes = {
+        str(name): str(value)
+        for name, value in module.params['attributes'].items()
+    }
     vm = pyv.get_vms_using_params(fail_on_missing=True)[0]
     if module.params['state'] == "present":
-        results = pyv.set_custom_field(vm, module.params['attributes'])
+        results = pyv.set_custom_field(vm, attributes)
     elif module.params['state'] == "absent":
-        results = pyv.remove_custom_field(vm, module.params['attributes'])
+        results = pyv.remove_custom_field(vm, attributes)
 
     module.exit_json(**results)
 

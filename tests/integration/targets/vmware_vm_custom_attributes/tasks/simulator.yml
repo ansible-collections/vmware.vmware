@@ -18,3 +18,25 @@
       ansible.builtin.assert:
         that:
           - _add is changed
+
+    - name: Add custom attribute with integer value
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          IntAttribute: 99
+      register: _add_int
+
+    - name: Add custom attribute with boolean value
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          BoolAttribute: true
+      register: _add_bool
+
+    - name: Check that the module reported changes for different value types
+      ansible.builtin.assert:
+        that:
+          - _add_int is changed
+          - _add_bool is changed

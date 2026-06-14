@@ -95,20 +95,66 @@
           - _update_idem is not changed
           - _update.custom_attributes.MyAttribute == 'MyUpdatedValue'
 
-    - name: Remove a custom attribute value
+    - name: Add custom attribute with integer value
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyIntAttr: 42
+      register: _add_int
+
+    - name: Add custom attribute with integer value - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyIntAttr: 42
+      register: _add_int_idem
+
+    - name: Add custom attribute with boolean value
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyBoolAttr: true
+      register: _add_bool
+
+    - name: Add custom attribute with boolean value - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyBoolAttr: true
+      register: _add_bool_idem
+
+    - name: Check Value Type Outputs
+      ansible.builtin.assert:
+        that:
+          - _add_int is changed
+          - _add_int_idem is not changed
+          - _add_int.custom_attributes.MyIntAttr == '42'
+          - _add_bool is changed
+          - _add_bool_idem is not changed
+          - _add_bool.custom_attributes.MyBoolAttr == 'True'
+
+    - name: Remove custom attribute values
       vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: absent
         attributes:
           MyAttribute:
+          MyIntAttr:
+          MyBoolAttr:
       register: _rm
 
-    - name: Remove a custom attribute - Idempotence
+    - name: Remove custom attribute values - Idempotence
       vmware.vmware.vm_custom_attributes:
         name: "{{ vm }}"
         state: absent
         attributes:
           MyAttribute:
+          MyIntAttr:
+          MyBoolAttr:
       register: _rm_idem
 
     - name: Check Remove Outputs
