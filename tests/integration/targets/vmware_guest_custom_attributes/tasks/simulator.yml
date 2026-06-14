@@ -1,0 +1,21 @@
+---
+# vcsim exposes CustomFieldsManager but SetField on a VM may not produce
+# persistent results on the simulator. The assertion below validates that
+# the module reports a change when attributes are provided.
+- name: Test
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Add custom attribute to VM
+      vmware.vmware.guest_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          - name: TestAttribute
+            value: TestValue
+      register: _add
+
+    - name: Check that the module reported a change
+      ansible.builtin.assert:
+        that:
+          - _add is changed
