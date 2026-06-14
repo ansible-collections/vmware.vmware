@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Ansible Project
-# Copyright: (c) 2018, Abhijeet Kasurde <akasurde@redhat.com>
 # Copyright: (c) 2025, Ansible Cloud Team (@ansible-collections)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
@@ -18,9 +16,8 @@ short_description: Manage custom attributes from VMware for the given virtual ma
 description:
     - This module can be used to add, remove and update custom attributes for the given virtual machine.
 author:
-    - Jimmy Conner (@cigamit)
-    - Abhijeet Kasurde (@Akasurde)
     - Ansible Cloud Team (@ansible-collections)
+    - Lorenzo Andreasi (@lollo03)
 options:
     name:
         description:
