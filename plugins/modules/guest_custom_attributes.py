@@ -61,24 +61,24 @@ options:
         description:
             - Datacenter name where the virtual machine is located in.
         type: str
+    folder_paths_are_absolute:
+        description:
+            - If true, any folder path parameters are treated as absolute paths.
+            - If false, modules will try to intelligently determine if the path is absolute
+              or relative.
+            - This option is useful when your environment has a complex folder structure. By default,
+              modules will try to intelligently determine if the path is absolute or relative.
+              They may mistakenly prepend the datacenter name or other folder names, and this option
+              can be used to avoid this.
+        default: false
+        type: bool
     attributes:
         description:
-            - A list of name and value of custom attributes that needs to be managed.
-            - Value of custom attribute is not required and will be ignored, if O(state=absent).
-        suboptions:
-            name:
-                description:
-                    - Name of the attribute.
-                type: str
-                required: true
-            value:
-                description:
-                    - Value of the attribute.
-                type: str
-                default: ''
-        default: []
-        type: list
-        elements: dict
+            - A dictionary of custom attributes to manage.
+            - The keys are the attribute names, the values are the attribute values.
+            - Values are not required and will be ignored if O(state=absent).
+        default: {}
+        type: dict
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
@@ -93,8 +93,7 @@ EXAMPLES = r'''
     uuid: 421e4592-c069-924d-ce20-7e7533fab926
     state: present
     attributes:
-      - name: MyAttribute
-        value: MyValue
+      MyAttribute: MyValue
   delegate_to: localhost
   register: attributes
 
@@ -106,10 +105,8 @@ EXAMPLES = r'''
     uuid: 421e4592-c069-924d-ce20-7e7533fab926
     state: present
     attributes:
-      - name: MyAttribute
-        value: MyValue
-      - name: MyAttribute2
-        value: MyValue2
+      MyAttribute: MyValue
+      MyAttribute2: MyValue2
   delegate_to: localhost
   register: attributes
 
@@ -121,7 +118,7 @@ EXAMPLES = r'''
     uuid: 421e4592-c069-924d-ce20-7e7533fab926
     state: absent
     attributes:
-      - name: MyAttribute
+      MyAttribute:
   delegate_to: localhost
   register: attributes
 
@@ -133,7 +130,7 @@ EXAMPLES = r'''
     moid: vm-42
     state: absent
     attributes:
-      - name: MyAttribute
+      MyAttribute:
   delegate_to: localhost
   register: attributes
 '''
@@ -175,8 +172,68 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         self.update_custom_attributes = []
         self.changed = False
 
-    def set_custom_field(self, vm, user_fields):
-        self.check_exists(vm, user_fields)
+    def _get_existing_attributes(self, user_attributes):
+        existing_attributes = {}
+        for field_def in self.custom_field_mgr:
+            if field_def.managedObjectType not in (vim.VirtualMachine, None):
+                continue
+            if field_def.name in user_attributes:
+                existing_attributes[field_def.name] = {
+                    "key": field_def.key,
+                    "name": field_def.name,
+                    "value": "",
+                }
+        return existing_attributes
+
+    def _populate_current_values(self, existing_attributes, vm):
+        for vm_custom_value in vm.customValue:
+            if vm_custom_value.name in existing_attributes:
+                existing_attributes[vm_custom_value.name]["value"] = vm_custom_value.value
+
+    def _compute_changes(self, existing_attributes, user_attributes):
+        update_attributes = []
+        user_attributes_for_diff = {}
+
+        for attr_name, attr_value in user_attributes.items():
+            if attr_name in existing_attributes:
+                current_value = existing_attributes[attr_name]["value"]
+                if attr_value != current_value:
+                    update_attributes.append({
+                        "name": attr_name,
+                        "value": attr_value,
+                        "key": existing_attributes[attr_name]["key"],
+                    })
+                user_attributes_for_diff[attr_name] = attr_value
+            elif self.params['state'] == "present":
+                update_attributes.append({
+                    "name": attr_name,
+                    "value": attr_value,
+                })
+                user_attributes_for_diff[attr_name] = attr_value
+
+        return update_attributes, user_attributes_for_diff
+
+    def check_exists(self, vm, user_attributes):
+        existing_attributes = self._get_existing_attributes(user_attributes)
+        self._populate_current_values(existing_attributes, vm)
+
+        self.update_custom_attributes, user_attributes_for_diff = self._compute_changes(
+            existing_attributes, user_attributes
+        )
+
+        if self.update_custom_attributes:
+            self.changed = True
+
+        self.diff_config['before']['custom_attributes'] = {
+            name: attrs["value"]
+            for name, attrs in sorted(existing_attributes.items())
+        }
+        self.diff_config['after']['custom_attributes'] = dict(
+            sorted(user_attributes_for_diff.items())
+        )
+
+    def set_custom_field(self, vm, user_attributes):
+        self.check_exists(vm, user_attributes)
         if self.module.check_mode:
             self.module.exit_json(changed=self.changed, diff=self.diff_config)
 
@@ -191,13 +248,11 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
 
             self.result_fields[field['name']] = field['value']
 
-        return {'changed': self.changed, 'failed': False, 'custom_attributes': self.result_fields}
+        return {'changed': self.changed, 'custom_attributes': self.result_fields}
 
-    def remove_custom_field(self, vm, user_fields):
-        for v in user_fields:
-            v['value'] = ''
-
-        self.check_exists(vm, user_fields)
+    def remove_custom_field(self, vm, user_attributes):
+        empty_attributes = dict.fromkeys(user_attributes, "")
+        self.check_exists(vm, empty_attributes)
         if self.module.check_mode:
             self.module.exit_json(changed=self.changed, diff=self.diff_config)
 
@@ -205,59 +260,7 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
             self.content.customFieldsManager.SetField(entity=vm, key=field['key'], value=field['value'])
             self.result_fields[field['name']] = field['value']
 
-        return {'changed': self.changed, 'failed': False, 'custom_attributes': self.result_fields}
-
-    def check_exists(self, vm, user_fields):
-        existing_custom_attributes = []
-        for k, n in [
-            (x.key, x.name) for x in self.custom_field_mgr
-            if x.managedObjectType == vim.VirtualMachine or x.managedObjectType is None
-            for v in user_fields
-            if x.name == v['name']
-        ]:
-            existing_custom_attributes.append({
-                "key": k,
-                "name": n
-            })
-
-        for e in existing_custom_attributes:
-            for v in vm.customValue:
-                if e['key'] == v.key:
-                    e['value'] = v.value
-
-            if 'value' not in e:
-                e['value'] = ''
-
-        _user_fields_for_diff = []
-        for v in user_fields:
-            for e in existing_custom_attributes:
-                if v['name'] == e['name'] and v['value'] != e['value']:
-                    self.update_custom_attributes.append({
-                        "name": v['name'],
-                        "value": v['value'],
-                        "key": e['key']
-                    })
-
-                if v['name'] == e['name']:
-                    _user_fields_for_diff.append({
-                        "name": v['name'],
-                        "value": v['value']
-                    })
-
-            if v['name'] not in [x['name'] for x in existing_custom_attributes] and self.params['state'] == "present":
-                self.update_custom_attributes.append(v)
-                _user_fields_for_diff.append({
-                    "name": v['name'],
-                    "value": v['value']
-                })
-
-        if self.update_custom_attributes:
-            self.changed = True
-
-        self.diff_config['before']['custom_attributes'] = sorted(
-            [x for x in existing_custom_attributes if x.pop('key', None)], key=lambda k: k['name']
-        )
-        self.diff_config['after']['custom_attributes'] = sorted(_user_fields_for_diff, key=lambda k: k['name'])
+        return {'changed': self.changed, 'custom_attributes': self.result_fields}
 
 
 def main():
@@ -269,16 +272,9 @@ def main():
         uuid=dict(type='str'),
         moid=dict(type='str'),
         use_instance_uuid=dict(type='bool', default=False),
+        folder_paths_are_absolute=dict(type='bool', required=False, default=False),
         state=dict(type='str', default='present', choices=['absent', 'present']),
-        attributes=dict(
-            type='list',
-            default=[],
-            elements='dict',
-            options=dict(
-                name=dict(type='str', required=True),
-                value=dict(type='str', default=''),
-            )
-        ),
+        attributes=dict(type='dict', default={}),
     )
 
     module = AnsibleModule(
@@ -293,15 +289,9 @@ def main():
         module.params['folder'] = module.params['folder'].rstrip('/')
 
     pyv = VmCustomAttributesModule(module)
-    results = {'changed': False, 'failed': False, 'instance': dict()}
+    results = {'changed': False}
 
-    vm = pyv.get_vms_using_params(fail_on_missing=False)
-    if not vm:
-        vm_id = (module.params.get('name') or module.params.get('uuid') or module.params.get('moid'))
-        module.fail_json(msg="Unable to manage custom attributes for non-existing"
-                             " virtual machine %s" % vm_id)
-
-    vm = vm[0]
+    vm = pyv.get_vms_using_params(fail_on_missing=True)[0]
     if module.params['state'] == "present":
         results = pyv.set_custom_field(vm, module.params['attributes'])
     elif module.params['state'] == "absent":

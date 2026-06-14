@@ -11,8 +11,7 @@
         name: "{{ vm }}"
         state: present
         attributes:
-          - name: TestAttribute
-            value: TestValue
+          TestAttribute: TestValue
       register: _add
 
     - name: Check that the module reported a change
