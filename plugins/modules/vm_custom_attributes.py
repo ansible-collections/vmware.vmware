@@ -207,13 +207,13 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
                         "value": str(attr_value),
                         "key": existing_attributes[attr_name]["key"],
                     })
-                user_attributes_for_diff[attr_name] = attr_value
+                user_attributes_for_diff[attr_name] = str(attr_value)
             elif self.params['state'] == "present":
                 update_attributes.append({
                     "name": attr_name,
                     "value": str(attr_value),
                 })
-                user_attributes_for_diff[attr_name] = attr_value
+                user_attributes_for_diff[attr_name] = str(attr_value)
 
         return update_attributes, user_attributes_for_diff
 
