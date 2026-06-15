@@ -197,17 +197,17 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         for attr_name, attr_value in user_attributes.items():
             if attr_name in existing_attributes:
                 current_value = existing_attributes[attr_name]["value"]
-                if attr_value != current_value:
+                if str(attr_value) != current_value:
                     update_attributes.append({
                         "name": attr_name,
-                        "value": attr_value,
+                        "value": str(attr_value),
                         "key": existing_attributes[attr_name]["key"],
                     })
                 user_attributes_for_diff[attr_name] = attr_value
             elif self.params['state'] == "present":
                 update_attributes.append({
                     "name": attr_name,
-                    "value": attr_value,
+                    "value": str(attr_value),
                 })
                 user_attributes_for_diff[attr_name] = attr_value
 
@@ -286,10 +286,9 @@ def main():
     pyv = VmCustomAttributesModule(module)
     results = {'changed': False}
 
-    # Convert all values to strings to ensure idempotent comparison against
-    # string values returned by the vCenter API
+    # Cast dict keys to string for consistency
     attributes = {
-        str(name): str(value)
+        str(name): value
         for name, value in module.params['attributes'].items()
     }
     vms = pyv.get_vms_using_params(fail_on_missing=True)
