@@ -20,6 +20,7 @@ action_groups:
         - esxi_maintenance_mode
         - folder
         - folder_template_from_vm
+        - vm_custom_attributes
         - guest_info
         - license_info
         - local_content_library

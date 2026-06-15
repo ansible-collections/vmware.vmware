@@ -1,0 +1,177 @@
+---
+- name: Lookup Root Resource Pool ID
+  ansible.builtin.set_fact:
+    vcenter_rp_id: >-
+      {{ lookup('vmware.vmware.moid_from_path',
+      '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      **vmware_rest_auth_vars) }}
+
+- name: Test
+  environment: "{{ environment_auth_vars }}"
+
+  block:
+    - name: Include Eco Vcenter Test Vars
+      ansible.builtin.include_vars:
+        file: eco-vcenter.yml
+
+    - name: Create a test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        name: "{{ tiny_prefix }}-vm_custom_attributes"
+        parent: "{{ vcenter_rp_id }}"
+      register: _test_rp
+
+    - name: Create Virtual Machine From OVF Template
+      vmware.vmware.deploy_content_library_ovf:
+        library_item_name: "{{ rhel9_content_library_ovf }}"
+        vm_name: "{{ vm }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ shared_storage_02 }}"
+        cluster: "{{ vcenter_cluster_name }}"
+
+    - name: Add custom attribute to VM
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyAttribute: MyValue
+      register: _add
+
+    - name: Add custom attribute - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyAttribute: MyValue
+      register: _add_idem
+
+    - name: Add multiple custom attributes
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyAttribute: MyValue
+          MyAttribute2: MyValue2
+      register: _add_multi
+
+    - name: Add multiple custom attributes - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyAttribute: MyValue
+          MyAttribute2: MyValue2
+      register: _add_multi_idem
+
+    - name: Check Add Outputs
+      ansible.builtin.assert:
+        that:
+          - _add is changed
+          - _add_idem is not changed
+          - _add_multi is changed
+          - _add_multi_idem is not changed
+          - _add_multi.custom_attributes.MyAttribute == 'MyValue'
+          - _add_multi.custom_attributes.MyAttribute2 == 'MyValue2'
+
+    - name: Update an existing custom attribute
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyAttribute: MyUpdatedValue
+      register: _update
+
+    - name: Update custom attribute - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyAttribute: MyUpdatedValue
+      register: _update_idem
+
+    - name: Check Update Outputs
+      ansible.builtin.assert:
+        that:
+          - _update is changed
+          - _update_idem is not changed
+          - _update.custom_attributes.MyAttribute == 'MyUpdatedValue'
+
+    - name: Add custom attribute with integer value
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyIntAttr: 42
+      register: _add_int
+
+    - name: Add custom attribute with integer value - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyIntAttr: 42
+      register: _add_int_idem
+
+    - name: Add custom attribute with boolean value
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyBoolAttr: true
+      register: _add_bool
+
+    - name: Add custom attribute with boolean value - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: present
+        attributes:
+          MyBoolAttr: true
+      register: _add_bool_idem
+
+    - name: Check Value Type Outputs
+      ansible.builtin.assert:
+        that:
+          - _add_int is changed
+          - _add_int_idem is not changed
+          - _add_int.custom_attributes.MyIntAttr == '42'
+          - _add_bool is changed
+          - _add_bool_idem is not changed
+          - _add_bool.custom_attributes.MyBoolAttr == 'True'
+
+    - name: Remove custom attribute values
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: absent
+        attributes:
+          MyAttribute:
+          MyIntAttr:
+          MyBoolAttr:
+      register: _rm
+
+    - name: Remove custom attribute values - Idempotence
+      vmware.vmware.vm_custom_attributes:
+        name: "{{ vm }}"
+        state: absent
+        attributes:
+          MyAttribute:
+          MyIntAttr:
+          MyBoolAttr:
+      register: _rm_idem
+
+    - name: Check Remove Outputs
+      ansible.builtin.assert:
+        that:
+          - _rm is changed
+          - _rm_idem is not changed
+
+  always:
+    - name: "Test teardown: Destroy VM guest {{ vm }}"
+      vmware.vmware.vm:
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: absent
+        name: "{{ vm }}"
+
+    - name: Delete test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent
