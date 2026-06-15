@@ -250,7 +250,7 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
                 )
                 self.content.customFieldsManager.SetField(entity=vm, key=field_key.key, value=field['value'])
 
-        return {'changed': self.changed, 'custom_attributes': dict(user_attributes)}
+        return {'changed': self.changed, 'custom_attributes': {str(k): str(v) for k, v in user_attributes.items()}}
 
     def remove_custom_field(self, vm, user_attributes):
         empty_attributes = dict.fromkeys(user_attributes, "")

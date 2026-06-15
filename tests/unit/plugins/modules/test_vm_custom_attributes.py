@@ -287,8 +287,10 @@ class TestVmCustomAttributes(ModuleTestCase):
             return_value=(mocker.Mock(), mock_content)
         )
 
+        # Mock at the search level so the real get_vms_using_params runs
+        # and calls fail_json when no VMs are found
         mocker.patch.object(
-            VmCustomAttributesModule, 'get_vms_using_params',
+            VmCustomAttributesModule, 'get_objs_by_name_or_moid',
             return_value=[]
         )
 
