@@ -133,11 +133,6 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-changed:
-    description: Whether the custom attributes were updated.
-    returned: always
-    type: bool
-    sample: true
 custom_attributes:
     description: metadata about the virtual machine custom attributes
     returned: always
