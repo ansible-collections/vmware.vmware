@@ -174,6 +174,10 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         self.changed = False
 
     def _get_existing_attributes(self, user_attributes):
+        """
+        Returns field definitions from the custom field manager matching
+        user-requested attribute names and scoped to VirtualMachine.
+        """
         existing_attributes = {}
         for field_def in self.custom_field_mgr:
             if field_def.managedObjectType not in (vim.VirtualMachine, None):
@@ -187,6 +191,9 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         return existing_attributes
 
     def _populate_current_values(self, existing_attributes, vm):
+        """
+        Fills in current values from vm.customValue for the fields being managed.
+        """
         key_to_name = {
             attrs["key"]: name
             for name, attrs in existing_attributes.items()
@@ -200,6 +207,10 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
                     break
 
     def _compute_changes(self, existing_attributes, user_attributes):
+        """
+        Compares desired and current values, returns fields to create or update
+        and a diff dict.
+        """
         update_attributes = []
         user_attributes_for_diff = {}
 
@@ -223,6 +234,9 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         return update_attributes, user_attributes_for_diff
 
     def _compute_required_updates(self, vm, user_attributes):
+        """
+        Runs the full diff and populates update_attributes, changed, and diff_config.
+        """
         existing_attributes = self._get_existing_attributes(user_attributes)
         self._populate_current_values(existing_attributes, vm)
 
@@ -242,6 +256,9 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         )
 
     def set_custom_field(self, vm, user_attributes):
+        """
+        Creates or updates custom attributes on the VM.
+        """
         self._compute_required_updates(vm, user_attributes)
         if self.module.check_mode:
             self.module.exit_json(changed=self.changed, diff=self.diff_config)
@@ -258,6 +275,9 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         return {'changed': self.changed, 'custom_attributes': {str(k): str(v) for k, v in user_attributes.items()}}
 
     def remove_custom_field(self, vm, user_attributes):
+        """
+        Clears custom attribute values on the VM.
+        """
         empty_attributes = dict.fromkeys(user_attributes, "")
         self._compute_required_updates(vm, empty_attributes)
         if self.module.check_mode:
