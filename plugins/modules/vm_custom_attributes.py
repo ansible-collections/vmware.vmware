@@ -217,7 +217,7 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
 
         return update_attributes, user_attributes_for_diff
 
-    def check_exists(self, vm, user_attributes):
+    def _compute_required_updates(self, vm, user_attributes):
         existing_attributes = self._get_existing_attributes(user_attributes)
         self._populate_current_values(existing_attributes, vm)
 
@@ -237,7 +237,7 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
         )
 
     def set_custom_field(self, vm, user_attributes):
-        self.check_exists(vm, user_attributes)
+        self._compute_required_updates(vm, user_attributes)
         if self.module.check_mode:
             self.module.exit_json(changed=self.changed, diff=self.diff_config)
 
@@ -254,7 +254,7 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
 
     def remove_custom_field(self, vm, user_attributes):
         empty_attributes = dict.fromkeys(user_attributes, "")
-        self.check_exists(vm, empty_attributes)
+        self._compute_required_updates(vm, empty_attributes)
         if self.module.check_mode:
             self.module.exit_json(changed=self.changed, diff=self.diff_config)
 
