@@ -282,8 +282,6 @@ def main():
         ],
     )
 
-    if module.params.get('folder'):
-        module.params['folder'] = module.params['folder'].rstrip('/')
 
     pyv = VmCustomAttributesModule(module)
     results = {'changed': False}
@@ -295,9 +293,6 @@ def main():
         for name, value in module.params['attributes'].items()
     }
     vms = pyv.get_vms_using_params(fail_on_missing=True)
-    if not vms:
-        vm_id = (module.params.get('name') or module.params.get('uuid') or module.params.get('moid'))
-        module.fail_json(msg="Unable to manage custom attributes for non-existing virtual machine %s" % vm_id)
     vm = vms[0]
     if module.params['state'] == "present":
         results = pyv.set_custom_field(vm, attributes)
