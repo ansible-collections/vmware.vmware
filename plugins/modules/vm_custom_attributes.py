@@ -186,9 +186,13 @@ class VmCustomAttributesModule(ModulePyvmomiBase):
             attrs["key"]: name
             for name, attrs in existing_attributes.items()
         }
+        found_keys = 0
         for vm_custom_value in vm.customValue:
             if vm_custom_value.key in key_to_name:
                 existing_attributes[key_to_name[vm_custom_value.key]]["value"] = vm_custom_value.value
+                found_keys += 1
+                if found_keys == len(key_to_name):
+                    break
 
     def _compute_changes(self, existing_attributes, user_attributes):
         update_attributes = []
