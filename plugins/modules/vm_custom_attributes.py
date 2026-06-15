@@ -311,7 +311,6 @@ def main():
         ],
     )
 
-
     pyv = VmCustomAttributesModule(module)
     results = {'changed': False}
 
