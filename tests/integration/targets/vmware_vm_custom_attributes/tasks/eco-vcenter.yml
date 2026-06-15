@@ -169,7 +169,6 @@
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         state: absent
-        force: true
         name: "{{ vm }}"
 
     - name: Delete test resource pool
