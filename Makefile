@@ -3,7 +3,7 @@ SANITY_TARGETS ?=
 INTEGRATION_TARGETS ?=
 UNIT_TARGETS ?=
 
-UNIT_PYTHON_VERSION ?= 3.14
+UNIT_PYTHON_VERSION ?= 3.12
 
 # galaxy.yml is not included in the installed collection artifact; read it from the source tree.
 GALAXY_YML ?= $(CURDIR)/galaxy.yml
