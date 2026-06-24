@@ -313,7 +313,8 @@ class VcenterEventManagerSource:
                 await self._poll_for_events()
             except vim.fault.InvalidState:
                 logger.warning(
-                    "vCenter authentication has expired. This is normal if it happens once in awhile; otherwise consider it an issue. Re-initializing the pyvmomi client."
+                    "vCenter authentication has expired. This is normal if it happens once in awhile; "
+                    "otherwise consider it an issue. Re-initializing the pyvmomi client."
                 )
                 self._init_pyvmomi_client()
                 # Retry the poll immediately to avoid a loop of auth errors, which happens if the poll interval is long enough.
