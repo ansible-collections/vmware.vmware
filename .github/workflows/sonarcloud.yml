@@ -34,6 +34,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           show-progress: false
+          allow-unsafe-pr-checkout: true
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v8
