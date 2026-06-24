@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncio
 import pytest
-from unittest.mock import patch, AsyncMock, Mock, MagicMock, call
+from unittest.mock import patch, AsyncMock, Mock
 from ansible.errors import AnsibleError
 import sys
 import os
@@ -16,11 +16,6 @@ from extensions.eda.plugins.event_source.vcenter_event_manager import (
     VcenterEventManagerSource,
     main,
 )
-
-try:
-    from pyVmomi import vim
-except ImportError:
-    vim = None
 
 
 class TestVcenterEventManagerSource:
@@ -357,7 +352,7 @@ class TestVcenterEventManagerSource:
         source.plugin_args["datacenter"] = "DC1"
 
         with pytest.raises(AnsibleError, match="More than one datacenter"):
-            _ = source.datacenter
+            _ = source.datacenter  # pylint: disable=disallowed-name
 
     @patch("extensions.eda.plugins.event_source.vcenter_event_manager.vim")
     def test_datacenter_property_raises_on_no_results(self, mock_vim, source):
@@ -365,7 +360,7 @@ class TestVcenterEventManagerSource:
         source.plugin_args["datacenter"] = "DC1"
 
         with pytest.raises(AnsibleError, match="No datacenter"):
-            _ = source.datacenter
+            _ = source.datacenter  # pylint: disable=disallowed-name
 
     @patch("extensions.eda.plugins.event_source.vcenter_event_manager.vim")
     def test_datacenter_property_returns_none_when_not_set(self, mock_vim, source):
@@ -419,8 +414,8 @@ class TestVcenterEventManagerSource:
     async def test_poll_for_events_multiple_pages(
         self, mock_obj_to_json, mock_vim, source
     ):
-        events_page1 = [Mock() for _ in range(100)]
-        events_page2 = [Mock() for _ in range(50)]
+        events_page1 = [Mock() for _ in range(100)]  # pylint: disable=disallowed-name
+        events_page2 = [Mock() for _ in range(50)]  # pylint: disable=disallowed-name
         mock_obj_to_json.side_effect = lambda x: {"event": x}
 
         mock_collector = Mock()

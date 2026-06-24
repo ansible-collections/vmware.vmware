@@ -218,7 +218,7 @@ class VcenterEventManagerSource:
 
             if auth_args[plugin_arg_name] is None and required:
                 raise AnsibleError(
-                    f"The {plugin_arg_name} plugin argument, or {env_var_name} environment variable, is required."
+                    "The %s plugin argument, or %s environment variable, is required." % (plugin_arg_name, env_var_name)
                 )
 
             if (
@@ -241,11 +241,11 @@ class VcenterEventManagerSource:
             )
             if len(results) > 1:
                 raise AnsibleError(
-                    f"More than one datacenter with name or ID {identifier} was found. This is an unsupported scenario in this plugin."
+                    "More than one datacenter with name or ID %s was found. This is an unsupported scenario in this plugin." % identifier
                 )
             elif len(results) == 0:
                 raise AnsibleError(
-                    f"No datacenter with name or ID {identifier} was found."
+                    "No datacenter with name or ID %s was found." % identifier
                 )
             else:
                 self._datacenter = results[0]
@@ -268,7 +268,7 @@ class VcenterEventManagerSource:
         allowed_severity = set(["info", "warning", "error"])
         if severity and not severity.issubset(allowed_severity):
             raise AnsibleError(
-                f"The severity plugin argument can only contain the values: {allowed_severity}."
+                "The severity plugin argument can only contain the values: %s." % allowed_severity
             )
 
         return args
@@ -302,7 +302,7 @@ class VcenterEventManagerSource:
         """
         Main entrypoint for the plugin. Start the polling loop and keep running until the plugin is stopped.
         """
-        logger.info(f"Poll sleep interval is {self.poll_interval_seconds} seconds")
+        logger.info("Poll sleep interval is %s seconds" % self.poll_interval_seconds)
 
         while True:
             logger.debug("Starting poll iteration.")
@@ -316,12 +316,12 @@ class VcenterEventManagerSource:
                 # Retry the poll immediately to avoid a loop of auth errors, which happens if the poll interval is long enough.
                 continue
             except Exception as e:
-                logger.exception(f"Error polling for events: {e}")
+                logger.exception("Error polling for events: %s" % e)
                 logger.info(
                     "Plugin will keep running, and increase the polled time interval to account for the error."
                 )
 
-            logger.debug(f"Sleeping for {self.poll_interval_seconds} seconds")
+            logger.debug("Sleeping for %s seconds" % self.poll_interval_seconds)
             await asyncio.sleep(self.poll_interval_seconds)
             logger.debug("Ending poll iteration")
 
@@ -334,7 +334,7 @@ class VcenterEventManagerSource:
         """
         time_filter = self._create_time_filter()
         logger.debug(
-            f"Polling for events from {time_filter.beginTime} to {time_filter.endTime}"
+            "Polling for events from %s to %s" % (time_filter.beginTime, time_filter.endTime)
         )
         filter_spec = vim.event.EventFilterSpec(
             time=time_filter, **self._create_event_filters()
@@ -397,5 +397,5 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     try:
         await vcenter_event_manager_source.start_polling()
     except Exception as e:
-        logger.exception(f"Error occurred during polling: {e}")
+        logger.exception("Error occurred during polling: %s" % e)
         raise e
