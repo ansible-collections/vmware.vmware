@@ -316,7 +316,7 @@ class VcenterEventManagerSource:
                 # Retry the poll immediately to avoid a loop of auth errors, which happens if the poll interval is long enough.
                 continue
             except Exception as e:
-                logger.error(f"Error polling for events: {e}")
+                logger.exception(f"Error polling for events: {e}")
                 logger.info(
                     "Plugin will keep running, and increase the polled time interval to account for the error."
                 )
@@ -397,5 +397,5 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     try:
         await vcenter_event_manager_source.start_polling()
     except Exception as e:
-        logger.error(f"Error occurred during polling: {e}")
+        logger.exception(f"Error occurred during polling: {e}")
         raise e

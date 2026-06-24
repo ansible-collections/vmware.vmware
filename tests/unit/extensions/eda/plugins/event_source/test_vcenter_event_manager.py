@@ -439,9 +439,16 @@ class TestVcenterEventManagerSource:
     @pytest.mark.asyncio
     @patch("extensions.eda.plugins.event_source.vcenter_event_manager.vim")
     async def test_start_polling_handles_invalid_state(self, mock_vim, source):
+        # Create a proper exception class that inherits from Exception
+        class InvalidStateException(Exception):
+            pass
+
+        # Mock vim.fault.InvalidState to be our exception class
+        mock_vim.fault.InvalidState = InvalidStateException
+
         source._poll_for_events = AsyncMock(
             side_effect=[
-                vim.fault.InvalidState(),
+                InvalidStateException(),
                 None,
                 asyncio.CancelledError(),
             ]
@@ -459,6 +466,13 @@ class TestVcenterEventManagerSource:
     async def test_start_polling_handles_generic_exception(
         self, mock_logger, mock_vim, source
     ):
+        # Create a proper exception class that inherits from Exception
+        class InvalidStateException(Exception):
+            pass
+
+        # Mock vim.fault.InvalidState to be our exception class
+        mock_vim.fault.InvalidState = InvalidStateException
+
         source._poll_for_events = AsyncMock(
             side_effect=[
                 Exception("Test error"),
@@ -469,7 +483,7 @@ class TestVcenterEventManagerSource:
         with pytest.raises(asyncio.CancelledError):
             await source.start_polling()
 
-        mock_logger.error.assert_called()
+        mock_logger.exception.assert_called()
 
     # Test main function
     @pytest.mark.asyncio
@@ -518,4 +532,4 @@ class TestVcenterEventManagerSource:
             with pytest.raises(Exception):
                 await main(mock_queue, args)
 
-        mock_logger.error.assert_called()
+        mock_logger.exception.assert_called()

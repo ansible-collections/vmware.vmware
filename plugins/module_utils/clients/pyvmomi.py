@@ -134,7 +134,7 @@ class PyvmomiClient():
             ssl_context.load_default_certs()
         elif hasattr(ssl, 'SSLContext'):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context.verify_mode = ssl.CERT_NONE  # NOSONAR (S4830) We know not trusting certs is unsafe
             ssl_context.check_hostname = False
         else:  # Python < 2.7.9 or RHEL/Centos < 7.4
             ssl_context = None
