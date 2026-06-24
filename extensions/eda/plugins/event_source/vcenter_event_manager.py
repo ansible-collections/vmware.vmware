@@ -218,7 +218,8 @@ class VcenterEventManagerSource:
 
             if auth_args[plugin_arg_name] is None and required:
                 raise AnsibleError(
-                    "The %s plugin argument, or %s environment variable, is required." % (plugin_arg_name, env_var_name)
+                    "The %s plugin argument, or %s environment variable, is required."
+                    % (plugin_arg_name, env_var_name)
                 )
 
             if (
@@ -241,7 +242,8 @@ class VcenterEventManagerSource:
             )
             if len(results) > 1:
                 raise AnsibleError(
-                    "More than one datacenter with name or ID %s was found. This is an unsupported scenario in this plugin." % identifier
+                    "More than one datacenter with name or ID %s was found. This is an unsupported scenario in this plugin."
+                    % identifier
                 )
             elif len(results) == 0:
                 raise AnsibleError(
@@ -268,7 +270,8 @@ class VcenterEventManagerSource:
         allowed_severity = set(["info", "warning", "error"])
         if severity and not severity.issubset(allowed_severity):
             raise AnsibleError(
-                "The severity plugin argument can only contain the values: %s." % allowed_severity
+                "The severity plugin argument can only contain the values: %s."
+                % allowed_severity
             )
 
         return args
@@ -334,7 +337,9 @@ class VcenterEventManagerSource:
         """
         time_filter = self._create_time_filter()
         logger.debug(
-            "Polling for events from %s to %s", time_filter.beginTime, time_filter.endTime
+            "Polling for events from %s to %s",
+            time_filter.beginTime,
+            time_filter.endTime,
         )
         filter_spec = vim.event.EventFilterSpec(
             time=time_filter, **self._create_event_filters()
