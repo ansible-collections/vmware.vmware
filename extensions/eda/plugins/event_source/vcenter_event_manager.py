@@ -302,7 +302,7 @@ class VcenterEventManagerSource:
         """
         Main entrypoint for the plugin. Start the polling loop and keep running until the plugin is stopped.
         """
-        logger.info("Poll sleep interval is %s seconds" % self.poll_interval_seconds)
+        logger.info("Poll sleep interval is %s seconds", self.poll_interval_seconds)
 
         while True:
             logger.debug("Starting poll iteration.")
@@ -316,12 +316,12 @@ class VcenterEventManagerSource:
                 # Retry the poll immediately to avoid a loop of auth errors, which happens if the poll interval is long enough.
                 continue
             except Exception as e:
-                logger.exception("Error polling for events: %s" % e)
+                logger.exception("Error polling for events: %s", e)
                 logger.info(
                     "Plugin will keep running, and increase the polled time interval to account for the error."
                 )
 
-            logger.debug("Sleeping for %s seconds" % self.poll_interval_seconds)
+            logger.debug("Sleeping for %s seconds", self.poll_interval_seconds)
             await asyncio.sleep(self.poll_interval_seconds)
             logger.debug("Ending poll iteration")
 
@@ -334,7 +334,7 @@ class VcenterEventManagerSource:
         """
         time_filter = self._create_time_filter()
         logger.debug(
-            "Polling for events from %s to %s" % (time_filter.beginTime, time_filter.endTime)
+            "Polling for events from %s to %s", time_filter.beginTime, time_filter.endTime
         )
         filter_spec = vim.event.EventFilterSpec(
             time=time_filter, **self._create_event_filters()
@@ -397,5 +397,5 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     try:
         await vcenter_event_manager_source.start_polling()
     except Exception as e:
-        logger.exception("Error occurred during polling: %s" % e)
+        logger.exception("Error occurred during polling: %s", e)
         raise e
