@@ -29,11 +29,12 @@ jobs:
       # WARNING: Checking out the workflow_run.head_sha is potentially dangerous, as it may contain untrusted code.
       # Be careful when making changes to this workflow to ensure that code is not executed from the checkout.
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           show-progress: false
+          allow-unsafe-pr-checkout: true
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v8

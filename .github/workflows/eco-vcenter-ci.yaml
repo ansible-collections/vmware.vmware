@@ -2,7 +2,7 @@
 name: Ansible Eco vCenter Integration Test
 on:
   pull_request_target:
-    types: [ opened, synchronize ]
+    types: [opened, synchronize]
   push:
     branches:
       - main
@@ -22,9 +22,10 @@ jobs:
       groups: ${{ steps.set-matrix.outputs.groups }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          allow-unsafe-pr-checkout: true
 
       - name: Build target groups matrix
         id: set-matrix
@@ -57,7 +58,7 @@ jobs:
           PYTHONIOENCODING: utf-8
 
   ansible_integration_test:
-    runs-on: [ "self-hosted", linux, X64 ]
+    runs-on: ["self-hosted", linux, X64]
     needs: prepare_matrix
     if: needs.prepare_matrix.outputs.groups != '[]'
     strategy:
@@ -73,9 +74,10 @@ jobs:
           sudo apt-get install podman
 
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          allow-unsafe-pr-checkout: true
 
       - name: Generate integration config
         run: |

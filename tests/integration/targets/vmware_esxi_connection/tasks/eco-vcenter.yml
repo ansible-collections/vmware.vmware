@@ -36,9 +36,10 @@
       register: _deploy
 
     - name: Power On Host
-      vmware.vmware_rest.vcenter_vm_power:
-        state: start
-        vm: "{{ _deploy.value.resource_id.id }}"
+      vmware.vmware.vm_powerstate:
+        state: powered-on
+        datacenter: "{{ vcenter_datacenter }}"
+        moid: "{{ _deploy.value.resource_id.id }}"
 
     - name: Wait For ESXi Host To Have IP
       vmware.vmware.guest_info:
