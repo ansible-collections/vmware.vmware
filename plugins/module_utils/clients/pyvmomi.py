@@ -24,7 +24,7 @@ try:
 except ImportError:
     PYVMOMI_IMP_ERR = traceback.format_exc()
 
-from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors import (
+from .errors import (
     ApiAccessError,
     MissingLibError
 )
@@ -134,7 +134,7 @@ class PyvmomiClient():
             ssl_context.load_default_certs()
         elif hasattr(ssl, 'SSLContext'):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            ssl_context.verify_mode = ssl.CERT_NONE
+            ssl_context.verify_mode = ssl.CERT_NONE  # NOSONAR (S4830) We know not trusting certs is unsafe
             ssl_context.check_hostname = False
         else:  # Python < 2.7.9 or RHEL/Centos < 7.4
             ssl_context = None
@@ -297,3 +297,44 @@ class PyvmomiClient():
             return None
 
         return obj
+
+    def get_objs_by_name_or_moid(self, vimtype, name, return_all=False, search_root_folder=None):
+        """
+        Get any vsphere objects associated with a given text name or MOID and vim type.
+        Different objects have different unique-ness requirements for the name parameter, so
+        you may get one or more objects back. The MOID should always be unique
+        Args:
+            vimtype: The type of object to search for
+            name: The name or the ID of the object to search for
+            return_all: If true, return all the objects that were found.
+                        Useful when names must be unique
+            search_root_folder: The folder object that should be used as the starting point
+                                for searches. Useful for restricting search results to a
+                                certain datacenter (search_root_folder=datacenter.hostFolder)
+        Returns:
+            list(object) or list() if no matches are found
+        """
+        identifier = name
+        if not search_root_folder:
+            search_root_folder = self.content.rootFolder
+        if isinstance(vimtype, list):
+            vimtype = vimtype[0]
+
+        results = []
+        for managed_object_ref in self.get_managed_object_references(vimtype, properties=['name'], folder=search_root_folder):
+            if len(results) > 0 and not return_all:
+                break
+
+            obj_skeleton = managed_object_ref.obj
+            if obj_skeleton._GetMoId() == identifier:
+                vim_obj = self.create_vim_object_from_moid(obj_skeleton._GetMoId(), vimtype)
+                results.append(vim_obj)
+                continue
+
+            for property in managed_object_ref.propSet:
+                if property.name == "name" and property.val == identifier:
+                    vim_obj = self.create_vim_object_from_moid(obj_skeleton._GetMoId(), vimtype)
+                    results.append(vim_obj)
+                    break
+
+        return results
