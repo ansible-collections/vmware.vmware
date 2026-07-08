@@ -1,0 +1,2 @@
+bugfixes:
+  - "import_content_library_iso - Fix OOM error when uploading large local ISO files by streaming the file instead of loading it into memory (https://github.com/ansible-collections/vmware.vmware/issues/385)."

@@ -98,13 +98,8 @@ class TestVmwareRemoteIso(ModuleTestCase):
         )
         mocker.patch.object(os.path, "getsize", return_value=10)
 
-        # Mock open_url to prevent real HTTP call
-        mock_response = mocker.Mock()
-        mock_response.read.return_value = b"OK"
-        mock_response.getcode.return_value = 200
-        mocker.patch(
-            "ansible_collections.vmware.vmware.plugins.modules.import_content_library_iso.open_url",
-            return_value=mock_response,
+        mock_post = mocker.patch(
+            "ansible_collections.vmware.vmware.plugins.modules.import_content_library_iso.requests.post"
         )
 
         # Selectively mock open() for ISO file
@@ -120,3 +115,8 @@ class TestVmwareRemoteIso(ModuleTestCase):
 
         assert result["changed"] is True
         assert result["library_item"]["id"] == "2"
+        assert mock_post.call_count == 1
+        assert hasattr(mock_post.call_args.kwargs["data"], "read")
+        assert mock_post.call_args.kwargs["verify"] is True
+        assert mock_post.call_args.kwargs["timeout"] == 300
+        assert mock_post.call_args.kwargs["headers"]["Content-Length"] == "10"
