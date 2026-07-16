@@ -187,7 +187,10 @@ class VmwareFolder(ModulePyvmomiBase):
                 % (self.absolute_folder_path, to_native(generic_exc))
             ))
 
-    def delete_folder(self):
+    def delete_folder(self) -> None:
+        if self.module.check_mode:
+            return
+
         try:
             if self.folder_type == 'vm' and not self.params['remove_vm_data']:
                 task = self.folder_object.UnregisterAndDestroy()
@@ -213,7 +216,7 @@ class VmwareFolder(ModulePyvmomiBase):
         except Exception as e:
             self.module.fail_json(msg=("Failed to remove folder due to unexpected error %s " % to_native(e)))
 
-    def create_folder(self):
+    def create_folder(self) -> dict:
         """
         Create the folder requested by the user. To save time, we split the folder path in half and check
         if the folder at that point exists. If it does, we start the search there. If it doesn't, we start
@@ -232,11 +235,21 @@ class VmwareFolder(ModulePyvmomiBase):
             starting_index = 2
             starting_folder = self.lookup_folder_object('/'.join(split_path[:2]), fail_on_missing=True)
 
-        return self.__create_folders_on_path(
-            starting_folder=starting_folder,
-            starting_index=starting_index,
-            path_parts=split_path,
-        )
+        if self.module.check_mode:
+            return {
+                'moid': "",
+                'name': split_path[-1]
+            }
+        else:
+            new_folder = self.__create_folders_on_path(
+                starting_folder=starting_folder,
+                starting_index=starting_index,
+                path_parts=split_path,
+            )
+            return {
+                'moid': new_folder._GetMoId(),
+                'name': new_folder.name
+            }
 
     def __create_folders_on_path(self, starting_index, starting_folder, path_parts):
         """
@@ -301,11 +314,8 @@ def main():
                 'name': vmware_folder.folder_object.name
             })
 
-        new_folder = vmware_folder.create_folder()
-        module.exit_json(changed=True, folder={
-            'moid': new_folder._GetMoId(),
-            'name': new_folder.name
-        })
+        new_folder_result = vmware_folder.create_folder()
+        module.exit_json(changed=True, folder=new_folder_result)
 
     if module.params['state'] == 'absent':
         if not vmware_folder.folder_object:

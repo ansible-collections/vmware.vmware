@@ -101,3 +101,37 @@ class TestEsxiMaintenanceMode(ModuleTestCase):
 
         assert result["changed"] is True
         assert result["folder"]["moid"] == "2"
+
+    def test_check_mode_state_present_with_change(self, mocker):
+        self.__prepare(mocker)
+        mocker.patch.object(VmwareFolder, 'get_folder_by_absolute_path', side_effect=[
+            None, self.mock_folder
+        ])
+
+        module_args = dict(
+            absolute_path="/DC0/host/test",
+            state="present",
+            _ansible_check_mode=True
+        )
+
+        result = run_module(module_entry=module_main, module_args=module_args)
+
+        assert result["changed"] is True
+        assert result["folder"]["moid"] == ""
+        assert result["folder"]["name"] == "test"
+
+    def test_check_mode_state_absent_with_change(self, mocker):
+        self.__prepare(mocker)
+        mocker.patch.object(VmwareFolder, 'get_folder_by_absolute_path', return_value=self.mock_folder)
+        self.mock_folder.Destroy = mock.Mock(return_value=MockVsphereTask())
+
+        module_args = dict(
+            absolute_path="/DC0/host/test",
+            state="absent",
+            _ansible_check_mode=True
+        )
+
+        result = run_module(module_entry=module_main, module_args=module_args)
+
+        assert result["changed"] is True
+        self.mock_folder.Destroy.assert_not_called()
