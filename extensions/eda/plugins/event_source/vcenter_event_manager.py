@@ -20,7 +20,7 @@ extends_documentation_fragment:
 options:
   interval:
     description:
-      - THe number of seconds to wait before performing another query.
+      - The number of seconds to wait before performing another query.
     required: false
     default: 60
     type: int
@@ -32,7 +32,7 @@ options:
       - If not specified, the plugin will use the current time as a default.
       - This option can be used to start tracking events from a specific time in the past.
     required: false
-    type: int
+    type: str
 
   datacenter:
     description:
@@ -55,7 +55,7 @@ options:
       - Whether to include system or user events.
       - User events describe things like logins, logouts, etc.
       - System events describe things like VM power on, power off, etc.
-      - You can fiter either event type with O(user_names) if desired.
+      - You can filter either event type with O(user_names) if desired.
     required: false
     type: str
     choices: [ system, user ]
@@ -287,7 +287,7 @@ class VcenterEventManagerSource:
             logger.warning(
                 "The polled time interval has grown to be greater than 10 times the polling interval."
                 "If you see this message repeatedly, it means the plugin cannot process events fast enough or is consistently failing to process events. "
-                "If no error is being logged, consider limitting the amount of events that are being polled."
+                "If no error is being logged, consider limiting the amount of events that are being polled."
             )
         time_filter.beginTime = start_time
         time_filter.endTime = end_time
@@ -351,6 +351,15 @@ class VcenterEventManagerSource:
             )
         )
 
+        try:
+            await self._process_events(event_collector)
+        finally:
+            event_collector.DestroyCollector()
+
+        self.last_poll_start_time = time_filter.endTime
+        logger.debug("Ending poll for events")
+
+    async def _process_events(self, event_collector):
         # page through events using ReadNextEvents
         page_size = 100
 
@@ -363,9 +372,6 @@ class VcenterEventManagerSource:
 
             for event in events_in_page:
                 await self.queue.put(vmware_obj_to_json(event))
-
-        self.last_poll_start_time = time_filter.endTime
-        logger.debug("Ending poll for events")
 
     def _create_event_filters(self):
         filters = dict()
