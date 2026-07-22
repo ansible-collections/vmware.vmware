@@ -1,4 +1,10 @@
 ---
+- name: Create Folder In Check Mode
+  vmware.vmware.folder:
+    absolute_path: "{{ vmware_folder_absolute_folder_name }}"
+  check_mode: true
+  register: _check_create
+
 - name: Create Folder With Relative Path
   vmware.vmware.folder:
     datacenter: "{{ vcenter_datacenter }}"
@@ -23,10 +29,17 @@
       - _rel.folder.moid == _abs.folder.moid
       - _rel is changed
       - _abs is not changed
+      - _check_create is changed
 
 - name: Additional Eco Vcenter Tests
   when: run_on_vcenter
   block:
+    - name: Delete Folder In Check Mode
+      vmware.vmware.folder:
+        absolute_path: "{{ vmware_folder_absolute_folder_name }}"
+        state: absent
+      check_mode: true
+      register: _check_delete
     - name: Delete The Folder
       vmware.vmware.folder:
         absolute_path: "{{ vmware_folder_absolute_folder_name }}"
@@ -39,3 +52,4 @@
       ansible.builtin.assert:
         that:
           - _abs is changed
+          - _check_delete is changed

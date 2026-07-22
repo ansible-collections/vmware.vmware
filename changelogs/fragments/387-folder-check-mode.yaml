@@ -1,0 +1,2 @@
+bugfixes:
+  - folder - Add check mode support for create and delete operations (https://github.com/ansible-collections/vmware.vmware/issues/387).
