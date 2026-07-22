@@ -22,7 +22,7 @@ except ImportError:
 
 from ansible.module_utils.common.text.converters import to_text
 from collections.abc import Mapping
-from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import get_folder_path_of_vsphere_object
+from ._folder_paths import get_folder_path_of_vsphere_object
 
 
 class VmFacts():

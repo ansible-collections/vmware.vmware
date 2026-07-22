@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "ansible-collections",
+        "projectKey": "ansible-collections_vmware.vmware"
+    }
+}
