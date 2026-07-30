@@ -183,6 +183,8 @@ class NativeKeyProviderModule(ModuleRestBase):
 
     def is_provider_cluster_default(self):
         default_provider_id = self.pyvmomi_crypto_manager.GetDefaultKmsCluster()
+        if default_provider_id is None:
+            return False
         return default_provider_id.id == self.provider_name
 
     def create_key_provider(self):
