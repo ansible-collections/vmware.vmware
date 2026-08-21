@@ -95,7 +95,6 @@ options:
     description:
         description:
         - Define an arbitrary description to attach to snapshot.
-        default: ''
         type: str
     quiesce:
         description:
@@ -250,6 +249,9 @@ snapshot:
         id: 4
         name: "snapshot4"
         state: "poweredOff"
+        quiesced: false
+        parent_id: 3
+        child_ids: [5, 6]
 
 result:
     description:
@@ -276,6 +278,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
     base_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import RunningTaskMonitor
+from ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot import (
+    serialize_snapshot_obj_to_json,
+    get_snapshot_by_identifier_recursively,
+)
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_text, to_native
 
@@ -305,46 +311,29 @@ class VmSnapshotModule(ModulePyvmomiBase):
                 self._snap_object = None
 
             else:
-                self._snap_object = self.get_snapshot_by_identifier_recursively(
+                self._snap_object = get_snapshot_by_identifier_recursively(
                     self.vm.snapshot.rootSnapshotList,
                     self.params["snapshot_name"] or self.params["snapshot_id"]
                 )
 
         return self._snap_object
 
-    def serialize_snapshot_obj_to_json(self, obj):
-        if not obj:
-            return dict()
-        return {'id': obj.id,
-                'name': obj.name,
-                'description': obj.description,
-                'creation_time': obj.createTime,
-                'state': obj.state,
-                'quiesced': obj.quiesced}
-
-    def get_snapshot_by_identifier_recursively(self, snapshots, snapidentifier):
-        for snapshot in snapshots:
-            if snapidentifier == snapshot.id or snapidentifier == snapshot.name:
-                return snapshot
-            else:
-                return self.get_snapshot_by_identifier_recursively(snapshot.childSnapshotList, snapidentifier)
-        return None
-
     def snapshot_vm(self):
         if self.snap_object:
-            if ((not self.params['new_snapshot_name'] or self.params['new_snapshot_name'] == self.snap_object.name) and
-               (not self.params['description'] or self.params['description'] == self.snap_object.description)):
+            if (self.params['new_snapshot_name'] is None and self.params['description'] is None):
                 return
-            return self.rename_snapshot()
+            return self.update_snapshot_metadata()
 
         memory_dump = self.params['memory_dump'] and self.vm.capability.memorySnapshotsSupported
         quiesce = self.params['quiesce'] and self.vm.capability.quiescedSnapshotsSupported
         try:
             self.changed_check_mode_exit()
-            snapshot = self.vm.CreateSnapshot_Task(self.params["snapshot_name"],
-                                                   self.params["description"],
-                                                   memory_dump,
-                                                   quiesce)
+            snapshot = self.vm.CreateSnapshot_Task(
+                self.params["snapshot_name"],
+                self.params["description"],
+                memory_dump,
+                quiesce
+            )
             self.result['changed'] = True
             return snapshot
         except vim.fault.RestrictedVersion as e:
@@ -354,12 +343,21 @@ class VmSnapshotModule(ModulePyvmomiBase):
             self.module.fail_json(msg="Failed to create snapshot of virtual machine"
                                       " %s due to %s" % (self.params['name'], to_native(e)))
 
-    def rename_snapshot(self):
-        self.changed_check_mode_exit()
+    def update_snapshot_metadata(self):
+        kwargs = {}
+        if self.params['new_snapshot_name'] and self.params['new_snapshot_name'] != self.snap_object.name:
+            kwargs['name'] = self.params['new_snapshot_name']
+            self.result['renamed'] = True
+
+        if self.params['description'] and self.params['description'] != self.snap_object.description:
+            kwargs['description'] = self.params['description']
+
+        if not kwargs:
+            return None
+
         self.result['changed'] = True
-        self.result['renamed'] = True
-        return self.snap_object.snapshot.RenameSnapshot(name=self.params["new_snapshot_name"],
-                                                        description=self.params["description"])
+        self.changed_check_mode_exit()
+        return self.snap_object.snapshot.RenameSnapshot(**kwargs)
 
     def remove_snapshot(self):
         if self.params['remove_all']:
@@ -390,7 +388,7 @@ class VmSnapshotModule(ModulePyvmomiBase):
             self.module.fail_json(msg=to_text(e))
 
         if self.params['state'] == 'present':
-            self.result['snapshot'] = self.serialize_snapshot_obj_to_json(self.snap_object)
+            self.result['snapshot'] = serialize_snapshot_obj_to_json(self.snap_object)
 
     def changed_check_mode_exit(self):
         if self.module.check_mode:
@@ -414,7 +412,7 @@ def main():
                 datacenter=dict(type='str'),
                 snapshot_name=dict(type='str'),
                 snapshot_id=dict(type='int'),
-                description=dict(type='str', default=''),
+                description=dict(type='str'),
                 quiesce=dict(type='bool', default=False),
                 memory_dump=dict(type='bool', default=False),
                 remove_children=dict(type='bool', default=False),

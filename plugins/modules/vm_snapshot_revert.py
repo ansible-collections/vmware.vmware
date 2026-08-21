@@ -163,6 +163,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     RunningTaskMonitor,
 )
+from ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot import (
+    get_snapshot_by_identifier_recursively,
+)
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_text
 
@@ -171,7 +174,7 @@ class VmSnapshotRevertModule(ModulePyvmomiBase):
     def __init__(self, module):
         super().__init__(module)
         self.vm = self.get_vms_using_params(fail_on_missing=True)[0]
-        self.snapshot = self._get_snapshot_by_identifier_recursively(
+        self.snapshot = get_snapshot_by_identifier_recursively(
             self.vm.snapshot.rootSnapshotList,
             self.module.params["snapshot_name"] or self.module.params["snapshot_id"],
         )
@@ -183,17 +186,6 @@ class VmSnapshotRevertModule(ModulePyvmomiBase):
                     self.module.params["snapshot_id"],
                 )
             )
-
-    def _get_snapshot_by_identifier_recursively(self, snapshot_list, snapidentifier):
-        for snapshot in snapshot_list:
-            if snapidentifier == snapshot.id or snapidentifier == snapshot.name:
-                return snapshot
-            else:
-                if child_match := self._get_snapshot_by_identifier_recursively(
-                    snapshot.childSnapshotList, snapidentifier
-                ):
-                    return child_match
-        return None
 
     def revert_to_snapshot(self):
         task_result = {}
