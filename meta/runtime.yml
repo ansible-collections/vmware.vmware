@@ -18,6 +18,8 @@ action_groups:
         - esxi_connection
         - esxi_host
         - esxi_maintenance_mode
+        - esxi_service
+        - esxi_service_info
         - folder
         - folder_template_from_vm
         - vm_custom_attributes

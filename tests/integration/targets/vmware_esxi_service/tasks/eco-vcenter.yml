@@ -1,0 +1,255 @@
+---
+- name: Include Eco Vcenter Test Vars
+  ansible.builtin.include_vars:
+    file: eco-vcenter.yml
+
+- name: Lookup Root Resource Pool ID
+  ansible.builtin.set_fact:
+    vcenter_rp_id: >-
+      {{ lookup('vmware.vmware.moid_from_path',
+      '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
+      **vmware_rest_auth_vars) }}
+
+- name: Test
+  environment: "{{ environment_auth_vars }}"
+  block:
+    - name: Create a test resource pool
+      vmware.vmware_rest.vcenter_resourcepool:
+        name: "{{ test_resource_pool }}"
+        parent: "{{ vcenter_rp_id }}"
+      register: _test_rp
+
+    - name: Gather Library Item Info
+      vmware.vmware.content_library_item_info:
+        library_item_name: "{{ esxi_content_library_template }}"
+        library_name: "{{ ci_resources_content_library }}"
+      register: _template
+
+    - name: Deploy Virtual ESXi Host
+      vmware.vmware_rest.vcenter_ovf_libraryitem:
+        ovf_library_item_id: "{{ (_template.library_item_info | first).id }}"
+        session_timeout: 10000
+        state: deploy
+        target:
+          resource_pool_id: "{{ _test_rp.id }}"
+        deployment_spec:
+          name: "{{ test_esxi_hostname }}"
+          accept_all_EULA: true
+          storage_provisioning: thin
+      register: _deploy
+
+    - name: Power On Host
+      vmware.vmware.vm_powerstate:
+        state: powered-on
+        datacenter: "{{ vcenter_datacenter }}"
+        moid: "{{ _deploy.value.resource_id.id }}"
+
+    - name: Wait For ESXi Host To Have IP
+      vmware.vmware.guest_info:
+        name: "{{ test_esxi_hostname }}"
+      register: _esxi_info
+      until: >-
+        _esxi_info.guests[0].ipv4 is defined and
+        _esxi_info.guests[0].ipv4 is truthy and
+        not _esxi_info.guests[0].ipv4.startswith('169.254')
+      retries: 60
+      delay: 5
+
+    - name: Pause for 15 seconds to ensure host is ready
+      ansible.builtin.pause:
+        seconds: 15
+
+    - name: Join Hosts To Cluster
+      community.vmware.vmware_host:
+        datacenter: "{{ vcenter_datacenter }}"
+        cluster: "{{ vcenter_cluster_name }}"
+        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
+        esxi_username: root
+        esxi_password: "!#%135qEt"
+        state: present
+
+    - name: Stop Service To Establish A Known Baseline
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        state: stopped
+
+    - name: Gather Info About All Services To Confirm The Baseline
+      vmware.vmware.esxi_service_info:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      register: _baseline_info
+
+    - name: Check Baseline Info Output
+      ansible.builtin.assert:
+        that:
+          - _baseline_info is not changed
+          - _baseline_info.exists
+          - _baseline_info.host.name == _esxi_info.guests[0].ipv4
+          - _baseline_info.host.moid is defined
+          - _baseline_info.services | length > 1
+          - (_baseline_info.services | selectattr('key', 'equalto', test_service_name) | list | length) == 1
+          - not (_baseline_info.services | selectattr('key', 'equalto', test_service_name) | first).running
+
+    - name: Start Service
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        state: started
+      register: _start
+
+    - name: Start Service - Idempotence
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        state: started
+      register: _start_again
+
+    - name: Check Start Output
+      ansible.builtin.assert:
+        that:
+          - _start is changed
+          - _start_again is not changed
+
+    - name: Set Service Startup Policy
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        service_policy: 'on'
+      register: _policy
+
+    - name: Set Service Startup Policy - Idempotence
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        service_policy: 'on'
+      register: _policy_again
+
+    - name: Check Policy Output
+      ansible.builtin.assert:
+        that:
+          - _policy is changed
+          - _policy_again is not changed
+
+    - name: Gather Info About A Single Service To Confirm The Changes
+      vmware.vmware.esxi_service_info:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_names:
+          - "{{ test_service_name }}"
+      register: _filtered_info
+
+    - name: Check Filtered Info Output
+      ansible.builtin.assert:
+        that:
+          - _filtered_info is not changed
+          - _filtered_info.exists
+          - _filtered_info.services | map(attribute='key') | list == [test_service_name]
+          - (_filtered_info.services | first).running
+          - (_filtered_info.services | first).policy == 'on'
+
+    - name: Restart Service
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        state: restarted
+      register: _restart
+
+    - name: Check Restart Output
+      ansible.builtin.assert:
+        that:
+          - _restart is changed
+
+    - name: Stop Service
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        state: stopped
+      register: _stop
+
+    - name: Stop Service - Idempotence
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: "{{ test_service_name }}"
+        state: stopped
+      register: _stop_again
+
+    - name: Check Stop Output
+      ansible.builtin.assert:
+        that:
+          - _stop is changed
+          - _stop_again is not changed
+
+    - name: Gather Info About The Service To Confirm It Stopped
+      vmware.vmware.esxi_service_info:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_names:
+          - "{{ test_service_name }}"
+      register: _stopped_info
+
+    - name: Check Stopped Info Output
+      ansible.builtin.assert:
+        that:
+          - not (_stopped_info.services | first).running
+
+    - name: Gather Info About A Nonexistent Service
+      vmware.vmware.esxi_service_info:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_names:
+          - this-service-does-not-exist
+      register: _missing_info
+
+    - name: Check Nonexistent Service Output
+      ansible.builtin.assert:
+        that:
+          - _missing_info is not changed
+          - not _missing_info.exists
+          - _missing_info.services == []
+
+    - name: Fail On An Unknown Service
+      vmware.vmware.esxi_service:
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+        service_name: this-service-does-not-exist
+        state: started
+      register: _unknown_service
+      ignore_errors: true
+
+    - name: Check Unknown Service Output
+      ansible.builtin.assert:
+        that:
+          - _unknown_service is failed
+
+    - name: Fail On An Unknown Host
+      vmware.vmware.esxi_service_info:
+        name: this-host-does-not-exist
+      register: _unknown_host
+      ignore_errors: true
+
+    - name: Check Unknown Host Output
+      ansible.builtin.assert:
+        that:
+          - _unknown_host is failed
+
+    - name: Enable Maintenance Mode Before Cleanup
+      vmware.vmware.esxi_maintenance_mode:
+        enable_maintenance_mode: true
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+
+  always:
+    - name: Disconnect Host From vCenter
+      community.vmware.vmware_host:
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 | default(test_esxi_hostname) }}"
+        state: absent
+    - name: "Test cleanup: Delete Virtual ESXi Host"
+      community.vmware.vmware_guest:
+        cluster: "{{ vcenter_cluster_name }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: ""
+        state: absent
+        name: "{{ test_esxi_hostname }}"
+        force: true
+    - name: "Test cleanup: Delete Resource Pool"
+      vmware.vmware_rest.vcenter_resourcepool:
+        resource_pool: "{{ _test_rp.id }}"
+        state: absent
+      when: _test_rp.id is defined

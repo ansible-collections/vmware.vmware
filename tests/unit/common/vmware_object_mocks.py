@@ -69,8 +69,55 @@ class MockEsxiHost(MockVmwareObject):
         self.parent.parent = mock.Mock()
         self.parent.parent.name = "dc"
 
+        self.configManager = mock.Mock()
+        self.configManager.serviceSystem = MockServiceSystem()
+
     def EnterMaintenanceMode_Task(self, *args):
         return MockVsphereTask()
 
     def ExitMaintenanceMode_Task(self, *args):
         return MockVsphereTask()
+
+
+class MockHostServiceSourcePackage():
+    def __init__(self, source_package_name="esx-base", description="ESXi base package"):
+        self.sourcePackageName = source_package_name
+        self.description = description
+
+
+class MockHostService():
+    def __init__(self, key="ntpd", running=False, policy="off", label=None,
+                 required=False, uninstallable=False, source_package=None):
+        self.key = key
+        self.running = running
+        self.policy = policy
+        self.label = label if label is not None else key
+        self.required = required
+        self.uninstallable = uninstallable
+        self.sourcePackage = source_package if source_package is not None else MockHostServiceSourcePackage()
+
+
+class MockServiceSystem():
+    def __init__(self, services=None):
+        self.serviceInfo = mock.Mock()
+        if services is None:
+            services = [MockHostService()]
+        self.serviceInfo.service = services
+
+    def __find(self, service_id):
+        for service in self.serviceInfo.service:
+            if service.key == service_id:
+                return service
+        return None
+
+    def StartService(self, id):
+        self.__find(id).running = True
+
+    def StopService(self, id):
+        self.__find(id).running = False
+
+    def RestartService(self, id):
+        self.__find(id).running = True
+
+    def UpdateServicePolicy(self, id, policy):
+        self.__find(id).policy = policy
