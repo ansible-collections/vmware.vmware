@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Ansible Project
-# This module is also sponsored by E.T.A.I. (www.etai.fr)
+# Copyright: (c) 2026, Ansible Project
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -313,7 +312,8 @@ class VmSnapshotModule(ModulePyvmomiBase):
             else:
                 self._snap_object = get_snapshot_by_identifier_recursively(
                     self.vm.snapshot.rootSnapshotList,
-                    self.params["snapshot_name"] or self.params["snapshot_id"]
+                    snap_name=self.params["snapshot_name"],
+                    snap_id=self.params["snapshot_id"]
                 )
 
         return self._snap_object

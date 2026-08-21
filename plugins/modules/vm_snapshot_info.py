@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Ansible Project
-# This module is also sponsored by E.T.A.I. (www.etai.fr)
+# Copyright: (c) 2026, Ansible Project
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -21,35 +20,35 @@ author:
 options:
     name:
         description:
-        - Name of the virtual machine to work with.
-        - This is required parameter, if O(uuid) or O(moid) is not supplied.
+            - Name of the virtual machine to work with.
+            - This is required parameter, if O(uuid) or O(moid) is not supplied.
         type: str
     name_match:
         description:
-        - If multiple VMs with the same name exist, use the first or last found.
+            - If multiple VMs with the same name exist, use the first or last found.
         default: 'first'
         choices: ['first', 'last']
         type: str
     uuid:
         description:
-        - UUID of the instance to manage. This is VMware's BIOS UUID by default.
-        - This is required if O(name) or O(moid) parameter is not supplied.
+            - UUID of the instance to manage. This is VMware's BIOS UUID by default.
+            - This is required if O(name) or O(moid) parameter is not supplied.
         type: str
     moid:
         description:
-        - Managed Object ID of the virtual machine to manage.
-        - This is required if O(name) or O(uuid) is not supplied.
+            - Managed Object ID of the virtual machine to manage.
+            - This is required if O(name) or O(uuid) is not supplied.
         type: str
     use_instance_uuid:
         description:
-        - Whether to use the VMware instance UUID rather than the BIOS UUID.
+            - Whether to use the VMware instance UUID rather than the BIOS UUID.
         default: false
         type: bool
     folder:
         description:
-        - Absolute or relative folder path to search for the virtual machine.
-        - This parameter is required if O(name) is supplied.
-        - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
+            - Absolute or relative folder path to search for the virtual machine.
+            - This parameter is required if O(name) is supplied.
+            - For example 'datacenter name/vm/path/to/folder' or 'path/to/folder'
         type: str
     folder_paths_are_absolute:
         description:
@@ -65,18 +64,22 @@ options:
         default: false
     datacenter:
         description:
-        - Datacenter to search for the virtual machine.
+            - Datacenter to search for the virtual machine.
         type: str
-    gather_current_snapshot:
+    snapshot_name:
         description:
-        - If true, the metadata for the VM's current snapshot is returned in RV(current_snapshot).
-        type: bool
-        default: true
-    gather_all_snapshots:
+            - The name of a specific snapshot to gather information about.
+            - If neither O(snapshot_name) nor O(snapshot_id) is provided, information about every
+              snapshot on the VM is returned.
+            - Mutually exclusive with O(snapshot_id).
+        type: str
+    snapshot_id:
         description:
-        - If true, the metadata for all of the VM's snapshots is returned in RV(snapshots).
-        type: bool
-        default: true
+            - The ID of a specific snapshot to gather information about.
+            - If neither O(snapshot_name) nor O(snapshot_id) is provided, information about every
+              snapshot on the VM is returned.
+            - Mutually exclusive with O(snapshot_name).
+        type: int
 
 extends_documentation_fragment:
     - vmware.vmware.base_options
@@ -92,14 +95,16 @@ EXAMPLES = r'''
     folder: "/{{ datacenter_name }}/vm/"
     name: "{{ guest_name }}"
 
-- name: Gather only the current snapshot info for a VM using its MoID
+- name: Gather info about a single snapshot by name
   vmware.vmware.vm_snapshot_info:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
     moid: vm-42
-    gather_all_snapshots: false
-    gather_current_snapshot: true
+    snapshot_name: "snapshot4"
+
+- name: Gather info about a single snapshot by ID, without the current snapshot
+  vmware.vmware.vm_snapshot_info:
+    moid: vm-42
+    snapshot_id: 4
+    gather_current_snapshot: false
 '''
 
 RETURN = r'''
@@ -115,8 +120,8 @@ vm:
 current_snapshot:
     description:
         - Metadata about the VM's current snapshot.
-        - Empty if O(gather_current_snapshot) is true but the VM has no snapshots.
-    returned: When O(gather_current_snapshot) is true
+        - Empty if the VM has no snapshots.
+    returned: Always
     type: dict
     sample:
         creation_time: "2024-12-24T15:27:37.041577+00:00"
@@ -130,11 +135,13 @@ current_snapshot:
 
 snapshots:
     description:
-        - Metadata about all of the VM's snapshots.
-        - Each entry includes RV(snapshots[].parent_id) and RV(snapshots[].child_ids), so the flattened
-          list can be walked as a tree. RV(snapshots[].parent_id) is null for root snapshots.
-        - Empty if O(gather_all_snapshots) is true but the VM has no snapshots.
-    returned: When O(gather_all_snapshots) is true
+        - Metadata about the VM's snapshots in a flattened list.
+        - When O(snapshot_name) or O(snapshot_id) is set, this is a single-item list describing
+          only the requested snapshot. Otherwise it lists every snapshot on the VM.
+        - Each entry includes C(parent_id) and C(child_ids), so the flattened
+          list can be walked as a tree. C(parent_id) is null for root snapshots.
+        - Empty if the VM has no snapshots.
+    returned: Always
     type: list
     elements: dict
     sample:
@@ -150,6 +157,41 @@ snapshots:
                 child_ids: [5, 6]
             }
         ]
+
+snapshots_tree:
+    description:
+        - Metadata about the VM's snapshots, arranged as a nested tree instead of the
+          flattened list.
+        - The value is a dict keyed by snapshot ID. Each entry contains a C(children) key holding
+          that snapshot's children in the same keyed-dict structure.
+        - When O(snapshot_name) or O(snapshot_id) is set, this holds only the requested snapshot
+          and its C(children) is empty.
+        - Snapshot IDs are integers, but because the return value is serialized to JSON the keys
+          are rendered as strings.
+        - Empty if the VM has no snapshots.
+    returned: Always
+    type: dict
+    sample:
+        "3":
+            creation_time: "2024-12-24T15:27:37.041577+00:00"
+            description: "Snapshot 3 example"
+            id: 3
+            name: "snapshot3"
+            state: "poweredOff"
+            quiesced: false
+            parent_id: null
+            child_ids: [4]
+            children:
+                "4":
+                    creation_time: "2024-12-24T15:28:37.041577+00:00"
+                    description: "Snapshot 4 example"
+                    id: 4
+                    name: "snapshot4"
+                    state: "poweredOff"
+                    quiesced: false
+                    parent_id: 3
+                    child_ids: []
+                    children: {}
 '''
 
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import (
@@ -160,8 +202,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot import (
     serialize_snapshot_obj_to_json,
-    get_snapshot_tree_by_snapshot_ref,
-    list_snapshots_recursively,
+    get_snapshot_by_identifier_recursively,
+    flatten_snapshot_tree,
+    build_nested_snapshot_tree,
 )
 from ansible.module_utils.basic import AnsibleModule
 
@@ -171,29 +214,75 @@ class VmSnapshotInfoModule(ModulePyvmomiBase):
         super().__init__(module)
         self.vm = self.get_vms_using_params(fail_on_missing=True)[0]
 
-    def gather_current_snapshot_info(self):
+    def gather_snapshot_info(self):
         """
-        Resolve the VM's currentSnapshot reference to its tree node and serialize it.
-        Returns an empty dict if the VM has no snapshots.
-        """
-        if not self.vm.snapshot:
-            return dict()
+        Read vm.snapshot exactly once - each access re-fetches the whole snapshot tree from
+        vCenter - and derive every representation this module reports from that single in-memory
+        copy. The tree returned by vCenter is a graph of data objects, so walking it (here and in
+        the _vm_snapshot helpers) makes no additional calls; it can be traversed as many times as
+        needed for free.
 
-        current_snapshot_tree, parent_id = get_snapshot_tree_by_snapshot_ref(
-            self.vm.snapshot.rootSnapshotList,
-            self.vm.snapshot.currentSnapshot
+        When O(snapshot_name) or O(snapshot_id) is given, only the matching snapshot is reported
+        in 'snapshots'/'snapshots_tree'; otherwise every snapshot is reported. The requested
+        snapshot is taken from the flattened list so its parent_id and child_ids are correct.
+        Returns:
+            A dict with keys:
+              'current'        - the serialized current snapshot dict, or an empty dict if the
+                                 VM has no snapshots or no current snapshot
+              'snapshots'      - flat list of serialized snapshot dicts (depth-first) when
+                                 reporting every snapshot, or a single-item list when a specific
+                                 snapshot is requested
+              'snapshots_tree' - nested dict keyed by snapshot ID, each value a serialized snapshot
+                                 dict plus a 'children' key holding the same structure for its
+                                 children. Holds only the requested snapshot, with no children
+                                 expanded, when a specific snapshot is requested
+        """
+        snapshot_info = self.vm.snapshot
+        if not snapshot_info:
+            return {'current': {}, 'snapshots': [], 'snapshots_tree': {}}
+
+        result = {'current': self._gather_current_snapshot(snapshot_info)}
+
+        if self.params['snapshot_name'] is None and self.params['snapshot_id'] is None:
+            result['snapshots'] = flatten_snapshot_tree(snapshot_info.rootSnapshotList)
+            result['snapshots_tree'] = build_nested_snapshot_tree(snapshot_info.rootSnapshotList)
+        else:
+            result['snapshots'], result['snapshots_tree'] = self._gather_requested_snapshot(snapshot_info)
+
+        return result
+
+    def _gather_current_snapshot(self, snapshot_info):
+        """
+        Return the serialized current snapshot, or an empty dict if the VM has no current snapshot.
+        """
+        if snapshot_info.currentSnapshot is None:
+            return {}
+
+        current_object = get_snapshot_by_identifier_recursively(
+            snapshot_trees=snapshot_info.rootSnapshotList,
+            snap_ref=snapshot_info.currentSnapshot
         )
-        return serialize_snapshot_obj_to_json(current_snapshot_tree, parent_id=parent_id)
+        return serialize_snapshot_obj_to_json(current_object)
 
-    def gather_all_snapshots_info(self):
+    def _gather_requested_snapshot(self, snapshot_info):
         """
-        Flatten and serialize the VM's entire snapshot tree.
-        Returns an empty list if the VM has no snapshots.
+        Return the ('snapshots', 'snapshots_tree') pair describing only the snapshot named by
+        O(snapshot_name) or O(snapshot_id). The snapshot is taken from the flattened tree so its
+        parent_id and child_ids are correct.
         """
-        if not self.vm.snapshot:
-            return []
+        snapshot_name = self.params['snapshot_name']
+        snapshot_id = self.params['snapshot_id']
 
-        return list_snapshots_recursively(self.vm.snapshot.rootSnapshotList)
+        match = next(
+            (node for node in flatten_snapshot_tree(snapshot_info.rootSnapshotList)
+             if (snapshot_name is not None and node['name'] == snapshot_name)
+             or (snapshot_id is not None and node['id'] == snapshot_id)),
+            None
+        )
+        if match is None:
+            return [], []
+
+        return [match], {match['id']: {**match, 'children': {}}}
 
 
 def main():
@@ -208,8 +297,8 @@ def main():
                 folder=dict(type='str'),
                 folder_paths_are_absolute=dict(type='bool', required=False, default=False),
                 datacenter=dict(type='str'),
-                gather_current_snapshot=dict(type='bool', default=True),
-                gather_all_snapshots=dict(type='bool', default=True),
+                snapshot_name=dict(type='str'),
+                snapshot_id=dict(type='int'),
             )
         },
         supports_check_mode=True,
@@ -220,23 +309,23 @@ def main():
             ['name', 'uuid', 'moid']
         ],
         mutually_exclusive=[
-            ('name', 'uuid', 'moid')
+            ('name', 'uuid', 'moid'),
+            ('snapshot_name', 'snapshot_id'),
         ]
     )
 
     vm_snapshot_info = VmSnapshotInfoModule(module)
+    snapshot_info = vm_snapshot_info.gather_snapshot_info()
+
     result = {
         'vm': {
             'moid': vm_snapshot_info.vm._GetMoId(),
             'name': vm_snapshot_info.vm.name
-        }
+        },
+        'current_snapshot': snapshot_info['current'],
+        'snapshots': snapshot_info['snapshots'],
+        'snapshots_tree': snapshot_info['snapshots_tree'],
     }
-
-    if module.params['gather_current_snapshot']:
-        result['current_snapshot'] = vm_snapshot_info.gather_current_snapshot_info()
-
-    if module.params['gather_all_snapshots']:
-        result['snapshots'] = vm_snapshot_info.gather_all_snapshots_info()
 
     module.exit_json(**result)
 
