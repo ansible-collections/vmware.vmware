@@ -162,7 +162,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     RunningTaskMonitor,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._snapshot import (
     get_snapshot_by_identifier_recursively,
 )
 from ansible.module_utils.basic import AnsibleModule

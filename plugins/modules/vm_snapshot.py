@@ -277,7 +277,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
     base_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import RunningTaskMonitor
-from ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._snapshot import (
     serialize_snapshot_obj_to_json,
     get_snapshot_by_identifier_recursively,
 )

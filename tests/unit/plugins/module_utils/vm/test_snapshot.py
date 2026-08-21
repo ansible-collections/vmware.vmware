@@ -3,7 +3,7 @@ __metaclass__ = type
 
 import pytest
 
-import ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot as vm_snapshot
+import ansible_collections.vmware.vmware.plugins.module_utils.vm._snapshot as vm_snapshot
 
 
 class MockSnapshotTree:
@@ -48,7 +48,7 @@ class TestSerializeSnapshotObjToJson:
         assert vm_snapshot.serialize_snapshot_obj_to_json([]) == {}
 
     def test_serializes_all_fields(self):
-        _, snap2, _, _ = build_sample_tree()
+        _, snap2, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         result = vm_snapshot.serialize_snapshot_obj_to_json(snap2, parent_id=1)
 
         assert result == {
@@ -63,12 +63,12 @@ class TestSerializeSnapshotObjToJson:
         }
 
     def test_parent_id_defaults_to_none(self):
-        snap1, _, _, _ = build_sample_tree()
+        snap1, _, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         result = vm_snapshot.serialize_snapshot_obj_to_json(snap1)
         assert result["parent_id"] is None
 
     def test_child_ids_empty_for_leaf(self):
-        _, _, snap3, _ = build_sample_tree()
+        _, _, snap3, _ = build_sample_tree()    # pylint: disable=disallowed-name
         result = vm_snapshot.serialize_snapshot_obj_to_json(snap3)
         assert result["child_ids"] == []
 
@@ -95,7 +95,7 @@ class TestFlattenSnapshotTree:
         assert by_id[4]["parent_id"] is None
 
     def test_child_ids_recorded(self):
-        snap1, _, _, _ = build_sample_tree()
+        snap1, _, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         flat = vm_snapshot.flatten_snapshot_tree([snap1])
         by_id = {node["id"]: node for node in flat}
         assert by_id[1]["child_ids"] == [2]
@@ -125,7 +125,7 @@ class TestBuildNestedSnapshotTree:
         assert children_of_2[3]["children"] == {}
 
     def test_leaf_has_empty_children(self):
-        _, _, _, snap4 = build_sample_tree()
+        _, _, _, snap4 = build_sample_tree()    # pylint: disable=disallowed-name
         tree = vm_snapshot.build_nested_snapshot_tree([snap4])
         assert tree[4]["children"] == {}
 
@@ -133,42 +133,42 @@ class TestBuildNestedSnapshotTree:
 class TestGetSnapshotByIdentifierRecursively:
 
     def test_find_by_name(self):
-        snap1, _, snap3, _ = build_sample_tree()
+        snap1, _, snap3, _ = build_sample_tree()    # pylint: disable=disallowed-name
         match = vm_snapshot.get_snapshot_by_identifier_recursively(
             [snap1], snap_name="snap3"
         )
         assert match is snap3
 
     def test_find_by_id(self):
-        snap1, snap2, _, _ = build_sample_tree()
+        snap1, snap2, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         match = vm_snapshot.get_snapshot_by_identifier_recursively(
             [snap1], snap_id=2
         )
         assert match is snap2
 
     def test_find_by_ref(self):
-        snap1, _, snap3, _ = build_sample_tree()
+        snap1, _, snap3, _ = build_sample_tree()    # pylint: disable=disallowed-name
         match = vm_snapshot.get_snapshot_by_identifier_recursively(
             [snap1], snap_ref=snap3.snapshot
         )
         assert match is snap3
 
     def test_find_root_node(self):
-        snap1, _, _, _ = build_sample_tree()
+        snap1, _, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         match = vm_snapshot.get_snapshot_by_identifier_recursively(
             [snap1], snap_id=1
         )
         assert match is snap1
 
     def test_searches_sibling_chains(self):
-        snap1, _, _, snap4 = build_sample_tree()
+        snap1, _, _, snap4 = build_sample_tree()    # pylint: disable=disallowed-name
         match = vm_snapshot.get_snapshot_by_identifier_recursively(
             [snap1, snap4], snap_name="snap4"
         )
         assert match is snap4
 
     def test_returns_none_when_not_found(self):
-        snap1, _, _, _ = build_sample_tree()
+        snap1, _, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         match = vm_snapshot.get_snapshot_by_identifier_recursively(
             [snap1], snap_name="does-not-exist"
         )
@@ -181,12 +181,12 @@ class TestGetSnapshotByIdentifierRecursively:
         assert match is None
 
     def test_raises_when_no_identifier_supplied(self):
-        snap1, _, _, _ = build_sample_tree()
+        snap1, _, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         with pytest.raises(ValueError):
             vm_snapshot.get_snapshot_by_identifier_recursively([snap1])
 
     def test_raises_when_multiple_identifiers_supplied(self):
-        snap1, _, _, _ = build_sample_tree()
+        snap1, _, _, _ = build_sample_tree()    # pylint: disable=disallowed-name
         with pytest.raises(ValueError):
             vm_snapshot.get_snapshot_by_identifier_recursively(
                 [snap1], snap_name="snap1", snap_id=1

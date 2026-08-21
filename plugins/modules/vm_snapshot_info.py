@@ -200,7 +200,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import (
     base_argument_spec
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._vm_snapshot import (
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._snapshot import (
     serialize_snapshot_obj_to_json,
     get_snapshot_by_identifier_recursively,
     flatten_snapshot_tree,
@@ -219,7 +219,7 @@ class VmSnapshotInfoModule(ModulePyvmomiBase):
         Read vm.snapshot exactly once - each access re-fetches the whole snapshot tree from
         vCenter - and derive every representation this module reports from that single in-memory
         copy. The tree returned by vCenter is a graph of data objects, so walking it (here and in
-        the _vm_snapshot helpers) makes no additional calls; it can be traversed as many times as
+        the _snapshot helpers) makes no additional calls; it can be traversed as many times as
         needed for free.
 
         When O(snapshot_name) or O(snapshot_id) is given, only the matching snapshot is reported
