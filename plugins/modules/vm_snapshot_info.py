@@ -16,7 +16,7 @@ short_description: Gathers information about a VMs snapshots
 description:
     - This module can be used to gather information about a virtual machine's snapshots.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 options:
     name:
         description:

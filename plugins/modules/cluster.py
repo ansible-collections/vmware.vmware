@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2023, Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -19,7 +19,7 @@ description:
       To manage DRS, HA and VSAN related configurations, use the modules cluster_drs,
       community.vmware.vmware_cluster_ha and community.vmware.vmware_cluster_vsan.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 
 options:
     cluster:

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2023, Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -19,7 +19,7 @@ description:
     - The module basis idempotentency on if the deployed VM exists or not, not the storage or power settings applied at deployment time.
 
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 
 seealso:
     - module: vmware.vmware.folder_template_from_vm

@@ -18,7 +18,7 @@ description:
     - Create a VM based on a template in a content library.
     - The module basis idempotentency on if the deployed VM exists or not, not the storage or power settings applied at deployment time.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 
 requirements:
     - vSphere Automation SDK

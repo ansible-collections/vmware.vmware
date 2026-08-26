@@ -10,7 +10,7 @@ DOCUMENTATION = r"""
 name: esxi_hosts
 short_description: Create an inventory containing VMware ESXi hosts
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
 description:
     - Create a dynamic inventory of VMware ESXi hosts from a vCenter environment.
     - Uses any file which ends with esxi_hosts.yml, esxi_hosts.yaml, vmware_esxi_hosts.yml, or vmware_esxi_hosts.yaml as a YAML configuration file.
