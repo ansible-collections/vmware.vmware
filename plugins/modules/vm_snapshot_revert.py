@@ -21,7 +21,7 @@ description:
     - If the snapshot is not found, the module will fail.
 
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Mike Morency (@mikemorency)
 
 options:
     name:

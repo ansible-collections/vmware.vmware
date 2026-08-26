@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2023, Ansible Eco Content Team (github.com/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -19,7 +19,7 @@ description:
     - Before taking a backup, a backup server must be set up and configured such that the vCenter server has access to it.
       The protocols supported for backup are FTPS, HTTPS, SFTP, FTP, NFS, SMB and HTTP.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Mike Morency (@mikemorency)
 
 options:
     name:

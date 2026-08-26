@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright: (c) 2024, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2024, Ansible Eco Content Team (github.com/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -14,7 +14,7 @@ short_description: Fetch VMware vCenter license keys
 description:
 - Fetch vCenter, ESXi server license keys.
 author:
-- Ansible Cloud Team (@ansible-collections)
+- Mike Morency (@mikemorency)
 requirements:
 - Python SDK for the VMware vSphere Management API
 attributes:

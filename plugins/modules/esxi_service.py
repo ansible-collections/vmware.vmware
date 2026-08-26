@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2024, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2024, Ansible Eco Content Team (github.com/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -18,7 +18,7 @@ description:
     - This module cannot create or remove services. The set of services available on an ESXi host
       is fixed, so this module only manages the state and startup policy of services that already exist.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Mike Morency (@mikemorency)
 
 version_added: '2.10.0'
 

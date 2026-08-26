@@ -19,7 +19,7 @@ description:
     - Content Library feature is introduced in vSphere 6.0 version.
     - This module does not work with vSphere version older than 67U2.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Mike Morency (@mikemorency)
 requirements:
     - vSphere Automation SDK
 options:

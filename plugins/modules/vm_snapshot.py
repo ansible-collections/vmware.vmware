@@ -16,7 +16,7 @@ short_description: Manages virtual machines snapshots in vCenter
 description:
     - This module can be used to create, delete and update snapshot(s) of the given virtual machine.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Mike Morency (@mikemorency)
 options:
     state:
         description:

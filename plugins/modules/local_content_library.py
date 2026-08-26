@@ -17,7 +17,7 @@ short_description: Manage a local content library.
 description:
     - Create, update, or destroy a local content library.
 author:
-    - Ansible Cloud Team (@ansible-collections)
+    - Mike Morency (@mikemorency)
 requirements:
     - vSphere Automation SDK
 

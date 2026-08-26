@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Cloud Team (@ansible-collections)
+# Copyright: (c) 2023, Ansible Eco Content Team (github.com/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -17,8 +17,7 @@ version_added: '1.4.0'
 short_description: Returns information about the portgroups of virtual machines
 description:
     - Returns information about the standard or distributed portgroups of virtual machines.
-author:
-    - Ansible Cloud Team (@ansible-collections)
+
 requirements:
     - vSphere Automation SDK
 options:
