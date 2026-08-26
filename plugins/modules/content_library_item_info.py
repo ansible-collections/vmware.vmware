@@ -20,7 +20,7 @@ description:
     - This module does not work with vSphere version older than 67U2.
     - If neither O(library_item_id) nor O(library_item_name) are provided, all items in the relevant libraries will be returned.
 author:
-    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
+    - Ansible Eco Content Team (github.com/eco-ansible-content)
 requirements:
     - vSphere Automation SDK
 options:

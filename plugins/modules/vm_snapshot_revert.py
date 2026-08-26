@@ -21,7 +21,7 @@ description:
     - If the snapshot is not found, the module will fail.
 
 author:
-    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
+    - Ansible Eco Content Team (github.com/eco-ansible-content)
 
 options:
     name:

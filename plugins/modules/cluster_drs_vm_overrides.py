@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
+# Copyright: (c) 2023, Ansible Eco Content Team (github.com/eco-ansible-content)
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -23,7 +23,7 @@ description:
     - Although VM overrides are shown in a unified view in vCenter, this module only manages the DRS override settings.
       Removing a VM override does not remove all overrides, just the DRS related ones.
 author:
-    - Ansible Eco Content Team (@ansible-collections/eco-ansible-content)
+    - Ansible Eco Content Team (github.com/eco-ansible-content)
 
 seealso:
     - module: vmware.vmware.cluster_drs
