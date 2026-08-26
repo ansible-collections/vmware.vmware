@@ -261,7 +261,7 @@ class VmPowerstateModule(ModulePyvmomiBase):
         self.vm = vm_list[0]
         state = self.params['state']
         self.desired_state = state.replace('_', '').replace('-', '').lower()
-        self.current_state = self.vm.summary.runtime.powerState.lower()
+        self.current_state = self.vm.runtime.powerState.lower()
         self.result["vm"]['moid'] = self.vm._GetMoId()
         self.result["vm"]['name'] = self.vm.name
 
@@ -287,7 +287,7 @@ class VmPowerstateModule(ModulePyvmomiBase):
 
         end_time = datetime.now() + timedelta(seconds=timeout)
         while datetime.now() < end_time:
-            if self.vm.summary.runtime.powerState.lower() == 'poweredoff':
+            if self.vm.runtime.powerState.lower() == 'poweredoff':
                 break
             time.sleep(5)
 

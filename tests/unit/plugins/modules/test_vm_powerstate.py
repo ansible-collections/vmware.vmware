@@ -32,7 +32,7 @@ class TestVmPowerstate(ModuleTestCase):
         self.vm_mock = mocker.MagicMock()
         self.vm_mock.configure_mock(
             **{
-                "summary.runtime.powerState.lower.return_value": "poweredon",
+                "runtime.powerState.lower.return_value": "poweredon",
                 "runtime.question": False
             }
         )
@@ -73,7 +73,7 @@ class TestVmPowerstate(ModuleTestCase):
         self.vm_mock.configure_mock(
             **{
                 "PowerOn.return_value": MockVsphereTask(),
-                "summary.runtime.powerState.lower.return_value": "poweredoff"
+                "runtime.powerState.lower.return_value": "poweredoff"
             }
         )
 
@@ -123,7 +123,7 @@ class TestVmPowerstate(ModuleTestCase):
         assert result["changed"] is True
 
     def _side_effect_power_off_vm(self, *args, **kwargs):
-        self.vm_mock.summary.runtime.powerState = 'poweredoff'
+        self.vm_mock.runtime.powerState = 'poweredoff'
 
     def test_poll_vm_state_for_shutdown(self, mocker):
         self.__prepare(mocker)
@@ -131,7 +131,7 @@ class TestVmPowerstate(ModuleTestCase):
         self.vm_mock.configure_mock(
             **{
                 "ShutdownGuest.return_value": MockVsphereTask(),
-                "summary.runtime.powerState": 'poweredon',
+                "runtime.powerState": 'poweredon',
                 "guest.toolsRunningStatus": 'guestToolsRunning'
             }
         )

@@ -101,9 +101,11 @@ class VmQuestionHandler():
         See https://knowledge.broadcom.com/external/article/311492/answering-a-virtual-machine-related-ques.html
         for an example of what this looks like in the UI.
         """
-        if hasattr(self.vm, "runtime") and self.vm.runtime.question:
-            if not self.answers:
-                raise TaskError("Unanswered VM question: '%s'" % to_text(self.vm.runtime.question.text))
+        if not (hasattr(self.vm, "runtime") and self.vm.runtime.question):
+            return
+
+        if not self.answers:
+            raise TaskError("Unanswered VM question: '%s'" % to_text(self.vm.runtime.question.text))
 
         responses = self.format_vm_question_responses()
         self.send_vm_question_responses(responses)

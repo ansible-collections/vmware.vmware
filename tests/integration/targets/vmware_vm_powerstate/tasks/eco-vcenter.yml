@@ -237,6 +237,48 @@
       retries: 60
       delay: 5
 
+    - name: Shutdown the guest and wait for it to power off
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: shutdown-guest
+        timeout: 600
+      register: shutdown_guest
+
+    - name: Gather VM info immediately after shutdown-guest returns
+      vmware.vmware.guest_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+      register: post_shutdown_info
+
+    # No until/retries here on purpose. If the module honored the timeout and
+    # waited for the guest to power off, the VM must already be poweredOff by
+    # the time control returns to Ansible.
+    - name: Verify the module waited for the guest to power off
+      ansible.builtin.assert:
+        that:
+          - shutdown_guest.changed
+          - post_shutdown_info.guests[0].hw_power_status == "poweredOff"
+
+    - name: Power the virtual machine back on
+      vmware.vmware.vm_powerstate:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
+        state: powered-on
+
+    - name: Wait until VM is ready again
+      vmware.vmware_rest.vcenter_vm_tools_info:
+        vm: "{{ deploy.vm.moid }}"
+      register: vm_tools_info
+      until:
+        - vm_tools_info is not failed
+        - vm_tools_info.value.run_state == "RUNNING"
+      retries: 60
+      delay: 5
+
     - name: Reboot the virtual machine with force
       vmware.vmware.vm_powerstate:
         datacenter: "{{ vm_datacenter }}"
