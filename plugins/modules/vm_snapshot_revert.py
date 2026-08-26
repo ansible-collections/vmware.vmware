@@ -1,8 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Ansible Project
-# This module is also sponsored by E.T.A.I. (www.etai.fr)
+# Copyright: (c) 2026, Ansible Project
 # GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -163,6 +162,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks import (
     RunningTaskMonitor,
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.vm._snapshot import (
+    get_snapshot_by_identifier_recursively,
+)
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_text
 
@@ -171,9 +173,10 @@ class VmSnapshotRevertModule(ModulePyvmomiBase):
     def __init__(self, module):
         super().__init__(module)
         self.vm = self.get_vms_using_params(fail_on_missing=True)[0]
-        self.snapshot = self._get_snapshot_by_identifier_recursively(
+        self.snapshot = get_snapshot_by_identifier_recursively(
             self.vm.snapshot.rootSnapshotList,
-            self.module.params["snapshot_name"] or self.module.params["snapshot_id"],
+            snap_name=self.module.params["snapshot_name"],
+            snap_id=self.module.params["snapshot_id"]
         )
         if not self.snapshot:
             self.module.fail_json(
@@ -183,17 +186,6 @@ class VmSnapshotRevertModule(ModulePyvmomiBase):
                     self.module.params["snapshot_id"],
                 )
             )
-
-    def _get_snapshot_by_identifier_recursively(self, snapshot_list, snapidentifier):
-        for snapshot in snapshot_list:
-            if snapidentifier == snapshot.id or snapidentifier == snapshot.name:
-                return snapshot
-            else:
-                if child_match := self._get_snapshot_by_identifier_recursively(
-                    snapshot.childSnapshotList, snapidentifier
-                ):
-                    return child_match
-        return None
 
     def revert_to_snapshot(self):
         task_result = {}

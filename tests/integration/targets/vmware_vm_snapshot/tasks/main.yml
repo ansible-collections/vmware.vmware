@@ -48,6 +48,41 @@
       vars:
         snapshot_info: "{{ info.guests[0].snapshots[0] }}"
 
+    - name: Gather all snapshot info with the info module
+      vmware.vmware.vm_snapshot_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+      register: _snap_info_all
+
+    - name: Gather info about a single snapshot by name
+      vmware.vmware.vm_snapshot_info:
+        moid: "{{ _create.vm.moid }}"
+        snapshot_name: snap1
+      register: _snap_info_by_name
+
+    - name: Gather info about a single snapshot by id
+      vmware.vmware.vm_snapshot_info:
+        moid: "{{ _create.vm.moid }}"
+        snapshot_id: "{{ _create.snapshot.id }}"
+      register: _snap_info_by_id
+
+    - name: Verify info module reports the snapshot
+      ansible.builtin.assert:
+        that:
+          - _snap_info_all.vm.moid == _create.vm.moid
+          - _snap_info_all.snapshots | length == 1
+          - _snap_info_all.snapshots[0].name == 'snap1'
+          - _snap_info_all.snapshots[0].description == 'snap1_description'
+          - _snap_info_all.snapshots[0].parent_id is none
+          - _snap_info_all.current_snapshot.name == 'snap1'
+          # snapshots_tree is keyed by snapshot id, rendered as a string once serialized to JSON
+          - _snap_info_all.snapshots_tree[_create.snapshot.id | string].name == 'snap1'
+          - _snap_info_by_name.snapshots | length == 1
+          - _snap_info_by_name.snapshots[0].id == _create.snapshot.id
+          - _snap_info_by_id.snapshots | length == 1
+          - _snap_info_by_id.snapshots[0].name == 'snap1'
+
     - name: Create a second snapshot
       vmware.vmware.vm_snapshot:
         datacenter: "{{ vm_datacenter }}"
@@ -70,30 +105,70 @@
         snapshot_name: snap1_2
         state: absent
 
-    - name: Rename Snapshot
+    # Renaming a snapshot must not touch its description. Note that no description is passed
+    # here: previously the module always sent an empty description alongside the new name,
+    # which wiped the existing description.
+    - name: Rename Snapshot without changing its description
       vmware.vmware.vm_snapshot:
         datacenter: "{{ vm_datacenter }}"
         folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
         state: present
         snapshot_name: snap1
-        description: snap1_description
         new_snapshot_name: new_name1
       register: _rename
 
-    - name: Gather some info from vm
-      vmware.vmware.guest_info:
+    - name: Rename Snapshot - Idempotence
+      vmware.vmware.vm_snapshot:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
         name: "{{ vm }}"
-      register: info
+        state: present
+        snapshot_name: new_name1
+      register: _rename_idem
 
-    - name: Verify snapshot renamed
+    - name: Gather snapshot info after rename
+      vmware.vmware.vm_snapshot_info:
+        moid: "{{ _create.vm.moid }}"
+        snapshot_name: new_name1
+      register: _snap_info_renamed
+
+    - name: Verify snapshot renamed and description preserved
       ansible.builtin.assert:
         that:
-          - snapshot_info.name == 'new_name1'
+          - _rename is ansible.builtin.changed
+          - _rename.renamed
+          - _rename_idem is not changed
+          - _snap_info_renamed.snapshots | length == 1
+          - _snap_info_renamed.snapshots[0].name == 'new_name1'
+          # The bug: renaming without a description used to reset the description to an empty string
+          - _snap_info_renamed.snapshots[0].description == 'snap1_description'
           - _revert is ansible.builtin.changed
-          - _revert.snapshot.id == info.guests[0].current_snapshot.id
-      vars:
-        snapshot_info: "{{ info.guests[0].snapshots[0] }}"
+          - _revert.snapshot.id == _snap_info_renamed.current_snapshot.id
+
+    # The inverse of the rename case: updating the description must not touch the name.
+    - name: Update snapshot description without renaming
+      vmware.vmware.vm_snapshot:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "/{{ vm_datacenter }}/vm/"
+        name: "{{ vm }}"
+        state: present
+        snapshot_name: new_name1
+        description: updated_description
+      register: _redescribe
+
+    - name: Gather snapshot info after description update
+      vmware.vmware.vm_snapshot_info:
+        moid: "{{ _create.vm.moid }}"
+        snapshot_name: new_name1
+      register: _snap_info_redescribed
+
+    - name: Verify description updated and name preserved
+      ansible.builtin.assert:
+        that:
+          - _redescribe is ansible.builtin.changed
+          - _snap_info_redescribed.snapshots[0].name == 'new_name1'
+          - _snap_info_redescribed.snapshots[0].description == 'updated_description'
 
     - name: Take a second snap with more options
       vmware.vmware.vm_snapshot:
@@ -123,10 +198,22 @@
         name: "{{ vm }}"
       register: info
 
+    - name: Gather all snapshot info with the info module
+      vmware.vmware.vm_snapshot_info:
+        moid: "{{ _create.vm.moid }}"
+      register: _snap_info_chain
+
     - name: Verify snapshot length
       ansible.builtin.assert:
         that:
           - info.guests[0].snapshots | length == 6
+          # The info module reports the same set of snapshots as guest_info
+          - _snap_info_chain.snapshots | length == 6
+          - _snap_info_chain.current_snapshot != {}
+          - _snap_info_chain.snapshots_tree | length > 0
+          # Every flattened snapshot exposes the tree-walking metadata keys
+          - _snap_info_chain.snapshots | map(attribute='parent_id') | list | length == 6
+          - _snap_info_chain.snapshots[0].child_ids is defined
 
     - name: Remove a single snapshot
       vmware.vmware.vm_snapshot:
@@ -190,10 +277,18 @@
         name: "{{ vm }}"
       register: info
 
+    - name: Gather snapshot info when the VM has no snapshots
+      vmware.vmware.vm_snapshot_info:
+        moid: "{{ _create.vm.moid }}"
+      register: _snap_info_empty
+
     - name: Verify all snapshots removed
       ansible.builtin.assert:
         that:
           - info.guests[0].snapshots | length == 0
+          - _snap_info_empty.snapshots | length == 0
+          - _snap_info_empty.snapshots_tree == {}
+          - _snap_info_empty.current_snapshot == {}
 
     - name: Create a snapshot
       vmware.vmware.vm_snapshot:

@@ -1,0 +1,11 @@
+---
+bugfixes:
+  - vm_snapshot - remove empty string default for the description field.
+    Descriptions will only be updated if you specify one.
+    Fixes https://github.com/ansible-collections/vmware.vmware/issues/395
+  - vm_snapshot - fix snapshot lookup so entire snapshot tree is accessible,
+    and not just the first branch.
+
+minor_changes:
+  - vm_snapshot - Add relevant parent and child snapshot IDs to the returned snapshot value.
+  - vm_snapshot_info - Add module to gather information about snapshots and the snapshot tree.
