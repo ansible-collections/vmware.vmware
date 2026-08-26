@@ -1,0 +1,6 @@
+---
+test_esxi_hostname: "{{ tiny_prefix }}_esxi_service"
+
+test_resource_pool: "{{ tiny_prefix }}_vmware_esxi_service"
+
+test_service_name: ntpd
