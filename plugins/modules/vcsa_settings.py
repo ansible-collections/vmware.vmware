@@ -16,8 +16,6 @@ short_description: Configure vCenter Server Appliance settings
 version_added: 1.2.0
 description:
   - Configure vCenter Server Appliance settings.
-author:
-  - Ansible Eco Content Team (github.com/eco-ansible-content)
 requirements:
   - vSphere Automation SDK
 options:

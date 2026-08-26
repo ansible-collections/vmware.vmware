@@ -16,7 +16,7 @@ short_description: Manage Distributed Resource Scheduler (DRS) on VMware vSphere
 description:
     - Manages DRS on VMware vSphere clusters.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:

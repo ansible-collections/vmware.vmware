@@ -23,7 +23,7 @@ description:
       via the vCenter UI.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     provider_name:

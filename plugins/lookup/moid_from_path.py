@@ -14,7 +14,7 @@ description:
     - Multiple objects can be returned if the path ends in slash, indicating that the path is a
       container and its contents should be queried.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     _terms:

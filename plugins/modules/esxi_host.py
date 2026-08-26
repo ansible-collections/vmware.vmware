@@ -22,7 +22,7 @@ description:
       be moved to a new cluster or folder.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.esxi_connection

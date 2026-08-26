@@ -28,7 +28,7 @@ description:
       'vmware-toolbox-cmd config set deployPkg enable-custom-scripts  true'
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     name:

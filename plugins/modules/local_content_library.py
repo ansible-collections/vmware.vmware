@@ -17,7 +17,7 @@ short_description: Manage a local content library.
 description:
     - Create, update, or destroy a local content library.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 requirements:
     - vSphere Automation SDK
 

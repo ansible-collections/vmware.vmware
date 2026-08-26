@@ -18,7 +18,7 @@ description:
     - It also returns identifying information about the ESXi host that the VM is on, as well as the
       resource pool that contains the VM.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     name:

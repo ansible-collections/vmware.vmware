@@ -19,7 +19,7 @@ description:
     - Before taking a backup, a backup server must be set up and configured such that the vCenter server has access to it.
       The protocols supported for backup are FTPS, HTTPS, SFTP, FTP, NFS, SMB and HTTP.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     name:

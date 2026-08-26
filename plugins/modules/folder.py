@@ -16,7 +16,7 @@ short_description: Manage VMware vSphere folders
 description:
     - Adds or removes VMware vSphere folders. This module does not manage folders inside of datastores.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     datacenter:

@@ -23,7 +23,7 @@ description:
       You can remove the host and add it back using the vmware.vmware.esxi_host to get it in the proper state.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.esxi_host

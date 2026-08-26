@@ -18,7 +18,7 @@ description:
     - Gets HA VM override settings on VMware vSphere clusters.
     - Although VM overrides are shown in a unified view in vCenter, this module only gets the HA override settings.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.cluster_ha

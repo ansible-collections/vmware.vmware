@@ -25,7 +25,7 @@ description:
       If you try manually vMotioning a VM through the GUI, vCenter will validate the vMotion options at each step. This can be useful when determining
       why a VM is not able to move to another host and why no recommendations are being made.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:

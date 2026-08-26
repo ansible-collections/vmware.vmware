@@ -10,7 +10,7 @@ DOCUMENTATION = r"""
 name: vms
 short_description: Create an inventory containing VMware VMs
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 description:
     - Create a dynamic inventory of VMware VMs from a vCenter or ESXi environment.
     - Uses any file which ends with vms.yml, vms.yaml, vmware_vms.yml, or vmware_vms.yaml as a YAML configuration file.

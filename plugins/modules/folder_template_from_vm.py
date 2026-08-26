@@ -18,7 +18,7 @@ description:
       The VM must be powered off, and is otherwise unchanged. If the template already exists and the desired state
       is 'present', nothing is done.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 requirements:
     - pyvmomi
 options:

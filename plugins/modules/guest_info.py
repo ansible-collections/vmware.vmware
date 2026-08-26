@@ -14,8 +14,7 @@ module: guest_info
 short_description: Gather guest information
 description:
     - This module gathers vm guest information.
-author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+
 requirements:
     - vSphere Automation SDK
 options:

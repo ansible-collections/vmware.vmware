@@ -18,7 +18,7 @@ description:
     - Gets DRS VM override settings on VMware vSphere clusters.
     - Although VM overrides are shown in a unified view in vCenter, this module only gets the DRS override settings.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.cluster_drs

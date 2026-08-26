@@ -20,7 +20,7 @@ description:
       will be affected.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.deploy_content_library_ovf

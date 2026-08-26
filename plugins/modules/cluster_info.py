@@ -18,7 +18,7 @@ description:
       Gathers information about one or more clusters.
       You can search for clusters based on the cluster name, datacenter name, or a combination of the two.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:

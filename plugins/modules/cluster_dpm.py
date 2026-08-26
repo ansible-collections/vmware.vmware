@@ -16,7 +16,7 @@ short_description: Manage Distributed Power Management (DPM) on VMware vSphere c
 description:
     - Manages DPM on VMware vSphere clusters.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:

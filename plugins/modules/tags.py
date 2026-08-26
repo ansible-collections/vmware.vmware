@@ -19,7 +19,7 @@ description:
     - For better performance, use object IDs instead of names when possible.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     state:

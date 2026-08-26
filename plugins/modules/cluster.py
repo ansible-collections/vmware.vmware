@@ -19,7 +19,7 @@ description:
       To manage DRS, HA and VSAN related configurations, use the modules cluster_drs,
       community.vmware.vmware_cluster_ha and community.vmware.vmware_cluster_vsan.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:

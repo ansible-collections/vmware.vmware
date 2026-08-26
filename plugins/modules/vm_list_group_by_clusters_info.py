@@ -16,8 +16,7 @@ version_added: '1.1.0'
 short_description: Returns information about the virtual machines grouping by clusters and folders
 description:
     - Returns information about the virtual machines grouping by clusters and folders.
-author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+
 requirements:
     - vSphere Automation SDK
 options:

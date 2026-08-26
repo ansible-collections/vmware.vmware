@@ -16,7 +16,7 @@ short_description: Manages power states of virtual machines in vCenter
 description:
     - Manages power states of virtual machines in vCenter, e.g., Power on / Power off / Restart.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     datacenter:

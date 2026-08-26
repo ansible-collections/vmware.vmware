@@ -21,7 +21,7 @@ description:
     - You can optionally require TPM protection on the ESXi hosts that use the key provider.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 requirements:
     - vSphere Automation SDK

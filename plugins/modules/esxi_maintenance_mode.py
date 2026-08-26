@@ -16,7 +16,7 @@ short_description: Manage an ESXi hosts maintenance mode setting in vCenter
 description:
     - Manage an ESXi hosts maintenance mode setting in vCenter
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     esxi_host_name:

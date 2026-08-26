@@ -17,8 +17,7 @@ version_added: '1.4.0'
 short_description: Returns information about the portgroups of virtual machines
 description:
     - Returns information about the standard or distributed portgroups of virtual machines.
-author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+
 requirements:
     - vSphere Automation SDK
 options:

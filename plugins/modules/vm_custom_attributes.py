@@ -16,8 +16,8 @@ short_description: Manage custom attributes from VMware for the given virtual ma
 description:
     - This module can be used to add, remove and update custom attributes for the given virtual machine.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
     - Lorenzo Andreasi (@lollo03)
+    - Mike Morency (@mikemorency)
 options:
     name:
         description:

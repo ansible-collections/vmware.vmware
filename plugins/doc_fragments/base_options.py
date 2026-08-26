@@ -24,6 +24,10 @@ notes:
       specify the certificate store by setting the REQUESTS_CA_BUNDLE environment variable. Note having this variable set may
       cause a 'false' value for the 'validate_certs' option to be ignored in some cases.
       Example: 'export REQUESTS_CA_BUNDLE=/path/to/your/ca_bundle.pem'
+
+author:
+  - Ansible Eco Content Team (@eco-ansible-content)
+
 options:
   hostname:
     description:

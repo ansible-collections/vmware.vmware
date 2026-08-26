@@ -19,7 +19,7 @@ description:
     - The module basis idempotentency on if the deployed VM exists or not, not the storage or power settings applied at deployment time.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.folder_template_from_vm

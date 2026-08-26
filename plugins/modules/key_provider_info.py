@@ -18,7 +18,7 @@ description:
     - This module allows you to gather information about one or more key providers in a vCenter instance.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     provider_name:

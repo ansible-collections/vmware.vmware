@@ -24,7 +24,7 @@ description:
       Removing a VM override does not remove all overrides, just the HA related ones.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 seealso:
     - module: vmware.vmware.cluster_ha

@@ -18,7 +18,7 @@ description:
     - If a name is provided, only the schedule with that name will be included in the output.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     name:

@@ -14,7 +14,7 @@ short_description: Fetch VMware vCenter license keys
 description:
 - Fetch vCenter, ESXi server license keys.
 author:
-- Ansible Eco Content Team (github.com/eco-ansible-content)
+- Mike Morency (@mikemorency)
 requirements:
 - Python SDK for the VMware vSphere Management API
 attributes:

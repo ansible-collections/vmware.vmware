@@ -21,7 +21,7 @@ description:
       to using a loop). See the examples for more details.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     state:

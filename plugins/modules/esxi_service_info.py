@@ -17,7 +17,7 @@ description:
     - Gather information about the services available on an ESXi host, including each
       service's running state, startup policy, and source package.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 version_added: '2.10.0'
 

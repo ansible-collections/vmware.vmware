@@ -17,7 +17,7 @@ description:
     - Manages the advanced settings for a VM.
     - Changing advanced settings can cause instability for the VM. Be careful when removing or updating existing settings.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     datacenter:

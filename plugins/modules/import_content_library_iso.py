@@ -19,7 +19,7 @@ description:
       will be affected.
 
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 extends_documentation_fragment:
     - vmware.vmware.base_options

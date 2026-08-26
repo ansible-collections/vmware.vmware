@@ -19,7 +19,7 @@ description:
       Datastores may not be configured for vCLS if they are blocked by solutions where vCLS
       cannot be configured such as SRM or vSAN maintenance mode.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:

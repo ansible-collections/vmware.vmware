@@ -15,8 +15,6 @@ module: appliance_info
 short_description: Gather appliance information
 description:
 - This module gather VCenter appliance information.
-author:
-- Ansible Eco Content Team (github.com/eco-ansible-content)
 requirements:
 - vSphere Automation SDK
 options:

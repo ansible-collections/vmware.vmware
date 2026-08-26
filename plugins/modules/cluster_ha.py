@@ -16,7 +16,7 @@ short_description: Manage High Availability services (HA) on VMware vSphere clus
 description:
     - Manages HA on VMware vSphere clusters.
 author:
-    - Ansible Eco Content Team (github.com/eco-ansible-content)
+    - Mike Morency (@mikemorency)
 
 options:
     cluster:
