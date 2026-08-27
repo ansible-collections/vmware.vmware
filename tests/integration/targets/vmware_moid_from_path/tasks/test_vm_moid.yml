@@ -1,7 +1,7 @@
 ---
 - name: Verify number of VMs in a folder
   ansible.builtin.assert:
-    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/vm/e2e-qe/', type='vm', wantlist=true, **vmware_rest_auth_vars) | length > 1
+    that: lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/vm/EcoAnsible/', type='vm', wantlist=true, **vmware_rest_auth_vars) | length > 1
 
 - name: Verify number of VMs in a host
   ansible.builtin.assert:

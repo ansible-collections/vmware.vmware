@@ -6,7 +6,7 @@ template_name: mytemplate
 
 vm_cluster: "{{ vcenter_cluster_name }}"
 vm_datacenter: "{{ vcenter_datacenter }}"
-vm_folder: "/{{ vcenter_datacenter }}/vm/e2e-qe"
+vm_folder: "/{{ vcenter_datacenter }}/vm"
 vm_guest_id: "rhel8_64Guest"
 vm_disk:
   - size_gb: 10
