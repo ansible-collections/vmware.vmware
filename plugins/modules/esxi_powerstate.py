@@ -36,7 +36,8 @@ options:
             - Set the power state of the ESXi host.
             - V(powered-off) shuts the host down.
             - V(restarted) reboots the host.
-            - V(standby) puts the host into a standby (low power) state.
+            - V(standby) puts the host into a standby (low power) state. Standby mode requires that the host
+              supports power-management or wake methods, and is never supported on nested or virtual hosts.
             - V(powered-on) brings the host out of a standby state. It cannot power on a host
               that is fully powered off, and requires a supported wake method (DPM, IPMI, or Wake-on-LAN).
         choices: [ powered-off, powered-on, restarted, standby ]
@@ -62,13 +63,16 @@ options:
             - The timeout, in seconds, to wait for the power state change to complete.
             - Also used as the time to wait for the host to enter or leave the standby state
               when O(state) is V(standby) or V(powered-on).
+            - When O(state) is V(restarted), the module waits up to this long for the host to
+              finish rebooting and reconnect to vCenter. When O(state) is V(powered-off), it
+              waits up to this long for the host to report a powered off state.
         default: 600
         type: int
     scheduled_at:
         description:
             - Date and time in string format at which specified task needs to be performed.
             - "The required format for date and time - 'dd/mm/yyyy hh:mm'."
-            - Scheduling task requires vCenter server. A standalone ESXi server does not support this option.
+            - Scheduling a task requires vCenter server. A standalone ESXi server does not support this option.
         type: str
         required: false
     scheduled_task_name:
@@ -87,16 +91,13 @@ options:
         description:
             - Description of scheduled task.
             - Valid only if O(scheduled_at) is specified.
-            - If not specified, newly created tasks are given an empty description, and when
-              reconciling an existing task the description is not checked or changed.
+            - If not specified, newly created tasks are given an empty description.
         type: str
         required: false
     scheduled_task_enabled:
         description:
             - Flag to indicate whether the scheduled task is enabled or disabled.
             - Newly created scheduled tasks are enabled by default.
-            - If not specified, the enabled state is not checked or changed when reconciling an
-              existing task.
         type: bool
         required: false
 
@@ -161,6 +162,7 @@ try:
 except ImportError:
     pass
 
+import time
 from random import randint
 from datetime import datetime
 from ansible.module_utils.basic import AnsibleModule
@@ -205,6 +207,9 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         self.current_state = self.host.runtime.powerState.lower()
         self.result["host"]["moid"] = self.host._GetMoId()
         self.result["host"]["name"] = self.host.name
+        # Boot time captured before a reboot so we can confirm the host actually
+        # rebooted (bootTime advances) rather than just that the task was accepted.
+        self._boot_time_before_reboot = None
 
     def run_host_task(self, task):
         """
@@ -223,7 +228,61 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         return self.host.ShutdownHost_Task(self.params["force"])
 
     def reboot_host(self):
+        # Record the current boot time so wait_for_reboot can confirm the host actually
+        # went through a reboot cycle rather than just accepting the task.
+        self._boot_time_before_reboot = getattr(self.host.runtime, "bootTime", None)
         return self.host.RebootHost_Task(self.params["force"])
+
+    def _get_host_runtime(self):
+        """
+        Returns the host's live runtime info, or None if it cannot be read (for example
+        while the host is briefly unreachable during a reboot).
+        """
+        try:
+            return self.host.runtime
+        except Exception:
+            return None
+
+    def wait_for_reboot(self):
+        """
+        Waits for the host to finish rebooting and reconnect to vCenter. Comparing
+        bootTime avoids the race where the host still reports connected and powered on
+        immediately after the reboot task is initiated.
+        """
+        deadline = time.time() + self.params["timeout"]
+        while time.time() < deadline:
+            runtime = self._get_host_runtime()
+            if runtime is not None:
+                current_boot = getattr(runtime, "bootTime", None)
+                if (
+                    str(runtime.connectionState) == "connected"
+                    and str(runtime.powerState).lower() == "poweredon"
+                    and current_boot is not None
+                    and current_boot != self._boot_time_before_reboot
+                ):
+                    return
+            time.sleep(5)
+
+        self.module.fail_json(
+            msg="Timed out after %d seconds waiting for host %s to finish rebooting "
+            "and reconnect" % (self.params["timeout"], self.host.name)
+        )
+
+    def wait_for_powered_off(self):
+        """
+        Waits for the host to report a powered off state after a shutdown.
+        """
+        deadline = time.time() + self.params["timeout"]
+        while time.time() < deadline:
+            runtime = self._get_host_runtime()
+            if runtime is not None and str(runtime.powerState).lower() in ("poweredoff", "unknown"):
+                return
+            time.sleep(5)
+
+        self.module.fail_json(
+            msg="Timed out after %d seconds waiting for host %s to power off"
+            % (self.params["timeout"], self.host.name)
+        )
 
     def standby_host(self):
         return self.host.PowerDownHostToStandBy_Task(
@@ -259,6 +318,13 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
             self.module.fail_json(msg=to_text(e))
 
         self.run_host_task(task)
+
+        # The task only reports that the operation was initiated. Wait for the host to
+        # actually reach the requested state so callers can rely on it afterwards.
+        if self.desired_state == "restarted":
+            self.wait_for_reboot()
+        elif self.desired_state == "poweredoff":
+            self.wait_for_powered_off()
 
     def configure_host_scheduled_powerstate(self, scheduled_at):
         """

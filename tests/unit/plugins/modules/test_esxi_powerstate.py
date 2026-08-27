@@ -24,6 +24,8 @@ from ...common.vmware_object_mocks import (
 from datetime import datetime
 from pyVmomi import vim, vmodl
 
+MODULE_PATH = "ansible_collections.vmware.vmware.plugins.modules.esxi_powerstate"
+
 pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"
 )
@@ -38,6 +40,13 @@ class TestEsxiPowerstate(ModuleTestCase):
 
         mocker.patch.object(EsxiPowerstateModule, 'get_esxi_host_by_name_or_moid', return_value=self.test_esxi)
         mocker.patch.object(RunningTaskMonitor, 'wait_for_completion', return_value=(True, True))
+        # These poll the live host until it reaches the target state. That behavior is
+        # covered directly in TestEsxiPowerstateWaits, so stub them out here to keep the
+        # module-level tests focused on triggering the change.
+        self.mock_wait_for_reboot = mocker.patch.object(
+            EsxiPowerstateModule, 'wait_for_reboot', return_value=None)
+        self.mock_wait_for_powered_off = mocker.patch.object(
+            EsxiPowerstateModule, 'wait_for_powered_off', return_value=None)
         # Default to no pre-existing scheduled tasks on the host.
         self.content_mock.scheduledTaskManager.RetrieveEntityScheduledTask.return_value = []
 
@@ -81,6 +90,8 @@ class TestEsxiPowerstate(ModuleTestCase):
         result = run_module(module_entry=module_main, module_args=module_args)
 
         assert result["changed"] is True
+        # A shutdown must wait for the host to actually reach a powered off state.
+        self.mock_wait_for_powered_off.assert_called_once()
 
     def test_reboot(self, mocker):
         self.__prepare(mocker)
@@ -95,6 +106,8 @@ class TestEsxiPowerstate(ModuleTestCase):
         result = run_module(module_entry=module_main, module_args=module_args)
 
         assert result["changed"] is True
+        # A reboot must wait for the host to finish rebooting and reconnect.
+        self.mock_wait_for_reboot.assert_called_once()
 
     def test_standby(self, mocker):
         self.__prepare(mocker)
@@ -497,3 +510,92 @@ class TestEsxiPowerstate(ModuleTestCase):
         result = run_module(module_entry=module_main, module_args=module_args, expect_success=False)
 
         assert result["failed"] is True
+
+
+class TestEsxiPowerstateWaits:
+    """
+    Directly exercises the polling helpers that wait for a host to reach the target
+    state after a power task is initiated.
+    """
+
+    def _make_module(self, mocker, host, timeout=60):
+        # Build an instance without running __init__ so we can test the wait helpers in
+        # isolation, setting only the attributes they rely on.
+        instance = EsxiPowerstateModule.__new__(EsxiPowerstateModule)
+        instance.host = host
+        instance.module = mocker.MagicMock()
+        instance.params = {"timeout": timeout}
+        instance._boot_time_before_reboot = None
+        return instance
+
+    def test_get_host_runtime_handles_exception(self, mocker):
+        host = mocker.MagicMock()
+        type(host).runtime = mocker.PropertyMock(side_effect=Exception("unreachable"))
+        instance = self._make_module(mocker, host)
+
+        assert instance._get_host_runtime() is None
+
+    def test_wait_for_powered_off_returns_when_off(self, mocker):
+        host = MockEsxiHost(name="test")
+        host.runtime.powerState = "poweredOff"
+        instance = self._make_module(mocker, host)
+
+        instance.wait_for_powered_off()
+
+        instance.module.fail_json.assert_not_called()
+
+    def test_wait_for_powered_off_times_out(self, mocker):
+        host = MockEsxiHost(name="test")
+        host.runtime.powerState = "poweredOn"
+        instance = self._make_module(mocker, host)
+        mocker.patch(MODULE_PATH + ".time.sleep")
+        # First call sets the deadline, second is past it so the loop exits immediately.
+        mocker.patch(MODULE_PATH + ".time.time", side_effect=[1000.0, 9999.0])
+
+        instance.wait_for_powered_off()
+
+        instance.module.fail_json.assert_called_once()
+        assert "power off" in instance.module.fail_json.call_args.kwargs["msg"]
+
+    def test_wait_for_reboot_returns_when_boot_time_changed(self, mocker):
+        host = MockEsxiHost(name="test")
+        host.runtime.connectionState = "connected"
+        host.runtime.powerState = "poweredOn"
+        host.runtime.bootTime = datetime(2026, 1, 1, 12, 0)
+        instance = self._make_module(mocker, host)
+        instance._boot_time_before_reboot = datetime(2026, 1, 1, 10, 0)
+
+        instance.wait_for_reboot()
+
+        instance.module.fail_json.assert_not_called()
+
+    def test_wait_for_reboot_times_out_when_boot_time_unchanged(self, mocker):
+        # The host is connected and powered on, but bootTime never advances, so the host
+        # has not actually rebooted and the wait must time out.
+        host = MockEsxiHost(name="test")
+        host.runtime.connectionState = "connected"
+        host.runtime.powerState = "poweredOn"
+        host.runtime.bootTime = datetime(2026, 1, 1, 10, 0)
+        instance = self._make_module(mocker, host)
+        instance._boot_time_before_reboot = datetime(2026, 1, 1, 10, 0)
+        mocker.patch(MODULE_PATH + ".time.sleep")
+        mocker.patch(MODULE_PATH + ".time.time", side_effect=[1000.0, 9999.0])
+
+        instance.wait_for_reboot()
+
+        instance.module.fail_json.assert_called_once()
+        assert "rebooting" in instance.module.fail_json.call_args.kwargs["msg"]
+
+    def test_wait_for_reboot_times_out_when_not_connected(self, mocker):
+        host = MockEsxiHost(name="test")
+        host.runtime.connectionState = "notResponding"
+        host.runtime.powerState = "poweredOn"
+        host.runtime.bootTime = datetime(2026, 1, 1, 12, 0)
+        instance = self._make_module(mocker, host)
+        instance._boot_time_before_reboot = datetime(2026, 1, 1, 10, 0)
+        mocker.patch(MODULE_PATH + ".time.sleep")
+        mocker.patch(MODULE_PATH + ".time.time", side_effect=[1000.0, 9999.0])
+
+        instance.wait_for_reboot()
+
+        instance.module.fail_json.assert_called_once()

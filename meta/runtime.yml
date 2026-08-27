@@ -17,6 +17,7 @@ action_groups:
         - deploy_folder_template
         - esxi_connection
         - esxi_host
+        - esxi_info
         - esxi_maintenance_mode
         - esxi_powerstate
         - esxi_service
