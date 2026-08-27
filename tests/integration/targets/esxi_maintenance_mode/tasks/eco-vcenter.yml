@@ -100,7 +100,7 @@
         that:
           - _set is changed
           - _set.result.state == 'success'
-          - _host_info.ansible_facts.ansible_in_maintenance_mode
+          - _host_info[0].in_maintenance_mode
 
     - name: Disable Maintenance Mode For Host That Is In Maintenance Mode
       vmware.vmware.esxi_maintenance_mode:
@@ -118,7 +118,7 @@
         that:
           - _set is changed
           - _set.result.state == 'success'
-          - not _host_info.ansible_facts.ansible_in_maintenance_mode
+          - not _host_info[0].in_maintenance_mode
 
     - name: Enable Maintenance Mode Before Cleanup
       vmware.vmware.esxi_maintenance_mode:

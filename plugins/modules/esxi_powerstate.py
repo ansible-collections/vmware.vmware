@@ -395,7 +395,7 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         }
         spec = vim.scheduler.ScheduledTaskSpec()
         spec.name = self.params["scheduled_task_name"] or "task_%s" % str(
-            randint(10000, 99999)
+            randint(10000, 99999)  # NOSONAR - task name uniqueness only, not a security context
         )
         spec.scheduler = vim.scheduler.OnceTaskScheduler()
         spec.scheduler.runAt = scheduled_date
