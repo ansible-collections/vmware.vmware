@@ -18,6 +18,7 @@ action_groups:
         - esxi_connection
         - esxi_host
         - esxi_maintenance_mode
+        - esxi_powerstate
         - esxi_service
         - esxi_service_info
         - folder
