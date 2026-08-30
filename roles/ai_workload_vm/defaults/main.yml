@@ -1,0 +1,33 @@
+---
+# VM configuration
+ai_vm_name: ai-workload-vm
+ai_vm_datacenter: DC0
+ai_vm_cluster: ""
+ai_vm_folder: ""
+ai_vm_template: ""
+ai_vm_datastore: ""
+
+# VM hardware
+ai_vm_num_cpus: 16
+ai_vm_memory_mb: 65536
+ai_vm_disk_size_gb: 200
+ai_vm_guest_id: rhel9_64Guest
+
+# GPU configuration
+ai_vm_gpu_mode: vgpu
+ai_vm_gpu_device_id: ""
+ai_vm_vgpu_profile: ""
+ai_vm_gpu_count: 1
+ai_vm_memory_reservation_locked: true
+ai_vm_enable_uefi_secure_boot: false
+
+# Network
+ai_vm_network_name: "VM Network"
+ai_vm_network_type: vmxnet3
+
+# Power state after provisioning
+ai_vm_power_state: powered_on
+
+# Whether to wait for VMware Tools to report the VM IP
+ai_vm_wait_for_ip: true
+ai_vm_wait_for_ip_timeout: 300
