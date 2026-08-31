@@ -40,7 +40,7 @@ if [ -n "${1:-}" ]; then
 elif [ -n "${ECO_VCENTER_CI_TARGETS:-}" ]; then
     read -ra target_list <<<"${ECO_VCENTER_CI_TARGETS}"
 else
-    mapfile -t target_list < <(ansible-test integration --list-target | grep 'vmware_')
+    mapfile -t target_list < <(ansible-test integration --list-target | grep -vE '^(prepare_test_vars|manual_)')
 fi
 
 for target in "${target_list[@]}"; do

@@ -37,10 +37,15 @@ jobs:
           from pathlib import Path
 
           root = Path("tests/integration/targets")
+          # Skip helper roles (e.g. prepare_test_vars) and targets that must be
+          # run manually (prefixed with "manual_").
+          skip = {"prepare_test_vars"}
           targets = sorted(
               p.name
               for p in root.iterdir()
-              if p.is_dir() and p.name.startswith("vmware_")
+              if p.is_dir()
+              and p.name not in skip
+              and not p.name.startswith("manual_")
           )
           chunk = 5
           groups = [
@@ -106,7 +111,7 @@ jobs:
   # This job does nothing and is only used for the branch protection
   # or multi-stage CI jobs, like making sure that all tests pass before
   # a publishing job is started.
-  eco-ci-integration-check:
+  integration-check:
     if: always()
     needs:
       - ansible_integration_test
