@@ -17,6 +17,6 @@
         dest: "{{ playbook_dir }}/test_session/vars.sh"
         content: |
           export VMWARE_HOST='{{ vcenter_hostname }}'
-          export VMWARE_USERNAME='{{ vcenter_username }}'
+          export VMWARE_USER='{{ vcenter_username }}'
           export VMWARE_PASSWORD='{{ vcenter_password }}'
           export TINY_PREFIX='{{ tiny_prefix }}'

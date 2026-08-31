@@ -36,7 +36,8 @@ symlink_roles_path
 tiny_prefix="test-vmware-$(uuidgen | tr -d '-' | cut -c1-4 | tr '[:upper:]' '[:lower:]')"
 
 ansible-playbook "setup.yml" -e tiny_prefix="$tiny_prefix"
-./test_session/vars.sh
+# shellcheck source=/dev/null
+source ./test_session/vars.sh
 
 ansible-playbook -i "files/test.esxi_hosts.yml" test.yml
 
