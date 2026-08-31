@@ -64,8 +64,8 @@ units-coverage: units
 	ansible-test coverage xml --requirements; \
 	cp tests/output/reports/coverage.xml $(CURDIR)/coverage-units.xml;
 
-.PHONY: eco-vcenter-ci
-eco-vcenter-ci: tests/integration/integration_config.yml install-integration-reqs upgrade-collections
+.PHONY: integration
+integration: tests/integration/integration_config.yml install-integration-reqs upgrade-collections
 	cd $(COLLECTION_ROOT); \
 	ansible --version; \
 	ansible-test --version; \
