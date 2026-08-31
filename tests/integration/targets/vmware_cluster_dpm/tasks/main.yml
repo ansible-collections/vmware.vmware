@@ -1,20 +1,5 @@
 ---
-- name: Test On Simulator
-  when: not run_on_vcenter
-  environment: "{{ environment_auth_vars }}"
-
-  block:
-    - name: Set DPM Settings In Cluster
-      vmware.vmware.cluster_dpm:
-        datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ test_cluster }}"
-        enable: "{{ dpm_enable }}"
-        automation_level: "{{ dpm_automation_level }}"
-        recommendation_priority_threshold: "{{ dpm_recommendation_priority_threshold }}"
-    # The simulator never seems to update its DPM settings, so there's nothing to validate here
-
 - name: Test On VCenter
-  when: run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:

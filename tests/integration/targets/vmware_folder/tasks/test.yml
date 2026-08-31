@@ -32,7 +32,6 @@
       - _check_create is changed
 
 - name: Additional Eco Vcenter Tests
-  when: run_on_vcenter
   block:
     - name: Delete Folder In Check Mode
       vmware.vmware.folder:

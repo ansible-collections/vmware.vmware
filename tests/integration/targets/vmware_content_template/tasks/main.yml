@@ -1,6 +1,5 @@
 ---
 - name: Test
-  when: run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:
@@ -18,7 +17,6 @@
         disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
         hardware: "{{ vm_hardware }}"
-      when: run_on_vcenter
 
     - name: "Test setup: Create content library {{ library }}"
       community.vmware.vmware_content_library_manager:
@@ -26,7 +24,6 @@
         library_name: "{{ library }}"
         state: present
         library_type: local
-      when: run_on_vcenter
 
     - name: Create template from vm in content library
       vmware.vmware.content_template:
@@ -39,16 +36,8 @@
     - name: Assert values
       ansible.builtin.assert:
         that:
-          - __res.changed == False
-          - __res.template_info.msg == "Template '" + template_name + "' already exists."
-      when: not run_on_vcenter
-
-    - name: Assert values
-      ansible.builtin.assert:
-        that:
           - __res.changed == True
           - __res.template_info.msg == "Template '" + template_name + "'."
-      when: run_on_vcenter
 
     - name: Delete template from content library
       vmware.vmware.content_template:
@@ -56,19 +45,16 @@
         library: "{{ library }}"
         host: "{{ template_host }}"
         state: absent
-      when: run_on_vcenter
 
     - name: Check for deleted template
       vmware.vmware.content_library_item_info:
         library_name: "{{ library }}"
         library_item_name: "{{ template_name }}"
       register: __res
-      when: run_on_vcenter
 
     - name: Verify Template Was Deleted
       ansible.builtin.assert:
         that: (__res.library_item_info | length) == 0
-      when: run_on_vcenter
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
@@ -79,10 +65,8 @@
         state: absent
         force: true
         name: "{{ vm }}"
-      when: run_on_vcenter
 
     - name: "Test teardown: Remove content library {{ library }}"
       community.vmware.vmware_content_library_manager:
         library_name: "{{ library }}"
         state: absent
-      when: run_on_vcenter

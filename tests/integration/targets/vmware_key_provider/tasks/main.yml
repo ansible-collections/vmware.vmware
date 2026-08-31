@@ -1,6 +1,5 @@
 ---
 - name: Test key provider modules on vCenter
-  when: run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:

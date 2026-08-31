@@ -64,16 +64,6 @@ units-coverage: units
 	ansible-test coverage xml --requirements; \
 	cp tests/output/reports/coverage.xml $(CURDIR)/coverage-units.xml;
 
-.PHONY: integration
-integration: install-integration-reqs upgrade-collections
-	cd $(COLLECTION_ROOT); \
-	ansible --version; \
-	ansible-test --version; \
-	ANSIBLE_COLLECTIONS_PATH=$(COLLECTION_ROOT)/../.. ansible-galaxy collection list; \
-	ANSIBLE_ROLES_PATH=$(COLLECTION_ROOT)/tests/integration/targets \
-		ANSIBLE_COLLECTIONS_PATH=$(COLLECTION_ROOT)/../.. \
-		ansible-test integration $(CLI_ARGS);
-
 .PHONY: eco-vcenter-ci
 eco-vcenter-ci: tests/integration/integration_config.yml install-integration-reqs upgrade-collections
 	cd $(COLLECTION_ROOT); \
