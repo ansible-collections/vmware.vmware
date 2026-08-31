@@ -63,6 +63,7 @@ class MockEsxiHost(MockVmwareObject):
         super().__init__(name=name, moid=moid)
         self.runtime = mock.Mock()
         self.runtime.inMaintenanceMode = False
+        self.runtime.powerState = "poweredOn"
 
         self.parent = mock.Mock()
         self.parent.name = "host"
@@ -76,6 +77,18 @@ class MockEsxiHost(MockVmwareObject):
         return MockVsphereTask()
 
     def ExitMaintenanceMode_Task(self, *args):
+        return MockVsphereTask()
+
+    def ShutdownHost_Task(self, *args):
+        return MockVsphereTask()
+
+    def RebootHost_Task(self, *args):
+        return MockVsphereTask()
+
+    def PowerDownHostToStandBy_Task(self, *args):
+        return MockVsphereTask()
+
+    def PowerUpHostFromStandBy_Task(self, *args):
         return MockVsphereTask()
 
 

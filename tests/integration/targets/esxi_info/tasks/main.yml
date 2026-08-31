@@ -1,0 +1,14 @@
+---
+- name: Test
+  environment: "{{ environment_auth_vars }}"
+  block:
+    - name: Gather host info
+      vmware.vmware.esxi_info:
+        datacenter: "{{ vcenter_datacenter }}"
+      register: __res
+
+    - name: Assert values
+      ansible.builtin.assert:
+        that:
+          - __res.changed == False
+          - __res.hosts | length > 5

@@ -68,62 +68,98 @@
         esxi_password: "!#%135qEt"
         state: present
 
-    - name: Disable Maintenance Mode For Host
-      vmware.vmware.esxi_maintenance_mode:
-        enable_maintenance_mode: false
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
-
-    - name: Disable Maintenance Mode For Host - Idempotence
-      vmware.vmware.esxi_maintenance_mode:
-        enable_maintenance_mode: false
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _set
-
-    - name: Check Task Output
-      ansible.builtin.assert:
-        that:
-          - _set is not changed
-
-    - name: Enable Maintenance Mode For Host That Is Not In Maintenance Mode
+    - name: Enter Maintenance Mode
       vmware.vmware.esxi_maintenance_mode:
         enable_maintenance_mode: true
         name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _set
+
+    - name: Power on host (no change) - check mode
+      vmware.vmware.esxi_powerstate:
+        state: powered-on
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      check_mode: true
+      register: _power_on_check
+
+    - name: Power on host (no change)
+      vmware.vmware.esxi_powerstate:
+        state: powered-on
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      register: _power_on
 
     - name: Gather Info about ESXi Host
       vmware.vmware.esxi_info:
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
       register: _host_info
 
-    - name: Check Task Output
+    - name: Check power on tasks
       ansible.builtin.assert:
         that:
-          - _set is changed
-          - _set.result.state == 'success'
-          - _host_info.hosts[0].in_maintenance_mode
+          - _power_on_check is not changed
+          - _power_on is not changed
+          - _host_info.hosts[0] is defined
+          - _host_info.hosts[0].power_state == 'poweredOn'
 
-    - name: Disable Maintenance Mode For Host That Is In Maintenance Mode
-      vmware.vmware.esxi_maintenance_mode:
-        enable_maintenance_mode: false
+    # This virtual ESXi host has no power-management / wake method (DPM, IPMI, or
+    # Wake-on-LAN), so vCenter rejects PowerDownHostToStandBy with "The operation is
+    # not supported on the object" and a host cannot be woken from standby. The real
+    # standby transition therefore cannot be exercised in this environment; it is
+    # validated in check mode only, which exercises the requested-vs-current state
+    # diff without calling the unsupported API.
+    - name: Put host into standby (check mode)
+      vmware.vmware.esxi_powerstate:
+        state: standby
         name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _set
+      check_mode: true
+      register: _standby_check
 
-    - name: Gather Info about ESXi Host
+    - name: Check standby task
+      ansible.builtin.assert:
+        that:
+          - _standby_check is changed
+
+    - name: Restart host
+      vmware.vmware.esxi_powerstate:
+        state: restarted
+        force: true
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      register: _restart
+
+    - name: Check restart task
+      ansible.builtin.assert:
+        that:
+          - _restart is changed
+
+    - name: Power off host (check mode)
+      vmware.vmware.esxi_powerstate:
+        state: powered-off
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      check_mode: true
+      register: _power_off_check
+
+    - name: Power off host
+      vmware.vmware.esxi_powerstate:
+        state: powered-off
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      register: _power_off
+
+    - name: Gather Info about ESXi Host After Power Off
       vmware.vmware.esxi_info:
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
-      register: _host_info
+      register: _host_info_powered_off
 
-    - name: Check Task Output
+    - name: Power off host (idempotence)
+      vmware.vmware.esxi_powerstate:
+        state: powered-off
+        name: "{{ _esxi_info.guests[0].ipv4 }}"
+      register: _power_off_idem
+
+    - name: Check power off tasks
       ansible.builtin.assert:
         that:
-          - _set is changed
-          - _set.result.state == 'success'
-          - not _host_info.hosts[0].in_maintenance_mode
-
-    - name: Enable Maintenance Mode Before Cleanup
-      vmware.vmware.esxi_maintenance_mode:
-        enable_maintenance_mode: true
-        name: "{{ _esxi_info.guests[0].ipv4 }}"
+          - _power_off_check is changed
+          - _power_off is changed
+          - _power_off_idem is not changed
+          - _host_info_powered_off.hosts[0].power_state == 'poweredOff'
 
   always:
     - name: Disconnect Host From vCenter
@@ -133,13 +169,12 @@
         esxi_hostname: "{{ _esxi_info.guests[0].ipv4 | default(test_esxi_hostname) }}"
         state: absent
     - name: "Test cleanup: Delete Virtual ESXi Host"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder: ""
         state: absent
         name: "{{ test_esxi_hostname }}"
-        force: true
+        allow_power_cycling: true
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
         resource_pool: "{{ _test_rp.id }}"
