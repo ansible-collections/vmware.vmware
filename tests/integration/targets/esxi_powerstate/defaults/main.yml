@@ -1,4 +1,2 @@
 ---
-test_esxi_hostname: DC0_H0
-
 test_resource_pool: "{{ tiny_prefix }}_vmware_esxi_powerstate"
