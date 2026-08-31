@@ -70,7 +70,6 @@ integration: tests/integration/integration_config.yml install-integration-reqs u
 	ansible --version; \
 	ansible-test --version; \
 	ANSIBLE_COLLECTIONS_PATH=$(COLLECTION_ROOT)/../.. ansible-galaxy collection list; \
-	chmod +x tests/integration/run_eco_vcenter_ci.sh; \
 	ANSIBLE_ROLES_PATH=$(COLLECTION_ROOT)/tests/integration/targets \
 		ANSIBLE_COLLECTIONS_PATH=$(COLLECTION_ROOT)/../.. \
-		./tests/integration/run_eco_vcenter_ci.sh "$(INTEGRATION_TARGETS)"
+		ansible-test integration $(INTEGRATION_TARGETS) $(CLI_ARGS)

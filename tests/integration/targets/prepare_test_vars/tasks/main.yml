@@ -11,10 +11,13 @@
     file: "{{ role_path }}/../../integration_config.yml"
   ignore_errors: true
 
-- name: Check For Tiny Prefix
-  ansible.builtin.assert:
-    that: tiny_prefix is defined and (tiny_prefix | length) > 0
-    fail_msg: Variable must be set in the integration_config.yml
+- name: Generate a unique tiny_prefix when one was not provided
+  ansible.builtin.set_fact:
+    # Namespaces every resource created during a test run so concurrent runs
+    # against the shared vCenter do not collide. Override by defining
+    # tiny_prefix in integration_config.yml (loaded above).
+    tiny_prefix: "test-vmware-{{ lookup('ansible.builtin.password', '/dev/null chars=ascii_lowercase length=4') }}"
+  when: tiny_prefix is not defined or (tiny_prefix | length) == 0
 
 - name: Set auth vars for later
   ansible.builtin.set_fact:
