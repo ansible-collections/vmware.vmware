@@ -15,7 +15,7 @@
           - >-
             ((groups.poweredOff | default([])) | length) ==
             (hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOff') | default([]) | length)
-          - groups | length == 2
+          - groups | length >= 3 # we should have at least found three groups from the folder path groups
           - ('test_' + vcenter_datacenter | replace('-', '_')) in groups
 
     - name: Check First Host
