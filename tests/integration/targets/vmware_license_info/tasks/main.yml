@@ -12,4 +12,4 @@
   ansible.builtin.assert:
     that:
       - __res.changed == False
-      - __res.licenses | length > 1 or not run_on_vcenter
+      - __res.licenses | length > 1

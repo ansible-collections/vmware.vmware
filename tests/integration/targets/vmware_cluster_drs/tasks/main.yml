@@ -1,23 +1,5 @@
 ---
-- name: Test On Simulator
-  when: not run_on_vcenter
-  environment: "{{ environment_auth_vars }}"
-
-  block:
-    - name: Set DRS Settings In Cluster
-      vmware.vmware.cluster_drs:
-        datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ test_cluster }}"
-        enable: "{{ drs_enable }}"
-        drs_enable_vm_behavior_overrides: "{{ drs_enable_vm_behavior_overrides}}"
-        drs_default_vm_behavior: "{{ drs_default_vm_behavior }}"
-        drs_vmotion_rate: "{{ drs_vmotion_rate }}"
-        advanced_settings: "{{ drs_advanced_settings }}"
-        predictive_drs: "{{ drs_predictive_drs }}"
-    # The simulator never seems to update its DRS settings, so there's nothing to validate here
-
 - name: Test On VCenter
-  when: run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:

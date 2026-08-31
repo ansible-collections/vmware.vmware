@@ -1,18 +1,5 @@
 ---
-- name: Test On Simulator
-  when: not run_on_vcenter
-  environment: "{{ environment_auth_vars }}"
-
-  block:
-    - name: Set vCLS Settings In Cluster
-      vmware.vmware.cluster_vcls:
-        datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ test_cluster }}"
-        allowed_datastores: "{{ allowed_datastores }}"
-    # The simulator never seems to update its vCLS settings, so there's nothing to validate here
-
 - name: Test On VCenter
-  when: run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:

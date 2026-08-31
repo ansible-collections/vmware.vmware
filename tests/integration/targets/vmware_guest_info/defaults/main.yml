@@ -1,5 +1,4 @@
 ---
-mock_file: "vmware_guest_info"
 vm_name: DC0_H0_VM0
 
 guests_length: 1

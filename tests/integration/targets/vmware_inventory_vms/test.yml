@@ -17,7 +17,6 @@
             (hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOff') | default([]) | length)
           - groups | length == 2
           - ('test_' + vcenter_datacenter | replace('-', '_')) in groups
-      when: run_on_vcenter
 
     - name: Check First Host
       ansible.builtin.assert:
@@ -28,6 +27,5 @@
           - first_host.tags_by_category is defined and first_host.tags_by_category is mapping
           - first_host.cluster.name is defined
           - first_host.esxi_host.name is defined
-      when: run_on_vcenter
       vars:
         first_host: "{{ hostvars.values() | first }}"

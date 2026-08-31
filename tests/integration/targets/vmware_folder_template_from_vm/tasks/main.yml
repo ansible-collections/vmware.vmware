@@ -1,33 +1,5 @@
 ---
-- name: Test On Simulator
-  when: not run_on_vcenter
-  environment: "{{ environment_auth_vars }}"
-
-  block:
-    - name: "Test setup: Create Folder"
-      vmware.vmware.folder:
-        datacenter: "{{ vcenter_datacenter }}"
-        relative_path: "{{ vm_folder }}"
-        folder_type: vm
-        state: present
-
-    - name: "Test setup: Power Off VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
-        cluster: "{{ vcenter_cluster_name }}"
-        datacenter: "{{ vcenter_datacenter }}"
-        state: poweredoff
-        name: "{{ vm_name }}"
-
-    - name: Create template from vm in vcenter folder
-      vmware.vmware.folder_template_from_vm:
-        datacenter: "{{ vcenter_datacenter }}"
-        template_folder: "{{ vm_folder }}"
-        vm_name: "{{ vm_name }}"
-        template_name: "{{ template_name }}"
-      register: __res
-
 - name: Test On VCenter
-  when: run_on_vcenter
   environment: "{{ environment_auth_vars }}"
 
   block:

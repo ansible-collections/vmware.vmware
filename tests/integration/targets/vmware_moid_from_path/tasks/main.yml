@@ -1,7 +1,6 @@
 ---
 - name: Test lookup plugin
   environment: "{{ environment_auth_vars }}"
-  when: run_on_vcenter
   block:
     - name: Create test cluster
       vmware.vmware.cluster:
