@@ -24,29 +24,86 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v7
         with:
+          # Check out into the collection path so ansible-test resolves the
+          # collection, and fetch full history so --changed can diff against base.
+          path: ansible_collections/vmware/vmware
+          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           allow-unsafe-pr-checkout: true
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible-core
+        run: pip install ansible-core
+
+      - name: List affected integration targets
+        id: list-targets
+        working-directory: ansible_collections/vmware/vmware
+        run: |
+          set -euo pipefail
+
+          # Global paths affect every target (or ansible-test cannot model them),
+          # so a change to any of these forces the full suite to run. Note the
+          # shared prepare_test_vars setup role is pulled in via meta/main.yml
+          # dependencies, which ansible-test change detection does not follow.
+          GLOBAL_RE='^(\.github/|Makefile$|tests/integration/(requirements|generate_integration_config|integration_config)|tests/integration/targets/prepare_test_vars/)'
+
+          run_all=false
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request_target" ]; then
+            # Pushes to official branches: ansible-test refuses change detection
+            # against an official branch, so run everything.
+            run_all=true
+          else
+            # Make the base branch available locally for both the diff below and
+            # ansible-test's --base-branch.
+            git fetch origin "${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+            if git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qE "${GLOBAL_RE}"; then
+              run_all=true
+            fi
+          fi
+
+          if [ "${run_all}" = "true" ]; then
+            echo "Running all integration targets."
+            ansible-test integration --list-targets > targets.txt
+          else
+            echo "Detecting integration targets changed against ${BASE_REF}."
+            # Recreate the base branch locally so --base-branch can resolve it.
+            git branch -f "${BASE_REF}" "origin/${BASE_REF}"
+            git checkout -B "pr-${PR_NUMBER}"
+            ansible-test integration --list-targets --changed \
+              --base-branch "${BASE_REF}" > targets.txt
+          fi
+
+          echo "Selected targets:"
+          cat targets.txt
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
       - name: Build target groups matrix
         id: set-matrix
+        working-directory: ansible_collections/vmware/vmware
         run: |
           set -euo pipefail
           python3 << 'PY'
           import json
           import os
-          from pathlib import Path
 
-          root = Path("tests/integration/targets")
           # Skip helper roles (e.g. prepare_test_vars) and targets that must be
           # run manually (prefixed with "manual_").
           skip = {"prepare_test_vars"}
-          targets = sorted(
-              p.name
-              for p in root.iterdir()
-              if p.is_dir()
-              and p.name not in skip
-              and not p.name.startswith("manual_")
-          )
+          with open("targets.txt", encoding="utf-8") as fh:
+              targets = sorted(
+                  name
+                  for name in (line.strip() for line in fh)
+                  if name
+                  and name not in skip
+                  and not name.startswith("manual_")
+              )
           chunk = 5
           groups = [
               {"group": i // chunk, "targets": " ".join(targets[i : i + chunk])}
@@ -96,7 +153,7 @@ jobs:
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
-          make eco-vcenter-ci INTEGRATION_TARGETS='${{ matrix.targets }}'
+          make integration INTEGRATION_TARGETS='${{ matrix.targets }}'
         env:
           ANSIBLE_COLLECTIONS_PATH: "${{ github.workspace }}"
           VCENTER_HOSTNAME: ${{ secrets.VCENTER_HOSTNAME }}
@@ -120,4 +177,7 @@ jobs:
       - name: Decide whether the needed jobs succeeded or failed
         uses: re-actors/alls-green@release/v1
         with:
+          # The test job is skipped when change detection selects no targets;
+          # a skip must not fail branch protection.
+          allowed-skips: ansible_integration_test
           jobs: ${{ toJSON(needs) }}
