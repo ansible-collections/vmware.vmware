@@ -65,7 +65,7 @@ ansible-galaxy collection install vmware.vmware:1.0.0
     * The system administrator can gather detailed information about a variety of resources for reporting.
   * Flow:
     * `vmware.vmware.appliance_info` - Gather details about one or more appliances running
-    * `vmware.vmware.guest_info` - Gather details about one or more VMs running
+    * `vmware.vmware.vm_info` - Gather details about one or more VMs running
     * `vmware.vmware.license_info` - Gather details about one or more licenses used in vCenter or ESXi
     * `vmware.vmware.vm_list_group_by_clusters_info` - Gather VMs and list them grouped by cluster and folder
     * `vmware.vmware.vm_portgroup_info` - Gather details about networks attached to VMs

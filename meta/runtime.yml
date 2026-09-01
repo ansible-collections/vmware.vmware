@@ -25,7 +25,7 @@ action_groups:
         - folder
         - folder_template_from_vm
         - vm_custom_attributes
-        - guest_info
+        - vm_info
         - license_info
         - local_content_library
         - subscribed_content_library
@@ -53,3 +53,5 @@ plugin_routing:
             tombstone:
                 removal_version: 2.0.0
                 warning_text: Use M(vmware.vmware.vm_list_group_by_clusters_info) instead.
+        guest_info:
+            redirect: vmware.vmware.vm_info

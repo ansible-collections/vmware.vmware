@@ -251,12 +251,12 @@ vmware.vmware.folder_template_from_vm:
         device_type: "virtual_machine"
       }
     }
-vmware.vmware.guest_info:
+vmware.vmware.vm_info:
   query: >-
     .guests[] | {
-      name: ("guest_info:" + (.moid| tostring)),
+      name: ("vms:" + (.moid| tostring)),
       canonical_facts: {
-            module: "guest_info",
+            module: "vms",
         moid: .moid
       },
       facts: {

@@ -49,7 +49,7 @@
       register: _add_idem
 
     - name: Get Updated VM Info
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         moid: "{{ _add.vm.moid }}"
       register: _vm_info
 
@@ -83,7 +83,7 @@
       register: _rm_idem
 
     - name: Get Updated VM Info
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         moid: "{{ _rm.vm.moid }}"
       register: _vm_info
 

@@ -48,7 +48,7 @@
   register: _update_vm_idempotent
 
 - name: Lookup VM Info
-  vmware.vmware.guest_info:
+  vmware.vmware.vm_info:
     moid: "{{ _update_vm.vm.moid }}"
   register: _lookup_vm_info
 
@@ -90,7 +90,7 @@
   register: _update_vm_minimal_idempotent
 
 - name: Lookup VM Info
-  vmware.vmware.guest_info:
+  vmware.vmware.vm_info:
     moid: "{{ _update_vm_minimal.vm.moid }}"
   register: _lookup_vm_info
 

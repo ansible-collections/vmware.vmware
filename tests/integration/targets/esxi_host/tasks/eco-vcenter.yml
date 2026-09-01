@@ -51,7 +51,7 @@
         moid: "{{ _deploy.value.resource_id.id }}"
 
     - name: Wait For ESXi Host To Have IP
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ test_esxi_hostname }}"
       register: _esxi_info
       until: >-

@@ -10,7 +10,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: guest_info
+module: vm_info
 short_description: Gather guest information
 description:
     - This module gathers vm guest information.
@@ -112,7 +112,7 @@ extends_documentation_fragment:
 
 EXAMPLES = r'''
 - name: Gather guest vm info
-  vmware.vmware.guest_info:
+  vmware.vmware.vm_info:
     hostname: "https://vcenter"
     username: "username"
     password: "password"
@@ -121,9 +121,9 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
-guests:
+vms:
     description:
-        - Information about guest.
+        - Information about the VMs.
     returned: On success
     type: list
     sample: [
@@ -191,6 +191,12 @@ guests:
           "vnc": {}
         }
       ]
+
+guests:
+    description:
+        - Information about the VMs. This is identical to the vms return value.
+    returned: On success
+    type: list
 '''
 
 
@@ -205,9 +211,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
 )
 
 
-class VmwareGuestInfo(ModuleRestBase):
+class VmwareVmInfo(ModuleRestBase):
     def __init__(self, module):
-        super(VmwareGuestInfo, self).__init__(module)
+        super(VmwareVmInfo, self).__init__(module)
         self.pyvmomi = ModulePyvmomiBase(module)
         self.vm_svc = self.api_client.vcenter.vm
 
@@ -329,9 +335,10 @@ def main():
     if module.params['schema'] != 'vsphere' and module.params.get('properties'):
         module.fail_json(msg="The option 'properties' is only valid when the schema is 'vsphere'")
 
-    vmware_appliance_mgr = VmwareGuestInfo(module)
+    vmware_appliance_mgr = VmwareVmInfo(module)
     guests = vmware_appliance_mgr.gather_info_for_guests()
-    module.exit_json(changed=False, guests=guests)
+    # guests is a legacy return key from the module rename, kept in place for backwards compatibility
+    module.exit_json(changed=False, guests=guests, vms=guests)
 
 
 if __name__ == '__main__':

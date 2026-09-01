@@ -32,7 +32,7 @@
   register: _set_disk_params_idempotent
 
 - name: Lookup VM disk Info
-  vmware.vmware.guest_info:
+  vmware.vmware.vm_info:
     moid: "{{ test_vm_moid }}"
   register: _lookup_vm_info
 
