@@ -15,7 +15,7 @@
           - >-
             ((groups.poweredOff | default([])) | length) ==
             (hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOff') | default([]) | length)
-          - groups | length >= 3 # we should have at least found three groups from the folder path groups
+          - groups | length >= 5 # at least powerstates + each tier of the folder path
           - ('test_' + vcenter_datacenter | replace('-', '_')) in groups
 
     - name: Check First Host
@@ -28,4 +28,4 @@
           - first_host.cluster.name is defined
           - first_host.esxi_host.name is defined
       vars:
-        first_host: "{{ hostvars.values() | first }}"
+        first_host: "{{ hostvars.values() | selectattr('summary.runtime.powerState', 'equalto', 'poweredOn') | first }}"

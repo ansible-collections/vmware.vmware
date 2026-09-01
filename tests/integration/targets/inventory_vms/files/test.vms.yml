@@ -5,7 +5,7 @@ cache: false
 group_by_paths: true
 group_by_paths_prefix: test
 gather_tags: true
-gather_compute_object_names: true
+gather_compute_objects: true
 rename_reserved_variables: true
 search_paths:
   - /Eco-Datacenter/vm/ansible_ci_vm_test_resources
