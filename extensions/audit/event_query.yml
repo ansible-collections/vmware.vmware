@@ -253,10 +253,10 @@ vmware.vmware.folder_template_from_vm:
     }
 vmware.vmware.vm_info:
   query: >-
-    .guests[] | {
-      name: ("vms:" + (.moid| tostring)),
+    .vms[] | {
+      name: ("vm_info:" + (.moid| tostring)),
       canonical_facts: {
-            module: "vms",
+            module: "vm_info",
         moid: .moid
       },
       facts: {
