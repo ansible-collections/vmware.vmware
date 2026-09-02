@@ -4,7 +4,7 @@ __metaclass__ = type
 import sys
 import pytest
 
-from ansible_collections.vmware.vmware.plugins.modules import guest_info
+from ansible_collections.vmware.vmware.plugins.modules import vm_info
 
 from ...common.utils import (
     run_module, ModuleTestCase
@@ -15,17 +15,17 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-class TestGuestInfo(ModuleTestCase):
+class TestVmInfo(ModuleTestCase):
 
     def __prepare(self, mocker):
-        init_mock = mocker.patch.object(guest_info.VmwareGuestInfo, "__init__")
+        init_mock = mocker.patch.object(vm_info.VmwareVmInfo, "__init__")
         init_mock.return_value = None
 
-        gather_info_for_guests = mocker.patch.object(guest_info.VmwareGuestInfo, "gather_info_for_guests")
+        gather_info_for_guests = mocker.patch.object(vm_info.VmwareVmInfo, "gather_info_for_guests")
         gather_info_for_guests.return_value = []
 
     def test_gather(self, mocker):
         self.__prepare(mocker)
 
-        result = run_module(module_entry=guest_info.main, module_args={})
+        result = run_module(module_entry=vm_info.main, module_args={})
         assert result["changed"] is False

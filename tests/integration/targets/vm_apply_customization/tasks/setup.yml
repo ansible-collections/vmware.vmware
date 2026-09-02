@@ -34,7 +34,7 @@
     state: powered-on
 
 - name: Wait For VM To Have IP
-  vmware.vmware.guest_info:
+  vmware.vmware.vm_info:
     moid: "{{ test_vm_moid }}"
   register: _new_vm_info
   until: >-

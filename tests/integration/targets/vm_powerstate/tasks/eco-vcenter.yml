@@ -247,7 +247,7 @@
       register: shutdown_guest
 
     - name: Gather VM info immediately after shutdown-guest returns
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"

@@ -32,7 +32,7 @@
       register: _create_idem
 
     - name: Gather some info from vm
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ vm }}"
       register: info
 
@@ -193,7 +193,7 @@
         - 6
 
     - name: Gather some info from vm
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ vm }}"
       register: info
 
@@ -233,7 +233,7 @@
       register: _rm_single_idem
 
     - name: Gather some info from vm
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ vm }}"
       register: info
 
@@ -253,7 +253,7 @@
         snapshot_name: snap04
 
     - name: Gather some info from vm
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ vm }}"
       register: info
 
@@ -272,7 +272,7 @@
         remove_all: True
 
     - name: Gather some info from vm
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ vm }}"
       register: info
 
@@ -308,7 +308,7 @@
         state: absent
 
     - name: Gather some info from vm
-      vmware.vmware.guest_info:
+      vmware.vmware.vm_info:
         name: "{{ vm }}"
       register: info
 

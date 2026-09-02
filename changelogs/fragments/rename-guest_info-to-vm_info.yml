@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - guest_info - renamed to ``vm_info``. A redirect was added so ``vmware.vmware.guest_info`` continues to work
+  - vm_info - Add ``vms`` output key to mirror ``guests`` for consistency

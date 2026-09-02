@@ -25,7 +25,7 @@
   register: _set_network_params_idempotent
 
 - name: Lookup VM Info
-  vmware.vmware.guest_info:
+  vmware.vmware.vm_info:
     moid: "{{ test_vm_moid }}"
   register: _lookup_vm_guest_info
 
