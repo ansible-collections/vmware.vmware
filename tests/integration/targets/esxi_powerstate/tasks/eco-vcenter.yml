@@ -159,7 +159,7 @@
           - _power_off_check is changed
           - _power_off is changed
           - _power_off_idem is not changed
-          - _host_info_powered_off.hosts[0].power_state == 'poweredOff'
+          - _host_info_powered_off.hosts[0].power_state in ('poweredOff', 'unknown')
 
   always:
     - name: Disconnect Host From vCenter
