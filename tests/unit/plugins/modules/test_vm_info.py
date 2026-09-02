@@ -21,8 +21,8 @@ class TestVmInfo(ModuleTestCase):
         init_mock = mocker.patch.object(vm_info.VmwareVmInfo, "__init__")
         init_mock.return_value = None
 
-        gather_info_for_guests = mocker.patch.object(vm_info.VmwareVmInfo, "gather_info_for_guests")
-        gather_info_for_guests.return_value = []
+        gather_info_for_vms = mocker.patch.object(vm_info.VmwareVmInfo, "gather_info_for_vms")
+        gather_info_for_vms.return_value = []
 
     def test_gather(self, mocker):
         self.__prepare(mocker)
