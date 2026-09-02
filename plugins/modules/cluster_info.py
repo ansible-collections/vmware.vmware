@@ -163,8 +163,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
     rest_compatible_argument_spec
 )
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
-from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils.facts._cluster import (
     ClusterFacts,
+)
+from ansible_collections.vmware.vmware.plugins.module_utils.facts._converters import (
     vmware_obj_to_json
 )
 

@@ -127,7 +127,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
     TaskError,
     RunningTaskMonitor
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils.facts._cluster import (
     ClusterFacts
 )
 
