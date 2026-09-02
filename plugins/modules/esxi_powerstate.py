@@ -179,15 +179,11 @@ from ansible_collections.vmware.vmware.plugins.module_utils._vsphere_tasks impor
     RunningTaskMonitor,
 )
 
-# Maps a desired power state to the WSDL method name vCenter stores/returns for a
-# scheduled task's action. Used to compare an existing scheduled task's action against
-# the desired action.
-STATE_TO_SCHEDULED_METHOD_NAME = {
-    "powered-off": "ShutdownHost_Task",
-    "powered-on": "PowerUpHostFromStandBy_Task",
-    "restarted": "RebootHost_Task",
-    "standby": "PowerDownHostToStandBy_Task",
-}
+STATE_POWERED_OFF = "poweredoff"
+STATE_POWERED_ON = "poweredon"
+STATE_RESTARTED = "restarted"
+STATE_STANDBY = "standby"
+STATE_UNKNOWN = "unknown"
 
 SCHEDULED_AT_TIME_FORMAT = "%d/%m/%Y %H:%M"
 
@@ -201,15 +197,62 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         self.host = self.get_esxi_host_by_name_or_moid(
             identifier=self.params["esxi_host_name"], fail_on_missing=True
         )
-        self.desired_state = (
-            self.params["state"].replace("_", "").replace("-", "").lower()
-        )
+        self.desired_state = self.get_desired_power_state_attrs()["normalized"]
         self.current_state = self.host.runtime.powerState.lower()
         self.result["host"]["moid"] = self.host._GetMoId()
         self.result["host"]["name"] = self.host.name
         # Boot time captured before a reboot so we can confirm the host actually
         # rebooted (bootTime advances) rather than just that the task was accepted.
         self._boot_time_before_reboot = None
+
+    def get_desired_power_state_attrs(self):
+        try:
+            return self.power_states[self.params["state"]]
+        except KeyError:
+            self.module.fail_json(
+                msg="Unsupported expected state provided: %s" % self.params["state"]
+            )
+
+    @property
+    def power_states(self):
+        """
+        Single source of truth for the per-state data, keyed by the user-facing O(state)
+        value. Built here rather than as a module-level constant so it can carry live
+        objects that only exist on an initialized instance: vim.* action refs (require
+        pyVmomi) and bound action methods.
+            - normalized: state normalized the way pyVmomi reports runtime.powerState,
+              used to compare the desired state against the host's current state.
+            - scheduled_method: WSDL method name vCenter stores/returns for a scheduled
+              task's action, used to compare an existing task against the desired action.
+            - scheduled_action: vim method reference used to build a scheduled task spec.
+            - immediate_action: bound method that performs the immediate power operation.
+        """
+        return {
+            "powered-off": {
+                "normalized": STATE_POWERED_OFF,
+                "scheduled_method": "ShutdownHost_Task",
+                "scheduled_action": vim.HostSystem.ShutdownHost_Task,
+                "immediate_action": self.shutdown_host,
+            },
+            "powered-on": {
+                "normalized": STATE_POWERED_ON,
+                "scheduled_method": "PowerUpHostFromStandBy_Task",
+                "scheduled_action": vim.HostSystem.PowerUpHostFromStandBy_Task,
+                "immediate_action": self.power_up_host,
+            },
+            "restarted": {
+                "normalized": STATE_RESTARTED,
+                "scheduled_method": "RebootHost_Task",
+                "scheduled_action": vim.HostSystem.RebootHost_Task,
+                "immediate_action": self.reboot_host,
+            },
+            "standby": {
+                "normalized": STATE_STANDBY,
+                "scheduled_method": "PowerDownHostToStandBy_Task",
+                "scheduled_action": vim.HostSystem.PowerDownHostToStandBy_Task,
+                "immediate_action": self.standby_host,
+            },
+        }
 
     def run_host_task(self, task):
         """
@@ -256,7 +299,7 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
                 current_boot = getattr(runtime, "bootTime", None)
                 if (
                     str(runtime.connectionState) == "connected"
-                    and str(runtime.powerState).lower() == "poweredon"
+                    and str(runtime.powerState).lower() == STATE_POWERED_ON
                     and current_boot is not None
                     and current_boot != self._boot_time_before_reboot
                 ):
@@ -275,7 +318,7 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         deadline = time.time() + self.params["timeout"]
         while time.time() < deadline:
             runtime = self._get_host_runtime()
-            if runtime is not None and str(runtime.powerState).lower() in ("poweredoff", "unknown"):
+            if runtime is not None and str(runtime.powerState).lower() in (STATE_POWERED_OFF, STATE_UNKNOWN):
                 return
             time.sleep(5)
 
@@ -290,7 +333,7 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         )
 
     def power_up_host(self):
-        if self.current_state == "poweredoff":
+        if self.current_state == STATE_POWERED_OFF:
             self.module.fail_json(
                 msg="Cannot power on ESXi host %s because it is fully powered off. The API can only "
                 "power a host up from a standby state." % self.host.name
@@ -301,19 +344,9 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         """
         Set the power state for the ESXi host determined by the requested state.
         """
-        desired_powerstate = {
-            "poweredoff": self.shutdown_host,
-            "poweredon": self.power_up_host,
-            "restarted": self.reboot_host,
-            "standby": self.standby_host,
-        }
+        immediate_action = self.get_desired_power_state_attrs()["immediate_action"]
         try:
-            if self.desired_state in desired_powerstate:
-                task = desired_powerstate[self.desired_state]()
-            else:
-                self.module.fail_json(
-                    msg="Unsupported expected state provided: %s" % self.desired_state
-                )
+            task = immediate_action()
         except Exception as e:
             self.module.fail_json(msg=to_text(e))
 
@@ -321,9 +354,9 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
 
         # The task only reports that the operation was initiated. Wait for the host to
         # actually reach the requested state so callers can rely on it afterwards.
-        if self.desired_state == "restarted":
+        if self.desired_state == STATE_RESTARTED:
             self.wait_for_reboot()
-        elif self.desired_state == "poweredoff":
+        elif self.desired_state == STATE_POWERED_OFF:
             self.wait_for_powered_off()
 
     def configure_host_scheduled_powerstate(self, scheduled_at):
@@ -387,12 +420,6 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         Returns:
             ScheduledTaskSpec
         """
-        powerstate = {
-            "powered-off": vim.HostSystem.ShutdownHost_Task,
-            "powered-on": vim.HostSystem.PowerUpHostFromStandBy_Task,
-            "restarted": vim.HostSystem.RebootHost_Task,
-            "standby": vim.HostSystem.PowerDownHostToStandBy_Task,
-        }
         spec = vim.scheduler.ScheduledTaskSpec()
         spec.name = self.params["scheduled_task_name"] or "task_%s" % str(
             randint(10000, 99999)  # NOSONAR - task name uniqueness only, not a security context
@@ -400,7 +427,7 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
         spec.scheduler = vim.scheduler.OnceTaskScheduler()
         spec.scheduler.runAt = scheduled_date
         spec.action = vim.action.MethodAction()
-        spec.action.name = powerstate[self.params["state"]]
+        spec.action.name = self.get_desired_power_state_attrs()["scheduled_action"]
 
         # description and enabled are required by the API. Prefer the user's value, then the
         # existing task's value (reconfigure), then a create default.
@@ -468,7 +495,7 @@ class EsxiPowerstateModule(ModulePyvmomiBase):
                 return False
         if (
             self._method_short_name(info.action)
-            != STATE_TO_SCHEDULED_METHOD_NAME[self.params["state"]]
+            != self.get_desired_power_state_attrs()["scheduled_method"]
         ):
             return False
         existing_runat = getattr(info.scheduler, "runAt", None)
@@ -566,7 +593,12 @@ def main():
         module.exit_json(**esxi_powerstate.result)
 
     # Immediate power action. If the host is already in the desired state, nothing to do.
-    if esxi_powerstate.current_state == esxi_powerstate.desired_state:
+    # If the host is in an unknown state, and the user wants to power it off,
+    # we assume it is unknown because its powered off
+    if (
+        esxi_powerstate.current_state == esxi_powerstate.desired_state or
+        (esxi_powerstate.current_state == STATE_UNKNOWN and esxi_powerstate.desired_state == STATE_POWERED_OFF)
+    ):
         module.exit_json(**esxi_powerstate.result)
 
     if module.check_mode:
