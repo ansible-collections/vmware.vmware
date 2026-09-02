@@ -253,28 +253,28 @@ class VmwareVmInfo(ModuleRestBase):
 
         return extract_object_attributes_to_dict(identity)
 
-    def gather_info_for_guests(self):
-        all_guest_info = []
-        for guest in self.get_guests():
-            guest_info = {}
+    def gather_info_for_vms(self):
+        all_vm_info = []
+        for vm in self.get_vms():
+            vm_info = {}
             if self.params['schema'] == 'summary':
-                vm_facts = VmFacts(guest)
-                guest_info = vm_facts.all_facts(self.pyvmomi.content)
+                vm_facts = VmFacts(vm)
+                vm_info = vm_facts.all_facts(self.pyvmomi.content)
             else:
-                guest_info = vmware_obj_to_json(guest, self.params['properties'])
+                vm_info = vmware_obj_to_json(vm, self.params['properties'])
 
-            guest_info['identity'] = self._get_identity(guest)
+            vm_info['identity'] = self._get_identity(vm)
             # legacy output
-            guest_info.update(guest_info['identity'])
+            vm_info.update(vm_info['identity'])
 
-            guest_info['tags'] = self._get_tags(guest)
-            guest_info['env'] = self._get_env(guest)
+            vm_info['tags'] = self._get_tags(vm)
+            vm_info['env'] = self._get_env(vm)
 
-            all_guest_info += [guest_info]
+            all_vm_info += [vm_info]
 
-        return all_guest_info
+        return all_vm_info
 
-    def get_guests(self):
+    def get_vms(self):
         """
         Uses the UUID, MOID, or name provided to find the source VM for the template. Returns an error if using the name,
         multiple matches are found, and the user did not provide a name_match strategy.
@@ -336,9 +336,9 @@ def main():
         module.fail_json(msg="The option 'properties' is only valid when the schema is 'vsphere'")
 
     vmware_appliance_mgr = VmwareVmInfo(module)
-    guests = vmware_appliance_mgr.gather_info_for_guests()
+    vms = vmware_appliance_mgr.gather_info_for_vms()
     # guests is a legacy return key from the module rename, kept in place for backwards compatibility
-    module.exit_json(changed=False, guests=guests, vms=guests)
+    module.exit_json(changed=False, guests=vms, vms=vms)
 
 
 if __name__ == '__main__':
