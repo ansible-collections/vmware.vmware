@@ -6,7 +6,6 @@ from unittest import mock
 
 from pyVmomi import vim
 
-from ansible_collections.vmware.vmware.plugins.module_utils.facts import _vm
 from ansible_collections.vmware.vmware.plugins.module_utils.facts._vm import (
     VmFacts,
     get_vm_prop_or_none,
