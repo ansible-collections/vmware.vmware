@@ -24,7 +24,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
 from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import (
     get_folder_path_of_vsphere_object
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils.facts._converters import (
     vmware_obj_to_json,
     properties_from_collector,
     flatten_dict

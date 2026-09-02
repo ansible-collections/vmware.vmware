@@ -183,7 +183,7 @@ from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import (
     ModuleRestBase,
 )
-from ansible_collections.vmware.vmware.plugins.module_utils._facts import (
+from ansible_collections.vmware.vmware.plugins.module_utils.facts._converters import (
     vmware_obj_to_json,
 )
 from ansible_collections.vmware.vmware.plugins.module_utils.facts._esxi import EsxiFacts

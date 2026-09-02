@@ -164,7 +164,7 @@ from typing import Any, Dict, List  # noqa: E402
 from ansible.errors import AnsibleError  # noqa: E402
 from ansible.module_utils.common.validation import check_type_int, check_type_bool
 from plugins.module_utils.clients.pyvmomi import PyvmomiClient  # noqa: E402
-from plugins.module_utils._facts import vmware_obj_to_json  # noqa: E402
+from plugins.module_utils.facts._converters import vmware_obj_to_json  # noqa: E402
 
 try:
     from pyVmomi import vim

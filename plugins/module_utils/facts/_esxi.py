@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from .._facts import get_vm_prop_or_none
+from ._vm import get_vm_prop_or_none
 
 
 class EsxiFacts:
