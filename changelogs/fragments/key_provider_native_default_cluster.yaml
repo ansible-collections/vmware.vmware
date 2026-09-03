@@ -1,2 +1,0 @@
-bugfixes:
-  - key_provider_native - Fix an ``AttributeError`` when gathering the default KMS cluster and no default cluster is configured.
