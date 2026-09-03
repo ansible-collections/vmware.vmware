@@ -4,6 +4,40 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.10.0
+=======
+
+Minor Changes
+-------------
+
+- esxi_service - add module to manage the state and startup policy of services on an ESXi host (migrated from community.vmware.vmware_host_service_manager) (https://github.com/ansible-collections/vmware.vmware/pull/396).
+- esxi_service_info - add module to gather information about the services on an ESXi host or every host in a cluster (migrated from community.vmware.vmware_host_service_info) (https://github.com/ansible-collections/vmware.vmware/pull/396).
+- guest_info - renamed to ``vm_info``. A redirect was added so ``vmware.vmware.guest_info`` continues to work
+- vcenter_event_manager - Create EDA plugin for events in vCenter Event Manager
+- vm_custom_attributes - add module to manage custom attributes for the given virtual machine (https://github.com/ansible-collections/vmware.vmware/pull/381).
+- vm_info - Add ``vms`` output key to mirror ``guests`` for consistency
+- vm_snapshot - Add relevant parent and child snapshot IDs to the returned snapshot value.
+- vm_snapshot_info - Add module to gather information about snapshots and the snapshot tree.
+
+Bugfixes
+--------
+
+- folder - Add check mode support for create and delete operations (https://github.com/ansible-collections/vmware.vmware/issues/387).
+- import_content_library_iso - Fix OOM error when uploading large local ISO files by streaming the file instead of loading it into memory (https://github.com/ansible-collections/vmware.vmware/issues/385).
+- key_provider_native - Fix an ``AttributeError`` when gathering the default KMS cluster and no default cluster is configured.
+- vm_powerstate - only attempt to answer VM questions when a question is actually pending. Previously, supplying the question_answers parameter while no question had appeared yet caused the module to error out before it could wait for and answer the question, leaving the VM stuck. Fixes https://github.com/ansible-collections/vmware.vmware/issues/224
+- vm_powerstate - read the authoritative live C(runtime.powerState) instead of the lazily-updated C(summary.runtime.powerState) so the module reliably waits for the VM to reach the powered off state when using the shutdown-guest state. Fixes https://github.com/ansible-collections/vmware.vmware/issues/224
+- vm_snapshot - fix snapshot lookup so entire snapshot tree is accessible, and not just the first branch.
+- vm_snapshot - remove empty string default for the description field. Descriptions will only be updated if you specify one. Fixes https://github.com/ansible-collections/vmware.vmware/issues/395
+
+New Modules
+-----------
+
+- vmware.vmware.esxi_info - Gathers information about one or more ESXi hosts
+- vmware.vmware.esxi_powerstate - Manages power states of ESXi hosts in vCenter
+- vmware.vmware.esxi_service - Manage the state and startup policy of a service on an ESXi host
+- vmware.vmware.esxi_service_info - Gather information about the services on an ESXi host
+
 v2.9.0
 ======
 
