@@ -7,7 +7,11 @@ action_groups:
         - cluster_dpm
         - cluster_drs
         - cluster_drs_recommendations
+        - cluster_drs_vm_overrides
+        - cluster_drs_vm_overrides_info
         - cluster_ha
+        - cluster_ha_vm_overrides
+        - cluster_ha_vm_overrides_info
         - cluster_info
         - cluster_vcls
         - content_library_item_info
@@ -24,28 +28,32 @@ action_groups:
         - esxi_service_info
         - folder
         - folder_template_from_vm
-        - vm_custom_attributes
-        - vm_info
+        - import_content_library_iso
+        - import_content_library_ovf
+        - key_provider_info
+        - key_provider_native
+        - key_provider_standard
         - license_info
         - local_content_library
         - subscribed_content_library
-        - import_content_library_ovf
-        - import_content_library_iso
-        - tags
         - tag_associations
         - tag_categories
+        - tags
         - vcsa_backup_schedule
         - vcsa_backup_schedule_info
         - vcsa_settings
+        - vm
         - vm_advanced_settings
         - vm_apply_customization
+        - vm_custom_attributes
+        - vm_info
         - vm_list_group_by_clusters_info
         - vm_portgroup_info
         - vm_powerstate
         - vm_resource_info
         - vm_snapshot
+        - vm_snapshot_info
         - vm_snapshot_revert
-        - vm
 
 plugin_routing:
     modules:
