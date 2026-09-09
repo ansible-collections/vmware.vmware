@@ -1061,7 +1061,8 @@ class VmModule(ModulePyvmomiBase):
             action="create"
         )
 
-        self.vm = task_result['result']
+        if not self.module.check_mode:
+            self.vm = task_result['result']
 
         return self.configurator.change_set
 
@@ -1171,6 +1172,10 @@ class VmModule(ModulePyvmomiBase):
         Returns:
             The vSphere task result.
         """
+        if self.module.check_mode:
+            # dont run the task, just return a fake result
+            return {}
+
         if task_kwargs is None:
             task_kwargs = dict()
 
@@ -1406,17 +1411,16 @@ def main():
         else:
             change_set = vm_module.create_new_vm()
 
-        result['vm']['moid'] = vm_module.vm._GetMoId()
-        result['vm']['name'] = vm_module.vm.name
+        result['vm']['moid'] = vm_module.vm._GetMoId() if vm_module.vm else ""
+        result['vm']['name'] = vm_module.vm.name if vm_module.vm else module.params.get('name', '')
         result['changed'] = change_set.are_changes_required()
         result['changes'] = change_set.changes
 
-    elif module.params['state'] == 'absent':
-        if vm_module.vm:
-            result['vm']['moid'] = vm_module.vm._GetMoId()
-            result['vm']['name'] = vm_module.vm.name
-            result['changed'] = True
-            vm_module.delete_vm()
+    elif module.params['state'] == 'absent' and vm_module.vm:
+        result['vm']['moid'] = vm_module.vm._GetMoId()
+        result['vm']['name'] = vm_module.vm.name
+        result['changed'] = True
+        vm_module.delete_vm()
 
     module.exit_json(**result)
 
