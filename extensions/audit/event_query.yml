@@ -1,533 +1,600 @@
 ---
+# Indirect node counting queries for the vmware.vmware collection.
+#
+# These jq expressions run inside the Automation Platform controller
+# (awx/main/tasks/host_indirect.py) against each module's result, and their
+# output feeds subscription node counting. Nothing in this repository executes
+# them, so tests/unit/audit/test_event_query_contract.py asserts the contract
+# the controller imposes on the output.
+#
+# THE CONTRACT
+# ------------
+# name             must be present and never null.
+#                  `if name is None: continue`
+# canonical_facts  must be present, truthy, and free of null at any depth.
+#                  get_hashable_form() accepts int/float/str/bool/dict/list/
+#                  tuple and raises UnhashableFacts on anything else, including
+#                  null; the caller catches it and skips the record. So
+#                  `(.x // null)` does not make a field optional -- it discards
+#                  the whole node, silently, with the job still green.
+# canonical_facts  is the ONLY dedup key (`results[hashable_facts]`), so it must
+#                  hold identity and nothing else. It previously carried the
+#                  module's own name, which produced one audit row per module
+#                  that touched a node rather than one row per node.
+# facts            must carry infra_type, infra_bucket and device_type; a node
+#                  without them is counted but cannot be bucketed downstream.
+#
+# CONVENTIONS USED BELOW
+# ----------------------
+# select(type == "object")   guards against a source key that is not the shape
+#                            the query expects. Indexing a boolean, a string or
+#                            an array raises a jq error, and the controller
+#                            catches that at the *event* level -- so one bad
+#                            query discards every other module's records for
+#                            that event too.
+# select(<id> != null)       drops a record that has no identity, instead of
+#                            emitting one whose canonical_facts is null (which
+#                            the controller discards anyway, but invisibly).
+# canonical_facts.moid       a vSphere managed object id; the same VM, cluster
+#                            or host reached through any module deduplicates to
+#                            one row because every query uses the same key.
+# canonical_facts.id         a vSphere Automation API uuid (libraries, items,
+#                            tags, templates).
+
 vmware.vmware.appliance_info:
   query: >-
-    .appliance | select(. != null) | {
-      name: ("appliance_info:" + (.id| tostring)),
+    .appliance |select(type == "object") | select(.id != null) |
+    {
+      name: (.name // (.id | tostring)),
       canonical_facts: {
-            module: "appliance_info",
-        id: .id
+        id: (.id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "management_appliance"
+        device_type: "management_appliance",
+        module: "appliance_info"
       }
     }
 vmware.vmware.cluster:
   query: >-
-    .cluster | select(. != null) | {
-      name: ("cluster:" + (.moid| tostring)),
+    .cluster |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster"
       }
     }
 vmware.vmware.cluster_dpm:
   query: >-
-    .cluster | select(. != null) | {
-      name: ("cluster_dpm:" + (.moid| tostring)),
+    .cluster |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster_dpm",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster_dpm"
       }
     }
 vmware.vmware.cluster_drs:
   query: >-
-    .cluster | select(. != null) | {
-      name: ("cluster_drs:" + (.moid| tostring)),
+    .cluster |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster_drs",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster_drs"
       }
     }
 vmware.vmware.cluster_drs_recommendations:
   query: >-
-    .cluster | select(. != null) | {
-      name: ("cluster_drs_recommendations:" + (.moid| tostring)),
+    .cluster |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster_drs_recommendations",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster_drs_recommendations"
       }
     }
 vmware.vmware.cluster_ha:
   query: >-
-    .cluster | select(. != null) | {
-      name: ("cluster_ha:" + (.moid| tostring)),
+    .cluster |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster_ha",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster_ha"
       }
     }
+# `clusters` is a dict keyed by cluster NAME (gather_info_for_clusters), so
+# reading `.moid` off the container itself was always null.
 vmware.vmware.cluster_info:
   query: >-
-    .clusters | select(. != null) | {
-      name: ("cluster_info:" + (.moid| tostring)),
+    .clusters | .[]? |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster_info",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster_info"
       }
     }
 vmware.vmware.cluster_vcls:
   query: >-
-    .cluster | select(. != null) | {
-      name: ("cluster_vcls:" + (.moid| tostring)),
+    .cluster |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "cluster_vcls",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "compute_cluster"
+        device_type: "compute_cluster",
+        module: "cluster_vcls"
       }
     }
 vmware.vmware.content_library_item_info:
   query: >-
-    .library_item_info[] | {
-      name: ("content_library_item_info:" + (.id| tostring)),
+    .library_item_info[]? |select(type == "object") | select(.id != null) |
+    {
+      name: (.name // (.id | tostring)),
       canonical_facts: {
-            module: "content_library_item_info",
-        id: .id
+        id: (.id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "content_library_item_info"
       }
     }
 vmware.vmware.content_template:
   query: >-
-    .template_info | select(. != null) | {
-      name: ("content_template:" + (.template_id| tostring)),
+    .template_info |select(type == "object") | select(.template_id != null) |
+    {
+      name: (.name // (.template_id | tostring)),
       canonical_facts: {
-            module: "content_template",
-        id: .template_id
+        id: (.template_id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "content_template"
       }
     }
+# device_type was `content_library`. The module returns `vm: {moid, name}`
+# -- "Identifying information about the vm" -- so the node it reports is a
+# virtual machine, not a library.
 vmware.vmware.deploy_content_library_ovf:
   query: >-
-    .vm | select(. != null) | {
-      name: ("deploy_content_library_ovf:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "deploy_content_library_ovf",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "virtual_machine",
+        module: "deploy_content_library_ovf"
       }
     }
+# device_type was `content_library`. The module returns `vm: {moid, name}`
+# -- "Identifying information about the vm" -- so the node it reports is a
+# virtual machine, not a library.
 vmware.vmware.deploy_content_library_template:
   query: >-
-    .vm | select(. != null) | {
-      name: ("deploy_content_library_template:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "deploy_content_library_template",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "virtual_machine",
+        module: "deploy_content_library_template"
       }
     }
+# device_type was `folder` and infra_bucket `governance_ops`. The module
+# returns `vm: {moid, name}`; the node it reports is a virtual machine.
 vmware.vmware.deploy_folder_template:
   query: >-
-    .vm | select(. != null) | {
-      name: ("deploy_folder_template:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "deploy_folder_template",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
-        infra_bucket: "governance_ops",
-        device_type: "folder"
+        infra_bucket: "compute",
+        device_type: "virtual_machine",
+        module: "deploy_folder_template"
       }
     }
 vmware.vmware.esxi_connection:
   query: >-
-    .host | select(. != null) | {
-      name: ("esxi_connection:" + (.moid| tostring)),
+    .host |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "esxi_connection",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "hypervisor_host"
+        device_type: "hypervisor_host",
+        module: "esxi_connection"
       }
     }
 vmware.vmware.esxi_host:
   query: >-
-    .host | select(. != null) | {
-      name: ("esxi_host:" + (.moid| tostring)),
+    .host |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "esxi_host",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "hypervisor_host"
+        device_type: "hypervisor_host",
+        module: "esxi_host"
       }
     }
+# Was `.result`, which holds the maintenance-mode TASK info
+# (completion_time, entity_name, error, state) and has no moid. The module
+# also returns `host: {moid, name}`, which is the node.
 vmware.vmware.esxi_maintenance_mode:
   query: >-
-    .result | select(. != null) | {
-      name: ("esxi_maintenance_mode:" + (.moid| tostring)),
+    .host |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "esxi_maintenance_mode",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "hypervisor_host"
+        device_type: "hypervisor_host",
+        module: "esxi_maintenance_mode"
       }
     }
 vmware.vmware.folder:
   query: >-
-    .folder | select(. != null) | {
-      name: ("folder:" + (.moid| tostring)),
+    .folder |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "folder",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "governance_ops",
-        device_type: "folder"
+        device_type: "folder",
+        module: "folder"
       }
     }
-vmware.vmware.folder_template_from_vm:
-  query: >-
-    . | select(. != null) | {
-      name: ("folder_template_from_vm:" + (.id| tostring)),
-      canonical_facts: {
-            module: "folder_template_from_vm",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "virtual_machine"
-      }
-    }
-vmware.vmware.vm_info:
-  query: >-
-    .vms[] | {
-      name: ("vm_info:" + (.moid| tostring)),
-      canonical_facts: {
-            module: "vm_info",
-        moid: .moid
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "virtual_machine"
-      }
-    }
+# Was `.`, the whole module result, which has no top-level id. The library
+# item id is set at `result['library_item']['id']`.
 vmware.vmware.import_content_library_iso:
   query: >-
-    . | select(. != null) | {
-      name: ("import_content_library_iso:" + (.id| tostring)),
+    .library_item |select(type == "object") | select(.id != null) |
+    {
+      name: (.name // (.id | tostring)),
       canonical_facts: {
-            module: "import_content_library_iso",
-        id: .id
+        id: (.id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "import_content_library_iso"
       }
     }
+# Was `.`, the whole module result, which has no top-level id. The library
+# item id is set at `result['library_item']['id']`.
 vmware.vmware.import_content_library_ovf:
   query: >-
-    . | select(. != null) | {
-      name: ("import_content_library_ovf:" + (.id| tostring)),
+    .library_item |select(type == "object") | select(.id != null) |
+    {
+      name: (.name // (.id | tostring)),
       canonical_facts: {
-            module: "import_content_library_ovf",
-        id: .id
+        id: (.id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
-      }
-    }
-vmware.vmware.license_info:
-  query: >-
-    .licenses[] | {
-      name: ("license_info:" + (.id| tostring)),
-      canonical_facts: {
-            module: "license_info",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "import_content_library_ovf"
       }
     }
 vmware.vmware.local_content_library:
   query: >-
-    .library | select(. != null) | {
-      name: ("local_content_library:" + (.id| tostring)),
+    .library |select(type == "object") | select(.id != null) |
+    {
+      name: (.name // (.id | tostring)),
       canonical_facts: {
-            module: "local_content_library",
-        id: .id
+        id: (.id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "local_content_library"
       }
     }
 vmware.vmware.subscribed_content_library:
   query: >-
-    .library | select(. != null) | {
-      name: ("subscribed_content_library:" + (.id| tostring)),
+    .library |select(type == "object") | select(.id != null) |
+    {
+      name: (.name // (.id | tostring)),
       canonical_facts: {
-            module: "subscribed_content_library",
-        id: .id
+        id: (.id | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "subscribed_content_library"
       }
     }
-vmware.vmware.tag_associations:
-  query: >-
-    .added_tags[] | {
-      name: ("tag_associations:" + (.id| tostring)),
-      canonical_facts: {
-            module: "tag_associations",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "content_library"
-      }
-    }
+# `vsphere_tag_categories` is a dict keyed by category id, so `.id` on the
+# container was always null.
 vmware.vmware.tag_categories:
   query: >-
-    .vsphere_tag_categories | select(. != null) | {
-      name: ("tag_categories:" + (.id| tostring)),
+    .vsphere_tag_categories | to_entries[]? |
+    select(type == "object") | select(.key != null) |
+    {
+      name: (.value.name // .key),
       canonical_facts: {
-            module: "tag_categories",
-        id: .id
+        id: (.key | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "tag_categories"
       }
     }
+# `vsphere_tags` is a dict keyed by tag id, so `.id` on the container was
+# always null and every tag was discarded.
 vmware.vmware.tags:
   query: >-
-    .vsphere_tags | select(. != null) | {
-      name: ("tags:" + (.id| tostring)),
+    .vsphere_tags | to_entries[]? |
+    select(type == "object") | select(.key != null) |
+    {
+      name: (.value.name // .key),
       canonical_facts: {
-            module: "tags",
-        id: .id
+        id: (.key | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "content_library"
+        device_type: "content_library",
+        module: "tags"
       }
     }
-vmware.vmware.vcsa_backup_schedule:
-  query: >-
-    .schedule | select(. != null) | {
-      name: ("vcsa_backup_schedule:" + (.id| tostring)),
-      canonical_facts: {
-            module: "vcsa_backup_schedule",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "management_appliance"
-      }
-    }
-vmware.vmware.vcsa_backup_schedule_info:
-  query: >-
-    .schedules[] | {
-      name: ("vcsa_backup_schedule_info:" + (.id| tostring)),
-      canonical_facts: {
-            module: "vcsa_backup_schedule_info",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "management_appliance"
-      }
-    }
-vmware.vmware.vcsa_settings:
-  query: >-
-    .vcsa_settings | select(. != null) | {
-      name: ("vcsa_settings:" + (.id| tostring)),
-      canonical_facts: {
-            module: "vcsa_settings",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "management_appliance"
-      }
-    }
+# Was `.power_cycled_for_update`, which is a bool and is always
+# returned. Indexing it raised a jq error that discarded every
+# module's records for the whole event. The VM identity this query
+# wants has always been under `.vm`.
 vmware.vmware.vm:
   query: >-
-    .power_cycled_for_update | select(. != null) | {
-      name: ("vm:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "vm",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm"
       }
     }
 vmware.vmware.vm_advanced_settings:
   query: >-
-    .vm | select(. != null) | {
-      name: ("vm_advanced_settings:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "vm_advanced_settings",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm_advanced_settings"
       }
     }
 vmware.vmware.vm_apply_customization:
   query: >-
-    .vm | select(. != null) | {
-      name: ("vm_apply_customization:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "vm_apply_customization",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm_apply_customization"
       }
     }
+vmware.vmware.vm_info:
+  query: >-
+    .vms[]? |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
+      canonical_facts: {
+        moid: (.moid | tostring)
+      },
+      facts: {
+        infra_type: "private_cloud",
+        infra_bucket: "compute",
+        device_type: "virtual_machine",
+        module: "vm_info"
+      }
+    }
+# The result is {cluster: {folder: [vm, ...]}}, so `.id` on the outer
+# container was always null. Each vm entry comes from
+# `{k: str(v) for k, v in vars(VM.Summary)}`, whose id field is named `vm`;
+# the module's RETURN sample documents `moid` instead, so both are accepted.
+# With detailed_vms=true the entries are VM.Info, which carries no id at
+# all -- those runs report nothing, which is correct, because there is no
+# identity to deduplicate on.
 vmware.vmware.vm_list_group_by_clusters_info:
   query: >-
-    .vm_list_group_by_clusters_info | select(. != null) | {
-      name: ("vm_list_group_by_clusters_info:" + (.id| tostring)),
+    .vm_list_group_by_clusters_info | .[]? | .[]? | .[]? |
+    select(type == "object") | select((.vm // .moid) != null) |
+    {
+      name: (.name // ((.vm // .moid) | tostring)),
       canonical_facts: {
-            module: "vm_list_group_by_clusters_info",
-        id: .id
+        moid: ((.vm // .moid) | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
-      }
-    }
-vmware.vmware.vm_portgroup_info:
-  query: >-
-    .vm_portgroup_info | select(. != null) | {
-      name: ("vm_portgroup_info:" + (.id| tostring)),
-      canonical_facts: {
-            module: "vm_portgroup_info",
-        id: .id
-      },
-      facts: {
-        infra_type: "private_cloud",
-        infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm_list_group_by_clusters_info"
       }
     }
 vmware.vmware.vm_powerstate:
   query: >-
-    .vm | select(. != null) | {
-      name: ("vm_powerstate:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "vm_powerstate",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm_powerstate"
       }
     }
 vmware.vmware.vm_resource_info:
   query: >-
-    .vms[] | {
-      name: ("vm_resource_info:" + (.moid| tostring)),
+    .vms[]? |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "vm_resource_info",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm_resource_info"
       }
     }
 vmware.vmware.vm_snapshot:
   query: >-
-    .vm | select(. != null) | {
-      name: ("vm_snapshot:" + (.moid| tostring)),
+    .vm |select(type == "object") | select(.moid != null) |
+    {
+      name: (.name // (.moid | tostring)),
       canonical_facts: {
-            module: "vm_snapshot",
-        moid: .moid
+        moid: (.moid | tostring)
       },
       facts: {
         infra_type: "private_cloud",
         infra_bucket: "compute",
-        device_type: "virtual_machine"
+        device_type: "virtual_machine",
+        module: "vm_snapshot"
       }
     }
+vmware.vmware.tag_associations:
+  query: >-
+    .object | select(type == "object") | select(.id != null) |
+    {
+      name: (.id | tostring),
+      canonical_facts: {
+        moid: (.id | tostring)
+      },
+      facts: {
+        infra_type: "private_cloud",
+        infra_bucket: "compute",
+        device_type: (
+          if   (.id | startswith("vm-"))       then "virtual_machine"
+          elif (.id | startswith("host-"))     then "hypervisor_host"
+          elif (.id | startswith("domain-c"))  then "compute_cluster"
+          elif (.id | startswith("group-"))    then "folder"
+          else "vsphere_object"
+          end
+        ),
+        module: "tag_associations"
+      }
+    }
+
+# REMOVED -- these modules return no usable node identity, so their queries
+# could not report a node no matter what they were changed to. Each is listed
+# with what its result actually contains. Restore any of them if the module
+# starts returning an identifier.
+#
+# folder_template_from_vm     result is `dict(changed=...)` and nothing else.
+#                             The query read `.id`, which was always null, so
+#                             the record was discarded on every run.
+#
+# license_info                `result['licenses']` is a list of license KEY
+#                             STRINGS (VcenterLicenseMgr.list_keys returns
+#                             item.licenseKey). `.licenses[] | .id` indexes a
+#                             string, which raises a jq error -- and the
+#                             controller catches jq errors at the event level,
+#                             so this discarded every other module's records
+#                             for the same event. A license is also not a node.
+#
+# vm_portgroup_info           returns {vm_name: [portgroup, ...]}. The only
+#                             identity available is the VM *name*, which is
+#                             mutable and is not the moid every other query
+#                             uses, so counting it would add a second row for a
+#                             VM already counted correctly elsewhere.
+#
+# vcsa_settings               returns the appliance's DNS/NTP settings, which
+#                             carry no identifier; `.vcsa_settings.id` was
+#                             always null. The appliance itself is reported by
+#                             appliance_info with a stable id.
+#
+# vcsa_backup_schedule        the schedule id is "default" on every appliance
+# vcsa_backup_schedule_info   ("Your VCSA may only allow for one schedule ...
+#                             its name is 'default'"), so canonical_facts was
+#                             identical across every vCenter in a fleet and
+#                             collapsed all of them into a single audit row.
+#                             A backup schedule is also not a node.
