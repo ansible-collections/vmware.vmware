@@ -1,0 +1,9 @@
+---
+minor_changes:
+  - vms inventory - add ``gather_path`` option (default ``true``) to skip pyVmomi folder-path
+    traversal when the ``path`` variable is not used. Traversal issues one synchronous vCenter
+    RPC per folder level per VM; setting ``gather_path`` to ``false`` saves roughly 1-2 seconds
+    per VM on a local network connection (https://github.com/ansible-collections/vmware.vmware/pull/416).
+  - vms inventory - replace per-VM ``list_attached_tags`` REST calls with a single
+    ``list_attached_tags_on_objects`` call when ``gather_tags`` is ``true``, reducing tag-fetch
+    round-trips from O(n) to O(1) (https://github.com/ansible-collections/vmware.vmware/pull/416).

@@ -177,6 +177,18 @@ filter_expressions:
 ...
 
 
+# Speed up inventory by disabling folder-path traversal and using bulk tag fetching.
+# gather_path defaults to true; set it to false when the 'path' variable is not referenced
+# in filter_expressions, compose, keyed_groups, hostnames, groups, or group_by_paths.
+# Combined with gather_tags: true, this replaces O(n) per-VM vCenter/REST round-trips with
+# a single bulk call, reducing runtime from minutes to seconds on large inventories.
+---
+plugin: vmware.vmware.vms
+gather_tags: true
+gather_path: false
+...
+
+
 # customizing hostnames based on VM's FQDN. The second hostnames template acts as a fallback mechanism.
 ---
 plugin: vmware.vmware.vms
