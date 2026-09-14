@@ -141,6 +141,86 @@ class TestInventoryUtilsBase():
         with pytest.raises(NotImplementedError):
             self.test_base.set_default_ansible_host_var(mocker.Mock())
 
+    def test_add_tags_to_objects_bulk(self, mocker):
+        self.__prepare(mocker)
+
+        tag1 = mocker.Mock()
+        tag1.id = 'tag-1'
+        tag1.name = 'production'
+        tag1.category_id = 'cat-1'
+
+        tag2 = mocker.Mock()
+        tag2.id = 'tag-2'
+        tag2.name = 'web'
+        tag2.category_id = 'cat-2'
+
+        tag3 = mocker.Mock()
+        tag3.id = 'tag-3'
+        tag3.name = 'staging'
+        tag3.category_id = 'cat-1'
+
+        host1 = mocker.Mock()
+        host1.object._GetMoId.return_value = 'vm-1'
+        host1.properties = {}
+
+        host2 = mocker.Mock()
+        host2.object._GetMoId.return_value = 'vm-2'
+        host2.properties = {}
+
+        self.test_base.rest_client = mocker.Mock()
+        self.test_base.rest_client.get_tags_for_vm_moids_bulk.return_value = {
+            'vm-1': [tag1, tag2],
+            'vm-2': [tag3],
+        }
+
+        cat1 = mocker.Mock()
+        cat1.name = 'Environment'
+        cat2 = mocker.Mock()
+        cat2.name = 'Team'
+
+        category_map = {'cat-1': cat1, 'cat-2': cat2}
+        self.test_base.rest_client.tag_category_service.get.side_effect = lambda cat_id: category_map[cat_id]
+
+        self.test_base.add_tags_to_objects_bulk([host1, host2])
+
+        assert host1.properties['tags'] == {'tag-1': 'production', 'tag-2': 'web'}
+        assert host1.properties['tags_by_category'] == {
+            'Environment': [{'tag-1': 'production'}],
+            'Team': [{'tag-2': 'web'}],
+        }
+        assert host2.properties['tags'] == {'tag-3': 'staging'}
+        assert host2.properties['tags_by_category'] == {'Environment': [{'tag-3': 'staging'}]}
+
+    def test_add_tags_to_objects_bulk_caches_category_names(self, mocker):
+        self.__prepare(mocker)
+
+        tag1 = mocker.Mock()
+        tag1.id = 'tag-1'
+        tag1.name = 'production'
+        tag1.category_id = 'cat-1'
+
+        host1 = mocker.Mock()
+        host1.object._GetMoId.return_value = 'vm-1'
+        host1.properties = {}
+
+        host2 = mocker.Mock()
+        host2.object._GetMoId.return_value = 'vm-2'
+        host2.properties = {}
+
+        self.test_base.rest_client = mocker.Mock()
+        self.test_base.rest_client.get_tags_for_vm_moids_bulk.return_value = {
+            'vm-1': [tag1],
+            'vm-2': [tag1],
+        }
+
+        cat1 = mocker.Mock()
+        cat1.name = 'Environment'
+        self.test_base.rest_client.tag_category_service.get.return_value = cat1
+
+        self.test_base.add_tags_to_objects_bulk([host1, host2])
+
+        self.test_base.rest_client.tag_category_service.get.assert_called_once_with('cat-1')
+
 
 class TestVmwareInventoryHost():
     class TestHost(VmwareInventoryHost):
@@ -252,6 +332,28 @@ class TestVmwareInventoryHost():
         )
 
         assert 'customValue' not in host.properties
+
+    def test_create_from_vcenter_object_skips_path_when_gather_path_false(self, mocker):
+        self.__prepare(mocker)
+        vmware_object = create_mock_vsphere_object()
+
+        mocked_path = mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
+
+        host = self.TestHost.create_from_vcenter_object(
+            vmware_object,
+            ['name'],
+            mocker.Mock(),
+            gather_path=False,
+        )
+
+        mocked_path.assert_not_called()
+        assert host.properties['path'] == ''
 
 
 class TestInventoryPropertyCollector():

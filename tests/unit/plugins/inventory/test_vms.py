@@ -118,7 +118,7 @@ class TestInventoryModule():
         )
         vm = VmInventoryHost()
         mocker.patch.object(VmInventoryHost, 'create_from_vcenter_object', return_value=vm)
-        mocker.patch.object(inventory_module, 'add_tags_to_object_properties')
+        mocker.patch.object(inventory_module, 'add_tags_to_objects_bulk')
         mocker.patch.object(inventory_module, 'set_inventory_hostname')
         mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
         inventory_module.get_option = mocker.Mock(side_effect=lambda key: key == 'gather_tags')
@@ -126,7 +126,7 @@ class TestInventoryModule():
         inventory_module.populate_from_vcenter()
 
         inventory_module.initialize_rest_client.assert_called_once()
-        inventory_module.add_tags_to_object_properties.assert_called_once_with(vm)
+        inventory_module.add_tags_to_objects_bulk.assert_called_once_with([vm])
 
     def test_populate_from_vcenter_with_gather_compute_objects(self, mocker):
         inventory_module = InventoryModule()
@@ -154,3 +154,27 @@ class TestInventoryModule():
 
         assert vm.properties['cluster'] == {'name': 'c1', 'moid': '1'}
         assert vm.properties['esxi_host'] == {'name': 'h1', 'moid': '2'}
+
+    def test_populate_from_vcenter_with_gather_path_false(self, mocker):
+        inventory_module = InventoryModule()
+        mocker.patch.object(inventory_module, 'parse_properties_param', return_value=['name'])
+        mocker.patch.object(
+            inventory_module,
+            'initialize_pyvmomi_client',
+            side_effect=setattr(inventory_module, 'pyvmomi_client', mocker.Mock()),
+        )
+        mocker.patch.object(
+            inventory_module,
+            'iter_inventory_sources',
+            return_value=[(mocker.Mock(), mocker.Mock())],
+        )
+        vm = VmInventoryHost()
+        mocker.patch.object(VmInventoryHost, 'create_from_vcenter_object', return_value=vm)
+        mocker.patch.object(inventory_module, 'set_inventory_hostname')
+        mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
+        inventory_module.get_option = mocker.Mock(return_value=False)
+
+        inventory_module.populate_from_vcenter()
+
+        _, call_kwargs = VmInventoryHost.create_from_vcenter_object.call_args
+        assert call_kwargs['gather_path'] is False
