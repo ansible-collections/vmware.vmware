@@ -54,6 +54,17 @@ options:
             - If false, ansible_host will not be set
         default: true
         type: bool
+    gather_path:
+        description:
+            - If true, the vSphere folder path of each VM is computed and stored in the C(path)
+              host variable. This requires traversing the parent folder chain via pyVmomi lazy
+              loading, which makes one network round-trip per folder level per VM and dominates
+              inventory run time when caching is disabled.
+            - Set to false when C(path) is not referenced in C(filter_expressions), C(compose),
+              C(keyed_groups), C(hostnames), C(groups), or C(group_by_paths). Saves roughly
+              1-2 seconds per VM on a local network connection.
+        default: true
+        type: bool
 """
 
 EXAMPLES = r"""
@@ -346,10 +357,11 @@ class InventoryModule(VmwareInventoryBase):
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
+        gather_path = self.get_option("gather_path")
         self.initialize_pyvmomi_client()
-        if self.get_option("gather_tags"):
-            self.initialize_rest_client()
 
+        # Collect all VM objects first so tags can be fetched in a single batch call
+        vms = []
         for vmware_object, prop_set in self.iter_inventory_sources(
             vim.VirtualMachine,
             properties_to_gather,
@@ -359,11 +371,15 @@ class InventoryModule(VmwareInventoryBase):
                 properties_to_gather=properties_to_gather,
                 pyvmomi_client=self.pyvmomi_client,
                 prop_set=prop_set,
+                gather_path=gather_path,
             )
+            vms.append(vm)
 
-            if self.get_option("gather_tags"):
-                self.add_tags_to_object_properties(vm)
+        if self.get_option("gather_tags"):
+            self.initialize_rest_client()
+            self.add_tags_to_objects_bulk(vms)
 
+        for vm in vms:
             if self.get_option("gather_compute_objects"):
                 vm.properties['cluster'] = vm.cluster
                 vm.properties['esxi_host'] = vm.esxi_host

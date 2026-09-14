@@ -60,16 +60,20 @@ class VmwareInventoryHost(ABC):
         return host
 
     @classmethod
-    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None):
+    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None, gather_path=True):
         """
         Create the class from a vCenter object reference.
 
         When prop_set is provided, properties come from a PropertyCollector result.
         Otherwise properties are read from the object via vmware_obj_to_json().
+
+        gather_path controls whether the vSphere folder path is computed. Path traversal
+        uses pyVmomi lazy loading (one RPC per folder level per VM), so set it to False
+        when the path variable is not needed.
         """
         host = cls()
         host.object = vmware_object
-        host.path = get_folder_path_of_vsphere_object(vmware_object)
+        host.path = get_folder_path_of_vsphere_object(vmware_object) if gather_path else ''
         host._set_inventory_properties(properties_to_gather, pyvmomi_client, prop_set)
         return host
 
@@ -351,6 +355,47 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         vmware_host_object.properties['tags'] = tags
         vmware_host_object.properties['tags_by_category'] = tags_by_category
+
+    def add_tags_to_objects_bulk(self, vmware_host_objects):
+        """
+        Fetch tags for all host objects in a single API call and distribute the results.
+
+        Uses list_attached_tags_on_objects (one round-trip for all VMs) and resolves each
+        unique tag object and category name exactly once, rather than once per VM.
+
+        Args:
+            vmware_host_objects: list of VmwareInventoryHost subclass instances
+        Returns:
+            None
+        """
+        if not hasattr(self, '_known_tag_category_ids_to_name'):
+            self._known_tag_category_ids_to_name = {}
+
+        moids = [obj.object._GetMoId() for obj in vmware_host_objects]
+        moid_to_tags = self.rest_client.get_tags_for_vm_moids_bulk(moids)
+
+        # Resolve category names for every unique category across all returned tags
+        seen_category_ids = set()
+        for tags in moid_to_tags.values():
+            for tag in tags:
+                if tag.category_id not in seen_category_ids:
+                    seen_category_ids.add(tag.category_id)
+                    if tag.category_id not in self._known_tag_category_ids_to_name:
+                        self._known_tag_category_ids_to_name[tag.category_id] = \
+                            self.rest_client.tag_category_service.get(tag.category_id).name
+
+        for host_obj in vmware_host_objects:
+            moid = host_obj.object._GetMoId()
+            tags = {}
+            tags_by_category = {}
+            for tag in moid_to_tags.get(moid, []):
+                tags[tag.id] = tag.name
+                category_name = self._known_tag_category_ids_to_name[tag.category_id]
+                if category_name not in tags_by_category:
+                    tags_by_category[category_name] = []
+                tags_by_category[category_name].append({tag.id: tag.name})
+            host_obj.properties['tags'] = tags
+            host_obj.properties['tags_by_category'] = tags_by_category
 
     def set_inventory_hostname(self, vmware_host_object):
         """
