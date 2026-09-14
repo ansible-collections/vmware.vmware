@@ -53,7 +53,7 @@ import yaml
 # --------------------------------------------------------------------------
 
 COLLECTION_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
 )
 AUDIT_DIR = os.path.join(COLLECTION_ROOT, "extensions", "audit")
 QUERY_FILE = os.path.join(AUDIT_DIR, "event_query.yml")
@@ -215,7 +215,7 @@ def emitted_record(query):
 
 
 def sub_object(expression):
-    block, _ = balanced_block(expression or "", 0)
+    block = balanced_block(expression or "", 0)[0]
     return dict(split_pairs(block)) if block else {}
 
 
