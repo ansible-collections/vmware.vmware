@@ -207,3 +207,56 @@ class VmwareRestClient():
             tags.append(self.tag_service.get(tag_id))
 
         return tags
+
+    def _get_tags_for_moids_bulk(self, moids, obj_type):
+        """
+        Fetch tags for multiple objects of the given type in a single API call.
+
+        Objects with no tags may be absent from the response; they map to an empty list
+        in the returned dict. Resolves each unique tag object exactly once.
+
+        Args:
+            moids: list of MOID strings
+            obj_type: vSphere object type string ('VirtualMachine', 'HostSystem', …)
+
+        Returns:
+            dict mapping each MOID to a (possibly empty) list of tag objects
+        """
+        if not moids:
+            return {}
+
+        dyn_ids = [DynamicID(type=obj_type, id=moid) for moid in moids]
+        object_to_tags_list = self.tag_association_service.list_attached_tags_on_objects(dyn_ids)
+
+        moid_to_tag_ids = {item.object_id.id: item.tag_ids for item in object_to_tags_list}
+        unique_tag_ids = {tag_id for tag_ids in moid_to_tag_ids.values() for tag_id in tag_ids}
+        tag_id_to_obj = {tag_id: self.tag_service.get(tag_id) for tag_id in unique_tag_ids}
+
+        return {
+            moid: [tag_id_to_obj[tag_id] for tag_id in moid_to_tag_ids.get(moid, [])]
+            for moid in moids
+        }
+
+    def get_tags_for_vm_moids_bulk(self, vm_moids):
+        """
+        Fetch tags for multiple VMs in a single API call.
+
+        Args:
+            vm_moids: list of VM MOID strings
+
+        Returns:
+            dict mapping each MOID to a (possibly empty) list of tag objects
+        """
+        return self._get_tags_for_moids_bulk(vm_moids, 'VirtualMachine')
+
+    def get_tags_for_host_moids_bulk(self, host_moids):
+        """
+        Fetch tags for multiple ESXi hosts in a single API call.
+
+        Args:
+            host_moids: list of HostSystem MOID strings
+
+        Returns:
+            dict mapping each MOID to a (possibly empty) list of tag objects
+        """
+        return self._get_tags_for_moids_bulk(host_moids, 'HostSystem')

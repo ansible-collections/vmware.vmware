@@ -157,11 +157,18 @@ class TestEsxiInventoryModule(object):
             'initialize_pyvmomi_client',
             side_effect=setattr(inventory_module, 'pyvmomi_client', mocker.Mock()),
         )
-        mocker.patch.object(inventory_module, 'initialize_rest_client')
+        rest_client_mock = mocker.Mock()
+        mocker.patch.object(
+            inventory_module,
+            'initialize_rest_client',
+            side_effect=setattr(inventory_module, 'rest_client', rest_client_mock),
+        )
+        mock_host_object = mocker.Mock()
+        mock_host_object._GetMoId.return_value = 'host-1'
         mocker.patch.object(
             inventory_module,
             'iter_inventory_sources',
-            return_value=[(mocker.Mock(), mocker.Mock())],
+            return_value=[(mock_host_object, mocker.Mock())],
         )
         mocker.patch.object(
             EsxiInventoryHost,
@@ -169,12 +176,15 @@ class TestEsxiInventoryModule(object):
             return_value=EsxiInventoryHost(),
         )
         mocker.patch.object(inventory_module, '_host_connection_state', return_value='connected')
-        mocker.patch.object(inventory_module, 'add_tags_to_object_properties')
+        mocker.patch.object(inventory_module, 'add_tags_from_bulk_result')
         mocker.patch.object(inventory_module, 'set_inventory_hostname')
         mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
         inventory_module.get_option = mocker.Mock(side_effect=lambda key: key == 'gather_tags')
 
+        moid_to_tags = {'host-1': []}
+        rest_client_mock.get_tags_for_host_moids_bulk.return_value = moid_to_tags
+
         inventory_module.populate_from_vcenter()
 
         inventory_module.initialize_rest_client.assert_called_once()
-        inventory_module.add_tags_to_object_properties.assert_called_once()
+        inventory_module.add_tags_from_bulk_result.assert_called_once()
