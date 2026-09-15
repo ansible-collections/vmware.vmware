@@ -54,6 +54,17 @@ options:
             - If false, ansible_host will not be set
         default: true
         type: bool
+    gather_path:
+        description:
+            - If true, the vSphere folder path of each VM is computed and stored in the C(path)
+              host variable. This requires traversing the parent folder chain via pyVmomi lazy
+              loading, which makes one network round-trip per folder level per VM and dominates
+              inventory run time when caching is disabled.
+            - Set to false when C(path) is not referenced in C(filter_expressions), C(compose),
+              C(keyed_groups), C(hostnames), C(groups), or C(group_by_paths). Saves roughly
+              1-2 seconds per VM on a local network connection.
+        default: true
+        type: bool
 """
 
 EXAMPLES = r"""
@@ -346,6 +357,7 @@ class InventoryModule(VmwareInventoryBase):
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
+        gather_path = self.get_option("gather_path")
         self.initialize_pyvmomi_client()
         if self.get_option("gather_tags"):
             self.initialize_rest_client()
@@ -360,6 +372,8 @@ class InventoryModule(VmwareInventoryBase):
                 pyvmomi_client=self.pyvmomi_client,
                 prop_set=prop_set,
             )
+            if not gather_path:
+                vm.properties.pop('path', None)
 
             if self.get_option("gather_tags"):
                 self.add_tags_to_object_properties(vm)
