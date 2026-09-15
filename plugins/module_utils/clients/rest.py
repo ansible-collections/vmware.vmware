@@ -228,35 +228,16 @@ class VmwareRestClient():
         dyn_ids = [DynamicID(type=obj_type, id=moid) for moid in moids]
         object_to_tags_list = self.tag_association_service.list_attached_tags_on_objects(dyn_ids)
 
-        moid_to_tag_ids = {item.object_id.id: item.tag_ids for item in object_to_tags_list}
-        unique_tag_ids = {tag_id for tag_ids in moid_to_tag_ids.values() for tag_id in tag_ids}
-        tag_id_to_obj = {tag_id: self.tag_service.get(tag_id) for tag_id in unique_tag_ids}
+        tag_ids_to_tag_objects = {}
+        output = {}
+        for object_tags in object_to_tags_list:
+            object_moid = object_tags.object_id.id
+            output[object_moid] = []
 
-        return {
-            moid: [tag_id_to_obj[tag_id] for tag_id in moid_to_tag_ids.get(moid, [])]
-            for moid in moids
-        }
+            for tag_id in set(object_tags.tag_ids or []):
+                if tag_id not in tag_ids_to_tag_objects:
+                    tag_ids_to_tag_objects[tag_id] = self.tag_service.get(tag_id)
 
-    def get_tags_for_vm_moids_bulk(self, vm_moids):
-        """
-        Fetch tags for multiple VMs in a single API call.
+                output[object_moid].append(tag_ids_to_tag_objects[tag_id])
 
-        Args:
-            vm_moids: list of VM MOID strings
-
-        Returns:
-            dict mapping each MOID to a (possibly empty) list of tag objects
-        """
-        return self._get_tags_for_moids_bulk(vm_moids, 'VirtualMachine')
-
-    def get_tags_for_host_moids_bulk(self, host_moids):
-        """
-        Fetch tags for multiple ESXi hosts in a single API call.
-
-        Args:
-            host_moids: list of HostSystem MOID strings
-
-        Returns:
-            dict mapping each MOID to a (possibly empty) list of tag objects
-        """
-        return self._get_tags_for_moids_bulk(host_moids, 'HostSystem')
+        return output

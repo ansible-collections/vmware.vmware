@@ -131,7 +131,7 @@ class TestInventoryModule():
         inventory_module.get_option = mocker.Mock(side_effect=lambda key: key == 'gather_tags')
 
         moid_to_tags = {'vm-1': []}
-        rest_client_mock.get_tags_for_vm_moids_bulk.return_value = moid_to_tags
+        rest_client_mock._get_tags_for_moids_bulk.return_value = moid_to_tags
 
         inventory_module.populate_from_vcenter()
 

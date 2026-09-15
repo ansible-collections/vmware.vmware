@@ -353,8 +353,8 @@ class InventoryModule(VmwareInventoryBase):
             self.initialize_rest_client()
 
         sources = list(self.iter_inventory_sources(vim.VirtualMachine, properties_to_gather))
-        moid_to_tags = self.rest_client.get_tags_for_vm_moids_bulk(
-            [obj._GetMoId() for obj, _ in sources]
+        moid_to_tags = self.rest_client._get_tags_for_moids_bulk(
+            [obj._GetMoId() for obj, _ in sources], 'VirtualMachine'
         ) if gather_tags else {}
 
         for vmware_object, prop_set in sources:
