@@ -169,7 +169,6 @@ class TestInventoryModule():
             return_value=[(mocker.Mock(), mocker.Mock())],
         )
         vm = VmInventoryHost()
-        vm.properties = {'path': '/dc/vm/folder'}
         mocker.patch.object(VmInventoryHost, 'create_from_vcenter_object', return_value=vm)
         mocker.patch.object(inventory_module, 'set_inventory_hostname')
         mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
@@ -177,4 +176,5 @@ class TestInventoryModule():
 
         inventory_module.populate_from_vcenter()
 
-        assert 'path' not in vm.properties
+        _, call_kwargs = VmInventoryHost.create_from_vcenter_object.call_args
+        assert call_kwargs['gather_path'] is False

@@ -57,12 +57,9 @@ options:
     gather_path:
         description:
             - If true, the vSphere folder path of each VM is computed and stored in the C(path)
-              host variable. This requires traversing the parent folder chain via pyVmomi lazy
-              loading, which makes one network round-trip per folder level per VM and dominates
-              inventory run time when caching is disabled.
-            - Set to false when C(path) is not referenced in C(filter_expressions), C(compose),
-              C(keyed_groups), C(hostnames), C(groups), or C(group_by_paths). Saves roughly
-              1-2 seconds per VM on a local network connection.
+              host variable.
+            - If false, the C(path) attribute is not evaluated, potentially saving execution time and bandwidth.
+            - This is required if C(path) referenced elsewhere in the inventory configuration, or O(group_by_paths) is C(True)
         default: true
         type: bool
 """
@@ -371,9 +368,8 @@ class InventoryModule(VmwareInventoryBase):
                 properties_to_gather=properties_to_gather,
                 pyvmomi_client=self.pyvmomi_client,
                 prop_set=prop_set,
+                gather_path=gather_path,
             )
-            if not gather_path:
-                vm.properties.pop('path', None)
 
             if self.get_option("gather_tags"):
                 self.add_tags_to_object_properties(vm)
