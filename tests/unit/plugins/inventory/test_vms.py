@@ -95,7 +95,7 @@ class TestInventoryModule():
         mocker.patch.object(inventory_module, 'set_inventory_hostname')
         mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory', return_value={})
 
-        mocker.patch.object(inventory_module, 'get_option', side_effect=(False, False, False, False))
+        mocker.patch.object(inventory_module, 'get_option', side_effect=(False, False, False))
         inventory_module.populate_from_vcenter()
 
         assert inventory_module.iter_inventory_sources.call_count == 1
@@ -110,23 +110,33 @@ class TestInventoryModule():
             'initialize_pyvmomi_client',
             side_effect=setattr(inventory_module, 'pyvmomi_client', mocker.Mock()),
         )
-        mocker.patch.object(inventory_module, 'initialize_rest_client')
+        rest_client_mock = mocker.Mock()
+        mocker.patch.object(
+            inventory_module,
+            'initialize_rest_client',
+            side_effect=setattr(inventory_module, 'rest_client', rest_client_mock),
+        )
+        mock_vm_object = mocker.Mock()
+        mock_vm_object._GetMoId.return_value = 'vm-1'
         mocker.patch.object(
             inventory_module,
             'iter_inventory_sources',
-            return_value=[(mocker.Mock(), mocker.Mock())],
+            return_value=[(mock_vm_object, mocker.Mock())],
         )
         vm = VmInventoryHost()
         mocker.patch.object(VmInventoryHost, 'create_from_vcenter_object', return_value=vm)
-        mocker.patch.object(inventory_module, 'add_tags_to_object_properties')
+        mocker.patch.object(inventory_module, 'add_tags_from_bulk_result')
         mocker.patch.object(inventory_module, 'set_inventory_hostname')
         mocker.patch.object(inventory_module, 'add_host_object_from_vcenter_to_inventory')
         inventory_module.get_option = mocker.Mock(side_effect=lambda key: key == 'gather_tags')
 
+        moid_to_tags = {'vm-1': []}
+        rest_client_mock._get_tags_for_moids_bulk.return_value = moid_to_tags
+
         inventory_module.populate_from_vcenter()
 
         inventory_module.initialize_rest_client.assert_called_once()
-        inventory_module.add_tags_to_object_properties.assert_called_once_with(vm)
+        inventory_module.add_tags_from_bulk_result.assert_called_once_with(vm, moid_to_tags)
 
     def test_populate_from_vcenter_with_gather_compute_objects(self, mocker):
         inventory_module = InventoryModule()

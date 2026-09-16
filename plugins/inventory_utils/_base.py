@@ -323,6 +323,35 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         for vmware_object in self.get_objects_by_type(vim_type=[vim_type]):
             yield vmware_object, None
 
+    def add_tags_from_bulk_result(self, vmware_host_object, moid_to_tags):
+        """
+        Assign tags and tags_by_category to a host object using a pre-fetched bulk result.
+
+        Args:
+            vmware_host_object: VmwareInventoryHost subclass instance
+            moid_to_tags: dict mapping MOID strings to lists of tag objects,
+                          as returned by get_tags_for_vm_moids_bulk / get_tags_for_host_moids_bulk
+        Returns:
+            None
+        """
+        if not hasattr(self, '_known_tag_category_ids_to_name'):
+            self._known_tag_category_ids_to_name = {}
+
+        moid = vmware_host_object.object._GetMoId()
+        tags = {}
+        tags_by_category = {}
+        for tag in moid_to_tags.get(moid, []):
+            tags[tag.id] = tag.name
+            if tag.category_id not in self._known_tag_category_ids_to_name:
+                self._known_tag_category_ids_to_name[tag.category_id] = (
+                    self.rest_client.tag_category_service.get(tag.category_id).name
+                )
+            category_name = self._known_tag_category_ids_to_name[tag.category_id]
+            tags_by_category.setdefault(category_name, []).append({tag.id: tag.name})
+
+        vmware_host_object.properties['tags'] = tags
+        vmware_host_object.properties['tags_by_category'] = tags_by_category
+
     def add_tags_to_object_properties(self, vmware_host_object):
         """
         Given a subclass of VmwareInventoryHost object, gather any tags attached to the object and add them

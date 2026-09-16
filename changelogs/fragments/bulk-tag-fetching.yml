@@ -1,0 +1,11 @@
+---
+minor_changes:
+  - vms inventory - fetch tags for all VMs in a single REST call using
+    C(list_attached_tags_on_objects) instead of one call per VM.
+    Resolves each unique tag object exactly once. Replaces the two-loop structure
+    with a single loop over a materialised source list, satisfying the constraint
+    that C(initialize_rest_client) must be called before iteration
+    (https://github.com/ansible-collections/vmware.vmware/pull/XXX).
+  - esxi_hosts inventory - same bulk tag-fetching optimisation as the vms plugin,
+    using C(get_tags_for_host_moids_bulk) with object type C(HostSystem)
+    (https://github.com/ansible-collections/vmware.vmware/pull/XXX).

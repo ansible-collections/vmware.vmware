@@ -11,8 +11,9 @@ from ansible_collections.vmware.vmware.plugins.inventory_utils._base import (
     VmwareInventoryHost,
     DISPLAY
 )
+from ansible_collections.vmware.vmware.plugins.inventory.vms import VmInventoryHost
 from ansible.errors import AnsibleError
-from ...common.vmware_object_mocks import (
+from ansible_collections.vmware.vmware.tests.unit.common.vmware_object_mocks import (
     create_mock_vsphere_object,
 )
 pytestmark = pytest.mark.skipif(
@@ -178,6 +179,60 @@ class TestInventoryUtilsBase():
         )
 
         assert host.properties.get('path') == '/dc/vm/folder'
+
+    def test_add_tags_from_bulk_result_no_tags(self, mocker):
+        self.__prepare(mocker)
+        self.test_base.rest_client = mocker.Mock()
+        host = VmInventoryHost()
+        host.object = mocker.Mock()
+        host.object._GetMoId.return_value = 'vm-1'
+
+        self.test_base.add_tags_from_bulk_result(host, {})
+
+        assert host.properties['tags'] == {}
+        assert host.properties['tags_by_category'] == {}
+
+    def test_add_tags_from_bulk_result_with_tags(self, mocker):
+        self.__prepare(mocker)
+        tag = mocker.Mock()
+        tag.id = 'tag-id-1'
+        tag.name = 'my-tag'
+        tag.category_id = 'cat-1'
+        rest_client = mocker.Mock()
+        rest_client.tag_category_service.get.return_value.name = 'my-category'
+        self.test_base.rest_client = rest_client
+        host = VmInventoryHost()
+        host.object = mocker.Mock()
+        host.object._GetMoId.return_value = 'vm-1'
+
+        self.test_base.add_tags_from_bulk_result(host, {'vm-1': [tag]})
+
+        assert host.properties['tags'] == {'tag-id-1': 'my-tag'}
+        assert host.properties['tags_by_category'] == {'my-category': [{'tag-id-1': 'my-tag'}]}
+
+    def test_add_tags_from_bulk_result_caches_category_lookups(self, mocker):
+        self.__prepare(mocker)
+        tag1 = mocker.Mock()
+        tag1.id = 'tag-1'
+        tag1.name = 'tag-one'
+        tag1.category_id = 'cat-1'
+        tag2 = mocker.Mock()
+        tag2.id = 'tag-2'
+        tag2.name = 'tag-two'
+        tag2.category_id = 'cat-1'
+        rest_client = mocker.Mock()
+        rest_client.tag_category_service.get.return_value.name = 'my-category'
+        self.test_base.rest_client = rest_client
+        host = VmInventoryHost()
+        host.object = mocker.Mock()
+        host.object._GetMoId.return_value = 'vm-1'
+
+        self.test_base.add_tags_from_bulk_result(host, {'vm-1': [tag1, tag2]})
+
+        # category_service.get should only be called once despite two tags in the same category
+        rest_client.tag_category_service.get.assert_called_once_with('cat-1')
+        assert 'my-category' in host.properties['tags_by_category']
+        assert len(host.properties['tags_by_category']['my-category']) == 2
 
 
 class TestVmwareInventoryHost():

@@ -265,14 +265,17 @@ class InventoryModule(VmwareInventoryBase):
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
         gather_path = self.get_option("gather_path")
+        gather_tags = self.get_option("gather_tags")
         self.initialize_pyvmomi_client()
-        if self.get_option("gather_tags"):
+        if gather_tags:
             self.initialize_rest_client()
 
-        for vmware_object, prop_set in self.iter_inventory_sources(
-            vim.HostSystem,
-            properties_to_gather,
-        ):
+        sources = list(self.iter_inventory_sources(vim.HostSystem, properties_to_gather))
+        moid_to_tags = self.rest_client._get_tags_for_moids_bulk(
+            [obj._GetMoId() for obj, _ in sources], 'HostSystem'  # pylint: disable=disallowed-name
+        ) if gather_tags else {}
+
+        for vmware_object, prop_set in sources:
             esxi_host = EsxiInventoryHost.create_from_vcenter_object(
                 vmware_object=vmware_object,
                 properties_to_gather=properties_to_gather,
@@ -280,13 +283,10 @@ class InventoryModule(VmwareInventoryBase):
                 prop_set=prop_set,
                 gather_path=gather_path,
             )
-
             if self._host_connection_state(esxi_host) in ("disconnected", "notResponding"):
                 continue
-
-            if self.get_option("gather_tags"):
-                self.add_tags_to_object_properties(esxi_host)
-
+            if gather_tags:
+                self.add_tags_from_bulk_result(esxi_host, moid_to_tags)
             self.set_inventory_hostname(esxi_host)
             self.add_host_object_from_vcenter_to_inventory(new_host=esxi_host, hostvars=hostvars)
 

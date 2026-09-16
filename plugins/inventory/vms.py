@@ -355,14 +355,18 @@ class InventoryModule(VmwareInventoryBase):
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
         gather_path = self.get_option("gather_path")
+        gather_tags = self.get_option("gather_tags")
+        gather_compute_objects = self.get_option("gather_compute_objects")
         self.initialize_pyvmomi_client()
-        if self.get_option("gather_tags"):
+        if gather_tags:
             self.initialize_rest_client()
 
-        for vmware_object, prop_set in self.iter_inventory_sources(
-            vim.VirtualMachine,
-            properties_to_gather,
-        ):
+        sources = list(self.iter_inventory_sources(vim.VirtualMachine, properties_to_gather))
+        moid_to_tags = self.rest_client._get_tags_for_moids_bulk(
+            [obj._GetMoId() for obj, _ in sources], 'VirtualMachine'  # pylint: disable=disallowed-name
+        ) if gather_tags else {}
+
+        for vmware_object, prop_set in sources:
             vm = VmInventoryHost.create_from_vcenter_object(
                 vmware_object=vmware_object,
                 properties_to_gather=properties_to_gather,
@@ -370,14 +374,11 @@ class InventoryModule(VmwareInventoryBase):
                 prop_set=prop_set,
                 gather_path=gather_path,
             )
-
-            if self.get_option("gather_tags"):
-                self.add_tags_to_object_properties(vm)
-
-            if self.get_option("gather_compute_objects"):
+            if gather_tags:
+                self.add_tags_from_bulk_result(vm, moid_to_tags)
+            if gather_compute_objects:
                 vm.properties['cluster'] = vm.cluster
                 vm.properties['esxi_host'] = vm.esxi_host
-
             self.set_inventory_hostname(vm)
             self.add_host_object_from_vcenter_to_inventory(new_host=vm, hostvars=hostvars)
 
