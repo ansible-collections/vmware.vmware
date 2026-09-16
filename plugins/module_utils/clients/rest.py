@@ -207,3 +207,37 @@ class VmwareRestClient():
             tags.append(self.tag_service.get(tag_id))
 
         return tags
+
+    def _get_tags_for_moids_bulk(self, moids, obj_type):
+        """
+        Fetch tags for multiple objects of the given type in a single API call.
+
+        Objects with no tags may be absent from the response; they map to an empty list
+        in the returned dict. Resolves each unique tag object exactly once.
+
+        Args:
+            moids: list of MOID strings
+            obj_type: vSphere object type string ('VirtualMachine', 'HostSystem', …)
+
+        Returns:
+            dict mapping each MOID to a (possibly empty) list of tag objects
+        """
+        if not moids:
+            return {}
+
+        dyn_ids = [DynamicID(type=obj_type, id=moid) for moid in moids]
+        object_to_tags_list = self.tag_association_service.list_attached_tags_on_objects(dyn_ids)
+
+        tag_ids_to_tag_objects = {}
+        output = {}
+        for object_tags in object_to_tags_list:
+            object_moid = object_tags.object_id.id
+            output[object_moid] = []
+
+            for tag_id in set(object_tags.tag_ids or []):
+                if tag_id not in tag_ids_to_tag_objects:
+                    tag_ids_to_tag_objects[tag_id] = self.tag_service.get(tag_id)
+
+                output[object_moid].append(tag_ids_to_tag_objects[tag_id])
+
+        return output
