@@ -128,6 +128,11 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.prepare_matrix.outputs.groups) }}
     steps:
+      - name: Echo group members
+        run: |
+          # this list is hard to see in the Github UI
+          echo "${{ matrix.group }}"
+
       - name: Update pip, git
         if: runner.os == 'Linux' && startsWith(runner.name, 'ubuntu')
         run: |
