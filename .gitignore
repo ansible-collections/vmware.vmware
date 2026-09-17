@@ -1,5 +1,8 @@
 /tests/output/
 /changelogs/.plugin-cache.yaml
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
 
 # AI
 .agents/skills/shared
