@@ -214,5 +214,5 @@ class TestEsxiInventoryModule(object):
 
         inventory_module.populate_from_vcenter()
 
-        _, call_kwargs = EsxiInventoryHost.create_from_vcenter_object.call_args
+        _, call_kwargs = EsxiInventoryHost.create_from_vcenter_object.call_args  # pylint: disable=disallowed-name
         assert call_kwargs['gather_path'] is False
