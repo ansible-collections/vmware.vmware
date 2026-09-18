@@ -30,6 +30,14 @@ options:
         default: ['name', 'customValue', 'summary.runtime.powerState']
     keyed_groups:
         default: [{key: 'summary.runtime.powerState', separator: ''}]
+    gather_path:
+        description:
+            - If true, the vSphere folder path of each ESXi host is computed and stored in the C(path)
+              host variable.
+            - If false, the C(path) attribute is not evaluated, potentially saving execution time and bandwidth.
+            - This is required if C(path) referenced elsewhere in the inventory configuration, or O(group_by_paths) is C(True)
+        default: true
+        type: bool
 """
 
 EXAMPLES = r"""
@@ -137,12 +145,13 @@ class EsxiInventoryHost(VmwareInventoryHost):
         self._management_ip = None
 
     @classmethod
-    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None):
+    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None, gather_path=True):
         host = super().create_from_vcenter_object(
             vmware_object,
             properties_to_gather,
             pyvmomi_client,
             prop_set=prop_set,
+            gather_path=gather_path,
         )
         host.properties['management_ip'] = host.management_ip
         return host
@@ -255,6 +264,7 @@ class InventoryModule(VmwareInventoryBase):
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
+        gather_path = self.get_option("gather_path")
         gather_tags = self.get_option("gather_tags")
         self.initialize_pyvmomi_client()
         if gather_tags:
@@ -271,6 +281,7 @@ class InventoryModule(VmwareInventoryBase):
                 properties_to_gather=properties_to_gather,
                 pyvmomi_client=self.pyvmomi_client,
                 prop_set=prop_set,
+                gather_path=gather_path,
             )
             if self._host_connection_state(esxi_host) in ("disconnected", "notResponding"):
                 continue

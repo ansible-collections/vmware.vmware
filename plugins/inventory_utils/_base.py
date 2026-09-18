@@ -60,7 +60,7 @@ class VmwareInventoryHost(ABC):
         return host
 
     @classmethod
-    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None):
+    def create_from_vcenter_object(cls, vmware_object, properties_to_gather, pyvmomi_client, prop_set=None, gather_path=True):
         """
         Create the class from a vCenter object reference.
 
@@ -69,7 +69,8 @@ class VmwareInventoryHost(ABC):
         """
         host = cls()
         host.object = vmware_object
-        host.path = get_folder_path_of_vsphere_object(vmware_object)
+        if gather_path:
+            host.path = get_folder_path_of_vsphere_object(vmware_object)
         host._set_inventory_properties(properties_to_gather, pyvmomi_client, prop_set)
         return host
 
@@ -82,7 +83,8 @@ class VmwareInventoryHost(ABC):
             self.properties = properties_from_collector(prop_set)
         else:
             self.properties = vmware_obj_to_json(self.object, properties_to_gather)
-        self.properties['path'] = self.path
+        if self.path:
+            self.properties['path'] = self.path
         self.properties['moid'] = self.object._GetMoId()
         self._add_custom_values_to_properties(properties_to_gather, pyvmomi_client)
 

@@ -142,6 +142,44 @@ class TestInventoryUtilsBase():
         with pytest.raises(NotImplementedError):
             self.test_base.set_default_ansible_host_var(mocker.Mock())
 
+    def test_create_from_vcenter_object_skips_path_computation_when_gather_path_false(self, mocker):
+        mock_path_fn = mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object'
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
+        vmware_obj = mocker.Mock()
+        vmware_obj._GetMoId.return_value = 'vm-1'
+
+        from ansible_collections.vmware.vmware.plugins.inventory.vms import VmInventoryHost
+        host = VmInventoryHost.create_from_vcenter_object(
+            vmware_obj, ['name'], mocker.Mock(), gather_path=False
+        )
+
+        assert 'path' not in host.properties
+        mock_path_fn.assert_not_called()
+
+    def test_create_from_vcenter_object_computes_path_when_gather_path_true(self, mocker):
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.get_folder_path_of_vsphere_object',
+            return_value='/dc/vm/folder',
+        )
+        mocker.patch(
+            'ansible_collections.vmware.vmware.plugins.inventory_utils._base.vmware_obj_to_json',
+            return_value={},
+        )
+        vmware_obj = mocker.Mock()
+        vmware_obj._GetMoId.return_value = 'vm-1'
+
+        from ansible_collections.vmware.vmware.plugins.inventory.vms import VmInventoryHost
+        host = VmInventoryHost.create_from_vcenter_object(
+            vmware_obj, ['name'], mocker.Mock(), gather_path=True
+        )
+
+        assert host.properties.get('path') == '/dc/vm/folder'
+
     def test_add_tags_from_bulk_result_no_tags(self, mocker):
         self.__prepare(mocker)
         self.test_base.rest_client = mocker.Mock()

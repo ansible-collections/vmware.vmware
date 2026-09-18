@@ -54,6 +54,14 @@ options:
             - If false, ansible_host will not be set
         default: true
         type: bool
+    gather_path:
+        description:
+            - If true, the vSphere folder path of each VM is computed and stored in the C(path)
+              host variable.
+            - If false, the C(path) attribute is not evaluated, potentially saving execution time and bandwidth.
+            - This is required if C(path) referenced elsewhere in the inventory configuration, or O(group_by_paths) is C(True)
+        default: true
+        type: bool
 """
 
 EXAMPLES = r"""
@@ -346,6 +354,7 @@ class InventoryModule(VmwareInventoryBase):
         """
         hostvars = {}
         properties_to_gather = self.parse_properties_param()
+        gather_path = self.get_option("gather_path")
         gather_tags = self.get_option("gather_tags")
         gather_compute_objects = self.get_option("gather_compute_objects")
         self.initialize_pyvmomi_client()
@@ -363,6 +372,7 @@ class InventoryModule(VmwareInventoryBase):
                 properties_to_gather=properties_to_gather,
                 pyvmomi_client=self.pyvmomi_client,
                 prop_set=prop_set,
+                gather_path=gather_path,
             )
             if gather_tags:
                 self.add_tags_from_bulk_result(vm, moid_to_tags)
