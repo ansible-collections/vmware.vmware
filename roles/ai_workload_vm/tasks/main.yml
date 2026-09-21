@@ -1,0 +1,47 @@
+---
+- name: Discover available GPUs in the cluster
+  vmware.vmware.vm_gpu_passthrough_info:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs | default(false) }}"
+    datacenter: "{{ ai_vm_datacenter }}"
+    cluster: "{{ ai_vm_cluster | default(omit) }}"
+    gather_vgpu_profiles: "{{ ai_vm_gpu_mode == 'vgpu' }}"
+  register: _gpu_discovery
+  when: ai_vm_gpu_device_id == '' and ai_vm_vgpu_profile == ''
+
+- name: Validate GPU resources are available
+  ansible.builtin.assert:
+    that:
+      - (ai_vm_gpu_mode == 'passthrough' and ai_vm_gpu_device_id != '') or
+        (ai_vm_gpu_mode == 'vgpu' and ai_vm_vgpu_profile != '') or
+        (_gpu_discovery.gpu_info.available_gpus | default([]) | length > 0) or
+        (_gpu_discovery.gpu_info.vgpu_profiles | default([]) | length > 0)
+    fail_msg: >-
+      No GPU resources available. Ensure GPUs are present on hosts in
+      datacenter {{ ai_vm_datacenter }} and passthrough/vGPU is configured.
+
+- name: Configure GPU passthrough on the VM
+  vmware.vmware.vm_gpu_passthrough:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "{{ vcenter_validate_certs | default(false) }}"
+    vm_name: "{{ ai_vm_name }}"
+    datacenter: "{{ ai_vm_datacenter }}"
+    gpu_mode: "{{ ai_vm_gpu_mode }}"
+    gpu_device_id: "{{ ai_vm_gpu_device_id | default(omit) }}"
+    vgpu_profile: "{{ ai_vm_vgpu_profile | default(omit) }}"
+    gpu_count: "{{ ai_vm_gpu_count }}"
+    memory_reservation_locked: "{{ ai_vm_memory_reservation_locked }}"
+    enable_uefi_secure_boot: "{{ ai_vm_enable_uefi_secure_boot }}"
+    state: present
+  register: _gpu_config_result
+
+- name: Report GPU configuration result
+  ansible.builtin.debug:
+    msg: >-
+      GPU passthrough configured on VM {{ ai_vm_name }}:
+      mode={{ ai_vm_gpu_mode }}, count={{ ai_vm_gpu_count }},
+      changed={{ _gpu_config_result.changed }}
