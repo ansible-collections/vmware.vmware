@@ -18,14 +18,14 @@
   register: _abs
 
 - name: Gather Info About Folders
-  community.vmware.vmware_folder_info:
-    datacenter: "{{ vcenter_datacenter }}"
+  vmware.vmware.folder_info:
+    absolute_path: "{{ vmware_folder_absolute_folder_name }}"
   register: _folder_info
 
 - name: Check Output
   ansible.builtin.assert:
     that:
-      - (_folder_info.flat_folder_info | selectattr('moid', 'equalto', _rel.folder.moid) | first).path == vmware_folder_absolute_folder_name
+      - (_folder_info.folders | selectattr('path', 'equalto', vmware_folder_absolute_folder_name)) | length == 1
       - _rel.folder.moid == _abs.folder.moid
       - _rel is changed
       - _abs is not changed
