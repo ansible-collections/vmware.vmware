@@ -28,6 +28,9 @@
       ansible.builtin.set_fact:
         test_vm_moid: "{{ _basic_create_task.vm.moid }}"
 
+    - name: Test check mode
+      ansible.builtin.include_tasks: check_mode_tests.yml
+
     # from this point on, the vm definition above is not reliable. Tests
     # should establish relevant vm options as a first task.
     - name: Test vm update
