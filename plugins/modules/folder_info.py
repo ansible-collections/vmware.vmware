@@ -356,7 +356,7 @@ class VmwareFolderInfo(ModulePyvmomiBase):
         """
         if self.params["moid"]:
             return self.create_vim_object_from_moid(
-                moid=self.params["moid"], vimtype=[vim.Folder]
+                moid=self.params["moid"], vimtype=vim.Folder
             )
 
         if self.params["absolute_path"]:
@@ -372,7 +372,7 @@ class VmwareFolderInfo(ModulePyvmomiBase):
 
             if dc and folder_type:
                 dc_prop_name = folder_types_to_datacenter_property_names(folder_type)[0]
-                return [getattr(dc, dc_prop_name)]
+                return getattr(dc, dc_prop_name)
 
             return dc
 
