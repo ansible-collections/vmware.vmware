@@ -10,6 +10,9 @@
     - name: Include Test Tasks
       ansible.builtin.include_tasks:
         file: test.yml
+    - name: Include Info Tasks
+      ansible.builtin.include_tasks:
+        file: info.yml
   always:
     - name: Destroy Test Folder
       vmware.vmware.folder:

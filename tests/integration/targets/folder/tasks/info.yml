@@ -1,0 +1,32 @@
+---
+- name: Lookup a madeup folder
+  vmware.vmware.folder_info:
+    absolute_path: "/foo/bar/bizz"
+  register: _madeup
+
+- name: Lookup a specific folder
+  vmware.vmware.folder_info:
+    absolute_path: "/{{ vcenter_datacenter }}/vm"
+  register: _specific
+
+- name: Lookup a specific folder type
+  vmware.vmware.folder_info:
+    folder_type: network
+    recurse: true
+  register: _type
+
+- name: Check Output
+  ansible.builtin.assert:
+    that:
+      - _madeup is not changed
+      - _madeup.folder_tree | length == 0
+      - _madeup.folders | length == 0
+
+      - _specific is not changed
+      - _specific.folder_tree | length != 0
+      - _specific.folders | length > 10 # many folders
+      - (_specific.folders | selectattr('path', 'equalto', '/' + vcenter_datacenter + '/vm')) | length == 1
+
+      - _type is not changed
+      - _type.folder_tree | length != 0
+      - _type.folders | length < 10 # not as many

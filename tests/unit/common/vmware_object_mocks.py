@@ -36,6 +36,8 @@ class MockVmwareObject(mock.Mock):
         super().__init__()
         self.name = name
         self._moId = moid
+        self.parent = None
+        self.parentVApp = None
 
     def _GetMoId(self):
         return self._moId
@@ -134,3 +136,25 @@ class MockServiceSystem():
 
     def UpdateServicePolicy(self, id, policy):
         self.__find(id).policy = policy
+
+
+class MockFolder(MockVmwareObject):
+    def __init__(self, name="test", moid="1"):
+        super().__init__(name=name, moid=moid)
+        self.childEntity = []
+
+
+class MockDatacenter(MockVmwareObject):
+    def __init__(self, name="test", moid="1"):
+        super().__init__(name=name, moid=moid)
+        self.datastoreFolder = MockFolder(name='datastore', moid='7000')
+        self.datastoreFolder.parent = self
+
+        self.vmFolder = MockFolder(name='vm', moid='7001')
+        self.vmFolder.parent = self
+
+        self.hostFolder = MockFolder(name='host', moid='7002')
+        self.hostFolder.parent = self
+
+        self.networkFolder = MockFolder(name='network', moid='7003')
+        self.networkFolder.parent = self
