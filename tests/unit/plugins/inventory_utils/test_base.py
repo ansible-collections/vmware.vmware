@@ -3,6 +3,7 @@ __metaclass__ = type
 
 import sys
 import pytest
+from unittest import mock
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
@@ -236,7 +237,7 @@ class TestInventoryUtilsBase():
 
 
 class TestVmwareInventoryHost():
-    class TestHost(VmwareInventoryHost):
+    class MockHost(VmwareInventoryHost):
         def __init__(self):
             super().__init__()
             self._guest_ip = None
@@ -245,7 +246,7 @@ class TestVmwareInventoryHost():
             pass
 
     def __prepare(self, mocker):
-        self.test_host = self.TestHost()
+        self.test_host = self.MockHost()
 
     def test_create_from_vcenter_object_adds_inventory_metadata(self, mocker):
         self.__prepare(mocker)
@@ -267,7 +268,7 @@ class TestVmwareInventoryHost():
             return_value={},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['customValue'],
             pyvmomi_client,
@@ -291,7 +292,7 @@ class TestVmwareInventoryHost():
             return_value={'name': 'host-one'},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['name'],
             mocker.Mock(),
@@ -316,7 +317,7 @@ class TestVmwareInventoryHost():
             return_value={},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['name'],
             mocker.Mock(),
@@ -338,7 +339,7 @@ class TestVmwareInventoryHost():
             return_value={},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['customValue'],
             mocker.Mock(),
@@ -411,7 +412,9 @@ class TestInventoryPropertyCollector():
             return_value=[obj_content],
         )
 
-        sources = list(self.test_base.iter_inventory_sources(mocker.sentinel.vim_type, ['name']))
+        with mock.patch.object(VmwareInventoryBase, 'vim_class', new_callable=mock.PropertyMock) as mock_vim_class:
+            mock_vim_class.return_value = mocker.sentinel.vim_type
+            sources = list(self.test_base.iter_inventory_sources(['name']))
 
         assert sources == [(obj_content.obj, obj_content.propSet)]
 
@@ -424,7 +427,9 @@ class TestInventoryPropertyCollector():
             return_value=[vmware_object],
         )
 
-        sources = list(self.test_base.iter_inventory_sources(mocker.sentinel.vim_type, []))
+        with mock.patch.object(VmwareInventoryBase, 'vim_class', new_callable=mock.PropertyMock) as mock_vim_class:
+            mock_vim_class.return_value = mocker.sentinel.vim_type
+            sources = list(self.test_base.iter_inventory_sources([]))
 
         assert sources == [(vmware_object, None)]
         self.test_base.get_objects_by_type.assert_called_once_with(vim_type=[mocker.sentinel.vim_type])

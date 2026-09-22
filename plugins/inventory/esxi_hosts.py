@@ -128,7 +128,7 @@ keyed_groups:
 """
 
 try:
-    from pyVmomi import vim
+    from pyVmomi import vim, vmodl
 except ImportError:
     # Already handled in base class
     pass
@@ -191,6 +191,14 @@ class EsxiInventoryHost(VmwareInventoryHost):
 class InventoryModule(VmwareInventoryBase):
 
     NAME = "vmware.vmware.esxi_hosts"
+
+    @property
+    def vim_class(self):
+        return vim.HostSystem
+
+    @property
+    def rest_class(self):
+        return "HostSystem"
 
     def verify_file(self, path):
         """
@@ -258,39 +266,26 @@ class InventoryModule(VmwareInventoryBase):
         except KeyError:
             return esxi_host.object.summary.runtime.connectionState
 
-    def populate_from_vcenter(self):
+    def _hydrate_inventory_host_from_vsphere_props(self, vmware_object, prop_set, properties_to_gather):
         """
-        Populate inventory data from vCenter
+        Override for the base class definition of this method. Used to fully populate an inventory host's
+        properties from vSphere.
         """
-        hostvars = {}
-        properties_to_gather = self.parse_properties_param()
-        gather_path = self.get_option("gather_path")
-        gather_tags = self.get_option("gather_tags")
-        self.initialize_pyvmomi_client()
-        if gather_tags:
-            self.initialize_rest_client()
-
-        sources = list(self.iter_inventory_sources(vim.HostSystem, properties_to_gather))
-        moid_to_tags = self.rest_client._get_tags_for_moids_bulk(
-            [obj._GetMoId() for obj, _ in sources], 'HostSystem'  # pylint: disable=disallowed-name
-        ) if gather_tags else {}
-
-        for vmware_object, prop_set in sources:
+        try:
             esxi_host = EsxiInventoryHost.create_from_vcenter_object(
                 vmware_object=vmware_object,
                 properties_to_gather=properties_to_gather,
                 pyvmomi_client=self.pyvmomi_client,
                 prop_set=prop_set,
-                gather_path=gather_path,
+                gather_path=self.get_option("gather_path"),
             )
             if self._host_connection_state(esxi_host) in ("disconnected", "notResponding"):
-                continue
-            if gather_tags:
-                self.add_tags_from_bulk_result(esxi_host, moid_to_tags)
-            self.set_inventory_hostname(esxi_host)
-            self.add_host_object_from_vcenter_to_inventory(new_host=esxi_host, hostvars=hostvars)
+                return None
+        except vmodl.fault.ManagedObjectNotFound:
+            self._handle_managed_object_not_found_error(vmware_object=vmware_object)
+            return None
 
-        return hostvars
+        return esxi_host
 
     def set_default_ansible_host_var(self, vmware_host_object):
         """

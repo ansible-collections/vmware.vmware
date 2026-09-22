@@ -1,0 +1,4 @@
+---
+bugfixes:
+  - inventory plugins - warn when an object cannot be found mid execution instead of throwing an error
+    (fixes https://github.com/ansible-collections/vmware.vmware/issues/419)
