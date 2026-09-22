@@ -271,18 +271,14 @@ class InventoryModule(VmwareInventoryBase):
         Override for the base class definition of this method. Used to fully populate an inventory host's
         properties from vSphere.
         """
-        try:
-            esxi_host = EsxiInventoryHost.create_from_vcenter_object(
-                vmware_object=vmware_object,
-                properties_to_gather=properties_to_gather,
-                pyvmomi_client=self.pyvmomi_client,
-                prop_set=prop_set,
-                gather_path=self.get_option("gather_path"),
-            )
-            if self._host_connection_state(esxi_host) in ("disconnected", "notResponding"):
-                return None
-        except vmodl.fault.ManagedObjectNotFound:
-            self._handle_managed_object_not_found_error(vmware_object=vmware_object)
+        esxi_host = EsxiInventoryHost.create_from_vcenter_object(
+            vmware_object=vmware_object,
+            properties_to_gather=properties_to_gather,
+            pyvmomi_client=self.pyvmomi_client,
+            prop_set=prop_set,
+            gather_path=self.get_option("gather_path"),
+        )
+        if self._host_connection_state(esxi_host) in ("disconnected", "notResponding"):
             return None
 
         return esxi_host
