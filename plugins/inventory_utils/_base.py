@@ -366,7 +366,6 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         tags = {}
         tags_by_category = {}
-        property_prefix = 'vmware_inventory_'
         for tag in vmware_host_object.get_tags(self.rest_client):
             tags[tag.id] = tag.name
             try:
