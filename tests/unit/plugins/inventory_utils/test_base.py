@@ -21,6 +21,8 @@ pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"
 )
 
+from pyVmomi import vmodl
+
 
 def get_option(value):
     if value in ('hostname', 'username', 'password', 'port', 'validate_certs', 'proxy_port', 'proxy_host'):
@@ -234,6 +236,24 @@ class TestInventoryUtilsBase():
         rest_client.tag_category_service.get.assert_called_once_with('cat-1')
         assert 'my-category' in host.properties['tags_by_category']
         assert len(host.properties['tags_by_category']['my-category']) == 2
+
+    def test_populate_from_vcenter_object_not_found(self, mocker):
+        self.__prepare(mocker)
+        test_object = mocker.Mock()
+        test_object.name = 'foo'
+        test_object._GetMoId.return_value = 'bar'
+        mocker.patch.object(VmwareInventoryBase, 'iter_inventory_sources', return_value=[
+            (test_object, [])
+        ])
+        mocker.patch.object(
+            VmwareInventoryBase,
+            '_hydrate_inventory_host_from_vsphere_props',
+            side_effect=vmodl.fault.ManagedObjectNotFound
+        )
+        mocker.patch.object(DISPLAY, 'warning')
+
+        self.test_base.populate_from_vcenter()
+        DISPLAY.warning.assert_called_once()
 
 
 class TestVmwareInventoryHost():

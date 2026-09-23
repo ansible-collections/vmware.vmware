@@ -614,6 +614,27 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         return hostvars
 
+    def parse_properties_param(self):
+        """
+        The properties option can be a variety of inputs from the user and we need to
+        manipulate it into a list of properties that can be used later.
+        This method may be extended by plugin classes, for custom property parsing.
+        Returns:
+          A list of property names that should be returned in the inventory. An empty
+          list means all properties should be collected
+        """
+        properties_param = self.get_option("properties")
+        if not isinstance(properties_param, list):
+            properties_param = [properties_param]
+
+        if "all" in properties_param:
+            return []
+
+        if "name" not in properties_param:
+            properties_param.append("name")
+
+        return properties_param
+
     def _hydrate_inventory_host_from_vsphere_props(self, vmware_object, prop_set, properties_to_gather):
         """
             Create an object that represents an inventory host using a vmware object and properties from vCenter.

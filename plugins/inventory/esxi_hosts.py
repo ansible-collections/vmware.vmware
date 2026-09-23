@@ -128,7 +128,7 @@ keyed_groups:
 """
 
 try:
-    from pyVmomi import vim, vmodl
+    from pyVmomi import vim
 except ImportError:
     # Already handled in base class
     pass
@@ -228,15 +228,7 @@ class InventoryModule(VmwareInventoryBase):
           A list of property names that should be returned in the inventory. An empty
           list means all properties should be collected
         """
-        properties_param = self.get_option("properties")
-        if not isinstance(properties_param, list):
-            properties_param = [properties_param]
-
-        if "all" in properties_param:
-            return []
-
-        if "name" not in properties_param:
-            properties_param.append("name")
+        properties_param = super().parse_properties_param()
 
         # needed to filter out disconnected or unreachable hosts in self.populate_from_vcenter
         if "summary.runtime.connectionState" not in properties_param:
