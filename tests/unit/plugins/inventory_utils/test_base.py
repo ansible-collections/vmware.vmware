@@ -3,6 +3,7 @@ __metaclass__ = type
 
 import sys
 import pytest
+from unittest import mock
 
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.pyvmomi import PyvmomiClient
 from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import VmwareRestClient
@@ -19,6 +20,8 @@ from ansible_collections.vmware.vmware.tests.unit.common.vmware_object_mocks imp
 pytestmark = pytest.mark.skipif(
     sys.version_info < (2, 7), reason="requires python2.7 or higher"
 )
+
+from pyVmomi import vmodl
 
 
 def get_option(value):
@@ -234,9 +237,27 @@ class TestInventoryUtilsBase():
         assert 'my-category' in host.properties['tags_by_category']
         assert len(host.properties['tags_by_category']['my-category']) == 2
 
+    def test_populate_from_vcenter_object_not_found(self, mocker):
+        self.__prepare(mocker)
+        test_object = mocker.Mock()
+        test_object.name = 'foo'
+        test_object._GetMoId.return_value = 'bar'
+        mocker.patch.object(VmwareInventoryBase, 'iter_inventory_sources', return_value=[
+            (test_object, [])
+        ])
+        mocker.patch.object(
+            VmwareInventoryBase,
+            '_hydrate_inventory_host_from_vsphere_props',
+            side_effect=vmodl.fault.ManagedObjectNotFound
+        )
+        mocker.patch.object(DISPLAY, 'warning')
+
+        self.test_base.populate_from_vcenter()
+        DISPLAY.warning.assert_called_once()
+
 
 class TestVmwareInventoryHost():
-    class TestHost(VmwareInventoryHost):
+    class MockHost(VmwareInventoryHost):
         def __init__(self):
             super().__init__()
             self._guest_ip = None
@@ -245,7 +266,7 @@ class TestVmwareInventoryHost():
             pass
 
     def __prepare(self, mocker):
-        self.test_host = self.TestHost()
+        self.test_host = self.MockHost()
 
     def test_create_from_vcenter_object_adds_inventory_metadata(self, mocker):
         self.__prepare(mocker)
@@ -267,7 +288,7 @@ class TestVmwareInventoryHost():
             return_value={},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['customValue'],
             pyvmomi_client,
@@ -291,7 +312,7 @@ class TestVmwareInventoryHost():
             return_value={'name': 'host-one'},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['name'],
             mocker.Mock(),
@@ -316,7 +337,7 @@ class TestVmwareInventoryHost():
             return_value={},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['name'],
             mocker.Mock(),
@@ -338,7 +359,7 @@ class TestVmwareInventoryHost():
             return_value={},
         )
 
-        host = self.TestHost.create_from_vcenter_object(
+        host = self.MockHost.create_from_vcenter_object(
             vmware_object,
             ['customValue'],
             mocker.Mock(),
@@ -411,7 +432,9 @@ class TestInventoryPropertyCollector():
             return_value=[obj_content],
         )
 
-        sources = list(self.test_base.iter_inventory_sources(mocker.sentinel.vim_type, ['name']))
+        with mock.patch.object(VmwareInventoryBase, 'vim_class', new_callable=mock.PropertyMock) as mock_vim_class:
+            mock_vim_class.return_value = mocker.sentinel.vim_type
+            sources = list(self.test_base.iter_inventory_sources(['name']))
 
         assert sources == [(obj_content.obj, obj_content.propSet)]
 
@@ -424,7 +447,9 @@ class TestInventoryPropertyCollector():
             return_value=[vmware_object],
         )
 
-        sources = list(self.test_base.iter_inventory_sources(mocker.sentinel.vim_type, []))
+        with mock.patch.object(VmwareInventoryBase, 'vim_class', new_callable=mock.PropertyMock) as mock_vim_class:
+            mock_vim_class.return_value = mocker.sentinel.vim_type
+            sources = list(self.test_base.iter_inventory_sources([]))
 
         assert sources == [(vmware_object, None)]
         self.test_base.get_objects_by_type.assert_called_once_with(vim_type=[mocker.sentinel.vim_type])
