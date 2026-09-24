@@ -169,6 +169,7 @@ class PortgroupInfo(ModulePyvmomiBase):
             self.module.fail_json(
                 "Failed to get an attribute on a DVS portgroup %s" % pg_id,
                 portgroup_id=pg_id,
+                portgroup_name=getattr(dvs_pg, 'name', None),
                 attribute_name=e.name,
                 exception_message=str(e)
             )
@@ -183,6 +184,7 @@ class PortgroupInfo(ModulePyvmomiBase):
 
     def get_standard_portgroup_detailed(self, pg_id):
         pg = self.get_standard_portgroup_by_name_or_moid(pg_id)
+        pg_name = None
         try:
             pg_name = str(pg.summary.name)
             ret_pg = vmware_network.get_standard_portgroup_vlan_vswitch(pg, pg_name)
@@ -190,6 +192,7 @@ class PortgroupInfo(ModulePyvmomiBase):
             self.module.fail_json(
                 "Failed to get an attribute on a standard portgroup %s" % pg_id,
                 portgroup_id=pg_id,
+                portgroup_name=pg_name,
                 attribute_name=e.name,
                 exception_message=str(e)
             )
