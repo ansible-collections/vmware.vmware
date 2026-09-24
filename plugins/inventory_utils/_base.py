@@ -641,7 +641,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
             This method should be where class specific logic for mapping properties from vSphere objects
             to inventory hosts should be kept. This method is wrapped in a try/except to protect against
-            objects being moved or deleted in vSphere. So implemntation should focus on performing all
+            objects being moved or deleted in vSphere. So implementation should focus on performing all
             property hydration within this method.
             Returns:
                 Host object if one was able to be created, else None
