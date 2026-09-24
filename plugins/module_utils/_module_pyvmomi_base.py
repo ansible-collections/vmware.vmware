@@ -75,6 +75,27 @@ class ModulePyvmomiBase(PyvmomiClient):
             self.module.fail_json(msg="Unable to find distributed portgroup with name or MOID %s" % identifier)
         return None
 
+    def get_folder_using_params(self, folder_param='folder', fail_on_missing=False):
+        """
+        Get a folder using the common folder parameters. This is a helper method that is wrapped by get_vms_using_params,
+        but can also be used individually.
+        Folders are typically looked up by absolute path, but users may find it easier to just provide a name. This method
+        handles both scenarios, given the parameters are wired up properly.
+        Args:
+            fail_on_missing: If true, an error will be thrown if no folders are found
+            folder_param: Set the parameter key that corresponds to the folder that contains the VM
+        Returns:
+            folder or None. A pyvmomi folder object if one was found
+        """
+        folder = None
+        if self.params.get(folder_param):
+            if self.params.get('folder_paths_are_absolute'):
+                _fq_path = self.params.get(folder_param)
+            else:
+                _fq_path = format_folder_path_as_vm_fq_path(self.params.get(folder_param), self.params.get('datacenter'))
+            folder = self.get_folder_by_absolute_path(_fq_path, fail_on_missing=fail_on_missing)
+        return folder
+
     def get_vms_using_params(
             self, name_param='name', uuid_param='uuid', moid_param='moid', fail_on_missing=False,
             name_match_param='name_match', use_instance_uuid_param='use_instance_uuid', folder_param='folder'):
@@ -107,13 +128,7 @@ class ModulePyvmomiBase(PyvmomiClient):
             )]
 
         else:
-            folder = None
-            if self.params.get(folder_param):
-                if self.params.get('folder_paths_are_absolute'):
-                    _fq_path = self.params.get(folder_param)
-                else:
-                    _fq_path = format_folder_path_as_vm_fq_path(self.params.get(folder_param), self.params.get('datacenter'))
-                folder = self.get_folder_by_absolute_path(_fq_path, fail_on_missing=fail_on_missing)
+            folder = self.get_folder_using_params(folder_param=folder_param, fail_on_missing=fail_on_missing)
             vms = self.get_objs_by_name_or_moid([vim.VirtualMachine], self.params.get(_search_id), return_all=True, search_root_folder=folder)
 
         if vms and _search_type == 'name' and self.params.get(name_match_param):
