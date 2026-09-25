@@ -1,3 +1,0 @@
-bugfixes:
-  - vm - Add check mode support so create, update, and delete operations report the
-    change without modifying the VM.

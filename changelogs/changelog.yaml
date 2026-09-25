@@ -404,6 +404,62 @@ releases:
       name: esxi_service_info
       namespace: ''
     release_date: '2026-09-03'
+  2.11.0:
+    changes:
+      bugfixes:
+      - event_query - ``deploy_content_library_ovf``, ``deploy_content_library_template``
+        and ``deploy_folder_template`` report a virtual machine, but were labelled
+        ``content_library`` and ``folder`` (https://github.com/ansible-collections/vmware.vmware/pull/414).
+      - event_query - ``esxi_maintenance_mode``, ``import_content_library_ovf``, ``import_content_library_iso``,
+        ``cluster_info``, ``tags``, ``tag_categories`` and ``vm_list_group_by_clusters_info``
+        read their identifier from a path the module does not populate, so ``canonical_facts``
+        held a null under that key. The controller cannot hash null and silently drops
+        such records, so these modules never reported a node (https://github.com/ansible-collections/vmware.vmware/pull/414).
+      - event_query - ``vm``, ``license_info`` and ``tag_associations`` read a key
+        whose value is not an object (a bool, and two lists of strings), which raises
+        a jq error. The controller catches jq errors at the event level, so each of
+        these discarded the audit records of every other module in the same event,
+        not just its own (https://github.com/ansible-collections/vmware.vmware/pull/414).
+      - event_query - the module's own name was part of ``canonical_facts``, which
+        is the only key the controller deduplicates on. One virtual machine touched
+        by ``vm``, ``vm_powerstate``, ``vm_snapshot`` and the other VM modules was
+        therefore counted as a separate node per module. The module name moved to
+        ``facts`` (https://github.com/ansible-collections/vmware.vmware/pull/414).
+      - inventory plugins - warn when an object cannot be found mid execution instead
+        of throwing an error (fixes https://github.com/ansible-collections/vmware.vmware/issues/419)
+      - vm - Add check mode support so create, update, and delete operations report
+        the change without modifying the VM.
+      minor_changes:
+      - esxi_hosts inventory - add ``gather_path`` option (default ``true``) with
+        the same semantics as the vms inventory plugin (https://github.com/ansible-collections/vmware.vmware/pull/XXX).
+      - esxi_hosts inventory - same bulk tag-fetching optimisation as the vms plugin,
+        using C(get_tags_for_host_moids_bulk) with object type C(HostSystem) (https://github.com/ansible-collections/vmware.vmware/pull/XXX).
+      - event_query - added ``tests/unit/extensions/audit/test_event_query_contract.py``,
+        which asserts the constraints the controller imposes on this file (https://github.com/ansible-collections/vmware.vmware/pull/414).
+      - event_query - removed the entries for ``folder_template_from_vm``, ``license_info``,
+        ``vm_portgroup_info``, ``vcsa_settings``, ``vcsa_backup_schedule`` and ``vcsa_backup_schedule_info``.
+        None of these modules returns an identifier that can distinguish one node
+        from another, so none of them could report a node regardless of the query
+        used (https://github.com/ansible-collections/vmware.vmware/pull/414).
+      - folder_info - Added module to collect information about folders in vSphere
+      - vms inventory - add ``gather_path`` option (default ``true``) to omit the
+        C(path) host variable when it is not needed. Path computation traverses the
+        parent folder chain via pyVmomi lazy loading, which issues one synchronous
+        vCenter RPC per folder level per object; setting ``gather_path`` to ``false``
+        saves roughly 1-2 seconds per object on a local network connection (https://github.com/ansible-collections/vmware.vmware/pull/XXX).
+      - vms inventory - fetch tags for all VMs in a single REST call using C(list_attached_tags_on_objects)
+        instead of one call per VM. Resolves each unique tag object exactly once.
+        Replaces the two-loop structure with a single loop over a materialised source
+        list, satisfying the constraint that C(initialize_rest_client) must be called
+        before iteration (https://github.com/ansible-collections/vmware.vmware/pull/XXX).
+    fragments:
+    - 09212026-folder_info.yml
+    - 09222026-inven-churn-fix.yml
+    - audit-event-query-node-identity.yml
+    - bulk-tag-fetching.yml
+    - gather-path-option.yml
+    - vm-check-mode.yaml
+    release_date: '2026-09-24'
   2.2.0:
     changes:
       bugfixes:
