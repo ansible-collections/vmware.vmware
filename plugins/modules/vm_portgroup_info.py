@@ -149,8 +149,17 @@ class PortgroupInfo(ModulePyvmomiBase):
         else:
             self.vms = self.get_vms_using_params(fail_on_missing=False)
 
-    def get_dvs_portgroup_detailed(self, pg_id):
-        dvs_pg = self.get_dvs_portgroup_by_name_or_moid(pg_id)
+    def _vm_network_devices(self, vm):
+        try:
+            devices = vm.config.hardware.device
+        except AttributeError:
+            return
+
+        for device in devices:
+            if isinstance(device, vim.vm.device.VirtualEthernetCard):
+                yield device
+
+    def get_dvs_portgroup_detailed(self, dvs_pg, pg_id):
         try:
             pg = {
                 'portgroup_name': dvs_pg.name,
@@ -182,12 +191,11 @@ class PortgroupInfo(ModulePyvmomiBase):
 
         return pg
 
-    def get_standard_portgroup_detailed(self, pg_id):
-        pg = self.get_standard_portgroup_by_name_or_moid(pg_id)
+    def get_standard_portgroup_detailed(self, portgroup, pg_id):
         pg_name = None
         try:
-            pg_name = str(pg.summary.name)
-            ret_pg = vmware_network.get_standard_portgroup_vlan_vswitch(pg, pg_name)
+            pg_name = str(portgroup.summary.name)
+            ret_pg = vmware_network.get_standard_portgroup_vlan_vswitch(portgroup, pg_name)
         except AttributeError as e:
             self.module.fail_json(
                 "Failed to get an attribute on a standard portgroup %s" % pg_id,
@@ -206,43 +214,50 @@ class PortgroupInfo(ModulePyvmomiBase):
         # Save a dictionary of portgroup details for reuse
         pg_map = {}
         for vm in self.vms:
-            vm_detailed = self.get_vm_detailed(pyv_obj=vm)
-            if not vm_detailed:
-                continue
             vm_nics = []
-            for _, nic_value in vm_detailed.nics.items():
-                nic_details = self._format_nic_details(nic_value, pg_map)
+            for network_device in self._vm_network_devices(vm):
+                nic_details = self._format_nic_details(network_device, pg_map)
                 if not nic_details:
                     continue
                 vm_nics.append(nic_details)
 
-            vms_nics[vm_detailed.name] = vm_nics
+            vms_nics[vm.name] = vm_nics
 
         return vms_nics
 
     def _format_nic_details(self, nic, pg_map):
         nic_details = {
-            'nic_mac_address': nic.mac_address,
-            'nic_mac_type': str(nic.mac_type),
-            'nic_type': str(nic.type)
+            'nic_mac_address': getattr(nic, "macAddress", None),
+            'nic_mac_type': getattr(nic, "addressType", None),
+            'nic_type': nic.__class__.__name__.replace('vim.vm.device.', '')
         }
 
-        pg_type = str(nic.backing.type)
-        pg_id = str(nic.backing.network)
+        device_backing = nic.backing
+        if hasattr(device_backing, 'port'):
+            # this is a dvs
+            port_group_key = device_backing.port.portgroupKey
+            dvs_uuid = device_backing.port.switchUuid
+            try:
+                dvs = self.content.dvSwitchManager.QueryDvsByUuid(dvs_uuid)
+                portgroup = dvs.LookupDvPortGroup(port_group_key)
+            except Exception as e:
+                self.module.fail_json(
+                    "Unable to find distributed virtual switch UUID %s "
+                    "or its portgroup with key %s" % (dvs_uuid, port_group_key),
+                    exeception=str(e)
+                )
+            format_func = self.get_dvs_portgroup_detailed
+        else:
+            portgroup = device_backing.network
+            format_func = self.get_standard_portgroup_detailed
 
-        if pg_type not in ['DISTRIBUTED_PORTGROUP', 'STANDARD_PORTGROUP']:
-            return
+        pg_id = portgroup._GetMoId()
         if pg_id not in pg_map:
-            if pg_type == 'STANDARD_PORTGROUP':
-                pg_map[pg_id] = self.get_standard_portgroup_detailed(pg_id)
-            else:
-                pg_map[pg_id] = self.get_dvs_portgroup_detailed(pg_id)
+            details = format_func(portgroup, pg_id)
+            pg_map[pg_id] = details
 
         nic_details.update(pg_map[pg_id])
         return nic_details
-
-    def get_vm_detailed(self, pyv_obj):
-        return self.vmware_client.api_client.vcenter.VM.get(vm=pyv_obj._GetMoId())
 
 
 def main():
