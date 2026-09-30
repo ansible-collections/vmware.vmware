@@ -4,13 +4,27 @@
 # These jq expressions run inside the Automation Platform controller
 # (awx/main/tasks/host_indirect.py) against each module's result, and their
 # output feeds subscription node counting. Nothing in this repository executes
-# them, so tests/unit/audit/test_event_query_contract.py asserts the contract
-# the controller imposes on the output.
+# them, so tests/unit/extensions/audit/test_event_query_contract.py asserts the
+# contract the controller imposes on the output.
 #
 # THE CONTRACT
 # ------------
 # name             must be present and never null.
 #                  `if name is None: continue`
+# name             must also be UNIQUE WITHIN A JOB. IndirectManagedNodeAudit
+#                  declares unique_together = [('name', 'job')] and the
+#                  controller bulk_create()s every record for a job in one
+#                  transaction, so two records that deduplicate apart on
+#                  canonical_facts but share a `name` raise IntegrityError --
+#                  which rolls back the transaction and loses EVERY audit
+#                  record for that job, not just the colliding pair, and
+#                  reverts event_queries_processed so the fallback task
+#                  re-picks the job and fails the same way until it ages out.
+#                  A vSphere name is only unique within its parent folder, so
+#                  two VMs called `web01` in two folders, or a VM and a
+#                  template of the same name, collide. Every query therefore
+#                  emits its moid or uuid as `name` and the display name as
+#                  facts.name, which is not constrained.
 # canonical_facts  must be present, truthy, and free of null at any depth.
 #                  get_hashable_form() accepts int/float/str/bool/dict/list/
 #                  tuple and raises UnhashableFacts on anything else, including
@@ -45,7 +59,7 @@ vmware.vmware.appliance_info:
   query: >-
     .appliance |select(type == "object") | select(.id != null) |
     {
-      name: (.name // (.id | tostring)),
+      name: (.id | tostring),
       canonical_facts: {
         id: (.id | tostring)
       },
@@ -53,14 +67,15 @@ vmware.vmware.appliance_info:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "management_appliance",
-        module: "appliance_info"
+        module: "appliance_info",
+        name: (.name // (.id | tostring))
       }
     }
 vmware.vmware.cluster:
   query: >-
     .cluster |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -68,14 +83,15 @@ vmware.vmware.cluster:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster"
+        module: "cluster",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.cluster_dpm:
   query: >-
     .cluster |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -83,14 +99,15 @@ vmware.vmware.cluster_dpm:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster_dpm"
+        module: "cluster_dpm",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.cluster_drs:
   query: >-
     .cluster |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -98,14 +115,15 @@ vmware.vmware.cluster_drs:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster_drs"
+        module: "cluster_drs",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.cluster_drs_recommendations:
   query: >-
     .cluster |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -113,14 +131,15 @@ vmware.vmware.cluster_drs_recommendations:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster_drs_recommendations"
+        module: "cluster_drs_recommendations",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.cluster_ha:
   query: >-
     .cluster |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -128,7 +147,8 @@ vmware.vmware.cluster_ha:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster_ha"
+        module: "cluster_ha",
+        name: (.name // (.moid | tostring))
       }
     }
 # `clusters` is a dict keyed by cluster NAME (gather_info_for_clusters), so
@@ -137,7 +157,7 @@ vmware.vmware.cluster_info:
   query: >-
     .clusters | .[]? |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -145,14 +165,15 @@ vmware.vmware.cluster_info:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster_info"
+        module: "cluster_info",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.cluster_vcls:
   query: >-
     .cluster |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -160,14 +181,15 @@ vmware.vmware.cluster_vcls:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "compute_cluster",
-        module: "cluster_vcls"
+        module: "cluster_vcls",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.content_library_item_info:
   query: >-
     .library_item_info[]? |select(type == "object") | select(.id != null) |
     {
-      name: (.name // (.id | tostring)),
+      name: (.id | tostring),
       canonical_facts: {
         id: (.id | tostring)
       },
@@ -175,14 +197,15 @@ vmware.vmware.content_library_item_info:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "content_library_item_info"
+        module: "content_library_item_info",
+        name: (.name // (.id | tostring))
       }
     }
 vmware.vmware.content_template:
   query: >-
     .template_info |select(type == "object") | select(.template_id != null) |
     {
-      name: (.name // (.template_id | tostring)),
+      name: (.template_id | tostring),
       canonical_facts: {
         id: (.template_id | tostring)
       },
@@ -190,7 +213,8 @@ vmware.vmware.content_template:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "content_template"
+        module: "content_template",
+        name: (.name // (.template_id | tostring))
       }
     }
 # device_type was `content_library`. The module returns `vm: {moid, name}`
@@ -200,7 +224,7 @@ vmware.vmware.deploy_content_library_ovf:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -208,7 +232,8 @@ vmware.vmware.deploy_content_library_ovf:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "deploy_content_library_ovf"
+        module: "deploy_content_library_ovf",
+        name: (.name // (.moid | tostring))
       }
     }
 # device_type was `content_library`. The module returns `vm: {moid, name}`
@@ -218,7 +243,7 @@ vmware.vmware.deploy_content_library_template:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -226,7 +251,8 @@ vmware.vmware.deploy_content_library_template:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "deploy_content_library_template"
+        module: "deploy_content_library_template",
+        name: (.name // (.moid | tostring))
       }
     }
 # device_type was `folder` and infra_bucket `governance_ops`. The module
@@ -235,7 +261,7 @@ vmware.vmware.deploy_folder_template:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -243,14 +269,15 @@ vmware.vmware.deploy_folder_template:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "deploy_folder_template"
+        module: "deploy_folder_template",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.esxi_connection:
   query: >-
     .host |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -258,14 +285,15 @@ vmware.vmware.esxi_connection:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "hypervisor_host",
-        module: "esxi_connection"
+        module: "esxi_connection",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.esxi_host:
   query: >-
     .host |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -273,7 +301,8 @@ vmware.vmware.esxi_host:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "hypervisor_host",
-        module: "esxi_host"
+        module: "esxi_host",
+        name: (.name // (.moid | tostring))
       }
     }
 # Was `.result`, which holds the maintenance-mode TASK info
@@ -283,7 +312,7 @@ vmware.vmware.esxi_maintenance_mode:
   query: >-
     .host |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -291,14 +320,15 @@ vmware.vmware.esxi_maintenance_mode:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "hypervisor_host",
-        module: "esxi_maintenance_mode"
+        module: "esxi_maintenance_mode",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.folder:
   query: >-
     .folder |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -306,7 +336,8 @@ vmware.vmware.folder:
         infra_type: "private_cloud",
         infra_bucket: "governance_ops",
         device_type: "folder",
-        module: "folder"
+        module: "folder",
+        name: (.name // (.moid | tostring))
       }
     }
 # Was `.`, the whole module result, which has no top-level id. The library
@@ -315,7 +346,7 @@ vmware.vmware.import_content_library_iso:
   query: >-
     .library_item |select(type == "object") | select(.id != null) |
     {
-      name: (.name // (.id | tostring)),
+      name: (.id | tostring),
       canonical_facts: {
         id: (.id | tostring)
       },
@@ -323,7 +354,8 @@ vmware.vmware.import_content_library_iso:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "import_content_library_iso"
+        module: "import_content_library_iso",
+        name: (.name // (.id | tostring))
       }
     }
 # Was `.`, the whole module result, which has no top-level id. The library
@@ -332,7 +364,7 @@ vmware.vmware.import_content_library_ovf:
   query: >-
     .library_item |select(type == "object") | select(.id != null) |
     {
-      name: (.name // (.id | tostring)),
+      name: (.id | tostring),
       canonical_facts: {
         id: (.id | tostring)
       },
@@ -340,14 +372,15 @@ vmware.vmware.import_content_library_ovf:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "import_content_library_ovf"
+        module: "import_content_library_ovf",
+        name: (.name // (.id | tostring))
       }
     }
 vmware.vmware.local_content_library:
   query: >-
     .library |select(type == "object") | select(.id != null) |
     {
-      name: (.name // (.id | tostring)),
+      name: (.id | tostring),
       canonical_facts: {
         id: (.id | tostring)
       },
@@ -355,14 +388,15 @@ vmware.vmware.local_content_library:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "local_content_library"
+        module: "local_content_library",
+        name: (.name // (.id | tostring))
       }
     }
 vmware.vmware.subscribed_content_library:
   query: >-
     .library |select(type == "object") | select(.id != null) |
     {
-      name: (.name // (.id | tostring)),
+      name: (.id | tostring),
       canonical_facts: {
         id: (.id | tostring)
       },
@@ -370,7 +404,8 @@ vmware.vmware.subscribed_content_library:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "subscribed_content_library"
+        module: "subscribed_content_library",
+        name: (.name // (.id | tostring))
       }
     }
 # `vsphere_tag_categories` is a dict keyed by category id, so `.id` on the
@@ -380,7 +415,7 @@ vmware.vmware.tag_categories:
     .vsphere_tag_categories | to_entries[]? |
     select(type == "object") | select(.key != null) |
     {
-      name: (.value.name // .key),
+      name: (.key | tostring),
       canonical_facts: {
         id: (.key | tostring)
       },
@@ -388,7 +423,8 @@ vmware.vmware.tag_categories:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "tag_categories"
+        module: "tag_categories",
+        name: (.value.name // .key)
       }
     }
 # `vsphere_tags` is a dict keyed by tag id, so `.id` on the container was
@@ -398,7 +434,7 @@ vmware.vmware.tags:
     .vsphere_tags | to_entries[]? |
     select(type == "object") | select(.key != null) |
     {
-      name: (.value.name // .key),
+      name: (.key | tostring),
       canonical_facts: {
         id: (.key | tostring)
       },
@@ -406,7 +442,8 @@ vmware.vmware.tags:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "content_library",
-        module: "tags"
+        module: "tags",
+        name: (.value.name // .key)
       }
     }
 # Was `.power_cycled_for_update`, which is a bool and is always
@@ -417,7 +454,7 @@ vmware.vmware.vm:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -425,14 +462,15 @@ vmware.vmware.vm:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm"
+        module: "vm",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.vm_advanced_settings:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -440,14 +478,15 @@ vmware.vmware.vm_advanced_settings:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_advanced_settings"
+        module: "vm_advanced_settings",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.vm_apply_customization:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -455,14 +494,15 @@ vmware.vmware.vm_apply_customization:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_apply_customization"
+        module: "vm_apply_customization",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.vm_info:
   query: >-
     .vms[]? |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -470,7 +510,8 @@ vmware.vmware.vm_info:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_info"
+        module: "vm_info",
+        name: (.name // (.moid | tostring))
       }
     }
 # The result is {cluster: {folder: [vm, ...]}}, so `.id` on the outer
@@ -485,7 +526,7 @@ vmware.vmware.vm_list_group_by_clusters_info:
     .vm_list_group_by_clusters_info | .[]? | .[]? | .[]? |
     select(type == "object") | select((.vm // .moid) != null) |
     {
-      name: (.name // ((.vm // .moid) | tostring)),
+      name: ((.vm // .moid) | tostring),
       canonical_facts: {
         moid: ((.vm // .moid) | tostring)
       },
@@ -493,14 +534,15 @@ vmware.vmware.vm_list_group_by_clusters_info:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_list_group_by_clusters_info"
+        module: "vm_list_group_by_clusters_info",
+        name: (.name // ((.vm // .moid) | tostring))
       }
     }
 vmware.vmware.vm_powerstate:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -508,14 +550,15 @@ vmware.vmware.vm_powerstate:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_powerstate"
+        module: "vm_powerstate",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.vm_resource_info:
   query: >-
     .vms[]? |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -523,14 +566,15 @@ vmware.vmware.vm_resource_info:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_resource_info"
+        module: "vm_resource_info",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.vm_snapshot:
   query: >-
     .vm |select(type == "object") | select(.moid != null) |
     {
-      name: (.name // (.moid | tostring)),
+      name: (.moid | tostring),
       canonical_facts: {
         moid: (.moid | tostring)
       },
@@ -538,7 +582,8 @@ vmware.vmware.vm_snapshot:
         infra_type: "private_cloud",
         infra_bucket: "compute",
         device_type: "virtual_machine",
-        module: "vm_snapshot"
+        module: "vm_snapshot",
+        name: (.name // (.moid | tostring))
       }
     }
 vmware.vmware.tag_associations:
