@@ -17,15 +17,14 @@
       register: _test_rp
 
     - name: Deploy Virtual Machine from template in content library
-      community.vmware.vmware_content_deploy_template:
-        template: "{{ rhel9_content_library_template }}"
+      vmware.vmware.deploy_content_library_template:
+        library_item_name: "{{ rhel9_content_library_template }}"
         datastore: "{{ datastore }}"
         folder: "{{ vm_folder }}"
         datacenter: "{{ vm_datacenter }}"
-        name: "{{ vm }}"
+        vm_name: "{{ vm }}"
         resource_pool: "{{ test_resource_pool }}"
         cluster: "{{ vm_cluster }}"
-        state: present
 
     - name: Set the state of a virtual machine to poweredon
       vmware.vmware.vm_powerstate:
