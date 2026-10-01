@@ -60,12 +60,12 @@
         seconds: 15
 
     - name: Join Hosts To Cluster
-      community.vmware.vmware_host:
+      vmware.vmware.esxi_host:
         datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ vcenter_cluster_name }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
-        esxi_username: root
-        esxi_password: "!#%135qEt"
+        cluster: "{{ test_cluster }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        esxi_username: "{{ test_esxi_username }}"
+        esxi_password: "{{ test_esxi_password }}"
         state: present
 
     - name: Disable Maintenance Mode For Host
