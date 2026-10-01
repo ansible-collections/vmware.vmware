@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - vm_portgroup_info - Fix module failure when DVS portgroups had NSX or unusual setups (causing mismatching IDs). Module should now
+    be able to resolve all portgroups.
+minor_changes:
+  - vm_portgroup_info - Add common vm search parameters to module (moid, folder, datacenter, etc).
