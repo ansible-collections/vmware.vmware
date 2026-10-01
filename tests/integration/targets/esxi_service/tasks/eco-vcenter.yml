@@ -62,7 +62,7 @@
     - name: Join Hosts To Cluster
       vmware.vmware.esxi_host:
         datacenter: "{{ vcenter_datacenter }}"
-        cluster: "{{ test_cluster }}"
+        cluster: "{{ vcenter_cluster_name }}"
         esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
         esxi_username: "{{ test_esxi_username }}"
         esxi_password: "{{ test_esxi_password }}"
