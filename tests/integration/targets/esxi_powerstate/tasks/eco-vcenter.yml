@@ -60,12 +60,12 @@
         seconds: 15
 
     - name: Join Hosts To Cluster
-      community.vmware.vmware_host:
+      vmware.vmware.esxi_host:
         datacenter: "{{ vcenter_datacenter }}"
         cluster: "{{ vcenter_cluster_name }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 }}"
-        esxi_username: root
-        esxi_password: "!#%135qEt"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 }}"
+        esxi_username: "{{ test_esxi_username }}"
+        esxi_password: "{{ test_esxi_password }}"
         state: present
 
     - name: Enter Maintenance Mode
@@ -163,10 +163,10 @@
 
   always:
     - name: Disconnect Host From vCenter
-      community.vmware.vmware_host:
+      vmware.vmware.esxi_host:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
-        esxi_hostname: "{{ _esxi_info.guests[0].ipv4 | default(test_esxi_hostname) }}"
+        esxi_host_name: "{{ _esxi_info.guests[0].ipv4 | default(test_esxi_hostname) }}"
         state: absent
     - name: "Test cleanup: Delete Virtual ESXi Host"
       vmware.vmware.vm:
