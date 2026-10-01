@@ -24,7 +24,6 @@
         datacenter: "{{ vm_datacenter }}"
         vm_name: "{{ vm }}"
         resource_pool: "{{ test_resource_pool }}"
-        cluster: "{{ vm_cluster }}"
 
     - name: Set the state of a virtual machine to poweredon
       vmware.vmware.vm_powerstate:
