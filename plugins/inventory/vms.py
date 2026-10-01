@@ -15,6 +15,12 @@ description:
     - Create a dynamic inventory of VMware VMs from a vCenter or ESXi environment.
     - Uses any file which ends with vms.yml, vms.yaml, vmware_vms.yml, or vmware_vms.yaml as a YAML configuration file.
 
+notes:
+    - >-
+        This plugin is the supported replacement for the deprecated C(community.vmware.vmware_vm_inventory) plugin.
+        For help migrating an existing configuration, see
+        U(https://github.com/ansible-collections/vmware.vmware/blob/main/docs/migrating_from_community_vmware_vm_inventory.md).
+
 extends_documentation_fragment:
     - vmware.vmware.base_options
     - vmware.vmware.additional_rest_options
