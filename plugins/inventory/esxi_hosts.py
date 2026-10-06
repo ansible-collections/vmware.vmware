@@ -228,15 +228,12 @@ class InventoryModule(VmwareInventoryBase):
           A list of property names that should be returned in the inventory. An empty
           list means all properties should be collected
         """
-        properties_param = super().parse_properties_param()
-
-        # needed to filter out disconnected or unreachable hosts in self.populate_from_vcenter
-        if "summary.runtime.connectionState" not in properties_param:
-            properties_param.append("summary.runtime.connectionState")
-
-        # needed by keyed_groups default
-        if "summary.runtime.powerState" not in properties_param:
-            properties_param.append("summary.runtime.powerState")
+        properties_param = super().parse_properties_param(
+            properties_to_add=set([
+                "summary.runtime.connectionState",  # needed to filter out disconnected or unreachable hosts in self.populate_from_vcenter
+                "summary.runtime.powerState"  # needed by keyed_groups default
+            ])
+        )
 
         return properties_param
 
