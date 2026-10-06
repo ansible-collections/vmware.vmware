@@ -277,19 +277,20 @@ class VmwareVmInfo(ModuleRestBase):
         return all_vm_info
 
     def _gather_info_about_one_vm(self, vm):
-            vm_info = {}
-            if self.params['schema'] == 'summary':
-                vm_facts = VmFacts(vm)
-                vm_info = vm_facts.all_facts(self.pyvmomi.content)
-            else:
-                vm_info = vmware_obj_to_json(vm, self.params['properties'])
+        vm_info = {}
+        if self.params['schema'] == 'summary':
+            vm_facts = VmFacts(vm)
+            vm_info = vm_facts.all_facts(self.pyvmomi.content)
+        else:
+            vm_info = vmware_obj_to_json(vm, self.params['properties'])
 
-            vm_info['identity'] = self._get_identity(vm)
-            # legacy output
-            vm_info.update(vm_info['identity'])
+        vm_info['identity'] = self._get_identity(vm)
+        # legacy output
+        vm_info.update(vm_info['identity'])
 
-            vm_info['tags'] = self._get_tags(vm)
-            vm_info['env'] = self._get_env(vm)
+        vm_info['tags'] = self._get_tags(vm)
+        vm_info['env'] = self._get_env(vm)
+        return vm_info
 
     def get_vms(self):
         """
