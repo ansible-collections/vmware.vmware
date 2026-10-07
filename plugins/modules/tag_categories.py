@@ -177,7 +177,6 @@ EXAMPLES = r"""
     state: absent
     tag_categories:
       - name: ALL-LOWER-CASE
-
 """
 
 RETURN = r"""
