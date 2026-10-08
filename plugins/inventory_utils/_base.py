@@ -24,6 +24,9 @@ from ansible_collections.vmware.vmware.plugins.module_utils.clients.rest import 
 from ansible_collections.vmware.vmware.plugins.module_utils._folder_paths import (
     get_folder_path_of_vsphere_object
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors import (
+    format_managed_object_not_found_message,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils.facts._converters import (
     vmware_obj_to_json,
     properties_from_collector,
@@ -556,22 +559,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
                 vmware_object: The object that is missing. We will try to get the moid/name from the object in case it was
                                cached somewhere along the way, but that may not be possible.
         """
-        try:
-            moid = vmware_object._GetMoId()
-        except vmodl.fault.ManagedObjectNotFound:
-            moid = "unknown"
-
-        try:
-            name = object_name or vmware_object.name
-        except (vmodl.fault.ManagedObjectNotFound, AttributeError):
-            name = "unknown"
-
-        message = (
-            "While attempting to read a vSphere object (name: %s, moid: %s), "
-            "the object was unable to be found. This can be due to the object being "
-            "moved, renamed, or deleted."
-        ) % (name, moid)
-
+        message = format_managed_object_not_found_message(vmware_object, object_name)
         if self.get_option('strict'):
             raise AnsibleError(message)
         else:
@@ -614,7 +602,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
 
         return hostvars
 
-    def parse_properties_param(self):
+    def parse_properties_param(self, properties_to_add=None):
         """
         The properties option can be a variety of inputs from the user and we need to
         manipulate it into a list of properties that can be used later.
@@ -623,6 +611,7 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
           A list of property names that should be returned in the inventory. An empty
           list means all properties should be collected
         """
+
         properties_param = self.get_option("properties")
         if not isinstance(properties_param, list):
             properties_param = [properties_param]
@@ -630,10 +619,13 @@ class VmwareInventoryBase(BaseInventoryPlugin, Constructable, Cacheable):
         if "all" in properties_param:
             return []
 
-        if "name" not in properties_param:
-            properties_param.append("name")
+        if properties_to_add is None:
+            properties_to_add = set()
 
-        return properties_param
+        properties_to_add.add("name")
+        properties = set(properties_param)
+        properties.update(properties_to_add)
+        return list(properties)
 
     def _hydrate_inventory_host_from_vsphere_props(self, vmware_object, prop_set, properties_to_gather):
         """

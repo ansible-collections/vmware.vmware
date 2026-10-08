@@ -51,12 +51,12 @@ class TestEsxiInventoryModule(object):
         inventory_module = InventoryModule()
         inventory_module.get_option = mocker.Mock(return_value=['name', 'capability'])
 
-        assert inventory_module.parse_properties_param() == [
+        assert sorted(inventory_module.parse_properties_param()) == sorted([
             'name',
             'capability',
             'summary.runtime.connectionState',
             'summary.runtime.powerState',
-        ]
+        ])
 
     def test_populate_from_vcenter(self, mocker):
         inventory_module = InventoryModule()

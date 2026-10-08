@@ -204,6 +204,9 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.vmware.vmware.plugins.module_utils._module_pyvmomi_base import ModulePyvmomiBase
 from ansible_collections.vmware.vmware.plugins.module_utils._module_rest_base import ModuleRestBase
 from ansible_collections.vmware.vmware.plugins.module_utils.argument_spec import rest_compatible_argument_spec
+from ansible_collections.vmware.vmware.plugins.module_utils.clients.errors import (
+    format_managed_object_not_found_message,
+)
 from ansible_collections.vmware.vmware.plugins.module_utils.facts._vm import (
     VmFacts,
 )
@@ -211,6 +214,12 @@ from ansible_collections.vmware.vmware.plugins.module_utils.facts._converters im
     vmware_obj_to_json,
     extract_object_attributes_to_dict
 )
+
+
+try:
+    from pyVmomi import vmodl
+except ImportError:
+    pass
 
 
 class VmwareVmInfo(ModuleRestBase):
@@ -258,23 +267,30 @@ class VmwareVmInfo(ModuleRestBase):
     def gather_info_for_vms(self):
         all_vm_info = []
         for vm in self.get_vms():
-            vm_info = {}
-            if self.params['schema'] == 'summary':
-                vm_facts = VmFacts(vm)
-                vm_info = vm_facts.all_facts(self.pyvmomi.content)
+            try:
+                vm_info = self._gather_info_about_one_vm(vm)
+            except vmodl.fault.ManagedObjectNotFound:
+                self.module.warn(format_managed_object_not_found_message(vm))
             else:
-                vm_info = vmware_obj_to_json(vm, self.params['properties'])
-
-            vm_info['identity'] = self._get_identity(vm)
-            # legacy output
-            vm_info.update(vm_info['identity'])
-
-            vm_info['tags'] = self._get_tags(vm)
-            vm_info['env'] = self._get_env(vm)
-
-            all_vm_info += [vm_info]
+                all_vm_info += [vm_info]
 
         return all_vm_info
+
+    def _gather_info_about_one_vm(self, vm):
+        vm_info = {}
+        if self.params['schema'] == 'summary':
+            vm_facts = VmFacts(vm)
+            vm_info = vm_facts.all_facts(self.pyvmomi.content)
+        else:
+            vm_info = vmware_obj_to_json(vm, self.params['properties'])
+
+        vm_info['identity'] = self._get_identity(vm)
+        # legacy output
+        vm_info.update(vm_info['identity'])
+
+        vm_info['tags'] = self._get_tags(vm)
+        vm_info['env'] = self._get_env(vm)
+        return vm_info
 
     def get_vms(self):
         """

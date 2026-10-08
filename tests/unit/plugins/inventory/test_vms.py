@@ -62,17 +62,19 @@ class TestVmInventoryHost():
 class TestInventoryModule():
     def test_parse_properties_param(self, mocker):
         inventory_module = InventoryModule()
-        inventory_module.get_option = mocker.Mock(side_effect=(['name', 'config', 'guest'], False))
-        assert inventory_module.parse_properties_param() == ['name', 'config', 'guest', 'config.guestId', 'summary.runtime.powerState']
+        # side_effect order matches the order get_option is called:
+        # gather_compute_objects first, then properties
+        inventory_module.get_option = mocker.Mock(side_effect=(False, ['name', 'config', 'guest']))
+        assert sorted(inventory_module.parse_properties_param()) == sorted(['name', 'config', 'guest', 'config.guestId', 'summary.runtime.powerState'])
 
-        inventory_module.get_option = mocker.Mock(side_effect=('name', False))
-        assert inventory_module.parse_properties_param() == ['name', 'config.guestId', 'summary.runtime.powerState']
+        inventory_module.get_option = mocker.Mock(side_effect=(False, 'name'))
+        assert sorted(inventory_module.parse_properties_param()) == sorted(['name', 'config.guestId', 'summary.runtime.powerState'])
 
-        inventory_module.get_option = mocker.Mock(side_effect=(['all'], False))
+        inventory_module.get_option = mocker.Mock(side_effect=(False, ['all']))
         assert inventory_module.parse_properties_param() == []
 
-        inventory_module.get_option = mocker.Mock(side_effect=('name', True))
-        assert inventory_module.parse_properties_param() == ['name', 'config.guestId', 'summary.runtime.powerState', 'summary.runtime.host']
+        inventory_module.get_option = mocker.Mock(side_effect=(True, 'name'))
+        assert sorted(inventory_module.parse_properties_param()) == sorted(['name', 'config.guestId', 'summary.runtime.powerState', 'summary.runtime.host'])
 
     def test_populate_from_vcenter(self, mocker):
         inventory_module = InventoryModule()

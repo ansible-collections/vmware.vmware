@@ -326,19 +326,16 @@ class InventoryModule(VmwareInventoryBase):
           A list of property names that should be returned in the inventory. An empty
           list means all properties should be collected
         """
-        properties_param = super().parse_properties_param()
-
-        # needed by keyed_groups default value
-        if "config.guestId" not in properties_param:
-            properties_param.append("config.guestId")
-
-        # needed by keyed_groups default value
-        if "summary.runtime.powerState" not in properties_param:
-            properties_param.append("summary.runtime.powerState")
-
-        # needed by esxi_host and cluster properties value
+        properties_to_add = set([
+            "config.guestId",  # needed by keyed_groups default value
+            "summary.runtime.powerState",  # needed by keyed_groups default value
+        ])
         if self.get_option("gather_compute_objects"):
-            properties_param.append("summary.runtime.host")
+            properties_to_add.add("summary.runtime.host")
+
+        properties_param = super().parse_properties_param(
+            properties_to_add=properties_to_add
+        )
 
         return properties_param
 

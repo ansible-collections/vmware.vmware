@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - vm_info - Display warning message when vm is deleted or moved while gathering info instead
+    of raising an exception (Fixes https://github.com/ansible-collections/vmware.vmware/issues/419)
+  - inventory plugins - Fix bug where instead of collecting all properties, only required properties
+    were collected
