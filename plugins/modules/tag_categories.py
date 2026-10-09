@@ -43,6 +43,7 @@ options:
             name:
                 description:
                     - The name of the tag category.
+                    - Category names must be unique in both value and case. See the examples for more information.
                     - At least one of O(tag_categories[].name) or O(tag_categories[].id) must be provided.
                     - If only the name is provided, it will be used to search for the tag category.
                       If a category cannot be found and O(state) is present, a new category will be created.
@@ -154,6 +155,28 @@ EXAMPLES = r"""
     - name: my-test-category-2
     - name: my-test-category-3
     - name: my-test-category-4
+
+# Category names must be unique in both value and case
+## Create a lower case named category
+- name: Create a lower case category
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories:
+      - name: all-lower-case
+## Use the same name, but upper case
+## This will fail since a category with the same value exists.
+- name: Create an upper case category
+  vmware.vmware.tag_categories:
+    state: present
+    tag_categories:
+      - name: ALL-LOWER-CASE
+## Remove a tag using the upper case name
+## This will report no change, since the category with the same case doesnt exist.
+- name: Delete an upper case category
+  vmware.vmware.tag_categories:
+    state: absent
+    tag_categories:
+      - name: ALL-LOWER-CASE
 """
 
 RETURN = r"""
