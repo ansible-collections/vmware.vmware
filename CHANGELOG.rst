@@ -4,6 +4,24 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.12.0
+=======
+
+Minor Changes
+-------------
+
+- event_query - the contract test now also asserts that ``name`` is derivable from the ``canonical_facts`` identity values, and that each query emits a stream of objects rather than collecting them into an array. The controller calls ``.get('canonical_facts')`` on every jq output, so an array output raises ``AttributeError`` outside the handler that catches jq errors (https://github.com/ansible-collections/vmware.vmware/pull/427).
+- event_query - the contract test now compiles every expression with ``jq``. Every other check in that file reads the query as text, so all of them pass on an expression that cannot run. The controller compiles the expression outside the error handling that guards evaluation, so a query that does not compile discards every indirect node audit record for the whole job - including the records of every other collection in it.
+- vm_portgroup_info - Add common vm search parameters to module (moid, folder, datacenter, etc).
+
+Bugfixes
+--------
+
+- event_query - every query emitted a vSphere display name as the top-level ``name``. ``IndirectManagedNodeAudit`` declares ``unique_together = [('name', 'job')]`` and the controller creates all of a job's records in one transaction, so two objects that deduplicate apart on ``canonical_facts`` but share a display name raise ``IntegrityError``. That rolls back the transaction and discards every audit record for the job, not just the colliding pair, and reverts ``event_queries_processed`` with it, so the fallback task re-picks the job and fails identically until it ages out. A vSphere name is only unique within its parent folder, so two VMs called ``web01`` in two folders, or a VM and a template of the same name, were enough to trigger it. ``name`` is now the moid or uuid and the display name moved to ``facts.name`` (https://github.com/ansible-collections/vmware.vmware/pull/427).
+- inventory plugins - Fix bug where instead of collecting all properties, only required properties were collected
+- vm_info - Display warning message when vm is deleted or moved while gathering info instead of raising an exception (Fixes https://github.com/ansible-collections/vmware.vmware/issues/419)
+- vm_portgroup_info - Fix module failure when DVS portgroups had NSX or unusual setups (causing mismatching IDs). Module should now be able to resolve all portgroups.
+
 v2.11.0
 =======
 
