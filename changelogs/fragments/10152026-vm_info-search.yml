@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vm_info - Dramatically improve execution time when gathering info about VMs. Add additional option
+    to skip identity API calls, further improving performance.

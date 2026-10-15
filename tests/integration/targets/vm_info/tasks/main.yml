@@ -1,20 +1,32 @@
 ---
-- name: Include Eco Vcenter Test Vars
-  ansible.builtin.include_vars:
-    file: eco-vcenter.yml
+- name: Test
+  environment: "{{ environment_auth_vars }}"
 
-- name: Gather guest info
-  vmware.vmware.vm_info:
-    validate_certs: false
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    port: "{{ vcenter_port }}"
-    guest_name: "{{ vm_name }}"
-  register: __res
+  block:
+    - name: Include Eco Vcenter Test Vars
+      ansible.builtin.include_vars:
+        file: eco-vcenter.yml
+
+    - name: Gather guest info - summary
+      vmware.vmware.vm_info:
+        guest_name: "{{ vm_name }}"
+      register: _summary
+
+    - name: Gather guest info - vsphere
+      vmware.vmware.vm_info:
+        name: "{{ vm_name }}"
+        schema: vsphere
+        properties:
+          - config
+      register: _vsphere
 
 - name: Assert values
   ansible.builtin.assert:
     that:
-      - __res.changed == False
-      - __res.guests | length == guests_length
+      - _summary.changed == False
+      - _summary.guests | length == 1
+      - _summary.guests | length == _summary.vms | length
+      - _vsphere.changed == False
+      - _vsphere.vms | length == 1
+      - "'config' in _vsphere.vms[0]"
+      - "'summary' not in _vsphere.vms[0]"

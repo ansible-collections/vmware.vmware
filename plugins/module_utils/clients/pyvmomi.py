@@ -231,6 +231,29 @@ class PyvmomiClient():
                 pass
         return objs
 
+    def _query_paged_managed_object_properties(self, filter_spec):
+        """
+            Run a property collector query, paging through the results so no single response is too large.
+            For large environments collecting information about many properties, this is required so that
+            information is not silently dropped.
+            Args:
+                filter_spec: vim.PropertyCollector.FilterSpec, the query to run
+            Returns:
+                list(vim.ObjectContent)
+        """
+        property_collector = self.content.propertyCollector
+        options = vim.PropertyCollector.RetrieveOptions()
+        result = property_collector.RetrievePropertiesEx([filter_spec], options)
+
+        objects = []
+        while result:
+            objects.extend(result.objects)
+            if not result.token:
+                break
+            result = property_collector.ContinueRetrievePropertiesEx(result.token)
+
+        return objects
+
     def get_managed_object_references(self, vimtype, properties=None, folder=None, recurse=True):
         """
             Use the property collector to create a list of managed object references with select properties.
@@ -272,7 +295,7 @@ class PyvmomiClient():
             reportMissingObjectsInResults=False
         )
 
-        retrieve_result = self.content.propertyCollector.RetrieveContents([filter_spec])
+        retrieve_result = self._query_paged_managed_object_properties(filter_spec)
         container_view.Destroy()
         return retrieve_result
 
