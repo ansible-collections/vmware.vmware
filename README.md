@@ -76,7 +76,7 @@ ansible-galaxy collection install vmware.vmware:1.0.0
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ansible-collections_vmware.vmware&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ansible-collections_vmware.vmware)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ansible-collections_vmware.vmware&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ansible-collections_vmware.vmware)
 
-Static analysis and coverage are tracked on [SonarCloud](https://sonarcloud.io/project/overview?id=ansible-collections_vmware.vmware). See [docs/sonarcloud.md](docs/sonarcloud.md) for CI wiring and contributor notes.
+Static analysis and coverage are tracked on [SonarCloud](https://sonarcloud.io/project/overview?id=ansible-collections_vmware.vmware). See [docs/sonarcloud.md](https://github.com/ansible-collections/vmware.vmware/blob/main/docs/sonarcloud.md) for CI wiring and contributor notes.
 
 All releases will meet the following test criteria.
 
