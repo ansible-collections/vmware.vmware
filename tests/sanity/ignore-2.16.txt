@@ -1,2 +1,2 @@
-plugins/inventory/esxi_hosts.py yamllint:unparsable-with-libyaml   # inventory examples are technically multiple yaml docs, which the linter in versions <2.17 does not like
-plugins/inventory/vms.py yamllint:unparsable-with-libyaml   # inventory examples are technically multiple yaml docs, which the linter in versions <2.17 does not like
+plugins/inventory/esxi_hosts.py yamllint:unparsable-with-libyaml   # https://github.com/ansible/ansible/issues/82353 inventory examples are multiple yaml docs which ansible-test <2.17 does not like
+plugins/inventory/vms.py yamllint:unparsable-with-libyaml   # https://github.com/ansible/ansible/issues/82353 inventory examples are multiple yaml docs which ansible-test <2.17 does not like
