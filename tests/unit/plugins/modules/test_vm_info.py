@@ -4,15 +4,12 @@ __metaclass__ = type
 import sys
 import pytest
 
-from pyVmomi import vmodl
+from pyVmomi import vim, vmodl
 
 from ansible_collections.vmware.vmware.plugins.modules import vm_info
 
 from ...common.utils import (
     run_module, ModuleTestCase
-)
-from ...common.vmware_object_mocks import (
-    create_mock_vsphere_object
 )
 
 pytestmark = pytest.mark.skipif(
@@ -20,179 +17,562 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-class TestVmInfo(ModuleTestCase):
+def build_object_content(moid="vm-1", properties=None, missing=None):
+    """
+    Build a real vim.ObjectContent, the shape the property collector hands back to the module.
+    """
+    prop_set = [
+        vmodl.DynamicProperty(name=name, val=value)
+        for name, value in (properties or {}).items()
+    ]
+    return vim.ObjectContent(
+        obj=vim.VirtualMachine(moid),
+        propSet=prop_set,
+        missingSet=(missing or []),
+    )
 
-    def __prepare(self, mocker):
-        init_mock = mocker.patch.object(vm_info.VmwareVmInfo, "__init__")
-        init_mock.return_value = None
 
-        gather_info_for_vms = mocker.patch.object(vm_info.VmwareVmInfo, "gather_info_for_vms")
-        gather_info_for_vms.return_value = []
+def build_missing_property(path="config", fault=None):
+    return vmodl.query.PropertyCollector.MissingProperty(
+        path=path,
+        fault=(fault if fault is not None else vmodl.fault.ManagedObjectNotFound()),
+    )
+
+
+def build_info_instance(mocker, params=None):
+    """
+    Build a VmwareVmInfo without running __init__, which would open connections.
+    """
+    mocker.patch.object(vm_info.VmwareVmInfo, "__init__", return_value=None)
+    info = vm_info.VmwareVmInfo(mocker.Mock())
+    info.module = mocker.Mock()
+    info.params = params if params is not None else {}
+    info.pyvmomi = mocker.Mock()
+    info.vm_svc = mocker.Mock()
+    return info
+
+
+class TestPrefetchedVm:
+    """
+    _PrefetchedVm stands in for a vim.VirtualMachine so VmFacts can read properties that
+    the property collector already returned, without triggering another SOAP call.
+    """
+
+    def test_copies_moid_and_prop_set(self):
+        object_content = build_object_content(
+            moid="vm-42", properties={"config": "config-value", "guest": "guest-value"}
+        )
+
+        prefetched = vm_info._PrefetchedVm(object_content)
+
+        assert prefetched._moId == "vm-42"
+        assert prefetched.config == "config-value"
+        assert prefetched.guest == "guest-value"
+
+    def test_unset_summary_properties_default_to_none(self):
+        """
+        The collector omits unset properties from propSet. Those must still be readable
+        as None instead of raising AttributeError inside VmFacts.
+        """
+        object_content = build_object_content(properties={"config": "config-value"})
+
+        prefetched = vm_info._PrefetchedVm(object_content)
+
+        for prop_name in vm_info.SUMMARY_SCHEMA_PROPERTIES:
+            assert hasattr(prefetched, prop_name)
+        assert prefetched.summary is None
+        assert prefetched.parentVApp is None
+        assert prefetched.config == "config-value"
+
+    def test_properties_outside_the_summary_set_are_still_applied(self):
+        object_content = build_object_content(properties={"name": "my-vm"})
+
+        prefetched = vm_info._PrefetchedVm(object_content)
+
+        assert prefetched.name == "my-vm"
+
+
+class TestSchemaHelpers:
+    def test_schema_is_vsphere(self, mocker):
+        assert build_info_instance(mocker, {"schema": "vsphere"}).schema_is_vsphere() is True
+        assert build_info_instance(mocker, {"schema": "summary"}).schema_is_vsphere() is False
+
+    def test_summary_schema_requests_the_fixed_property_set(self, mocker):
+        info = build_info_instance(mocker, {"schema": "summary", "properties": None})
+
+        assert info.search_properties == vm_info.SUMMARY_SCHEMA_PROPERTIES
+
+    def test_vsphere_schema_requests_the_user_properties(self, mocker):
+        info = build_info_instance(
+            mocker, {"schema": "vsphere", "properties": ["name", "runtime.powerState"]}
+        )
+
+        assert info.search_properties == ["name", "runtime.powerState"]
+
+    @pytest.mark.parametrize("properties", [None, []])
+    def test_vsphere_schema_without_properties_requests_everything(self, mocker, properties):
+        """
+        An empty property list is the signal to _collect_vm_managed_object_properties
+        to set all=True on the property spec.
+        """
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": properties})
+
+        assert info.search_properties == []
+
+
+class TestGatherInfoForVms:
+    def test_summary_schema_builds_facts_from_prefetched_vm(self, mocker):
+        info = build_info_instance(mocker, {"schema": "summary", "properties": None})
+        object_content = build_object_content(moid="vm-1", properties={"config": "config-value"})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[object_content],
+        )
+        vm_facts = mocker.patch.object(vm_info, "VmFacts")
+        vm_facts.return_value.all_facts.return_value = {"hw_name": "vm1"}
+        hydrate = mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        result = info.gather_info_for_vms()
+
+        assert result == [{"hw_name": "vm1"}]
+        vm_facts.return_value.all_facts.assert_called_once_with(info.pyvmomi.content)
+        # VmFacts must be handed the prefetched stand-in, not the live managed object
+        prefetched = vm_facts.call_args[0][0]
+        assert isinstance(prefetched, vm_info._PrefetchedVm)
+        assert prefetched._moId == "vm-1"
+        assert prefetched.config == "config-value"
+        # the REST hydration needs the real managed object reference
+        hydrate.assert_called_once_with({"hw_name": "vm1"}, object_content.obj)
+
+    def test_vsphere_schema_converts_prop_set(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        object_content = build_object_content(moid="vm-1", properties={"name": "vm1"})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[object_content],
+        )
+        converter = mocker.patch.object(
+            vm_info, "properties_from_collector", return_value={"name": "vm1"}
+        )
+        mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        result = info.gather_info_for_vms()
+
+        assert result == [{"name": "vm1"}]
+        converter.assert_called_once_with(object_content.propSet)
+        info.module.fail_json.assert_not_called()
+
+    def test_skips_vm_that_disappeared_mid_gather(self, mocker):
+        """
+        Large environments churn. A VM deleted between the search and the property
+        collection must warn and be skipped, not fail the whole run.
+        """
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        missing_vm = build_object_content(
+            moid="vm-gone",
+            missing=[build_missing_property(fault=vmodl.fault.ManagedObjectNotFound())],
+        )
+        present_vm = build_object_content(moid="vm-1", properties={"name": "vm1"})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[missing_vm, present_vm],
+        )
+        mocker.patch.object(
+            vm_info, "properties_from_collector", return_value={"name": "vm1"}
+        )
+        mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        result = info.gather_info_for_vms()
+
+        assert result == [{"name": "vm1"}]
+        info.module.warn.assert_called_once()
+        assert "vm-gone" in info.module.warn.call_args[0][0]
+        info.module.fail_json.assert_not_called()
+
+    def test_unreadable_property_fails_the_module(self, mocker):
+        """
+        The VM is there but a requested property could not be read - usually a typo
+        in the property path or a permissions problem. That should be loud.
+        """
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["bogus.path"]})
+        object_content = build_object_content(
+            moid="vm-1",
+            missing=[
+                build_missing_property(
+                    path="bogus.path", fault=vmodl.fault.InvalidArgument(msg="no such property")
+                )
+            ],
+        )
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[object_content],
+        )
+        mocker.patch.object(vm_info, "properties_from_collector", return_value={})
+        mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        info.gather_info_for_vms()
+
+        info.module.fail_json.assert_called_once()
+        message = info.module.fail_json.call_args[1]["msg"]
+        assert "bogus.path" in message
+        assert "vm-1" in message
+        assert "no such property" in message
+
+    def test_unreadable_property_is_tolerated_when_gathering_all_properties(self, mocker):
+        """
+        With no explicit property list the module asks for everything, so individual
+        unreadable properties are expected rather than user error.
+        """
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": None})
+        object_content = build_object_content(
+            moid="vm-1",
+            properties={"name": "vm1"},
+            missing=[
+                build_missing_property(
+                    path="config", fault=vmodl.fault.InvalidArgument(msg="denied")
+                )
+            ],
+        )
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[object_content],
+        )
+        mocker.patch.object(
+            vm_info, "properties_from_collector", return_value={"name": "vm1"}
+        )
+        mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        result = info.gather_info_for_vms()
+
+        assert result == [{"name": "vm1"}]
+        info.module.fail_json.assert_not_called()
+
+    def test_unreadable_property_is_tolerated_for_summary_schema(self, mocker):
+        info = build_info_instance(mocker, {"schema": "summary", "properties": None})
+        object_content = build_object_content(
+            moid="vm-1",
+            missing=[
+                build_missing_property(
+                    path="snapshot", fault=vmodl.fault.InvalidArgument(msg="denied")
+                )
+            ],
+        )
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[object_content],
+        )
+        vm_facts = mocker.patch.object(vm_info, "VmFacts")
+        vm_facts.return_value.all_facts.return_value = {"hw_name": "vm1"}
+        mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        result = info.gather_info_for_vms()
+
+        assert result == [{"hw_name": "vm1"}]
+        info.module.fail_json.assert_not_called()
+
+    def test_returns_empty_list_when_nothing_matched(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "_collect_vm_managed_object_properties", return_value=[]
+        )
+        hydrate = mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        assert info.gather_info_for_vms() == []
+        hydrate.assert_not_called()
+        info.module.warn.assert_not_called()
+
+
+class TestCollectVmManagedObjectProperties:
+    def test_returns_empty_without_querying_when_no_vms(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        mocker.patch.object(vm_info.VmwareVmInfo, "get_vms", return_value=[])
+
+        assert info._collect_vm_managed_object_properties() == []
+        info.pyvmomi._query_paged_managed_object_properties.assert_not_called()
+
+    def test_builds_filter_spec_for_requested_properties(self, mocker):
+        info = build_info_instance(
+            mocker, {"schema": "vsphere", "properties": ["name", "runtime.powerState"]}
+        )
+        vms = [vim.VirtualMachine("vm-1"), vim.VirtualMachine("vm-2")]
+        mocker.patch.object(vm_info.VmwareVmInfo, "get_vms", return_value=vms)
+        info.pyvmomi._query_paged_managed_object_properties.return_value = ["result"]
+
+        assert info._collect_vm_managed_object_properties() == ["result"]
+
+        filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
+        assert filter_spec.propSet[0].type == vim.VirtualMachine
+        assert filter_spec.propSet[0].pathSet == ["name", "runtime.powerState"]
+        assert filter_spec.propSet[0].all is False
+        assert [spec.obj for spec in filter_spec.objectSet] == vms
+        assert all(spec.skip is False for spec in filter_spec.objectSet)
+        # without this a single bad VM would poison the whole batch
+        assert filter_spec.reportMissingObjectsInResults is True
+
+    def test_requests_all_properties_when_none_specified(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": None})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "get_vms", return_value=[vim.VirtualMachine("vm-1")]
+        )
+        info.pyvmomi._query_paged_managed_object_properties.return_value = []
+
+        info._collect_vm_managed_object_properties()
+
+        filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
+        assert filter_spec.propSet[0].all is True
+        assert filter_spec.propSet[0].pathSet == []
+
+    def test_summary_schema_requests_the_fixed_property_set(self, mocker):
+        info = build_info_instance(mocker, {"schema": "summary", "properties": None})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "get_vms", return_value=[vim.VirtualMachine("vm-1")]
+        )
+        info.pyvmomi._query_paged_managed_object_properties.return_value = []
+
+        info._collect_vm_managed_object_properties()
+
+        filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
+        assert filter_spec.propSet[0].pathSet == vm_info.SUMMARY_SCHEMA_PROPERTIES
+        assert filter_spec.propSet[0].all is False
+
+    def test_invalid_property_path_fails_the_module(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["nope"]})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "get_vms", return_value=[vim.VirtualMachine("vm-1")]
+        )
+        info.pyvmomi._query_paged_managed_object_properties.side_effect = (
+            vmodl.query.InvalidProperty(name="nope")
+        )
+
+        info._collect_vm_managed_object_properties()
+
+        info.module.fail_json.assert_called_once()
+        assert "nope" in info.module.fail_json.call_args[1]["msg"]
+
+
+class TestGetVms:
+    @pytest.mark.parametrize("identifier", ["name", "uuid", "moid"])
+    def test_searches_by_identifier_when_one_is_given(self, mocker, identifier):
+        info = build_info_instance(mocker, {identifier: "something"})
+        info.pyvmomi.get_vms_using_params.return_value = ["vm"]
+
+        assert info.get_vms() == ["vm"]
+        info.pyvmomi.get_vms_using_params.assert_called_once_with(fail_on_missing=False)
+        info.pyvmomi.get_all_vms.assert_not_called()
+
+    def test_gathers_every_vm_when_no_identifier_or_folder(self, mocker):
+        info = build_info_instance(mocker, {"name": None, "uuid": None, "moid": None, "folder": None})
+        info.pyvmomi.get_all_vms.return_value = ["vm1", "vm2"]
+
+        assert info.get_vms() == ["vm1", "vm2"]
+        info.pyvmomi.get_all_vms.assert_called_once_with(folder=None)
+        info.pyvmomi.get_folder_using_params.assert_not_called()
+
+    def test_scopes_the_search_to_a_folder(self, mocker):
+        """
+        folder on its own (no name/uuid/moid) now limits a bulk gather to that folder.
+        """
+        info = build_info_instance(mocker, {"folder": "/dc/vm/prod"})
+        folder = mocker.Mock()
+        info.pyvmomi.get_folder_using_params.return_value = folder
+        info.pyvmomi.get_all_vms.return_value = ["vm1"]
+
+        assert info.get_vms() == ["vm1"]
+        # a folder the user explicitly named but that does not exist is an error
+        info.pyvmomi.get_folder_using_params.assert_called_once_with(fail_on_missing=True)
+        info.pyvmomi.get_all_vms.assert_called_once_with(folder=folder)
+
+    def test_returns_empty_list_when_search_finds_nothing(self, mocker):
+        info = build_info_instance(mocker, {"name": "missing"})
+        info.pyvmomi.get_vms_using_params.return_value = None
+
+        assert info.get_vms() == []
+
+
+class TestGetIdentity:
+    def test_skipped_when_gather_identity_is_false(self, mocker):
+        info = build_info_instance(mocker, {"gather_identity": False})
+
+        assert info._get_identity(vim.VirtualMachine("vm-1")) == {}
+        info.vm_svc.guest.Identity.get.assert_not_called()
+
+    def test_returns_extracted_attributes(self, mocker):
+        info = build_info_instance(mocker, {"gather_identity": True})
+        identity = mocker.Mock()
+        info.vm_svc.guest.Identity.get.return_value = identity
+        extract = mocker.patch.object(
+            vm_info, "extract_object_attributes_to_dict", return_value={"name": "linux"}
+        )
+
+        assert info._get_identity(vim.VirtualMachine("vm-1")) == {"name": "linux"}
+        info.vm_svc.guest.Identity.get.assert_called_once_with(vm="vm-1")
+        extract.assert_called_once_with(identity)
+
+    def test_returns_empty_dict_when_the_api_call_fails(self, mocker):
+        """
+        Identity is unavailable on powered off VMs and VMs without tools, which is
+        not an error for an info module.
+        """
+        info = build_info_instance(mocker, {"gather_identity": True})
+        info.vm_svc.guest.Identity.get.side_effect = Exception("tools not running")
+
+        assert info._get_identity(vim.VirtualMachine("vm-1")) == {}
+
+
+class TestGetEnv:
+    def test_skipped_without_guest_credentials(self, mocker):
+        info = build_info_instance(mocker, {"guest_username": None})
+
+        assert info._get_env(vim.VirtualMachine("vm-1")) == {}
+        info.vm_svc.guest.Environment.list.assert_not_called()
+
+    def test_returns_guest_environment(self, mocker):
+        info = build_info_instance(
+            mocker, {"guest_username": "root", "guest_password": "secret"}
+        )
+        info.vm_svc.guest.Environment.list.return_value = {"PATH": "/bin"}
+        vm = vim.VirtualMachine("vm-1")
+
+        assert info._get_env(vm) == {"PATH": "/bin"}
+        call_kwargs = info.vm_svc.guest.Environment.list.call_args[1]
+        assert call_kwargs["vm"] is vm
+        assert call_kwargs["credentials"]["user_name"] == "root"
+        assert call_kwargs["credentials"]["password"] == "secret"
+
+    def test_returns_empty_dict_when_the_api_call_fails(self, mocker):
+        info = build_info_instance(
+            mocker, {"guest_username": "root", "guest_password": "secret"}
+        )
+        info.vm_svc.guest.Environment.list.side_effect = Exception("bad credentials")
+
+        assert info._get_env(vim.VirtualMachine("vm-1")) == {}
+
+
+class TestGetTags:
+    def test_skipped_when_gather_tags_is_false(self, mocker):
+        info = build_info_instance(mocker, {"gather_tags": False})
+        get_tags = mocker.patch.object(vm_info.VmwareVmInfo, "get_tags_by_vm_moid")
+
+        assert info._get_tags(vim.VirtualMachine("vm-1")) == []
+        get_tags.assert_not_called()
+
+    def test_formats_each_tag(self, mocker):
+        info = build_info_instance(mocker, {"gather_tags": True})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "get_tags_by_vm_moid", return_value=["tag-a", "tag-b"]
+        )
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "format_tag_identity_as_dict",
+            side_effect=lambda tag: {"name": tag},
+        )
+
+        assert info._get_tags(vim.VirtualMachine("vm-1")) == [
+            {"name": "tag-a"}, {"name": "tag-b"}
+        ]
+
+
+class TestHydrateVmInfoWithRestCalls:
+    def test_attaches_identity_tags_and_env(self, mocker):
+        info = build_info_instance(mocker)
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "_get_identity", return_value={"name": "linux"}
+        )
+        mocker.patch.object(vm_info.VmwareVmInfo, "_get_tags", return_value=["tag"])
+        mocker.patch.object(vm_info.VmwareVmInfo, "_get_env", return_value={"PATH": "/bin"})
+        vm_facts = {"moid": "vm-1"}
+
+        info._hydrate_vm_info_with_rest_calls(vm_facts, vim.VirtualMachine("vm-1"))
+
+        assert vm_facts["identity"] == {"name": "linux"}
+        # identity keys are also flattened onto the top level for backwards compatibility
+        assert vm_facts["name"] == "linux"
+        assert vm_facts["tags"] == ["tag"]
+        assert vm_facts["env"] == {"PATH": "/bin"}
+
+    def test_empty_identity_adds_no_legacy_keys(self, mocker):
+        info = build_info_instance(mocker)
+        mocker.patch.object(vm_info.VmwareVmInfo, "_get_identity", return_value={})
+        mocker.patch.object(vm_info.VmwareVmInfo, "_get_tags", return_value=[])
+        mocker.patch.object(vm_info.VmwareVmInfo, "_get_env", return_value={})
+        vm_facts = {"moid": "vm-1"}
+
+        info._hydrate_vm_info_with_rest_calls(vm_facts, vim.VirtualMachine("vm-1"))
+
+        assert vm_facts == {"moid": "vm-1", "identity": {}, "tags": [], "env": {}}
+
+
+class TestVmInfoModule(ModuleTestCase):
+
+    def __prepare(self, mocker, vms=None):
+        mocker.patch.object(vm_info.VmwareVmInfo, "__init__", return_value=None)
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "gather_info_for_vms", return_value=(vms or [])
+        )
 
     def test_gather(self, mocker):
         self.__prepare(mocker)
 
         result = run_module(module_entry=vm_info.main, module_args={})
+
         assert result["changed"] is False
 
-
-class TestGatherInfoForVms:
-    """
-    Covers the churn handling added when a VM disappears mid-flight. A VM that
-    raises ManagedObjectNotFound should be skipped with a warning rather than
-    failing the whole module run.
-    """
-
-    def _build_info_instance(self, mocker):
-        mocker.patch.object(vm_info.VmwareVmInfo, "__init__", return_value=None)
-        info = vm_info.VmwareVmInfo(mocker.Mock())
-        info.module = mocker.Mock()
-        return info
-
-    def test_skips_missing_vm_and_warns(self, mocker):
-        info = self._build_info_instance(mocker)
-        present_vm = create_mock_vsphere_object(name="present", moid="vm-1")
-        missing_vm = create_mock_vsphere_object(name="missing", moid="vm-2")
-        mocker.patch.object(
-            vm_info.VmwareVmInfo, "get_vms", return_value=[missing_vm, present_vm]
-        )
-
-        def fake_gather(vm):
-            if vm is missing_vm:
-                raise vmodl.fault.ManagedObjectNotFound()
-            return {"name": vm.name}
-
-        mocker.patch.object(
-            vm_info.VmwareVmInfo, "_gather_info_about_one_vm", side_effect=fake_gather
-        )
-
-        result = info.gather_info_for_vms()
-
-        assert result == [{"name": "present"}]
-        info.module.warn.assert_called_once()
-        warning_message = info.module.warn.call_args[0][0]
-        assert "missing" in warning_message
-
-    def test_includes_all_vms_when_no_errors(self, mocker):
-        info = self._build_info_instance(mocker)
-        vm1 = create_mock_vsphere_object(name="vm1", moid="vm-1")
-        vm2 = create_mock_vsphere_object(name="vm2", moid="vm-2")
-        mocker.patch.object(vm_info.VmwareVmInfo, "get_vms", return_value=[vm1, vm2])
-        mocker.patch.object(
-            vm_info.VmwareVmInfo,
-            "_gather_info_about_one_vm",
-            side_effect=lambda vm: {"name": vm.name},
-        )
-
-        result = info.gather_info_for_vms()
-
-        assert result == [{"name": "vm1"}, {"name": "vm2"}]
-        info.module.warn.assert_not_called()
-
-    def test_returns_empty_when_no_vms(self, mocker):
-        info = self._build_info_instance(mocker)
-        mocker.patch.object(vm_info.VmwareVmInfo, "get_vms", return_value=[])
-        gather_one = mocker.patch.object(
-            vm_info.VmwareVmInfo, "_gather_info_about_one_vm"
-        )
-
-        result = info.gather_info_for_vms()
-
-        assert result == []
-        gather_one.assert_not_called()
-        info.module.warn.assert_not_called()
-
-    def test_warning_still_skips_when_last_vm_is_missing(self, mocker):
-        info = self._build_info_instance(mocker)
-        present_vm = create_mock_vsphere_object(name="present", moid="vm-1")
-        missing_vm = create_mock_vsphere_object(name="missing", moid="vm-2")
-        mocker.patch.object(
-            vm_info.VmwareVmInfo, "get_vms", return_value=[present_vm, missing_vm]
-        )
-
-        def fake_gather(vm):
-            if vm is missing_vm:
-                raise vmodl.fault.ManagedObjectNotFound()
-            return {"name": vm.name}
-
-        mocker.patch.object(
-            vm_info.VmwareVmInfo, "_gather_info_about_one_vm", side_effect=fake_gather
-        )
-
-        result = info.gather_info_for_vms()
-
-        assert result == [{"name": "present"}]
-        info.module.warn.assert_called_once()
-
-
-class TestGatherInfoAboutOneVm:
-    """
-    Covers the _gather_info_about_one_vm helper extracted during the churn fix.
-    Both schema branches must attach identity (plus its legacy flattening),
-    tags, and env to the returned facts.
-    """
-
-    def _build_info_instance(self, mocker):
-        mocker.patch.object(vm_info.VmwareVmInfo, "__init__", return_value=None)
-        info = vm_info.VmwareVmInfo(mocker.Mock())
-        info.module = mocker.Mock()
-        info.pyvmomi = mocker.Mock()
-        return info
-
-    def test_summary_schema_builds_facts(self, mocker):
-        info = self._build_info_instance(mocker)
-        info.params = {"schema": "summary"}
-        vm = create_mock_vsphere_object(name="vm1", moid="vm-1")
-
-        vm_facts = mocker.patch.object(vm_info, "VmFacts")
-        vm_facts.return_value.all_facts.return_value = {"base": "facts"}
-        mocker.patch.object(
-            vm_info.VmwareVmInfo, "_get_identity", return_value={"guest_os": "linux"}
-        )
-        mocker.patch.object(vm_info.VmwareVmInfo, "_get_tags", return_value=["tag1"])
-        mocker.patch.object(vm_info.VmwareVmInfo, "_get_env", return_value={"PATH": "/bin"})
-
-        result = info._gather_info_about_one_vm(vm)
-
-        vm_facts.assert_called_once_with(vm)
-        assert result["base"] == "facts"
-        assert result["identity"] == {"guest_os": "linux"}
-        # legacy output flattens identity keys onto the top level
-        assert result["guest_os"] == "linux"
-        assert result["tags"] == ["tag1"]
-        assert result["env"] == {"PATH": "/bin"}
-
-    def test_non_summary_schema_uses_obj_to_json(self, mocker):
-        info = self._build_info_instance(mocker)
-        info.params = {"schema": "vsphere", "properties": ["name", "config"]}
-        vm = create_mock_vsphere_object(name="vm1", moid="vm-1")
-
-        obj_to_json = mocker.patch.object(
-            vm_info, "vmware_obj_to_json", return_value={"name": "vm1"}
-        )
-        mocker.patch.object(vm_info.VmwareVmInfo, "_get_identity", return_value={})
-        mocker.patch.object(vm_info.VmwareVmInfo, "_get_tags", return_value=[])
-        mocker.patch.object(vm_info.VmwareVmInfo, "_get_env", return_value={})
-
-        result = info._gather_info_about_one_vm(vm)
-
-        obj_to_json.assert_called_once_with(vm, ["name", "config"])
-        assert result["name"] == "vm1"
-        assert result["identity"] == {}
-        assert result["tags"] == []
-        assert result["env"] == {}
-
-    def test_managed_object_not_found_propagates(self, mocker):
+    def test_vms_and_guests_return_the_same_data(self, mocker):
         """
-        _gather_info_about_one_vm must let ManagedObjectNotFound bubble up so
-        gather_info_for_vms can catch it and warn.
+        guests is a legacy return key kept for backwards compatibility.
         """
-        info = self._build_info_instance(mocker)
-        info.params = {"schema": "summary"}
-        vm = create_mock_vsphere_object(name="vm1", moid="vm-1")
+        self.__prepare(mocker, vms=[{"moid": "vm-1"}])
 
-        vm_facts = mocker.patch.object(vm_info, "VmFacts")
-        vm_facts.return_value.all_facts.side_effect = vmodl.fault.ManagedObjectNotFound()
+        result = run_module(module_entry=vm_info.main, module_args={})
 
-        with pytest.raises(vmodl.fault.ManagedObjectNotFound):
-            info._gather_info_about_one_vm(vm)
+        assert result["vms"] == [{"moid": "vm-1"}]
+        assert result["guests"] == result["vms"]
+
+    def test_properties_require_the_vsphere_schema(self, mocker):
+        self.__prepare(mocker)
+
+        result = run_module(
+            module_entry=vm_info.main,
+            module_args={"schema": "summary", "properties": ["name"]},
+            expect_success=False,
+        )
+
+        assert "properties" in result["msg"]
+
+    def test_properties_are_allowed_with_the_vsphere_schema(self, mocker):
+        self.__prepare(mocker)
+
+        result = run_module(
+            module_entry=vm_info.main,
+            module_args={"schema": "vsphere", "properties": ["name"]},
+        )
+
+        assert result["changed"] is False
+
+    @pytest.mark.parametrize(
+        "module_args",
+        [
+            {"name": "vm1", "uuid": "uuid1"},
+            {"name": "vm1", "moid": "vm-1"},
+            {"uuid": "uuid1", "moid": "vm-1"},
+        ],
+    )
+    def test_identifiers_are_mutually_exclusive(self, mocker, module_args):
+        self.__prepare(mocker)
+
+        run_module(module_entry=vm_info.main, module_args=module_args, expect_success=False)
+
+    def test_guest_credentials_must_be_supplied_together(self, mocker):
+        self.__prepare(mocker)
+
+        run_module(
+            module_entry=vm_info.main,
+            module_args={"guest_username": "root"},
+            expect_success=False,
+        )
