@@ -39,6 +39,20 @@ def build_missing_property(path="config", fault=None):
     )
 
 
+def build_related_object_content(obj, properties=None, missing=None):
+    """
+    Build a vim.ObjectContent for a non-VM object (folder, host, etc) collected through a traversal spec.
+    """
+    return vim.ObjectContent(
+        obj=obj,
+        propSet=[
+            vmodl.DynamicProperty(name=name, val=value)
+            for name, value in (properties or {}).items()
+        ],
+        missingSet=(missing or []),
+    )
+
+
 def build_info_instance(mocker, params=None):
     """
     Build a VmwareVmInfo without running __init__, which would open connections.
@@ -49,6 +63,8 @@ def build_info_instance(mocker, params=None):
     info.params = params if params is not None else {}
     info.pyvmomi = mocker.Mock()
     info.vm_svc = mocker.Mock()
+    info._enabled_gatherers = []
+    info._search_properties = None
     return info
 
 
@@ -100,24 +116,24 @@ class TestSchemaHelpers:
     def test_summary_schema_requests_the_fixed_property_set(self, mocker):
         info = build_info_instance(mocker, {"schema": "summary", "properties": None})
 
-        assert info.search_properties == vm_info.SUMMARY_SCHEMA_PROPERTIES
+        assert set(info.search_properties) == set(vm_info.SUMMARY_SCHEMA_PROPERTIES)
 
     def test_vsphere_schema_requests_the_user_properties(self, mocker):
         info = build_info_instance(
             mocker, {"schema": "vsphere", "properties": ["name", "runtime.powerState"]}
         )
 
-        assert info.search_properties == ["name", "runtime.powerState"]
+        assert set(info.search_properties) == {"name", "runtime.powerState"}
 
-    @pytest.mark.parametrize("properties", [None, []])
+    @pytest.mark.parametrize("properties", [None])
     def test_vsphere_schema_without_properties_requests_everything(self, mocker, properties):
         """
-        An empty property list is the signal to _collect_vm_managed_object_properties
-        to set all=True on the property spec.
+        The 'all' sentinel is the signal to _create_prop_set to set all=True on the
+        property spec.
         """
         info = build_info_instance(mocker, {"schema": "vsphere", "properties": properties})
 
-        assert info.search_properties == []
+        assert info.search_properties == ["all"]
 
 
 class TestGatherInfoForVms:
@@ -308,7 +324,7 @@ class TestCollectVmManagedObjectProperties:
 
         filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
         assert filter_spec.propSet[0].type == vim.VirtualMachine
-        assert filter_spec.propSet[0].pathSet == ["name", "runtime.powerState"]
+        assert set(filter_spec.propSet[0].pathSet) == {"name", "runtime.powerState"}
         assert filter_spec.propSet[0].all is False
         assert [spec.obj for spec in filter_spec.objectSet] == vms
         assert all(spec.skip is False for spec in filter_spec.objectSet)
@@ -338,7 +354,7 @@ class TestCollectVmManagedObjectProperties:
         info._collect_vm_managed_object_properties()
 
         filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
-        assert filter_spec.propSet[0].pathSet == vm_info.SUMMARY_SCHEMA_PROPERTIES
+        assert set(filter_spec.propSet[0].pathSet) == set(vm_info.SUMMARY_SCHEMA_PROPERTIES)
         assert filter_spec.propSet[0].all is False
 
     def test_invalid_property_path_fails_the_module(self, mocker):
@@ -354,6 +370,358 @@ class TestCollectVmManagedObjectProperties:
 
         info.module.fail_json.assert_called_once()
         assert "nope" in info.module.fail_json.call_args[1]["msg"]
+
+
+class TestEnabledGatherers:
+    def test_none_enabled_by_default(self, mocker):
+        info = build_info_instance(mocker, {})
+
+        assert info.enabled_gatherers == []
+
+    def test_compute_only(self, mocker):
+        info = build_info_instance(mocker, {"gather_compute_objects": True})
+
+        assert info.enabled_gatherers == [vm_info.ComputeObjectsGatherer]
+
+    def test_location_only(self, mocker):
+        info = build_info_instance(mocker, {"gather_location_objects": True})
+
+        assert info.enabled_gatherers == [vm_info.LocationObjectsGatherer]
+
+    def test_both_enabled(self, mocker):
+        info = build_info_instance(
+            mocker, {"gather_compute_objects": True, "gather_location_objects": True}
+        )
+
+        assert set(info.enabled_gatherers) == {
+            vm_info.ComputeObjectsGatherer, vm_info.LocationObjectsGatherer
+        }
+
+
+class TestSearchPropertiesWithGatherers:
+    def test_vsphere_schema_adds_gatherer_properties(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": ["name"], "gather_compute_objects": True},
+        )
+
+        assert set(info.search_properties) == {"name", "resourcePool", "runtime.host"}
+
+    def test_vsphere_schema_with_empty_properties_returns_only_gatherer_properties(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": [], "gather_location_objects": True},
+        )
+
+        assert info.search_properties == ["parent"]
+
+    def test_vsphere_schema_with_empty_properties_and_no_gatherers_returns_nothing(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": []})
+
+        assert info.search_properties == []
+
+    def test_summary_schema_adds_gatherer_properties(self, mocker):
+        info = build_info_instance(
+            mocker, {"schema": "summary", "gather_location_objects": True}
+        )
+
+        assert set(info.search_properties) == set(vm_info.SUMMARY_SCHEMA_PROPERTIES) | {"parent"}
+
+    def test_result_is_cached(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+
+        first = info.search_properties
+        info.params["properties"] = ["other"]
+
+        assert info.search_properties is first
+
+
+class TestCreateSelectSet:
+    def test_none_without_gatherers(self, mocker):
+        info = build_info_instance(mocker, {})
+
+        assert info._create_select_set() is None
+
+    def test_includes_traversal_specs_of_enabled_gatherers(self, mocker):
+        info = build_info_instance(
+            mocker, {"gather_compute_objects": True, "gather_location_objects": True}
+        )
+
+        names = {spec.name for spec in info._create_select_set()}
+
+        assert names == {"vmToResourcePool", "vmToHost", "folderToParent", "vmToFolder"}
+
+
+class TestCreatePropSet:
+    def test_specific_properties(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+
+        prop_set = info._create_prop_set()
+
+        assert len(prop_set) == 1
+        assert prop_set[0].type == vim.VirtualMachine
+        assert prop_set[0].pathSet == ["name"]
+        assert prop_set[0].all is False
+
+    def test_all_properties_sentinel_is_not_a_path(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": None})
+
+        prop_set = info._create_prop_set()
+
+        assert prop_set[0].pathSet == []
+        assert prop_set[0].all is True
+
+    def test_all_properties_with_gatherers_still_requests_everything(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": None, "gather_compute_objects": True},
+        )
+
+        prop_set = info._create_prop_set()
+
+        assert prop_set[0].all is True
+        assert set(prop_set[0].pathSet) == {"resourcePool", "runtime.host"}
+
+    def test_appends_gatherer_property_specs(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": ["name"], "gather_location_objects": True},
+        )
+
+        prop_set = info._create_prop_set()
+
+        assert [spec.type for spec in prop_set] == [
+            vim.VirtualMachine, vim.Folder, vim.Datacenter
+        ]
+
+
+class TestFailOnMissingVmProperties:
+    def test_fails_for_each_unreadable_property(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["a", "b"]})
+        content = build_object_content(
+            moid="vm-1",
+            missing=[
+                build_missing_property(path="a", fault=vmodl.fault.InvalidArgument(msg="denied")),
+            ],
+        )
+
+        info._fail_on_missing_vm_properties(content)
+
+        info.module.fail_json.assert_called_once()
+        message = info.module.fail_json.call_args[1]["msg"]
+        assert "'a'" in message and "vm-1" in message and "denied" in message
+
+    def test_no_failure_without_missing_properties(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["a"]})
+
+        info._fail_on_missing_vm_properties(build_object_content(properties={"a": 1}))
+
+        info.module.fail_json.assert_not_called()
+
+    def test_tolerated_when_gathering_all(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": None})
+        content = build_object_content(
+            missing=[build_missing_property(path="a", fault=vmodl.fault.InvalidArgument(msg="x"))]
+        )
+
+        info._fail_on_missing_vm_properties(content)
+
+        info.module.fail_json.assert_not_called()
+
+    def test_tolerated_for_summary_schema(self, mocker):
+        info = build_info_instance(mocker, {"schema": "summary"})
+        content = build_object_content(
+            missing=[build_missing_property(path="a", fault=vmodl.fault.InvalidArgument(msg="x"))]
+        )
+
+        info._fail_on_missing_vm_properties(content)
+
+        info.module.fail_json.assert_not_called()
+
+
+class TestSplitCollectedObjects:
+    def test_empty(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+
+        assert info._split_collected_objects([]) == ([], {})
+
+    def test_separates_vms_from_related_objects(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        vm = build_object_content(moid="vm-1", properties={"name": "vm1"})
+        folder = build_related_object_content(
+            vim.Folder("group-v1"), {"name": "my_folder", "parent": vim.Datacenter("datacenter-1")}
+        )
+        datacenter = build_related_object_content(
+            vim.Datacenter("datacenter-1"), {"name": "dc01"}
+        )
+
+        vm_refs, related = info._split_collected_objects([vm, folder, datacenter])
+
+        assert vm_refs == [vm]
+        assert related == {
+            "group-v1": {"name": "my_folder", "parent": vim.Datacenter("datacenter-1")},
+            "datacenter-1": {"name": "dc01"},
+        }
+
+    def test_warns_and_skips_deleted_vm(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        gone = build_object_content(moid="vm-gone", missing=[build_missing_property()])
+
+        vm_refs, related = info._split_collected_objects([gone])
+
+        assert (vm_refs, related) == ([], {})
+        info.module.warn.assert_called_once()
+        assert "vm-gone" in info.module.warn.call_args[0][0]
+
+    def test_warns_and_skips_deleted_related_object(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        gone = build_related_object_content(
+            vim.Folder("group-gone"), missing=[build_missing_property()]
+        )
+
+        vm_refs, related = info._split_collected_objects([gone])
+
+        assert (vm_refs, related) == ([], {})
+        info.module.warn.assert_called_once()
+
+    def test_unreadable_vm_property_fails_the_module(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["bogus"]})
+        vm = build_object_content(
+            missing=[build_missing_property(path="bogus", fault=vmodl.fault.InvalidArgument(msg="no"))]
+        )
+
+        info._split_collected_objects([vm])
+
+        info.module.fail_json.assert_called_once()
+
+    def test_unreadable_related_object_property_is_not_checked(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        folder = build_related_object_content(
+            vim.Folder("group-v1"),
+            {"name": "f"},
+            missing=[build_missing_property(path="parent", fault=vmodl.fault.InvalidArgument(msg="no"))],
+        )
+
+        _, related = info._split_collected_objects([folder])
+
+        assert related == {"group-v1": {"name": "f"}}
+        info.module.fail_json.assert_not_called()
+
+
+class TestHydrateVmInfoWithCollectedProps:
+    def test_vsphere_schema_without_gatherers(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        content = build_object_content(properties={"name": "vm1"})
+        mocker.patch.object(vm_info, "properties_from_collector", return_value={"name": "vm1"})
+
+        assert info._hydrate_vm_info_with_collected_props(content, {}) == {"name": "vm1"}
+
+    def test_summary_schema_uses_prefetched_vm_facts(self, mocker):
+        info = build_info_instance(mocker, {"schema": "summary"})
+        content = build_object_content(moid="vm-1", properties={"config": "c"})
+        vm_facts = mocker.patch.object(vm_info, "VmFacts")
+        vm_facts.return_value.all_facts.return_value = {"hw_name": "vm1"}
+
+        result = info._hydrate_vm_info_with_collected_props(content, {})
+
+        assert result == {"hw_name": "vm1"}
+        assert isinstance(vm_facts.call_args[0][0], vm_info._PrefetchedVm)
+        vm_facts.return_value.all_facts.assert_called_once_with(info.pyvmomi.content)
+
+    def test_gatherers_receive_flat_vm_props_and_related_objects(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": ["name"], "gather_location_objects": True},
+        )
+        content = build_object_content(properties={"name": "vm1", "parent": "folder-ref"})
+        mocker.patch.object(vm_info, "properties_from_collector", return_value={"name": "vm1"})
+        gatherer = mocker.Mock()
+        info._enabled_gatherers = [gatherer]
+        related = {"group-v1": {"name": "f"}}
+
+        result = info._hydrate_vm_info_with_collected_props(content, related)
+
+        gatherer.add_facts.assert_called_once_with(
+            {"name": "vm1"}, {"name": "vm1", "parent": "folder-ref"}, related
+        )
+        assert result == {"name": "vm1"}
+
+    def test_gatherers_enrich_vm_info(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": [], "gather_location_objects": True},
+        )
+        folder = vim.Folder("group-v1")
+        content = build_object_content(properties={"parent": folder})
+        related = {
+            "group-v1": {"name": "my_folder", "parent": vim.Datacenter("datacenter-1")},
+            "datacenter-1": {"name": "dc01"},
+        }
+
+        result = info._hydrate_vm_info_with_collected_props(content, related)
+
+        assert result["folder"] == {"moid": "group-v1", "name": "my_folder"}
+        assert result["datacenter"] == {"moid": "datacenter-1", "name": "dc01"}
+
+
+class TestGatherInfoForVmsWithRelatedObjects:
+    def test_related_objects_are_passed_to_each_vm(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": [], "gather_location_objects": True},
+        )
+        vm = build_object_content(moid="vm-1", properties={"parent": vim.Folder("group-v1")})
+        folder = build_related_object_content(
+            vim.Folder("group-v1"), {"name": "my_folder", "parent": vim.Datacenter("datacenter-1")}
+        )
+        datacenter = build_related_object_content(vim.Datacenter("datacenter-1"), {"name": "dc01"})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo,
+            "_collect_vm_managed_object_properties",
+            return_value=[vm, folder, datacenter],
+        )
+        mocker.patch.object(vm_info, "properties_from_collector", return_value={})
+        hydrate = mocker.patch.object(vm_info.VmwareVmInfo, "_hydrate_vm_info_with_rest_calls")
+
+        result = info.gather_info_for_vms()
+
+        # only the VM becomes a result; the folder and datacenter are lookup data
+        assert len(result) == 1
+        assert result[0]["folder"] == {"moid": "group-v1", "name": "my_folder"}
+        assert result[0]["datacenter"] == {"moid": "datacenter-1", "name": "dc01"}
+        hydrate.assert_called_once_with(result[0], vm.obj)
+
+
+class TestCollectVmManagedObjectPropertiesWithGatherers:
+    def test_filter_spec_includes_gatherer_specs(self, mocker):
+        info = build_info_instance(
+            mocker,
+            {"schema": "vsphere", "properties": ["name"], "gather_location_objects": True},
+        )
+        vms = [vim.VirtualMachine("vm-1")]
+        mocker.patch.object(vm_info.VmwareVmInfo, "get_vms", return_value=vms)
+
+        info._collect_vm_managed_object_properties()
+
+        filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
+        assert [p.type for p in filter_spec.propSet] == [
+            vim.VirtualMachine, vim.Folder, vim.Datacenter
+        ]
+        assert set(filter_spec.propSet[0].pathSet) == {"name", "parent"}
+        assert {s.name for s in filter_spec.objectSet[0].selectSet} == {
+            "folderToParent", "vmToFolder"
+        }
+
+    def test_no_select_set_without_gatherers(self, mocker):
+        info = build_info_instance(mocker, {"schema": "vsphere", "properties": ["name"]})
+        mocker.patch.object(
+            vm_info.VmwareVmInfo, "get_vms", return_value=[vim.VirtualMachine("vm-1")]
+        )
+
+        info._collect_vm_managed_object_properties()
+
+        filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
+        assert not filter_spec.objectSet[0].selectSet
 
 
 class TestGetVms:
