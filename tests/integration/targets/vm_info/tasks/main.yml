@@ -20,6 +20,15 @@
           - config
       register: _vsphere
 
+    - name: Gather guest info - vsphere with gathered objects and no properties
+      vmware.vmware.vm_info:
+        name: "{{ vm_name }}"
+        schema: vsphere
+        properties: []
+        gather_compute_objects: true
+        gather_location_objects: true
+      register: _gathered_objects
+
 - name: Assert values
   ansible.builtin.assert:
     that:
@@ -30,3 +39,11 @@
       - _vsphere.vms | length == 1
       - "'config' in _vsphere.vms[0]"
       - "'summary' not in _vsphere.vms[0]"
+      - _gathered_objects.changed == False
+      - _gathered_objects.vms | length == 1
+      - "'cluster' in _gathered_objects.vms[0]"
+      - "'esxi_host' in _gathered_objects.vms[0]"
+      - "'resource_pool' in _gathered_objects.vms[0]"
+      - "'folder' in _gathered_objects.vms[0]"
+      - "'datacenter' in _gathered_objects.vms[0]"
+      - "'config' not in _gathered_objects.vms[0]"

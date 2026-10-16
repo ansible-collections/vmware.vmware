@@ -107,24 +107,44 @@ options:
         type: bool
         default: true
 
+    gather_location_objects:
+        description:
+            - If true, information about the VM's folder and datacenter will be included in the output.
+            - This gives more detailed information about these objects than what VM properties alone
+              can provide.
+        type: bool
+        default: false
+
+    gather_compute_objects:
+        description:
+            - If true, information about the VM's ESXi host, cluster, and resource pool will be included
+              in the output.
+            - This gives more detailed information about these objects than what VM properties alone
+              can provide.
+        type: bool
+        default: false
+
     schema:
         description:
             - The type of info to gather from the VMs.
             - The default value of C(summary) is for backwards compatibility. Users should prefer
               the C(vsphere) schema with a list of O(properties).
             - The C(summary) option provides a curated list of VM parameters with custom names.
-              Its performance is noticeably worse than the equivalent search using C(vsphere) and
+              It's performance is noticeably worse than the equivalent search using C(vsphere) and
               O(properties).
         choices: [summary, vsphere]
         default: summary
         type: str
     properties:
         description:
-            - If the schema is C(vsphere), gather these specific properties only.
-            - If this is not provided, all properties will be gathered. This can be a lot of
-              information.
-            - Reducing the number of properties does not significantly affect runtime.
-            - Additional properties may be gathered, depending on other module parameters.
+            - The list of VM properties to gather. This is only used when O(schema=vsphere).
+            - The C(gather_*) options may add properties to this list.
+            - If omitted, or if the keyword 'all' is supplied in the list, all properties
+              are gathered, which can produce a large amount of output.
+            - If set to an empty list, only properties required by the relevnat C(gather_*)
+              options are returned. Use this to get a minimal output or if you are unsure
+              what about the property names.
+            - Adding properties does not significantly increase runtime.
         type: list
         elements: str
 
@@ -265,6 +285,9 @@ vms:
         - The first item in the sample list shows the C(summary) schema
         - The second item shows the C(vsphere) schema with all properties. Note that this
           sample is already shortened to remove similar list items. It is a lot of data.
+        - O(gather_compute_objects) adds the C(resource_pool), C(esxi_host), and C(cluster)
+          keys.
+        - O(gather_location_objects) adds the C(datacenter) and C(folder) keys.
     returned: On success
     type: list
     sample: [
@@ -1359,6 +1382,10 @@ from ansible_collections.vmware.vmware.plugins.module_utils.facts._converters im
     properties_from_collector,
     extract_object_attributes_to_dict
 )
+from ansible_collections.vmware.vmware.plugins.module_utils.facts._gatherers import (
+    LocationObjectsGatherer,
+    ComputeObjectsGatherer
+)
 
 
 try:
@@ -1388,6 +1415,37 @@ class VmwareVmInfo(ModuleRestBase):
         super(VmwareVmInfo, self).__init__(module)
         self.pyvmomi = ModulePyvmomiBase(module)
         self.vm_svc = self.api_client.vcenter.vm
+        self._enabled_gatherers = []
+        self._search_properties = None
+
+    @property
+    def enabled_gatherers(self):
+        if not self._enabled_gatherers:
+            gathers = {
+                'gather_compute_objects': ComputeObjectsGatherer,
+                'gather_location_objects': LocationObjectsGatherer,
+            }
+            self._enabled_gatherers = [g for option, g in gathers.items() if self.params.get(option)]
+
+        return self._enabled_gatherers
+
+    @property
+    def search_properties(self):
+        if self._search_properties is None:
+            if self.schema_is_vsphere():
+                properties = self.params.get('properties')
+                if properties is None:
+                    properties = ['all']
+                properties = set(properties)
+            else:
+                properties = set(SUMMARY_SCHEMA_PROPERTIES)
+
+            for gatherer in self.enabled_gatherers:
+                properties.update(gatherer.vm_properties)
+
+            self._search_properties = list(properties)
+
+        return self._search_properties
 
     def _get_env(self, vm):
         """
@@ -1431,38 +1489,33 @@ class VmwareVmInfo(ModuleRestBase):
     def schema_is_vsphere(self):
         return (self.params['schema'] == 'vsphere')
 
-    @property
-    def search_properties(self):
-        if self.schema_is_vsphere():
-            return self.params.get('properties') or []
-        return SUMMARY_SCHEMA_PROPERTIES
-
     def gather_info_for_vms(self):
         all_vm_info = []
+        managed_object_refs = self._collect_vm_managed_object_properties()
+        vm_refs, related_objects = self._split_collected_objects(managed_object_refs)
 
-        for managed_object_ref in self._collect_vm_managed_object_properties():
-            if any(isinstance(m.fault, vmodl.fault.ManagedObjectNotFound) for m in managed_object_ref.missingSet):
-                # object was deleted mid-gather; pass a name so the helper doesn't make a SOAP call on a dead object
-                self.module.warn(format_managed_object_not_found_message(managed_object_ref.obj, object_name='unknown'))
-                continue
-
-            if self.schema_is_vsphere() and self.search_properties:
-                for missing in managed_object_ref.missingSet:
-                    # VM exists, but a specific property couldn't be read (permissions, etc.)
-                    # Probably a typo, or an unexpected issue
-                    self.module.fail_json(msg="Unable to read property '%s' on VM %s: %s" % (
-                        missing.path, managed_object_ref.obj._GetMoId(), missing.fault.msg)
-                    )
-
-            if self.schema_is_vsphere():
-                vm_info = properties_from_collector(managed_object_ref.propSet)
-            else:
-                vm_info = VmFacts(_PrefetchedVm(managed_object_ref)).all_facts(self.pyvmomi.content)
-
-            self._hydrate_vm_info_with_rest_calls(vm_info, managed_object_ref.obj)  # real MOR for REST/tags
+        for vm_ref in vm_refs:
+            vm_info = self._hydrate_vm_info_with_collected_props(vm_ref, related_objects)
+            self._hydrate_vm_info_with_rest_calls(vm_info, vm_ref.obj)  # real MOR for REST/tags
             all_vm_info += [vm_info]
 
         return all_vm_info
+
+    def _hydrate_vm_info_with_collected_props(self, managed_object_ref, related_objects=None):
+        if related_objects is None:
+            related_objects = {}
+
+        if self.schema_is_vsphere():
+            vm_info = properties_from_collector(managed_object_ref.propSet)
+        else:
+            vm_info = VmFacts(_PrefetchedVm(managed_object_ref)).all_facts(self.pyvmomi.content)
+
+        # since vm_info format varies, we need to have a (flat) dict of all props
+        vm_props = {p.name: p.val for p in managed_object_ref.propSet}
+        for gatherer in self.enabled_gatherers:
+            gatherer.add_facts(vm_info, vm_props, related_objects)
+
+        return vm_info
 
     def _hydrate_vm_info_with_rest_calls(self, vm_info, vm):
         vm_info['identity'] = self._get_identity(vm)
@@ -1472,15 +1525,36 @@ class VmwareVmInfo(ModuleRestBase):
         vm_info['tags'] = self._get_tags(vm)
         vm_info['env'] = self._get_env(vm)
 
+    def _create_select_set(self):
+        select_set = []
+        for gather in self.enabled_gatherers:
+            select_set += gather.traversal_specs()
+
+        return select_set or None
+
+    def _create_prop_set(self):
+        prop_set = [
+            vim.PropertyCollector.PropertySpec(
+                type=vim.VirtualMachine,
+                pathSet=[p for p in self.search_properties if p != 'all'],
+                all=('all' in self.search_properties),
+            )
+        ]
+        for gatherer in self.enabled_gatherers:
+            prop_set += gatherer.property_specs()
+
+        return prop_set
+
     def _collect_vm_managed_object_properties(self):
         vms = self.get_vms()
         if not vms:
             return []
 
-        prop_spec = vim.PropertyCollector.PropertySpec(type=vim.VirtualMachine, pathSet=self.search_properties, all=(not self.search_properties))
-        object_set = [vim.PropertyCollector.ObjectSpec(obj=vm, skip=False) for vm in vms]
+        select_set = self._create_select_set()
+        prop_set = self._create_prop_set()
+        object_set = [vim.PropertyCollector.ObjectSpec(obj=vm, skip=False, selectSet=select_set) for vm in vms]
         filter_spec = vim.PropertyCollector.FilterSpec(
-            propSet=[prop_spec],
+            propSet=prop_set,
             objectSet=object_set,
             reportMissingObjectsInResults=True  # if false, the whole batch is bad instead of just one vm
         )
@@ -1489,6 +1563,33 @@ class VmwareVmInfo(ModuleRestBase):
             return self.pyvmomi._query_paged_managed_object_properties(filter_spec)
         except vmodl.query.InvalidProperty as e:
             self.module.fail_json(msg="Invalid property path '%s' requested for VMs." % e.name)
+
+    def _fail_on_missing_vm_properties(self, managed_object_ref):
+        if self.schema_is_vsphere() and 'all' not in self.search_properties:
+            for missing in managed_object_ref.missingSet:
+                # VM exists, but a specific property couldn't be read (permissions, etc.)
+                # Probably a typo, or an unexpected issue
+                self.module.fail_json(msg="Unable to read property '%s' on VM %s: %s" % (
+                    missing.path, managed_object_ref.obj._GetMoId(), missing.fault.msg)
+                )
+
+    def _split_collected_objects(self, managed_object_refs):
+        vm_refs, related_objects = [], {}
+        for managed_object_ref in managed_object_refs:
+            if any(isinstance(m.fault, vmodl.fault.ManagedObjectNotFound) for m in managed_object_ref.missingSet):
+                # object was deleted mid-gather; pass a name so the helper doesn't make a SOAP call on a dead object
+                self.module.warn(format_managed_object_not_found_message(managed_object_ref.obj, object_name='unknown'))
+                continue
+
+            if isinstance(managed_object_ref.obj, vim.VirtualMachine):
+                self._fail_on_missing_vm_properties(managed_object_ref)
+                vm_refs.append(managed_object_ref)
+            else:
+                related_objects[managed_object_ref.obj._moId] = {
+                    p.name: p.val for p in managed_object_ref.propSet
+                }
+
+        return vm_refs, related_objects
 
     def get_vms(self):
         """
@@ -1535,6 +1636,8 @@ def main():
 
             gather_tags=dict(type='bool', default=False),
             gather_identity=dict(type='bool', default=True),
+            gather_location_objects=dict(type='bool', default=False),
+            gather_compute_objects=dict(type='bool', default=False),
 
             schema=dict(type='str', choices=['summary', 'vsphere'], default='summary'),
             properties=dict(type='list', elements='str'),
