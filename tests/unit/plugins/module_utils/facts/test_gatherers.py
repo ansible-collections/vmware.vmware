@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-import pytest
-
 from pyVmomi import vim
 
 from ansible_collections.vmware.vmware.plugins.module_utils.facts._gatherers import (
