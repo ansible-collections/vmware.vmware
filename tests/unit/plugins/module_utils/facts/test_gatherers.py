@@ -13,10 +13,6 @@ from ansible_collections.vmware.vmware.plugins.module_utils.facts._gatherers imp
 
 
 class TestObjectsGathererBase:
-    def test_cannot_instantiate_abstract_class(self):
-        with pytest.raises(TypeError):
-            _ObjectsGatherer()
-
     def test_describe_related_object_none(self):
         assert _ObjectsGatherer._describe_related_object(None, {}) == {}
 

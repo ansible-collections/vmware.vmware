@@ -1501,7 +1501,10 @@ class VmwareVmInfo(ModuleRestBase):
 
         return all_vm_info
 
-    def _hydrate_vm_info_with_collected_props(self, managed_object_ref, related_objects = {}):
+    def _hydrate_vm_info_with_collected_props(self, managed_object_ref, related_objects=None):
+        if related_objects is None:
+            related_objects = {}
+
         if self.schema_is_vsphere():
             vm_info = properties_from_collector(managed_object_ref.propSet)
         else:

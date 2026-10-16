@@ -602,7 +602,7 @@ class TestSplitCollectedObjects:
             missing=[build_missing_property(path="parent", fault=vmodl.fault.InvalidArgument(msg="no"))],
         )
 
-        _, related = info._split_collected_objects([folder])
+        _, related = info._split_collected_objects([folder])  # pylint: disable=disallowed-name
 
         assert related == {"group-v1": {"name": "f"}}
         info.module.fail_json.assert_not_called()

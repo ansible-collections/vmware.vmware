@@ -193,4 +193,3 @@ class LocationObjectsGatherer(_ObjectsGatherer):
             _ObjectsGatherer._find_datacenter(vm_props.get('parent'), related_objects),
             related_objects
         )
-
