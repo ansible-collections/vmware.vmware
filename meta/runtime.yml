@@ -47,6 +47,7 @@ action_groups:
         - vm_advanced_settings
         - vm_apply_customization
         - vm_custom_attributes
+        - vm_hardware_version
         - vm_info
         - vm_list_group_by_clusters_info
         - vm_portgroup_info
