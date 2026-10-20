@@ -22,8 +22,9 @@ options:
     datacenter:
         description:
             - The datacenter where the VM you'd like to operate the power.
+            - This is only used when a relative path for the O(folder) option is used.
         type: str
-        required: true
+        required: false
     state:
         description:
             - Set the state of the virtual machine.
@@ -442,7 +443,7 @@ def main():
     module = AnsibleModule(
         argument_spec={
             **base_argument_spec(), **dict(
-                datacenter=dict(type='str', required=True),
+                datacenter=dict(type='str', required=False),
                 state=dict(type='str', default='powered-on',
                                 choices=['powered-off', 'powered-on', 'reboot-guest', 'restarted', 'shutdown-guest', 'suspended']),
                 name=dict(type='str'),

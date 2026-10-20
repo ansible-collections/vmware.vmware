@@ -27,7 +27,6 @@
 
     - name: Set the state of a virtual machine to poweredon
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-on
@@ -45,7 +44,6 @@
 
     - name: Restart the virtual machine
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: restarted
@@ -62,7 +60,6 @@
 
     - name: Power on a virtual machine with the question_answers param
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         question_answers:
@@ -82,7 +79,6 @@
 
     - name: Set the state of a virtual machine to poweroff using MoID
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         moid: "{{ deploy.vm.moid }}"
         state: powered-off
@@ -99,8 +95,6 @@
 
     - name: Set the state of a virtual machine to poweron using MoID
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
-        folder: "{{ vm_folder }}"
         moid: "{{ deploy.vm.moid }}"
         state: powered-on
 
@@ -116,7 +110,6 @@
 
     - name: Suspend the virtual machine
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: suspended
@@ -133,7 +126,6 @@
 
     - name: Power on the virtual machine without force
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-on
@@ -147,7 +139,6 @@
 
     - name: Power on the virtual machine with force
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-on
@@ -165,7 +156,6 @@
 
     - name: Set the state of a virtual machine to poweroff at given scheduled time
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-off
@@ -186,7 +176,6 @@
 
     - name: Set the state of a virtual machine to poweron using MoID
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         moid: "{{ deploy.vm.moid }}"
         state: powered-on
@@ -203,7 +192,6 @@
 
     - name: Shutdown virtual machine
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         name: "{{ vm }}"
         state: shutdown-guest
 
@@ -219,7 +207,6 @@
 
     - name: Set the state of a virtual machine to poweredon
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-on
@@ -237,7 +224,6 @@
 
     - name: Shutdown the guest and wait for it to power off
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: shutdown-guest
@@ -262,7 +248,6 @@
 
     - name: Power the virtual machine back on
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: powered-on
@@ -279,7 +264,6 @@
 
     - name: Reboot the virtual machine with force
       vmware.vmware.vm_powerstate:
-        datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         name: "{{ vm }}"
         state: reboot-guest
@@ -292,10 +276,8 @@
         state: absent
 
     - name: "Test teardown: Destroy VM guest {{ vm }}"
-      community.vmware.vmware_guest:
-        cluster: "{{ vm_cluster }}"
-        datacenter: "{{ vm_datacenter }}"
+      vmware.vmware.vm:
         folder: "{{ vm_folder }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm }}"

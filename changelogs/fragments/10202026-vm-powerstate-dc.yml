@@ -1,0 +1,3 @@
+---
+minor_changes:
+  - vm_powerstate - Make the datacenter parameter optional, since it is not used in most cases
