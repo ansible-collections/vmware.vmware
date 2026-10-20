@@ -130,7 +130,7 @@ options:
             - The default value of C(summary) is for backwards compatibility. Users should prefer
               the C(vsphere) schema with a list of O(properties).
             - The C(summary) option provides a curated list of VM parameters with custom names.
-              It's performance is noticeably worse than the equivalent search using C(vsphere) and
+              Its performance is noticeably worse than the equivalent search using C(vsphere) and
               O(properties).
         choices: [summary, vsphere]
         default: summary
@@ -141,7 +141,7 @@ options:
             - The C(gather_*) options may add properties to this list.
             - If omitted, or if the keyword 'all' is supplied in the list, all properties
               are gathered, which can produce a large amount of output.
-            - If set to an empty list, only properties required by the relevnat C(gather_*)
+            - If set to an empty list, only properties required by the relevant C(gather_*)
               options are returned. Use this to get a minimal output or if you are unsure
               what about the property names.
             - Adding properties does not significantly increase runtime.

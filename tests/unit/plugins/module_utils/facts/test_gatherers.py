@@ -119,19 +119,24 @@ class TestComputeObjectsGatherer:
 
 class TestLocationObjectsGatherer:
     def test_vm_properties(self):
-        assert LocationObjectsGatherer.vm_properties == ["parent"]
+        assert LocationObjectsGatherer.vm_properties == ["parent", "parentVApp"]
 
     def test_traversal_specs(self):
-        specs = LocationObjectsGatherer.traversal_specs()
-        assert [s.name for s in specs] == ["folderToParent", "vmToFolder"]
-        for spec in specs:
-            assert spec.path == "parent"
-            assert [s.name for s in spec.selectSet] == ["folderToParent"]
+        specs = {s.name: s for s in LocationObjectsGatherer.traversal_specs()}
+        assert set(specs) == {"folderToParent", "vappToParentFolder", "vappToParent", "vmToFolder", "vmToVApp"}
+        assert specs["folderToParent"].path == "parent"
+        assert specs["vappToParentFolder"].path == "parentFolder"
+        assert specs["vappToParent"].path == "parent"
+        assert specs["vmToFolder"].path == "parent"
+        assert specs["vmToVApp"].path == "parentVApp"
+        for name in ("vmToFolder", "vmToVApp"):
+            assert {s.name for s in specs[name].selectSet} == {"folderToParent", "vappToParentFolder", "vappToParent"}
 
     def test_property_specs(self):
         specs = LocationObjectsGatherer.property_specs()
         assert {s.type: s.pathSet for s in specs} == {
             vim.Folder: ["name", "parent"],
+            vim.VirtualApp: ["name", "parent", "parentFolder"],
             vim.Datacenter: ["name"],
         }
 
@@ -166,3 +171,35 @@ class TestLocationObjectsGatherer:
         vm_info = {}
         LocationObjectsGatherer.add_facts(vm_info, {}, {})
         assert vm_info == {"folder": {}, "datacenter": {}}
+
+    def test_add_facts_vm_in_vapp(self):
+        dc = vim.Datacenter("datacenter-1")
+        folder = vim.Folder("group-v2")
+        vapp = vim.VirtualApp("resgroup-v10")
+        related = {
+            "resgroup-v10": {"name": "vapp", "parentFolder": folder, "parent": vim.ResourcePool("resgroup-1")},
+            "group-v2": {"name": "vm", "parent": dc},
+            "datacenter-1": {"name": "dc01"},
+        }
+        vm_info = {}
+        LocationObjectsGatherer.add_facts(vm_info, {"parentVApp": vapp}, related)
+        assert vm_info == {
+            "folder": {"moid": "group-v2", "name": "vm"},
+            "datacenter": {"moid": "datacenter-1", "name": "dc01"},
+        }
+
+    def test_add_facts_vm_in_nested_vapp(self):
+        dc = vim.Datacenter("datacenter-1")
+        folder = vim.Folder("group-v2")
+        outer = vim.VirtualApp("resgroup-v10")
+        inner = vim.VirtualApp("resgroup-v11")
+        related = {
+            "resgroup-v11": {"name": "inner", "parent": outer},
+            "resgroup-v10": {"name": "outer", "parentFolder": folder},
+            "group-v2": {"name": "vm", "parent": dc},
+            "datacenter-1": {"name": "dc01"},
+        }
+        vm_info = {}
+        LocationObjectsGatherer.add_facts(vm_info, {"parent": inner}, related)
+        assert vm_info["folder"] == {"moid": "group-v2", "name": "vm"}
+        assert vm_info["datacenter"] == {"moid": "datacenter-1", "name": "dc01"}

@@ -413,7 +413,7 @@ class TestSearchPropertiesWithGatherers:
             {"schema": "vsphere", "properties": [], "gather_location_objects": True},
         )
 
-        assert info.search_properties == ["parent"]
+        assert set(info.search_properties) == {"parent", "parentVApp"}
 
     def test_vsphere_schema_with_empty_properties_and_no_gatherers_returns_nothing(self, mocker):
         info = build_info_instance(mocker, {"schema": "vsphere", "properties": []})
@@ -449,7 +449,10 @@ class TestCreateSelectSet:
 
         names = {spec.name for spec in info._create_select_set()}
 
-        assert names == {"vmToResourcePool", "vmToHost", "folderToParent", "vmToFolder"}
+        assert names == {
+            "vmToResourcePool", "vmToHost", "folderToParent", "vappToParentFolder",
+            "vappToParent", "vmToFolder", "vmToVApp"
+        }
 
 
 class TestCreatePropSet:
@@ -491,7 +494,7 @@ class TestCreatePropSet:
         prop_set = info._create_prop_set()
 
         assert [spec.type for spec in prop_set] == [
-            vim.VirtualMachine, vim.Folder, vim.Datacenter
+            vim.VirtualMachine, vim.Folder, vim.VirtualApp, vim.Datacenter
         ]
 
 
@@ -705,11 +708,11 @@ class TestCollectVmManagedObjectPropertiesWithGatherers:
 
         filter_spec = info.pyvmomi._query_paged_managed_object_properties.call_args[0][0]
         assert [p.type for p in filter_spec.propSet] == [
-            vim.VirtualMachine, vim.Folder, vim.Datacenter
+            vim.VirtualMachine, vim.Folder, vim.VirtualApp, vim.Datacenter
         ]
-        assert set(filter_spec.propSet[0].pathSet) == {"name", "parent"}
+        assert set(filter_spec.propSet[0].pathSet) == {"name", "parent", "parentVApp"}
         assert {s.name for s in filter_spec.objectSet[0].selectSet} == {
-            "folderToParent", "vmToFolder"
+            "folderToParent", "vappToParentFolder", "vappToParent", "vmToFolder", "vmToVApp"
         }
 
     def test_no_select_set_without_gatherers(self, mocker):

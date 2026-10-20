@@ -84,21 +84,40 @@ class _ObjectsGatherer(ABC):
         return {'moid': ref._moId, 'name': related_objects[ref._moId].get('name')}
 
     @staticmethod
+    def _find_ancestor(ref, related_objects, ancestor_type):
+        """
+        Walk up the parent chain from an object until an object of the given type is found.
+
+        Each step uses 'parentFolder' (top-level vApps) if present, otherwise 'parent'. Preferring
+        'parentFolder' keeps the walk in the VM folder hierarchy rather than the resource pool one.
+
+        Args:
+            ref: A managed object reference to start from, or None. Returned if it is already the right type.
+            related_objects (dict): Related object properties, keyed by moId. Objects must
+                have had their parent properties collected for the walk to continue.
+            ancestor_type: The vim type to stop at, e.g. vim.Folder.
+
+        Returns:
+            The matching reference, or None if the chain ends without reaching one.
+        """
+        while ref is not None and not isinstance(ref, ancestor_type):
+            props = related_objects.get(ref._moId, {})
+            ref = props.get('parentFolder') or props.get('parent')
+        return ref
+
+    @staticmethod
     def _find_datacenter(ref, related_objects):
         """
         Walk up the parent chain from an object until a datacenter is found.
 
         Args:
             ref: A managed object reference to start from, or None.
-            related_objects (dict): Related object properties, keyed by moId. Objects must
-                have had their 'parent' property collected for the walk to continue.
+            related_objects (dict): Related object properties, keyed by moId.
 
         Returns:
             The datacenter reference, or None if the chain ends without reaching one.
         """
-        while ref is not None and not isinstance(ref, vim.Datacenter):
-            ref = related_objects.get(ref._moId, {}).get('parent')
-        return ref
+        return _ObjectsGatherer._find_ancestor(ref, related_objects, vim.Datacenter)
 
 
 class ComputeObjectsGatherer(_ObjectsGatherer):
@@ -155,41 +174,69 @@ class LocationObjectsGatherer(_ObjectsGatherer):
     """
     Gathers where a VM lives in the vCenter inventory.
 
-    Adds these facts to the VM info: 'folder' (the VM's parent folder) and 'datacenter'
-    (found by walking up the folder hierarchy). Each is a dict with 'moid' and 'name',
-    or an empty dict if unavailable.
+    Adds these facts to the VM info: 'folder' (the closest VM folder, which for a VM in a vApp is the
+    folder containing the vApp) and 'datacenter' (found by walking up the hierarchy). Each is a dict
+    with 'moid' and 'name', or an empty dict if unavailable.
     """
-    vm_properties = ['parent']
+    vm_properties = ['parent', 'parentVApp']
 
     @staticmethod
     def traversal_specs():
-        """Traverse VM -> parent folder, then up through parent folders until a datacenter is reached."""
+        """Traverse VM -> parent folder or vApp, then up through folders and vApps until a datacenter is reached."""
+        parent_selects = [
+            vim.PropertyCollector.SelectionSpec(name='folderToParent'),
+            vim.PropertyCollector.SelectionSpec(name='vappToParentFolder'),
+            vim.PropertyCollector.SelectionSpec(name='vappToParent'),
+        ]
         return [
             # Folder.parent -> Folder | Datacenter, repeating until it reaches a Datacenter
             vim.PropertyCollector.TraversalSpec(
                 name='folderToParent', type=vim.Folder, path='parent', skip=False,
                 selectSet=[vim.PropertyCollector.SelectionSpec(name='folderToParent')]
             ),
-            # vm.parent -> Folder, then hand off to the repeating folder spec
+            # VirtualApp.parentFolder -> Folder, for a top-level vApp
+            vim.PropertyCollector.TraversalSpec(
+                name='vappToParentFolder', type=vim.VirtualApp, path='parentFolder', skip=False,
+                selectSet=[vim.PropertyCollector.SelectionSpec(name='folderToParent')]
+            ),
+            # VirtualApp.parent -> VirtualApp, for a nested vApp
+            vim.PropertyCollector.TraversalSpec(
+                name='vappToParent', type=vim.VirtualApp, path='parent', skip=False,
+                selectSet=[
+                    vim.PropertyCollector.SelectionSpec(name='vappToParentFolder'),
+                    vim.PropertyCollector.SelectionSpec(name='vappToParent'),
+                ]
+            ),
+            # vm.parent -> Folder (or vApp), then hand off to the repeating specs
             vim.PropertyCollector.TraversalSpec(
                 name='vmToFolder', type=vim.VirtualMachine, path='parent', skip=False,
-                selectSet=[vim.PropertyCollector.SelectionSpec(name='folderToParent')]
+                selectSet=parent_selects
+            ),
+            # vm.parentVApp -> VirtualApp, then hand off to the repeating specs
+            vim.PropertyCollector.TraversalSpec(
+                name='vmToVApp', type=vim.VirtualMachine, path='parentVApp', skip=False,
+                selectSet=parent_selects
             ),
         ]
 
     @staticmethod
     def property_specs():
-        """Collect names and parents for folders, and names for datacenters."""
+        """Collect names and parents for folders and vApps, and names for datacenters."""
         return [
             vim.PropertyCollector.PropertySpec(type=vim.Folder, pathSet=['name', 'parent']),
+            vim.PropertyCollector.PropertySpec(type=vim.VirtualApp, pathSet=['name', 'parent', 'parentFolder']),
             vim.PropertyCollector.PropertySpec(type=vim.Datacenter, pathSet=['name'])
         ]
 
     @staticmethod
     def add_facts(vm_info, vm_props, related_objects):
         """Set 'folder' and 'datacenter' on vm_info."""
-        vm_info['folder'] = _ObjectsGatherer._describe_related_object(vm_props.get('parent'), related_objects)
+        start = vm_props.get('parent') or vm_props.get('parentVApp')
+        vm_info['folder'] = _ObjectsGatherer._describe_related_object(
+            _ObjectsGatherer._find_ancestor(start, related_objects, vim.Folder),
+            related_objects
+        )
         vm_info['datacenter'] = _ObjectsGatherer._describe_related_object(
-            _ObjectsGatherer._find_datacenter(vm_props.get('parent'), related_objects),
+            _ObjectsGatherer._find_datacenter(start, related_objects),
             related_objects
         )
