@@ -23,14 +23,14 @@
         version: latest
       register: _upgrade_already_latest
 
-    - name: Gather VM info
-      vmware.vmware.vm_info:
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
         moid: "{{ _create_latest.vm.moid }}"
       register: _latest_info
 
     - name: Store the latest hardware version supported by the cluster
       ansible.builtin.set_fact:
-        latest_hw_version: "{{ _latest_info.vms[0].hw_version | replace('vmx-', '') | int }}"
+        latest_hw_version: "{{ _latest_info.current | replace('vmx-', '') | int }}"
 
     - name: Check upgrade to latest on a VM that is already latest
       ansible.builtin.assert:
@@ -54,19 +54,20 @@
         hardware_version: "{{ (latest_hw_version | int) - 2 }}"
       register: _create_old
 
-    - name: Gather VM info
-      vmware.vmware.vm_info:
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
         moid: "{{ _create_old.vm.moid }}"
       register: _old_info
 
     - name: Check VM was created at the older hardware version
       ansible.builtin.assert:
         that:
-          - (_old_info.vms[0].hw_version | replace('vmx-', '') | int) == (latest_hw_version | int) - 2
+          - (_old_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 2
 
     - name: Power on the VM
       vmware.vmware.vm_powerstate:
         moid: "{{ _create_old.vm.moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
         state: powered-on
 
     - name: Upgrade powered on VM without allowing power cycling
@@ -90,10 +91,18 @@
       check_mode: true
       register: _upgrade_next_check
 
-    - name: Gather VM info
-      vmware.vmware.vm_info:
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
         moid: "{{ _create_old.vm.moid }}"
       register: _check_mode_info
+
+    - name: Check the VM is still powered on
+      vmware.vmware.vm_powerstate:
+        moid: "{{ _create_old.vm.moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: powered-on
+      check_mode: true
+      register: _powered_on_check_mode
 
     - name: Check check mode reports the upgrade without making changes
       ansible.builtin.assert:
@@ -103,8 +112,9 @@
           - _upgrade_next_check.snapshot == {}
           - (_upgrade_next_check.diff.before.version | replace('vmx-', '') | int) == (latest_hw_version | int) - 2
           - (_upgrade_next_check.diff.after.version | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
-          - (_check_mode_info.vms[0].hw_version | replace('vmx-', '') | int) == (latest_hw_version | int) - 2
-          - _check_mode_info.vms[0].hw_power_status == "poweredOn"
+          - (_check_mode_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 2
+          - _check_mode_info.scheduled_upgrade == {}
+          - _powered_on_check_mode is not ansible.builtin.changed
 
     - name: Upgrade VM to the next hardware version with power cycling
       vmware.vmware.vm_hardware_version:
@@ -121,10 +131,18 @@
         allow_power_cycling: true
       register: _upgrade_next_idem
 
-    - name: Gather VM info
-      vmware.vmware.vm_info:
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
         moid: "{{ _create_old.vm.moid }}"
       register: _next_info
+
+    - name: Check the VM is still powered on
+      vmware.vmware.vm_powerstate:
+        moid: "{{ _create_old.vm.moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: powered-on
+      check_mode: true
+      register: _powered_on_after_next
 
     - name: Check upgrade to the next hardware version
       ansible.builtin.assert:
@@ -136,8 +154,9 @@
           - (_upgrade_next.diff.after.version | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
           - _upgrade_next_idem is not ansible.builtin.changed
           - _upgrade_next_idem.power_cycled is false
-          - (_next_info.vms[0].hw_version | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
-          - _next_info.vms[0].hw_power_status == "poweredOn"
+          - (_next_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
+          - _next_info.scheduled_upgrade == {}
+          - _powered_on_after_next is not ansible.builtin.changed
 
     - name: Downgrade VM
       vmware.vmware.vm_hardware_version:
@@ -161,36 +180,132 @@
           - _downgrade_ignored is not ansible.builtin.changed
           - _downgrade_ignored.power_cycled is false
 
-    - name: Upgrade VM to latest with power cycling
+    - name: Schedule upgrade to latest on next guest power off - Check mode
       vmware.vmware.vm_hardware_version:
         moid: "{{ _create_old.vm.moid }}"
         version: latest
-        allow_power_cycling: true
-      register: _upgrade_latest
+        upgrade_policy: next_guest_power_off
+      check_mode: true
+      register: _schedule_check
 
-    - name: Upgrade VM to latest with power cycling - Idempotence
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
+        moid: "{{ _create_old.vm.moid }}"
+      register: _schedule_check_info
+
+    - name: Check check mode does not schedule an upgrade
+      ansible.builtin.assert:
+        that:
+          - _schedule_check is ansible.builtin.changed
+          - _schedule_check.power_cycled is false
+          - _schedule_check.snapshot == {}
+          - _schedule_check_info.scheduled_upgrade == {}
+          - (_schedule_check_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
+
+    - name: Schedule upgrade to latest on next guest power off
       vmware.vmware.vm_hardware_version:
         moid: "{{ _create_old.vm.moid }}"
         version: latest
-        allow_power_cycling: true
-      register: _upgrade_latest_idem
+        upgrade_policy: next_guest_power_off
+      register: _schedule_guest
 
-    - name: Gather VM info
-      vmware.vmware.vm_info:
+    - name: Schedule upgrade to latest on next guest power off - Idempotence
+      vmware.vmware.vm_hardware_version:
+        moid: "{{ _create_old.vm.moid }}"
+        version: latest
+        upgrade_policy: next_guest_power_off
+      register: _schedule_guest_idem
+
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
+        moid: "{{ _create_old.vm.moid }}"
+      register: _schedule_guest_info
+
+    - name: Check upgrade was scheduled without changing the current version or power state
+      ansible.builtin.assert:
+        that:
+          - _schedule_guest is ansible.builtin.changed
+          - _schedule_guest.power_cycled is false
+          - _schedule_guest.snapshot == {}
+          - _schedule_guest_idem is not ansible.builtin.changed
+          - _schedule_guest_idem.power_cycled is false
+          - (_schedule_guest_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
+          - (_schedule_guest_info.scheduled_upgrade.version | replace('vmx-', '') | int) == (latest_hw_version | int)
+          - _schedule_guest_info.scheduled_upgrade.policy == "onSoftPowerOff"
+          - _schedule_guest_info.scheduled_upgrade.status == "pending"
+
+    - name: Schedule upgrade to latest on next power off
+      vmware.vmware.vm_hardware_version:
+        moid: "{{ _create_old.vm.moid }}"
+        version: latest
+        upgrade_policy: next_power_off
+      register: _schedule_any
+
+    - name: Schedule upgrade to latest on next power off - Idempotence
+      vmware.vmware.vm_hardware_version:
+        moid: "{{ _create_old.vm.moid }}"
+        version: latest
+        upgrade_policy: next_power_off
+      register: _schedule_any_idem
+
+    - name: Gather VM hardware version info
+      vmware.vmware.vm_hardware_version_info:
+        moid: "{{ _create_old.vm.moid }}"
+      register: _schedule_any_info
+
+    - name: Check the scheduled upgrade policy was updated
+      ansible.builtin.assert:
+        that:
+          - _schedule_any is ansible.builtin.changed
+          - _schedule_any_idem is not ansible.builtin.changed
+          - (_schedule_any_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
+          - (_schedule_any_info.scheduled_upgrade.version | replace('vmx-', '') | int) == (latest_hw_version | int)
+          - _schedule_any_info.scheduled_upgrade.policy == "always"
+          - _schedule_any_info.scheduled_upgrade.status == "pending"
+
+    - name: Power off the VM to trigger the scheduled upgrade
+      vmware.vmware.vm_powerstate:
+        moid: "{{ _create_old.vm.moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: powered-off
+
+    - name: Wait for the scheduled upgrade to be applied
+      vmware.vmware.vm_hardware_version_info:
+        moid: "{{ _create_old.vm.moid }}"
+      register: _scheduled_applied_info
+      until: (_scheduled_applied_info.current | replace('vmx-', '') | int) == (latest_hw_version | int)
+      retries: 12
+      delay: 5
+
+    - name: Upgrade VM to latest - Idempotence after scheduled upgrade
+      vmware.vmware.vm_hardware_version:
+        moid: "{{ _create_old.vm.moid }}"
+        version: latest
+      register: _upgrade_after_scheduled
+
+    - name: Check no further changes are needed after the scheduled upgrade
+      ansible.builtin.assert:
+        that:
+          - _upgrade_after_scheduled is not ansible.builtin.changed
+          - (_scheduled_applied_info.scheduled_upgrade.status | default('')) != "pending"
+
+    - name: Power on the VM
+      vmware.vmware.vm_powerstate:
+        moid: "{{ _create_old.vm.moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        state: powered-on
+
+    - name: Verify the module reports the latest version in the info module
+      vmware.vmware.vm_hardware_version_info:
         moid: "{{ _create_old.vm.moid }}"
       register: _final_info
 
-    - name: Check upgrade to the latest hardware version
+    - name: Check the info module output
       ansible.builtin.assert:
         that:
-          - _upgrade_latest is ansible.builtin.changed
-          - _upgrade_latest.power_cycled is true
-          - (_upgrade_latest.diff.before.version | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
-          - (_upgrade_latest.diff.after.version | replace('vmx-', '') | int) == (latest_hw_version | int)
-          - _upgrade_latest_idem is not ansible.builtin.changed
-          - _upgrade_latest_idem.power_cycled is false
-          - (_final_info.vms[0].hw_version | replace('vmx-', '') | int) == (latest_hw_version | int)
-          - _final_info.vms[0].hw_power_status == "poweredOn"
+          - _final_info.current == _latest_info.current
+          - _final_info.available is iterable
+          - _final_info.vm.moid == _create_old.vm.moid
 
   always:
     - name: Delete VM

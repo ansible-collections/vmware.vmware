@@ -12,7 +12,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: vm_hardware_version
-short_description: Specify the virtual hardware version for virtual machine.
+short_description: Specify the virtual hardware version for a virtual machine.
 description:
     - This module is used to ensure a virtual hardware version for a virtual machine.
     - If the current version does not match the desired state, the virtual machine will be upgraded.
@@ -91,10 +91,25 @@ options:
         required: false
         default: false
 
+    upgrade_policy:
+        description:
+            - Specify when the upgrade should take place. This module supports upgrading immediately or on the next
+              reboot.
+            - V(now) will attempt to upgrade the VM now, within the context of the module. This provides the best error
+              handling and feedback within Ansible.
+            - V(next_guest_power_off) will attempt to upgrade the VM the next time it powers off from the guest OS.
+              This is also known as a soft power off.
+            - V(next_power_off) will attempt to upgrade the VM the next time it powers off for any reason. This includes
+              shutdowns from the guest OS, or hard shutdowns initiated from vSphere.
+        type: str
+        choices: [now, next_guest_power_off, next_power_off]
+        default: now
+
     allow_power_cycling:
         description:
-            - Whether to allow the module to power off the VM, if it is powered on, so that the upgrade can be applied.
-              If the VM was powered off by the module, it is powered back on after the upgrade.
+            - If O(upgrade_policy) is V(now), this controls whether to allow the module to power off the VM
+              if it is powered on, so that the upgrade can be applied.
+            - If the VM was powered off by the module, it is powered back on after the upgrade.
             - If this is false and the VM is powered on, the module will fail.
             - The power off is a "hard" power off, not a guest OS shutdown. To shut down the guest gracefully instead,
               run this module in check mode to see if an upgrade is needed, use the M(vmware.vmware.vm_powerstate) module
@@ -105,9 +120,10 @@ options:
         default: false
     snapshot_before_upgrade:
         description:
-            - If true, a snapshot of the VM is taken before the upgrade starts. If the VM needs to be powered off,
-              the snapshot is taken after the power off.
-            - The snapshot does not include the VM's memory and the guest file system is not quiesced.
+            - If O(upgrade_policy) is V(now), this controls whether a snapshot of the VM is taken before the upgrade starts.
+              If the VM needs to be powered off, the snapshot is taken after the power off.
+            - Since the VM will be off, the snapshot does not include the VM's memory and the guest file
+              system is not quiesced.
             - If a snapshot is taken, its ID and name are returned in RV(snapshot).
             - Snapshots can be managed further using the M(vmware.vmware.vm_snapshot) module(s).
         type: bool
@@ -136,10 +152,6 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-# By default, this module fails if the requested version is lower than the VM's current version.
-# Set ignore_downgrades to true to treat a VM that is already at a higher version as unchanged,
-# so the requested version acts as a minimum.
-# Power cycling is not allowed, so VMs that are powered on and need an upgrade will cause a failure.
 - name: Gather the hardware version of all VMs in a folder
   vmware.vmware.vm_info:
     folder: /DC01/vm/app-servers
@@ -150,6 +162,10 @@ EXAMPLES = r'''
       - config.version
   register: _vm_info
 
+# By default, this module fails if the requested version is lower than the VM's current version.
+# Set ignore_downgrades to true to treat a VM that is already at a higher version as unchanged,
+# so the requested version acts as a minimum.
+# Power cycling is not allowed, so VMs that are powered on and need an upgrade will cause a failure.
 - name: Upgrade powered off VMs that are below hardware version 19
   vmware.vmware.vm_hardware_version:
     folder: /DC01/vm/app-servers
@@ -183,6 +199,18 @@ EXAMPLES = r'''
   ansible.builtin.debug:
     msg: "Snapshot {{ _upgrade.snapshot.name }} (ID {{ _upgrade.snapshot.id }}) was created"
   when: _upgrade.snapshot
+
+# Instead of upgrading immediately, schedule the upgrade to happen the next time the VM powers off.
+# The module only schedules the upgrade, so the VM is not powered off or snapshotted by the module
+# and allow_power_cycling and snapshot_before_upgrade are ignored.
+# Use next_guest_power_off to limit the upgrade to guest OS shutdowns (soft power offs), or
+# next_power_off to upgrade after any power off, including hard power offs from vSphere.
+# Running the module again while the same upgrade is pending reports no change.
+- name: Schedule an upgrade for the next time the VM is shut down from the guest OS
+  vmware.vmware.vm_hardware_version:
+    name: app-server-01
+    version: latest
+    upgrade_policy: next_guest_power_off
 
 # Large VMs or busy environments may need more time for each task (power off, snapshot,
 # upgrade, power on) to complete
@@ -356,6 +384,7 @@ class VmHardwareModule(ModulePyvmomiBase):
 
         self.current_version = HwVersion(self.vm.config.version)
         self._all_supported_versions = None
+        self._desired_version = None
 
     @property
     def all_supported_versions(self):
@@ -372,52 +401,81 @@ class VmHardwareModule(ModulePyvmomiBase):
 
         return self._all_supported_versions
 
-    def get_desired_version(self):
-        param_version = self.params.get('version')
-        if param_version == 'latest':
-            return max(self.all_supported_versions)
+    @property
+    def desired_version(self):
+        if self._desired_version is None:
+            param_version = self.params.get('version')
+            if param_version == 'latest':
+                self._desired_version = max(self.all_supported_versions)
+            else:
+                try:
+                    self._desired_version = HwVersion(param_version)
+                except ValueError:
+                    self.module.fail_json(
+                        "The version parameter must either be an integer ('19') or a string formatted like 'vmx-19'."
+                    )
+
+        return self._desired_version
+
+    @property
+    def vim_upgrade_policy(self):
+        policy_param = self.params.get('upgrade_policy')
+        upgrade_policies = {
+            'next_guest_power_off': 'onSoftPowerOff',
+            'next_power_off': 'always'
+        }
 
         try:
-            return HwVersion(param_version)
-        except ValueError:
+            return upgrade_policies[policy_param]
+        except KeyError:
             self.module.fail_json(
-                "The version parameter must either be an integer ('19') or a string formatted like 'vmx-19'."
+                "The upgrade policy %s is not supported by the scheduled upgrade path. This is a module bug."
+                % policy_param
             )
 
-    def is_hw_change_needed(self, desired_version):
-        if self.current_version == desired_version:
+    def is_hw_change_needed(self):
+        if self.current_version == self.desired_version:
             return False
 
-        if desired_version < self.current_version:
+        if self.desired_version < self.current_version:
             if self.params.get('ignore_downgrades'):
                 return False
 
             self.module.fail_json(
                 msg="The desired hardware version cannot be less than the current version. Downgrades are not supported.",
-                desired_version=str(desired_version),
+                desired_version=str(self.desired_version),
                 current_version=str(self.current_version)
             )
 
         for hw_version in self.all_supported_versions:
-            if hw_version == desired_version:
+            if hw_version == self.desired_version:
                 return True
 
         self.module.fail_json(
             msg="The desired hardware version was not found in the list of available versions.",
-            desired_version=str(desired_version),
+            desired_version=str(self.desired_version),
             available_versions=[str(v) for v in self.all_supported_versions]
         )
 
-    def upgrade_vm(self, desired_version):
-        self._try_to_run_task(
-            task_func=self.vm.UpgradeVM_Task,
-            task_kwargs=dict(version=str(desired_version)),
-            action="upgrade"
-        )
+    def is_pending_upgrade_task_needed(self):
+        pending_task_info = getattr(self.vm.config, 'scheduledHardwareUpgradeInfo', None)
+        if pending_task_info is None:
+            return True
+
+        if pending_task_info.versionKey != str(self.desired_version):
+            return True
+
+        if pending_task_info.scheduledHardwareUpgradeStatus != 'pending':
+            return True
+
+        if pending_task_info.upgradePolicy != self.vim_upgrade_policy:
+            return True
+
+        return False
 
     def snapshot_vm(self):
         """
-        Attempt to snapshot the VM before the upgrade but after its powered off.
+        Attempt to snapshot the VM before the upgrade but after it is powered off.
         """
         if not self.params['snapshot_before_upgrade']:
             return dict()
@@ -426,7 +484,7 @@ class VmHardwareModule(ModulePyvmomiBase):
             str(self.current_version),
             datetime.now().strftime("%Y%m%d-%H%M%S")
         )
-        task_result = self._try_to_run_task(
+        task_result = self.try_to_run_task(
             task_func=self.vm.CreateSnapshot_Task,
             action="take snapshot",
             task_kwargs=dict(
@@ -445,7 +503,19 @@ class VmHardwareModule(ModulePyvmomiBase):
             name=snapshot_tree.name
         )
 
-    def _try_to_run_task(self, task_func, action, task_kwargs=None):
+    def schedule_upgrade(self):
+        spec = vim.vm.ConfigSpec()
+        info = vim.vm.ScheduledHardwareUpgradeInfo()
+        info.upgradePolicy = self.vim_upgrade_policy
+        info.versionKey = str(self.desired_version)
+        spec.scheduledHardwareUpgradeInfo = info
+        self.try_to_run_task(
+            self.vm.ReconfigVM_Task,
+            action="schedule upgrade",
+            task_kwargs={'spec': spec}
+        )
+
+    def try_to_run_task(self, task_func, action, task_kwargs=None):
         """
         Attempt to run a task on the VM.
 
@@ -488,6 +558,68 @@ class VmHardwareModule(ModulePyvmomiBase):
         return task_result
 
 
+def perform_upgrade_now(vm_module, result):
+    """
+    Perform the upgrade immediately. We already checked that an upgrade is needed,
+    so now we just need to check the power status, perform an optional snapshot, and
+    then perform the upgrade.
+    """
+    module = vm_module.module
+    needs_power_cycle = (vm_module.vm.summary.runtime.powerState.lower() != 'poweredoff')
+    result['changed'] = True
+    result['power_cycled'] = needs_power_cycle
+    result['diff'] = {
+        'before': {'version': str(vm_module.current_version)},
+        'after': {'version': str(vm_module.desired_version)}
+    }
+
+    if needs_power_cycle and not module.params['allow_power_cycling']:
+        module.fail_json(
+            "The VM must be powered off, or allow_power_cycling must be set to true, before upgrading hardware."
+        )
+
+    if module.check_mode:
+        return
+
+    if needs_power_cycle:
+        vm_module.try_to_run_task(
+            task_func=vm_module.vm.PowerOffVM_Task,
+            action="power off"
+        )
+
+    result['snapshot'] = vm_module.snapshot_vm()
+    vm_module.try_to_run_task(
+        task_func=vm_module.vm.UpgradeVM_Task,
+        task_kwargs=dict(version=str(vm_module.desired_version)),
+        action="upgrade"
+    )
+
+    if needs_power_cycle:
+        vm_module.try_to_run_task(
+            task_func=vm_module.vm.PowerOnVM_Task,
+            action="power on"
+        )
+
+
+def perform_upgrade_later(vm_module, result):
+    """
+    Perform the upgrade at the next reboot. This is a different path than the immediate upgrade,
+    and we don't need to run any tasks.
+    However, we do need to check if there is already a pending upgrade in place.
+    """
+    result['diff'] = {
+        'before': {'version': str(vm_module.current_version)},
+        'after': {'version': str(vm_module.desired_version)}
+    }
+
+    if not vm_module.is_pending_upgrade_task_needed():
+        return
+
+    result['changed'] = True
+    if not vm_module.module.check_mode:
+        vm_module.schedule_upgrade()
+
+
 def main():
     module = AnsibleModule(
         argument_spec={
@@ -502,6 +634,10 @@ def main():
                 folder=dict(type='str', required=False),
                 folder_paths_are_absolute=dict(type='bool', required=False, default=False),
 
+                upgrade_policy=dict(
+                    type='str', default='now',
+                    choices=['now', 'next_guest_power_off', 'next_power_off']
+                ),
                 version=dict(type='str', required=True),
                 allow_power_cycling=dict(type='bool', default=False),
                 snapshot_before_upgrade=dict(type='bool', default=False),
@@ -529,36 +665,11 @@ def main():
         snapshot=dict()
     )
 
-    desired_version = vm_module.get_desired_version()
-    if vm_module.is_hw_change_needed(desired_version):
-        needs_power_cycle = (vm_module.vm.summary.runtime.powerState.lower() != 'poweredoff')
-        result['changed'] = True
-        result['power_cycled'] = needs_power_cycle
-        result['diff'] = {
-            'before': {'version': str(vm_module.current_version)},
-            'after': {'version': str(desired_version)}
-        }
-
-        if needs_power_cycle and not module.params['allow_power_cycling']:
-            module.fail_json(
-                "The VM must be powered off, or allow_power_cycling set to True, before upgrading hardware."
-            )
-
-        if not module.check_mode:
-            if needs_power_cycle:
-                vm_module._try_to_run_task(
-                    task_func=vm_module.vm.PowerOffVM_Task,
-                    action="power off"
-                )
-
-            result['snapshot'] = vm_module.snapshot_vm()
-            vm_module.upgrade_vm(desired_version=desired_version)
-
-            if needs_power_cycle:
-                vm_module._try_to_run_task(
-                    task_func=vm_module.vm.PowerOnVM_Task,
-                    action="power on"
-                )
+    if vm_module.is_hw_change_needed():
+        if module.params['upgrade_policy'] == 'now':
+            perform_upgrade_now(vm_module, result)
+        else:
+            perform_upgrade_later(vm_module, result)
 
     module.exit_json(**result)
 
