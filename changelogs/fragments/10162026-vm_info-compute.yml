@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - vm_info - Add option gather_compute_objects to collect cluster, resource pool, and ESXI host IDs
+  - vm_info - Add option gather_location_objects to collect datacenter and folder IDs
