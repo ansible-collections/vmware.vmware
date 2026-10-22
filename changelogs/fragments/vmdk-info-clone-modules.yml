@@ -1,5 +1,5 @@
 ---
 minor_changes:
-  - vmdk_info - add module to gather information about a virtual disk file (https://github.com/ansible-collections/vmware.vmware/pull/XXXX).
+  - vmdk_info - add module to gather information about a virtual disk file (https://github.com/ansible-collections/vmware.vmware/pull/444).
   - vmdk_clone - add module to clone a virtual disk file, optionally converting its format or copying it onto a LUN as an RDM
-    (https://github.com/ansible-collections/vmware.vmware/pull/XXXX).
+    (https://github.com/ansible-collections/vmware.vmware/pull/444).
