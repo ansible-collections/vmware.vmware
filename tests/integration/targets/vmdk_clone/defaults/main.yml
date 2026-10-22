@@ -1,0 +1,14 @@
+---
+test_vm_name: "{{ tiny_prefix }}-vmdk-clone"
+test_disk_folder: "[{{ shared_storage_01 }}] {{ test_vm_name }}"
+test_source_disk: "{{ test_disk_folder }}/{{ test_vm_name }}.vmdk"
+test_copy_disk: "{{ test_disk_folder }}/copy.vmdk"
+
+# The ESXi tests run only when these are defined. They need a direct connection to an ESXi host that
+# mounts shared_storage_01, and for the RDM test an unused LUN of at least 1 GB that the host sees.
+# vmdk_clone_esxi_hostname:
+# vmdk_clone_esxi_username:
+# vmdk_clone_esxi_password:
+# vmdk_clone_rdm_device:
+test_thick_disk: "{{ test_disk_folder }}/thick.vmdk"
+test_rdm_disk: "{{ test_disk_folder }}/rdm.vmdk"

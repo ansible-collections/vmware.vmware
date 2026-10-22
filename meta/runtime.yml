@@ -54,6 +54,8 @@ action_groups:
         - vm_snapshot
         - vm_snapshot_info
         - vm_snapshot_revert
+        - vmdk_clone
+        - vmdk_info
 
 plugin_routing:
     modules:
