@@ -48,7 +48,7 @@
 
   always:
     - name: "Test cleanup: Delete Virtual VM"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         datacenter: "{{ vcenter_datacenter }}"
         name: "{{ test_vm_name }}"
         state: absent

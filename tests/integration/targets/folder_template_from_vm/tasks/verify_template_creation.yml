@@ -1,6 +1,6 @@
 ---
 - name: Get info on templates
-  community.vmware.vmware_guest_info:
+  vmware.vmware.vm_info:
     datacenter: "{{ vcenter_datacenter }}"
     folder: "{{ item }}"
     name: "{{ template_name }}"
@@ -9,6 +9,7 @@
 - name: Check template
   ansible.builtin.assert:
     that:
-      - template_info.instance.hw_folder == "/" + vcenter_datacenter + "/vm/" + item
-      - template_info.instance.hw_is_template == true
-      - template_info.instance.hw_name == template_name
+      - template_info.vms | length == 1
+      - template_info.vms[0].hw_folder == "/" + vcenter_datacenter + "/vm/" + item
+      - template_info.vms[0].hw_is_template == true
+      - template_info.vms[0].hw_name == template_name

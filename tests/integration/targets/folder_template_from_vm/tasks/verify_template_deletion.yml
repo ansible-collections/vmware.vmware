@@ -1,12 +1,13 @@
 ---
 - name: Get info on templates
-  community.vmware.vmware_guest_info:
+  vmware.vmware.vm_info:
+    datacenter: "{{ vcenter_datacenter }}"
     folder: "{{ item }}"
     name: "{{ template_name }}"
   register: template_info
-  ignore_errors: true
 
 - name: Fail the task if the template still exists
-  ansible.builtin.fail:
-    msg: "Template {{ template_name }} still exists in folder {{ item }}"
-  when: not template_info.failed
+  ansible.builtin.assert:
+    that:
+      - template_info.vms | length == 0
+    fail_msg: "Template {{ template_name }} still exists in folder {{ item }}"

@@ -117,13 +117,12 @@
         state: absent
       when: _esxi_info.guests[0] is defined
     - name: "Test cleanup: Delete Virtual ESXi Host"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder: ""
         state: absent
         name: "{{ test_esxi_hostname }}"
-        force: true
+        allow_power_cycling: true
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
         resource_pool: "{{ _test_rp.id }}"

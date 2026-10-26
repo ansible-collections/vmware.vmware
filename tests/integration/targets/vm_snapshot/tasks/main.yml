@@ -320,9 +320,9 @@
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm }}"

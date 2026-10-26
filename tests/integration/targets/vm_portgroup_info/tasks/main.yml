@@ -40,12 +40,12 @@
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{  vcenter_datacenter }}"
         folder: "{{ test_folder }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm_name }}"
 
     - name: Create a test folders

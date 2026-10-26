@@ -9,11 +9,13 @@ vm_name_match: first
 template_name: "{{ vm_name }}_template"
 
 vm_guest_id: "rhel8_64Guest"
-vm_disk:
-  - size_gb: 10
-    type: thin
-    autoselect_datastore: true
-vm_hardware:
-  memory_mb: 2000
-  num_cpus: 2
+vm_disks:
+  - size: 10gb
+    provisioning: thin
+    device_node: SCSI(0:0)
+vm_cpu:
+  cores: 2
+vm_memory:
+  size_mb: 2000
+vm_options:
   boot_firmware: efi
