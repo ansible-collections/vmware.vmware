@@ -11,6 +11,13 @@ on:
 permissions:
   contents: read
 
+env:
+  # Update these to change the controller Python and ansible-core used for change detection.
+  # ansible-core must support this Python version and satisfy requires_ansible in meta/runtime.yml.
+  PYTHON_VERSION: "3.12"
+  # Installed as ~=, so patch releases within this minor are allowed.
+  ANSIBLE_CORE_VERSION: "2.20"
+
 jobs:
   prepare_matrix:
     runs-on: ubuntu-latest
@@ -22,7 +29,7 @@ jobs:
       groups: ${{ steps.set-matrix.outputs.groups }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           # Check out into the collection path so ansible-test resolves the
           # collection, and fetch full history so --changed can diff against base.
@@ -32,12 +39,13 @@ jobs:
           allow-unsafe-pr-checkout: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install ansible-core
-        run: pip install ansible-core
+        run: >-
+          pip install --only-binary=:all: "ansible-core==${ANSIBLE_CORE_VERSION}"
 
       - name: List affected integration targets
         id: list-targets
@@ -141,7 +149,7 @@ jobs:
           sudo apt-get install podman
 
       - name: Checkout repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           allow-unsafe-pr-checkout: true
@@ -180,7 +188,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
         with:
           # The test job is skipped when change detection selects no targets;
           # a skip must not fail branch protection.

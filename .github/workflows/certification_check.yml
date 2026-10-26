@@ -34,7 +34,7 @@ concurrency:
 # for each affected version of ansible-core (for example, `tests/sanity/ignore-2.18.txt`) and add corresponding entries.
 jobs:
   certification_check:
-    uses: ansible-collections/partner-certification-checker/.github/workflows/certification-reusable.yml@v6.0.0 # zizmor: ignore[unpinned-uses]
+    uses: ansible-collections/partner-certification-checker/.github/workflows/certification-reusable.yml@0b3575fff9a50e8057134e01862c52450648c3fc # v6.0.0
     # If the minimal Ansible Core version your collection supports Ansible
     # is greater than 2.16.0, specify it below.
     # You might also have to specify Python version supported by that version,
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Perform sanity testing
-        uses: ansible-community/ansible-test-gh-action@release/v1
+        uses: ansible-community/ansible-test-gh-action@6ded727edb598e670ac056a8e680ca4050bac0a3 # release/v1
         with:
           ansible-core-version: ${{ matrix.ansible }}
           testing-type: sanity
@@ -83,6 +83,6 @@ jobs:
 
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
         with:
           jobs: ${{ toJSON(needs) }}
