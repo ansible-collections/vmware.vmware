@@ -16,7 +16,7 @@ env:
   # ansible-core must support this Python version and satisfy requires_ansible in meta/runtime.yml.
   PYTHON_VERSION: "3.12"
   # Installed as ~=, so patch releases within this minor are allowed.
-  ANSIBLE_CORE_VERSION: "2.20.0"
+  ANSIBLE_CORE_VERSION: "2.20"
 
 jobs:
   prepare_matrix:
@@ -45,7 +45,7 @@ jobs:
 
       - name: Install ansible-core
         run: >-
-          pip install --only-binary=:all: "ansible-core~=${ANSIBLE_CORE_VERSION}"
+          pip install --only-binary=:all: "ansible-core==${ANSIBLE_CORE_VERSION}"
 
       - name: List affected integration targets
         id: list-targets
