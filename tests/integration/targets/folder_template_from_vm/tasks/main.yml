@@ -26,6 +26,7 @@
         name: "{{ vm_name }}"
         guest_id: "{{ vm_guest_id }}"
         disks: "{{ vm_disks }}"
+        scsi_controllers: "{{ vm_scsi_controllers }}"
         cpu: "{{ vm_cpu }}"
         memory: "{{ vm_memory }}"
         vm_options: "{{ vm_options }}"

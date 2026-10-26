@@ -12,6 +12,9 @@ vm_disks:
   - size: 10gb
     provisioning: thin
     device_node: SCSI(0:0)
+vm_scsi_controllers:
+  - controller_type: paravirtual
+    bus_number: 0
 vm_cpu:
   cores: 2
 vm_memory:
