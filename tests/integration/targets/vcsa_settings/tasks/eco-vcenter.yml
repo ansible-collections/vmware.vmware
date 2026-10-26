@@ -1,7 +1,8 @@
 ---
 # Note: running on vCenter can be very disruptive, so the tests here are limited
 - name: Test on vCenter
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     - name: Set VCSA proxy

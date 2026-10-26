@@ -7,7 +7,8 @@
       **vmware_rest_auth_vars) }}
 
 - name: Setup test cluster
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
   block:
     - name: Create Test Cluster
       vmware.vmware.cluster:

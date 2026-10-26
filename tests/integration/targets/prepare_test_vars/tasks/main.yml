@@ -10,6 +10,7 @@
   ansible.builtin.include_vars:
     file: "{{ role_path }}/../../integration_config.yml"
   ignore_errors: true
+  no_log: true
 
 - name: Generate a unique tiny_prefix when one was not provided
   ansible.builtin.set_fact:
@@ -36,3 +37,11 @@
       vcenter_username: "{{ vcenter_username }}"
       vcenter_password: "{{ vcenter_password }}"
       vcenter_validate_certs: false
+
+    vmware_auth_vars:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      port: "{{ vcenter_port }}"
+  no_log: true

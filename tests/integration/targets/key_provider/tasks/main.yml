@@ -1,6 +1,7 @@
 ---
 - name: Test key provider modules on vCenter
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     - name: Include Eco vCenter test vars

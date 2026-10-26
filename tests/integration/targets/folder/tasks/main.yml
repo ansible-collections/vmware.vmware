@@ -4,7 +4,8 @@
     file: eco-vcenter.yml
 
 - name: Include Test Tasks
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     - name: Include Test Tasks

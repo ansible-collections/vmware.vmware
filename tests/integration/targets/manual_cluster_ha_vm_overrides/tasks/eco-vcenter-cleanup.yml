@@ -1,6 +1,7 @@
 ---
 - name: Cleanup test cluster
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
   block:
     - name: Remove test vm
       vmware.vmware.vm:
