@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  role_name: ai_workload_vm
+  author: Ansible Cloud Team
+  description: >-
+    Provision a VMware vSphere VM with GPU passthrough configured for AI
+    workloads. Supports PCIe passthrough and vGPU profiles for NVIDIA AI
+    Enterprise on vSphere.
+  company: Red Hat
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.14"
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+  galaxy_tags:
+    - vmware
+    - vsphere
+    - gpu
+    - ai
+    - passthrough
+    - vgpu
+
+dependencies: []
