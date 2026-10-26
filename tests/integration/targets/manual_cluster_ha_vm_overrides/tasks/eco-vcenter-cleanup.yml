@@ -2,6 +2,7 @@
 - name: Cleanup test cluster
   module_defaults:
     group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
+    group/vmware.vmware_rest.vmware_rest: "{{ vmware_rest_auth_vars }}"
   block:
     - name: Remove test vm
       vmware.vmware.vm:
