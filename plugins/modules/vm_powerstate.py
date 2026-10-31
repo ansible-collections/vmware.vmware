@@ -21,9 +21,11 @@ author:
 options:
     datacenter:
         description:
-            - The datacenter where the VM you'd like to operate the power.
+            - The name of the datacenter to search for the VM.
+            - This is only used if O(folder) is also used.
         type: str
-        required: true
+        required: false
+        aliases: [datacenter_name]
     state:
         description:
             - Set the state of the virtual machine.
@@ -442,7 +444,7 @@ def main():
     module = AnsibleModule(
         argument_spec={
             **base_argument_spec(), **dict(
-                datacenter=dict(type='str', required=True),
+                datacenter=dict(type='str', required=False, aliases=['datacenter_name']),
                 state=dict(type='str', default='powered-on',
                                 choices=['powered-off', 'powered-on', 'reboot-guest', 'restarted', 'shutdown-guest', 'suspended']),
                 name=dict(type='str'),
