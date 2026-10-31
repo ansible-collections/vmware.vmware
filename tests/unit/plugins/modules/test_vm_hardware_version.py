@@ -768,3 +768,138 @@ class TestVmHardwareVersion(ModuleTestCase):
             module.schedule_upgrade()
 
         self.vm_mock.ReconfigVM_Task.assert_not_called()
+
+    def test_schedule_when_existing_policy_is_never(self, mocker):
+        self.__prepare_scheduled(mocker, pending=self.pending_info(version="vmx-19", policy="never"))
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", version="vmx-19", upgrade_policy="next_guest_power_off"
+        ))
+
+        assert result["changed"] is True
+        assert self.scheduled_spec().scheduledHardwareUpgradeInfo.upgradePolicy == "onSoftPowerOff"
+
+    @pytest.mark.parametrize("policy", ["now", "next_guest_power_off", "next_power_off"])
+    def test_version_required_unless_policy_is_never(self, mocker, policy):
+        self.__prepare_scheduled(mocker)
+
+        result = run_module(
+            module_entry=module_main,
+            module_args=dict(name="test-vm", upgrade_policy=policy),
+            expect_success=False
+        )
+
+        assert result["failed"] is True
+        assert "version" in result["msg"]
+        assert self.task_calls() == []
+
+    @pytest.mark.parametrize("policy", ["onSoftPowerOff", "always"])
+    def test_cancel_scheduled_upgrade(self, mocker, policy):
+        self.__prepare_scheduled(mocker, pending=self.pending_info(policy=policy))
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", upgrade_policy="never"
+        ))
+
+        assert result["changed"] is True
+        assert result["power_cycled"] is False
+        assert result["snapshot"] == dict()
+        assert "diff" not in result
+        assert self.task_calls() == ['ReconfigVM_Task']
+        info = self.scheduled_spec().scheduledHardwareUpgradeInfo
+        assert info.upgradePolicy == "never"
+        assert info.versionKey is None
+
+    @pytest.mark.parametrize("status", ["success", "failed"])
+    def test_cancel_scheduled_upgrade_with_non_pending_status(self, mocker, status):
+        self.__prepare_scheduled(mocker, pending=self.pending_info(status=status, policy="always"))
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", upgrade_policy="never"
+        ))
+
+        assert result["changed"] is True
+        assert self.task_calls() == ['ReconfigVM_Task']
+
+    def test_cancel_with_no_scheduled_upgrade_info(self, mocker):
+        self.__prepare_scheduled(mocker, pending=None)
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", upgrade_policy="never"
+        ))
+
+        assert result["changed"] is False
+        assert self.task_calls() == []
+
+    def test_cancel_already_canceled_is_idempotent(self, mocker):
+        # vSphere keeps the info object after a cancel, with the policy set to never
+        self.__prepare_scheduled(mocker, pending=self.pending_info(status="none", policy="never"))
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", upgrade_policy="never"
+        ))
+
+        assert result["changed"] is False
+        assert self.task_calls() == []
+
+    def test_cancel_check_mode(self, mocker):
+        self.__prepare_scheduled(mocker, pending=self.pending_info())
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", upgrade_policy="never", _ansible_check_mode=True
+        ))
+
+        assert result["changed"] is True
+        assert self.task_calls() == []
+
+    def test_cancel_ignores_version(self, mocker):
+        # a downgrade or unavailable version would normally fail, but version is not used when canceling
+        self.__prepare_scheduled(mocker, current_version="vmx-21", pending=self.pending_info())
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", version="vmx-17", upgrade_policy="never"
+        ))
+
+        assert result["changed"] is True
+        assert self.task_calls() == ['ReconfigVM_Task']
+        self.vm_mock.environmentBrowser.QueryConfigOptionDescriptor.assert_not_called()
+
+    def test_cancel_does_not_power_cycle(self, mocker):
+        self.__prepare_scheduled(mocker, power_state="poweredon", pending=self.pending_info())
+
+        result = run_module(module_entry=module_main, module_args=dict(
+            name="test-vm", upgrade_policy="never", allow_power_cycling=True, snapshot_before_upgrade=True
+        ))
+
+        assert result["changed"] is True
+        assert result["power_cycled"] is False
+        assert result["snapshot"] == dict()
+        assert self.task_calls() == ['ReconfigVM_Task']
+
+    def test_cancel_task_error(self, mocker):
+        self.__prepare_scheduled(mocker, pending=self.pending_info())
+        self.wait_mock.side_effect = TaskError("boom", parent_error=Exception("boom"))
+
+        result = run_module(
+            module_entry=module_main,
+            module_args=dict(name="test-vm", upgrade_policy="never"),
+            expect_success=False
+        )
+
+        assert result["failed"] is True
+        assert result["error_code"] == "TASK_ERROR"
+        assert result["msg"] == "Unable to cancel scheduled upgrade for VM. boom"
+
+    def test_cancel_vim_fault(self, mocker):
+        self.__prepare_scheduled(mocker, pending=self.pending_info())
+        self.vm_mock.ReconfigVM_Task.side_effect = vim.fault.InvalidState(msg="bad state")
+
+        result = run_module(
+            module_entry=module_main,
+            module_args=dict(name="test-vm", upgrade_policy="never"),
+            expect_success=False
+        )
+
+        assert result["failed"] is True
+        assert result["error_code"] == "VIM_FAULT"
+        assert result["msg"] == "Unable to cancel scheduled upgrade for VM. bad state"

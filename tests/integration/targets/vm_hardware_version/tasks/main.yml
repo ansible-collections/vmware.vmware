@@ -116,11 +116,12 @@
           - _check_mode_info.scheduled_upgrade == {}
           - _powered_on_check_mode is not ansible.builtin.changed
 
-    - name: Upgrade VM to the next hardware version with power cycling
+    - name: Upgrade VM to the next hardware version with power cycling and a snapshot
       vmware.vmware.vm_hardware_version:
         moid: "{{ _create_old.vm.moid }}"
         version: "vmx-{{ (latest_hw_version | int) - 1 }}"
         allow_power_cycling: true
+        snapshot_before_upgrade: true
       register: _upgrade_next
 
     # Use the integer version format here to make sure it is treated the same as vmx-<version>
@@ -129,7 +130,16 @@
         moid: "{{ _create_old.vm.moid }}"
         version: "{{ (latest_hw_version | int) - 1 }}"
         allow_power_cycling: true
+        snapshot_before_upgrade: true
       register: _upgrade_next_idem
+
+    - name: Remove the snapshot taken before the upgrade
+      vmware.vmware.vm_snapshot:
+        moid: "{{ _create_old.vm.moid }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        snapshot_id: "{{ _upgrade_next.snapshot.id }}"
+        state: absent
+      register: _remove_upgrade_snapshot
 
     - name: Gather VM hardware version info
       vmware.vmware.vm_hardware_version_info:
@@ -149,11 +159,14 @@
         that:
           - _upgrade_next is ansible.builtin.changed
           - _upgrade_next.power_cycled is true
-          - _upgrade_next.snapshot == {}
+          - _upgrade_next.snapshot.id is integer
+          - _upgrade_next.snapshot.name is match("hw-upgrade-vmx-%02d-" | format((latest_hw_version | int) - 2))
+          - _remove_upgrade_snapshot is ansible.builtin.changed
           - (_upgrade_next.diff.before.version | replace('vmx-', '') | int) == (latest_hw_version | int) - 2
           - (_upgrade_next.diff.after.version | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
           - _upgrade_next_idem is not ansible.builtin.changed
           - _upgrade_next_idem.power_cycled is false
+          - _upgrade_next_idem.snapshot == {}
           - (_next_info.current | replace('vmx-', '') | int) == (latest_hw_version | int) - 1
           - _next_info.scheduled_upgrade == {}
           - _powered_on_after_next is not ansible.builtin.changed

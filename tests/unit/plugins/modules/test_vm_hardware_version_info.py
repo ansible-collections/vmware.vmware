@@ -64,7 +64,7 @@ class TestVmHardwareVersionInfo(ModuleTestCase):
         assert result["changed"] is False
         assert result["vm"] == dict(moid="vm-123", name="test-vm")
         assert result["current"] == "vmx-17"
-        assert sorted(result["available"]) == ["vmx-17", "vmx-19", "vmx-21"]
+        assert result["available"] == ["vmx-21", "vmx-19", "vmx-17"]
         assert result["scheduled_upgrade"] == dict()
 
     @pytest.mark.parametrize("module_args", [
@@ -130,7 +130,7 @@ class TestVmHardwareVersionInfo(ModuleTestCase):
 
         result = run_module(module_entry=module_main, module_args=dict(name="test-vm"))
 
-        assert sorted(result["available"]) == ["vmx-17", "vmx-19"]
+        assert result["available"] == ["vmx-19", "vmx-17"]
 
     def test_info_no_supported_versions(self, mocker):
         self.__prepare(mocker, supported_versions=[])
@@ -144,7 +144,7 @@ class TestVmHardwareVersionInfo(ModuleTestCase):
 
         result = run_module(module_entry=module_main, module_args=dict(name="test-vm"))
 
-        assert sorted(result["available"]) == ["vmx-19", "vmx-21"]
+        assert result["available"] == ["vmx-21", "vmx-19"]
 
     def test_info_check_mode(self, mocker):
         self.__prepare(mocker, scheduled=self.scheduled_info())

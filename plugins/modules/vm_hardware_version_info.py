@@ -136,11 +136,11 @@ current:
 available:
     description:
         - The hardware versions that this VM can be upgraded to, as reported by the VM's host.
-        - This list is not sorted.
+        - This list is sorted from newest version to oldest version.
     returned: always
     type: list
     elements: str
-    sample: ['vmx-19', 'vmx-20', 'vmx-21']
+    sample: ['vmx-21', 'vmx-20', 'vmx-19']
 scheduled_upgrade:
     description:
         - Information about a hardware upgrade that is scheduled to happen the next time the VM is powered off.
