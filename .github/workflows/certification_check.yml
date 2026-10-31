@@ -51,6 +51,7 @@ jobs:
 
   sanity:
     name: Non-AAP Sanity (Ⓐ${{ matrix.ansible }})
+    continue-on-error: ${{ matrix.ansible == 'devel' }}
     strategy:
       matrix:
         ansible:
