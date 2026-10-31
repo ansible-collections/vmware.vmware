@@ -1,6 +1,7 @@
 ---
 - name: Test On VCenter
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     # No hardware_version is given, so the VM is created at the highest version supported by the cluster
