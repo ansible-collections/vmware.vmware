@@ -1,6 +1,7 @@
 ---
 - name: Test
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     - name: Include Eco Vcenter Test Vars
@@ -8,15 +9,19 @@
         file: eco-vcenter.yml
 
     - name: "Test setup: Create VM guest {{ vm }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
+        datastore: "{{ datastore }}"
         folder: "{{ vm_folder }}"
         state: present
         name: "{{ vm }}"
-        disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
-        hardware: "{{ vm_hardware }}"
+        disks: "{{ vm_disks }}"
+        scsi_controllers: "{{ vm_scsi_controllers }}"
+        cpu: "{{ vm_cpu }}"
+        memory: "{{ vm_memory }}"
+        vm_options: "{{ vm_options }}"
 
     - name: "Test setup: Create content library {{ library }}"
       vmware.vmware.local_content_library:
@@ -57,12 +62,12 @@
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         folder: "{{ vm_folder }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm }}"
 
     - name: "Test teardown: Remove content library {{ library }}"

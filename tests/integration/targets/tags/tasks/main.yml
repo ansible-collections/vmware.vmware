@@ -1,6 +1,7 @@
 ---
 - name: Test On VCenter
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
   block:
     - name: Include category tests
       ansible.builtin.include_tasks:
@@ -13,11 +14,11 @@
         file: test_association.yml
   always:
     - name: Destroy Test VM
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ test_vm_name }}"
       when: _test_association_vm.vm is defined
     - name: Destroy Test Tags

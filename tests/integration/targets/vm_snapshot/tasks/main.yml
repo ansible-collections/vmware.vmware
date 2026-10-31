@@ -1,6 +1,7 @@
 ---
 - name: Test
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     - name: Create Virtual Machine From OVF Template
@@ -319,9 +320,9 @@
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vm_cluster }}"
         datacenter: "{{ vm_datacenter }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm }}"

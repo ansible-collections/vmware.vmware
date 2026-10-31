@@ -8,10 +8,12 @@
     vcenter_rp_id: >-
       {{ lookup('vmware.vmware.moid_from_path',
       '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-      **vmware_rest_auth_vars) }}
+      **vmware_auth_vars) }}
 
 - name: Test
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
+    group/vmware.vmware_rest.vmware_rest: "{{ vmware_rest_auth_vars }}"
   block:
     - name: Create a test resource pool
       vmware.vmware_rest.vcenter_resourcepool:

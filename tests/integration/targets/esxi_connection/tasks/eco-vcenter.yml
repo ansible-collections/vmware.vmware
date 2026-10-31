@@ -4,10 +4,12 @@
     vcenter_rp_id: >-
       {{ lookup('vmware.vmware.moid_from_path',
       '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-      **vmware_rest_auth_vars) }}
+      **vmware_auth_vars) }}
 
 - name: Test
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
+    group/vmware.vmware_rest.vmware_rest: "{{ vmware_rest_auth_vars }}"
 
   block:
     - name: Create a test resource pool
@@ -115,13 +117,12 @@
         state: absent
       when: _esxi_info.guests[0] is defined
     - name: "Test cleanup: Delete Virtual ESXi Host"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
-        folder: ""
         state: absent
         name: "{{ test_esxi_hostname }}"
-        force: true
+        allow_power_cycling: true
     - name: "Test cleanup: Delete Resource Pool"
       vmware.vmware_rest.vcenter_resourcepool:
         resource_pool: "{{ _test_rp.id }}"

@@ -4,10 +4,12 @@
     vcenter_rp_id: >-
       {{ lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter +
       '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-      **vmware_rest_auth_vars) }}
+      **vmware_auth_vars) }}
 
 - name: Test
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
+    group/vmware.vmware_rest.vmware_rest: "{{ vmware_rest_auth_vars }}"
 
   block:
     - name: Create a test resource pool
@@ -33,12 +35,14 @@
       register: deploy
 
     - name: Wait for the virtual machine to power on
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOn"
+        - vm_info.vms[0].hw_power_status == "poweredOn"
       retries: 60
       delay: 5
 
@@ -49,12 +53,14 @@
         state: restarted
 
     - name: Wait for the virtual machine to power on
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOn"
+        - vm_info.vms[0].hw_power_status == "poweredOn"
       retries: 60
       delay: 5
 
@@ -68,12 +74,14 @@
         state: powered-on
 
     - name: Wait for the virtual machine to power on
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOn"
+        - vm_info.vms[0].hw_power_status == "poweredOn"
       retries: 60
       delay: 5
 
@@ -84,12 +92,14 @@
         state: powered-off
 
     - name: Wait for the virtual machine to power off
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOff"
+        - vm_info.vms[0].hw_power_status == "poweredOff"
       retries: 60
       delay: 5
 
@@ -99,12 +109,14 @@
         state: powered-on
 
     - name: Wait for the virtual machine to power on
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOn"
+        - vm_info.vms[0].hw_power_status == "poweredOn"
       retries: 60
       delay: 5
 
@@ -115,12 +127,14 @@
         state: suspended
 
     - name: Wait for the virtual machine to be suspended
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "suspended"
+        - vm_info.vms[0].hw_power_status == "suspended"
       retries: 60
       delay: 5
 
@@ -145,12 +159,14 @@
         force: true
 
     - name: Wait for the virtual machine to power on
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOn"
+        - vm_info.vms[0].hw_power_status == "poweredOn"
       retries: 60
       delay: 5
 
@@ -165,12 +181,14 @@
         scheduled_task_enabled: true
 
     - name: Wait for the virtual machine to power off
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOff"
+        - vm_info.vms[0].hw_power_status == "poweredOff"
       retries: 60
       delay: 5
 
@@ -196,12 +214,14 @@
         state: shutdown-guest
 
     - name: Wait for the virtual machine to shutdown
-      community.vmware.vmware_vm_info:
-        vm_name: "{{ vm }}"
+      vmware.vmware.vm_info:
+        datacenter: "{{ vm_datacenter }}"
+        folder: "{{ vm_folder }}"
+        name: "{{ vm }}"
       register: vm_info
       until:
         - vm_info is not failed
-        - vm_info.virtual_machines[0].power_state == "poweredOff"
+        - vm_info.vms[0].hw_power_status == "poweredOff"
       retries: 60
       delay: 5
 

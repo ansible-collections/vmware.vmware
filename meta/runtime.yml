@@ -27,6 +27,7 @@ action_groups:
         - esxi_service
         - esxi_service_info
         - folder
+        - folder_info
         - folder_template_from_vm
         - import_content_library_iso
         - import_content_library_ovf

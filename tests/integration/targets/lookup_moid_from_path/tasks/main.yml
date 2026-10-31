@@ -1,6 +1,8 @@
 ---
 - name: Test lookup plugin
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
+    group/vmware.vmware_rest.vmware_rest: "{{ vmware_rest_auth_vars }}"
   block:
     - name: Create test cluster
       vmware.vmware.cluster:
@@ -10,7 +12,7 @@
 
     - name: Get random host info
       vmware.vmware_rest.vcenter_host_info:
-        hosts: "{{ lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/', type='host', wantlist=true, **vmware_rest_auth_vars)[0] }}"
+        hosts: "{{ lookup('vmware.vmware.moid_from_path', '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/', type='host', wantlist=true, **vmware_auth_vars)[0] }}"
       register: vcenter_host_info
 
     - name: Set host name for tests

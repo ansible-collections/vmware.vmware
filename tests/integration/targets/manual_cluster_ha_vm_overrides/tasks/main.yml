@@ -3,7 +3,8 @@
 # in the test cluster. This test is not run as part of the CI/CD pipeline.
 # We need a way to create a datastore on the esxi host that is created for the test cluster. Then this can be automated.
 - name: Test On VCenter
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     # - name: Setup test cluster

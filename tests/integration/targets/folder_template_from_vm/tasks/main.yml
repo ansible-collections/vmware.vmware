@@ -1,6 +1,7 @@
 ---
 - name: Test On VCenter
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
 
   block:
     - name: Include Eco Vcenter Test Vars
@@ -16,23 +17,19 @@
       loop: "{{ template_folders }}"
 
     - name: "Test setup: Create VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ shared_storage_01 }}"
         folder: "{{ vm_folder }}"
-        state: poweredon
+        state: present
         name: "{{ vm_name }}"
-        disk: "{{ vm_disk }}"
         guest_id: "{{ vm_guest_id }}"
-        hardware: "{{ vm_hardware }}"
-
-    - name: "Test setup: Power off VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
-        cluster: "{{ vcenter_cluster_name }}"
-        datacenter: "{{ vcenter_datacenter }}"
-        folder: "{{ vm_folder }}"
-        state: poweredoff
-        name: "{{ vm_name }}"
+        disks: "{{ vm_disks }}"
+        scsi_controllers: "{{ vm_scsi_controllers }}"
+        cpu: "{{ vm_cpu }}"
+        memory: "{{ vm_memory }}"
+        vm_options: "{{ vm_options }}"
 
     - name: Create templates from vm in vcenter folders
       vmware.vmware.folder_template_from_vm:
@@ -64,21 +61,21 @@
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm_name }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ vm_folder }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm_name }}"
 
     - name: "Test teardown: Destroy VM template from folder"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         folder: "{{ item }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ template_name }}"
       loop: "{{ template_folders }}"
 

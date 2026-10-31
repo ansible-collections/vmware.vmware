@@ -4,10 +4,12 @@
     vcenter_rp_id: >-
       {{ lookup('vmware.vmware.moid_from_path',
       '/' + vcenter_datacenter + '/host/' + vcenter_cluster_name + '/' + vcenter_resource_pool,
-      **vmware_rest_auth_vars) }}
+      **vmware_auth_vars) }}
 
 - name: Test
-  environment: "{{ environment_auth_vars }}"
+  module_defaults:
+    group/vmware.vmware.vmware: "{{ vmware_auth_vars }}"
+    group/vmware.vmware_rest.vmware_rest: "{{ vmware_rest_auth_vars }}"
 
   block:
     - name: Include Eco Vcenter Test Vars
@@ -98,11 +100,11 @@
 
   always:
     - name: "Test teardown: Destroy VM guest {{ vm }}"
-      community.vmware.vmware_guest:
+      vmware.vmware.vm:
         cluster: "{{ vcenter_cluster_name }}"
         datacenter: "{{ vcenter_datacenter }}"
         state: absent
-        force: true
+        allow_power_cycling: true
         name: "{{ vm }}"
 
     - name: Delete test resource pool
