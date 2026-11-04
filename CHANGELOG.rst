@@ -4,6 +4,22 @@ vmware.vmware Release Notes
 
 .. contents:: Topics
 
+v2.13.0
+=======
+
+Minor Changes
+-------------
+
+- vm_info - Add option gather_compute_objects to collect cluster, resource pool, and ESXI host IDs
+- vm_info - Add option gather_location_objects to collect datacenter and folder IDs
+- vm_info - Dramatically improve execution time when gathering info about VMs. Add additional option to skip identity API calls, further improving performance.
+- vm_powerstate - Make the datacenter parameter optional, since it is not used in most cases
+
+Bugfixes
+--------
+
+- Add folder_info module to vmware module defaults group.
+
 v2.12.0
 =======
 
