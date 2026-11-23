@@ -1,0 +1,5 @@
+---
+minor_changes:
+  - vm_apply_customization - Add option ``windows_sysprep_text`` to apply a complete Windows Sysprep answer file (``vim.vm.customization.SysprepText``).
+    This covers settings the structured ``windows_sysprep`` options cannot express, and replaces the ``sysprep_xml`` option of the removed
+    ``vmware.vmware_rest.vcenter_vm_guest_customization`` module (https://github.com/ansible-collections/vmware.vmware/issues/454).

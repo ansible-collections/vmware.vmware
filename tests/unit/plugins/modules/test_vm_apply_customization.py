@@ -7,6 +7,7 @@ from ansible_collections.vmware.vmware.plugins.modules.vm_apply_customization im
     Identity,
     CloudInitIdentity,
     WinSysprepIdentity,
+    WinSysprepTextIdentity,
     UnixPrepIdentity,
     VMCustomizationModule,
     main as module_main
@@ -36,6 +37,10 @@ class TestCloudInitIdentity():
         params = dict(unix_prep=True)
         identity = Identity.create_from_params(params)
         assert isinstance(identity, UnixPrepIdentity)
+
+        params = dict(windows_sysprep_text=dict(answer_file_string='<unattend/>'))
+        identity = Identity.create_from_params(params)
+        assert isinstance(identity, WinSysprepTextIdentity)
 
     def test_create_identity_spec(self):
         params = dict(instance_data_string='{"foo": "bar"}')
@@ -91,6 +96,15 @@ class TestWinSysprepIdentity():
         assert spec.guiUnattended is not None
         assert spec.identification is not None
         assert spec.userData is not None
+
+
+class TestWinSysprepTextIdentity():
+    def test_create_identity_spec(self):
+        answer_file = '<?xml version="1.0" encoding="utf-8"?><unattend xmlns="urn:schemas-microsoft-com:unattend"/>'
+        identity = WinSysprepTextIdentity(dict(answer_file_string=answer_file, post_customization_action='reboot'))
+        spec = identity.create_identity_spec()
+        assert spec is not None
+        assert spec.value == answer_file
 
 
 class TestUnixPrepIdentity():
@@ -203,3 +217,29 @@ class TestVmApplyCustomization(ModuleTestCase):
         assert result["changed"] is True
         self.vm_mock.CustomizeVM_Task.assert_called_once()
         self.identity_mock.create_identity_spec.assert_called_once()
+
+    @patch('ansible_collections.vmware.vmware.plugins.modules.vm_apply_customization.vim.vm.customization.Specification')
+    def test_customize_with_sysprep_text(self, specification_mock, mocker):
+        mocker.patch.object(PyvmomiClient, 'connect_to_api', return_value=(mocker.Mock(), mocker.Mock()))
+        vm_mock = create_mock_vsphere_object()
+        vm_mock.CustomizeVM_Task.return_value = MockVsphereTask()
+        mock_nic = mocker.Mock()
+        mock_nic.macAddress = '00:00:00:00:00:00'
+        vm_mock.config.hardware.device = [mock_nic]
+        mocker.patch.object(VMCustomizationModule, 'get_vms_using_params', return_value=([vm_mock]))
+        spec = mocker.Mock()
+        specification_mock.return_value = spec
+        answer_file = '<?xml version="1.0" encoding="utf-8"?><unattend xmlns="urn:schemas-microsoft-com:unattend"/>'
+        module_args = dict(
+            name="vm1",
+            global_dns=dict(servers=['1.1.1.1']),
+            windows_sysprep_text=dict(answer_file_string=answer_file, post_customization_action='shutdown'),
+            use_dhcpv4_for_all_nics=True,
+        )
+
+        result = run_module(module_entry=module_main, module_args=module_args)
+
+        assert result["changed"] is True
+        vm_mock.CustomizeVM_Task.assert_called_once_with(spec)
+        assert spec.identity.value == answer_file
+        assert spec.options.reboot == 'shutdown'
