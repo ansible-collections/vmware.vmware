@@ -89,7 +89,8 @@ options:
     existing_spec_name:
         description:
             - The name of the existing customization specification in vSphere to apply to the VM.
-            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), or O(unix_prep) must be specified.
+            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), O(windows_sysprep_text), or O(unix_prep)
+              must be specified.
         type: str
         required: false
 
@@ -98,7 +99,8 @@ options:
             - The cloud-init configuration to apply to the VM.
             - Only applicable for Linux guests.
             - The OS must already have cloud-init and perl installed.
-            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), or O(unix_prep) must be specified.
+            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), O(windows_sysprep_text), or O(unix_prep)
+              must be specified.
         type: dict
         required: false
         suboptions:
@@ -131,7 +133,8 @@ options:
         description:
             - The Windows Sysprep configuration to apply to the VM.
             - Only applicable for Windows guests.
-            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), or O(unix_prep) must be specified.
+            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), O(windows_sysprep_text), or O(unix_prep)
+              must be specified.
         type: dict
         required: false
         suboptions:
@@ -240,12 +243,39 @@ options:
                 type: str
                 required: true
 
+    windows_sysprep_text:
+        description:
+            - A complete Windows Sysprep answer file (unattend.xml) to apply to the VM.
+            - Only applicable for Windows guests.
+            - Use this instead of O(windows_sysprep) when you need settings that the structured options cannot express,
+              for example additional local accounts, auto logon as a user other than Administrator, OOBE or locale settings.
+            - The answer file is passed to vSphere as is. vSphere does not validate its content, so errors in the file
+              only show up during customization inside the guest.
+            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), O(windows_sysprep_text), or O(unix_prep)
+              must be specified.
+        type: dict
+        required: false
+        suboptions:
+            answer_file_string:
+                description:
+                    - The content of the Sysprep answer file, as an XML string.
+                    - This usually contains passwords, so it is not logged.
+                type: str
+                required: true
+            post_customization_action:
+                description:
+                    - The power-related action to take once the sysprep process is complete. This is either a reboot, a shutdown, or nothing at all.
+                type: str
+                default: reboot
+                choices: [ reboot, noreboot, shutdown ]
+
     unix_prep:
         description:
             - The Unix Prep configuration to apply to the VM.
             - Only applicable for Linux guests.
             - The OS must already have perl installed.
-            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), or O(unix_prep) must be specified.
+            - One and only one of O(existing_spec_name), O(cloud_init), O(windows_sysprep), O(windows_sysprep_text), or O(unix_prep)
+              must be specified.
         type: dict
         required: false
         suboptions:
@@ -513,6 +543,20 @@ EXAMPLES = r'''
     datacenter: "my-datacenter"
     state: powered-on
 
+# Windows customization with a complete Sysprep answer file
+- name: Set VM customization spec from an answer file
+  vmware.vmware.vm_apply_customization:
+    moid: "{{ _deploy_vm.vm.moid }}"
+    datacenter: "my-datacenter"
+    use_dhcpv4_for_all_nics: true
+    windows_sysprep_text:
+      answer_file_string: "{{ lookup('ansible.builtin.template', 'unattend.xml.j2') }}"
+      post_customization_action: reboot
+    global_dns:
+      servers:
+        - 10.0.0.1
+        - 10.0.0.2
+
 - name: Wait for customization to complete
   ansible.builtin.wait_for:
     path: /etc/cloud/cloud-init.disabled
@@ -563,6 +607,8 @@ class Identity(ABC):
     def create_from_params(params):
         if params.get('windows_sysprep'):
             return WinSysprepIdentity(params.get('windows_sysprep'))
+        elif params.get('windows_sysprep_text'):
+            return WinSysprepTextIdentity(params.get('windows_sysprep_text'))
         elif params.get('cloud_init'):
             return CloudInitIdentity(params.get('cloud_init'))
         elif params.get('unix_prep'):
@@ -669,6 +715,16 @@ class WinSysprepIdentity(Identity):
             subspec.computerName = name
 
         return subspec
+
+
+class WinSysprepTextIdentity(Identity):
+    """
+    Identity specification for Windows Sysprep with a complete answer file. Only applicable to Windows guests.
+    """
+    def create_identity_spec(self):
+        spec = vim.vm.customization.SysprepText()
+        spec.value = self.params.get('answer_file_string')
+        return spec
 
 
 class UnixPrepIdentity(Identity):
@@ -791,7 +847,7 @@ class VMCustomizationModule(ModulePyvmomiBase):
         return spec
 
     def _create_options_spec(self):
-        win_sysprep_opts = self.params.get('windows_sysprep')
+        win_sysprep_opts = self.params.get('windows_sysprep') or self.params.get('windows_sysprep_text')
         if not win_sysprep_opts:
             return None
 
@@ -937,6 +993,13 @@ def main():
                     ]
                 ),
 
+                windows_sysprep_text=dict(
+                    type='dict', required=False, options=dict(
+                        answer_file_string=dict(type='str', required=True, no_log=True),
+                        post_customization_action=dict(type='str', required=False, choices=['reboot', 'noreboot', 'shutdown'], default='reboot'),
+                    ),
+                ),
+
                 unix_prep=dict(
                     type='dict', required=False, options=dict(
                         domain=dict(type='str', required=True),
@@ -990,11 +1053,11 @@ def main():
         supports_check_mode=True,
         mutually_exclusive=[
             ('name', 'uuid', 'moid'),
-            ('windows_sysprep', 'cloud_init', 'unix_prep', 'existing_spec_name'),
+            ('windows_sysprep', 'windows_sysprep_text', 'cloud_init', 'unix_prep', 'existing_spec_name'),
         ],
         required_one_of=[
             ('name', 'uuid', 'moid'),
-            ('windows_sysprep', 'cloud_init', 'unix_prep', 'existing_spec_name'),
+            ('windows_sysprep', 'windows_sysprep_text', 'cloud_init', 'unix_prep', 'existing_spec_name'),
         ],
         required_if=[
             ('use_dhcpv4_for_all_nics', False, ('nic_specific_settings',)),
